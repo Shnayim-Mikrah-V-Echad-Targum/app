@@ -97,13 +97,15 @@ void main() {
     final reeh = LocalDate(2022, 8, 27);
     final kiTeitzei = LocalDate(2022, 9, 10);
 
-    test("has the Rosh Chodesh haftarah for Ashkenazim, Re'eh's apart, and then both with Ki Tetze", () {
+    test("has the Rosh Chodesh haftarah for Ashkenazim, and Re'eh's with Ki Tetze's, not apart this week", () {
       final h = repo.haftarahFor(const PortionId(47), reeh, HaftarahNusach.ashkenazi);
       // 30 Av, with Sunday Rosh Chodesh too: Machar Chodesh's first and last
       // verses are added.
       expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)');
       expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42');
-      expect(refs(h.regular), 'Isaiah 54:11-55:5');
+      // Read two weeks later, so not offered as one some read too now.
+      expect(h.regular, isNull);
+      expect(h.regularFallback, isFalse);
       final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.ashkenazi);
       expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
       expect(next.regular, isNull, reason: "Ki Tetze's own haftarah is its first part");
@@ -129,10 +131,30 @@ void main() {
         final h = repo.haftarahFor(const PortionId(47), shabbat, HaftarahNusach.chabad);
         expect(h.specialKey, 'Shabbat Rosh Chodesh (and Sunday)', reason: '$shabbat');
         expect(refs(h.parts), 'Isaiah 66:1-66:24, I Samuel 20:18-20:18, I Samuel 20:42-20:42', reason: '$shabbat');
+        expect(h.regular, isNull, reason: "$shabbat: Chabad reads Re'eh's with Ki Tetze's, not twice");
       }
       final next = repo.haftarahFor(const PortionId(49), kiTeitzei, HaftarahNusach.chabad);
       expect(next.specialKey, 'Ki Teitzei with 3rd Haftarah of Consolation');
       expect(refs(next.parts), 'Isaiah 54:1-54:10, Isaiah 54:11-55:5');
+    });
+  });
+
+  group('Acharei Mot 5782, on Shabbat Machar Chodesh,', () {
+    final acharei = LocalDate(2022, 4, 30);
+
+    test("has no regular haftarah apart for Ashkenazim or Chabad, who read Acharei Mot's for Kedoshim", () {
+      for (final n in [HaftarahNusach.ashkenazi, HaftarahNusach.chabad]) {
+        final h = repo.haftarahFor(const PortionId(29), acharei, n);
+        expect(h.specialKey, 'Shabbat Machar Chodesh', reason: n.name);
+        expect(h.regular, isNull, reason: n.name);
+        expect(h.regularFallback, isFalse, reason: n.name);
+      }
+    });
+
+    test('offers Sephardim its own as one some read too, as Kedoshim reads its own', () {
+      final h = repo.haftarahFor(const PortionId(29), acharei, HaftarahNusach.sephardi);
+      expect(h.specialKey, 'Shabbat Machar Chodesh');
+      expect(refs(h.regular), 'Ezekiel 22:1-22:16');
     });
   });
 

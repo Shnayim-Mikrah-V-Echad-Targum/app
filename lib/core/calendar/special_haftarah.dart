@@ -8,6 +8,7 @@ enum HaftarahNusach { ashkenazi, sephardi, chabad }
 
 /// Parsha numbers referenced by the rules below.
 abstract final class _P {
+  static const acharei = 29;
   static const kedoshim = 30;
   static const pinchas = 41;
   static const masei = 43;
@@ -127,10 +128,28 @@ String? specialHaftarahKey(LocalDate shabbat, PortionId portion, {required Hafta
     if (ph.month == HebrewMonth.nisan && ph.day >= 15 && ph.day <= 22) {
       previous = previous.addDays(-7);
     }
-    if (specialHaftarahKey(previous, const PortionId(_P.kedoshim - 1), nusach: nusach) != null) {
+    if (specialHaftarahKey(previous, const PortionId(_P.acharei), nusach: nusach) != null) {
       return 'Kedoshim following Special Shabbat';
     }
   }
 
   return null;
+}
+
+/// Whether [portion]'s own haftarah, which a special one displaces on
+/// [shabbat], is read on a later Shabbat in [nusach]'s custom, so that it
+/// is not offered as a regular haftarah some read too that week (it would
+/// be read twice). By the rules above: Re'eh's on Rosh Chodesh Elul, which
+/// Ashkenazim and Chabad join to Ki Tetze's two weeks later, and Acharei
+/// Mot's, which they read for Kedoshim.
+bool regularHaftarahDeferred(LocalDate shabbat, PortionId portion, {required HaftarahNusach nusach}) {
+  if (nusach == HaftarahNusach.sephardi || portion.combined) return false;
+  return switch (portion.number) {
+    // 30 Av: Ki Tetze, the Shabbat after Shoftim, sees Rosh Chodesh two
+    // weeks back.
+    _P.reeh => JewishHolidays.isRoshChodesh(HebrewDate.fromLocalDate(shabbat)),
+    // Kedoshim, a week later or after Pesach, sees a special haftarah here.
+    _P.acharei => specialHaftarahKey(shabbat, portion, nusach: nusach) != null,
+    _ => false,
+  };
 }

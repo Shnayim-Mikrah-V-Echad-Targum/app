@@ -286,7 +286,13 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
               ),
               if (ctx.haftarah.specialKey case final key?) ...[
                 const Gap(Space.xs),
-                Text(names.specialHaftarah(key), style: SeferType.of(context).marginalia),
+                // Balanced where it wraps, as marginalia is ("…, with verses /
+                // for Sunday's Rosh Chodesh", not "Rosh Chodesh" alone).
+                BalancedText(
+                  names.specialHaftarah(key),
+                  style: SeferType.of(context).marginalia,
+                  textAlign: TextAlign.start,
+                ),
               ],
               // Chabad's own reading of this haftarah isn't listed yet, and
               // the Ashkenazi and Sephardi ones differ. The regular haftarah,
@@ -393,9 +399,10 @@ List<Widget> _verses(
 const _verseGap = 20.0;
 
 /// The portion's own haftarah, in a week a special one displaces it, for
-/// those who read it too. Chabad's custom is to, so it opens for them;
-/// otherwise it starts folded. Where Chabad's own reading of it isn't
-/// listed, a note above its verses says so.
+/// those who read it too. Chabad's custom is to, so it opens for them as
+/// "Also: …"; otherwise it starts folded, titled as one some read too.
+/// Where Chabad's own reading of it isn't listed, a note above its verses
+/// says so.
 class _RegularHaftarah extends ConsumerWidget {
   const _RegularHaftarah({required this.ctx});
 
@@ -408,10 +415,12 @@ class _RegularHaftarah extends ConsumerWidget {
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final sefer = SeferColors.of(context);
+    final chabad = settings.nusach == HaftarahNusach.chabad;
+    final portion = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
     // A hairline above, open or folded, rather than lines that come and go.
     final rule = Border(top: BorderSide(color: sefer.hairline, width: sefer.hairlineWidth));
     return ExpansionTile(
-      initiallyExpanded: settings.nusach == HaftarahNusach.chabad,
+      initiallyExpanded: chabad,
       expansionAnimationStyle: Motion.of(context).style,
       // In line with the text above and below it.
       tilePadding: EdgeInsets.zero,
@@ -424,9 +433,12 @@ class _RegularHaftarah extends ConsumerWidget {
       title: Semantics(
         header: true,
         headingLevel: 2,
-        child: Text(
-          l.regularHaftarahOf(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames)),
+        // Balanced where it wraps, so that its last words don't stand alone
+        // ("(some" over "read it too)" on a phone).
+        child: BalancedText(
+          chabad ? l.regularHaftarahOf(portion) : l.regularHaftarahSomeRead(portion),
           style: theme.textTheme.titleMedium,
+          textAlign: TextAlign.start,
         ),
       ),
       subtitle: Text(names.haftarah(ctx.haftarah.regular!)),

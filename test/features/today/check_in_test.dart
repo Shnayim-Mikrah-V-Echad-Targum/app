@@ -16,7 +16,7 @@ import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/check_in.dart';
 import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
-import 'package:shnayim_mikra/ui/widgets/lines.dart' show DotLine;
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart' show PaperRow;
 
 import '../../helpers.dart';
 
@@ -146,7 +146,7 @@ void main() {
       await tester.tap(find.text('Change date'));
       await tester.pumpAndSettle();
       expect(find.text('When did you read it?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ListTile, 'Yesterday'));
+      await tester.tap(find.widgetWithText(PaperRow, 'Yesterday'));
       await tester.pumpAndSettle();
       expect(findWords('Read on Sunday, October 11'), findsOneWidget);
 
@@ -352,14 +352,14 @@ void main() {
       // latest first; yesterday is named as the Yom Tov it was. Each date is
       // held together but after its comma.
       final days = [
-        for (final tile in tester.widgetList<ListTile>(find.widgetWithText(ListTile, 'On Yom Tov')))
-          (tile.subtitle! as DotLine).parts.single.replaceAll('\u00A0', ' '),
+        for (final row in tester.widgetList<PaperRow>(find.widgetWithText(PaperRow, 'On Yom Tov')))
+          row.subtitle!.replaceAll('\u00A0', ' '),
       ];
       expect(days, ['Sunday, October 4', 'Saturday, October 3', 'Sunday, September 27', 'Saturday, September 26']);
-      expect(find.widgetWithText(ListTile, 'Yesterday'), findsNothing);
-      expect(find.widgetWithText(ListTile, 'On Shabbat'), findsNothing);
+      expect(find.widgetWithText(PaperRow, 'Yesterday'), findsNothing);
+      expect(find.widgetWithText(PaperRow, 'On Shabbat'), findsNothing);
 
-      await tester.tap(find.ancestor(of: findDotLine('Saturday, October\u00A03'), matching: find.byType(ListTile)));
+      await tester.tap(find.ancestor(of: find.text('Saturday, October\u00A03'), matching: find.byType(PaperRow)));
       await tester.pumpAndSettle();
       expect(findDotLine('Read on Yom Tov, October 3'), findsOneWidget);
       await tester.ensureVisible(find.text('Log reading'));
@@ -519,13 +519,13 @@ void main() {
     await tester.tap(find.text('Change date'));
     await tester.pumpAndSettle();
     final days = [
-      for (final tile in tester.widgetList<ListTile>(find.widgetWithText(ListTile, 'On Yom Tov')))
-        (tile.subtitle! as DotLine).parts.single.replaceAll('\u00A0', ' '),
+      for (final row in tester.widgetList<PaperRow>(find.widgetWithText(PaperRow, 'On Yom Tov')))
+        row.subtitle!.replaceAll('\u00A0', ' '),
     ];
     expect(days, ['Monday, May 21', 'Sunday, May 20']);
-    expect(find.widgetWithText(ListTile, 'Yesterday'), findsNothing);
-    expect(find.widgetWithText(ListTile, 'On Shabbat'), findsOneWidget);
-    await tester.tap(find.ancestor(of: findDotLine('Sunday, May\u00A020'), matching: find.byType(ListTile)));
+    expect(find.widgetWithText(PaperRow, 'Yesterday'), findsNothing);
+    expect(find.widgetWithText(PaperRow, 'On Shabbat'), findsOneWidget);
+    await tester.tap(find.ancestor(of: find.text('Sunday, May\u00A020'), matching: find.byType(PaperRow)));
     await tester.pumpAndSettle();
     expect(findDotLine('Read on Yom Tov, May 20'), findsOneWidget);
 

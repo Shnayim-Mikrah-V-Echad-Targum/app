@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/features/notes/notes_screen.dart';
 import 'package:shnayim_mikra/features/parsha/browse_screen.dart';
 import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
@@ -160,11 +161,11 @@ void main() {
       }
       for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
         expect(textIn(tester, row(name), 'Planned for $day').style?.color, overdue, reason: name);
-        expect(find.descendant(of: row(name), matching: find.byIcon(Icons.history)), findsOneWidget, reason: name);
+        expect(find.descendant(of: row(name), matching: find.byIcon(stillToReadIcon)), findsOneWidget, reason: name);
       }
       // Read on their days: plain.
       expect(textIn(tester, row('Rishon'), 'Planned for Monday').style?.color, scheme.onSurfaceVariant);
-      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(Icons.history)), findsNothing);
+      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(stillToReadIcon)), findsNothing);
     });
 
     testWidgets('planned for a day before the reader joined are never overdue', (tester) async {
@@ -174,15 +175,15 @@ void main() {
         settings: _settings.copyWith(joinDate: LocalDate(2026, 10, 7), starterCatchUp: false),
         progress: const ProgressState(),
       );
-      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(Icons.history)), findsNothing);
-      expect(find.descendant(of: row('Sheni'), matching: find.byIcon(Icons.history)), findsNothing);
-      expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.history)), findsOneWidget);
+      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(stillToReadIcon)), findsNothing);
+      expect(find.descendant(of: row('Sheni'), matching: find.byIcon(stillToReadIcon)), findsNothing);
+      expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(stillToReadIcon)), findsOneWidget);
     });
 
     group('are never overdue on a day that does not count', () {
       void expectNoneOverdue(WidgetTester tester) {
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
-        expect(find.byIcon(Icons.history), findsNothing);
+        expect(find.byIcon(stillToReadIcon), findsNothing);
         for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
           expect(textIn(tester, row(name), 'Planned for $day').style?.color, isNot(overdue), reason: name);
         }
@@ -216,7 +217,7 @@ void main() {
         );
         expect(find.textContaining('Not counted'), findsOneWidget);
         expectNoneOverdue(tester);
-        expect(find.descendant(of: row('Shishi'), matching: find.byIcon(Icons.history)), findsNothing);
+        expect(find.descendant(of: row('Shishi'), matching: find.byIcon(stillToReadIcon)), findsNothing);
       });
     });
 
@@ -227,7 +228,7 @@ void main() {
         await open(tester, settings: shabbatPlan);
         final line = textIn(tester, row('Shevi’i'), 'Shabbat morning');
         expect(line.data, 'Shabbat morning — log it after Shabbat');
-        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsNothing);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(stillToReadIcon)), findsNothing);
       });
 
       testWidgets('are still to read once Shabbat has passed', (tester) async {
@@ -246,7 +247,7 @@ void main() {
         );
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
         expect(textIn(tester, row('Shevi’i'), 'Shabbat morning').style?.color, overdue);
-        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsOneWidget);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(stillToReadIcon)), findsOneWidget);
         expect(
           tester.getSemantics(find.text('Shevi’i')).getSemanticsData().label,
           contains('Planned for Shabbat morning, still to read'),
@@ -262,7 +263,7 @@ void main() {
       }
       await open(tester, route: '/week/5787:1', now: DateTime(2026, 10, 22, 10), progress: ProgressState(weeks: {'5787:1': w}));
       expect(find.text('Planned for today'), findsNothing);
-      expect(find.byIcon(Icons.history), findsNothing);
+      expect(find.byIcon(stillToReadIcon), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
       expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.check)), findsOneWidget);
     });
@@ -271,7 +272,7 @@ void main() {
       await open(tester, route: '/week/5787:2');
       expect(findWords('Preview — you can log this parsha from'), findsOneWidget);
       expect(find.text('Planned for today'), findsNothing);
-      expect(find.byIcon(Icons.history), findsNothing);
+      expect(find.byIcon(stillToReadIcon), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
     });
 
@@ -368,16 +369,41 @@ void main() {
       expect(pips.center.dy, moreOrLessEquals(title.center.dy, epsilon: 1), reason: "on the name's line");
     });
 
-    testWidgets('note where some sources divide an aliyah otherwise', (tester) async {
+    testWidgets('note where some sources divide an aliyah otherwise, quietly, as a line of meta', (tester) async {
       await open(tester);
-      final note = textIn(tester, row('Chamishi'), 'Some sources use');
-      expect(note.data, 'Some sources use 4:19\u2060–\u206026');
-      expect(note.style, SeferType.of(tester.element(find.byType(WeekOverview))).marginalia);
+      final chamishi = row('Chamishi');
+      final note = textIn(tester, chamishi, 'Some sources use');
+      final words = note.textSpan!.toPlainText(includePlaceholders: false);
+      expect(words, 'Some sources use 4:19\u2060–\u206026');
+      expect(note.semanticsLabel, words, reason: 'its words, without the mark');
+      // Set as the row's other meta are, not louder than its name.
+      final theme = Theme.of(tester.element(find.byType(WeekOverview)));
+      final meta = theme.textTheme.bodySmall!;
+      final style = note.style!;
+      expect((style.fontFamily, style.fontSize, style.fontStyle), (meta.fontFamily, meta.fontSize, meta.fontStyle));
+      expect(style.color, theme.colorScheme.onSurfaceVariant);
+      // After a small mark in its colour at the start of its first line, as
+      // the overdue mark leads the plan's line.
+      final mark = find.descendant(of: chamishi, matching: find.byIcon(Icons.info_outline));
+      expect(tester.widget<Icon>(mark).size, 14);
+      expect(tester.widget<Icon>(mark).color, theme.colorScheme.onSurfaceVariant);
+      final text = tester.getRect(find.descendant(of: chamishi, matching: find.textContaining('Some sources use')));
+      final plan = tester.getRect(find.descendant(of: chamishi, matching: find.byIcon(stillToReadIcon)));
+      expect(tester.getRect(mark).left, moreOrLessEquals(text.left, epsilon: 0.5));
+      expect(tester.getRect(mark).left, moreOrLessEquals(plan.left, epsilon: 0.5));
+      final firstLine = style.fontSize! * style.height!;
+      expect(tester.getCenter(mark).dy, moreOrLessEquals(text.top + firstLine / 2, epsilon: 1.5));
+      // Only where some sources do.
+      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(Icons.info_outline)), findsNothing);
     });
 
     testWidgets('note it in Hebrew too, in Hebrew numerals', (tester) async {
       await open(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
-      expect(find.text('לפי חלק מהמקורות: ד,\u00A0יט\u2060–\u2060כו'), findsOneWidget);
+      final note = find.textContaining('לפי חלק מהמקורות: ד,\u00A0יט\u2060–\u2060כו');
+      expect(note, findsOneWidget);
+      // Its mark at the start, on the right.
+      final mark = find.descendant(of: row('חמישי'), matching: find.byIcon(Icons.info_outline));
+      expect(tester.getRect(mark).right, moreOrLessEquals(tester.getRect(note).right, epsilon: 0.5));
       expect(find.text('מתוכנן ליום שני'), findsOneWidget, reason: 'the weekday names its day once');
     });
   });
@@ -396,7 +422,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(mark);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Today'));
+    await tester.tap(find.widgetWithText(PaperRow, 'Today'));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
     expect(mark, findsNothing);
@@ -412,6 +438,99 @@ void main() {
     expect(c.read(routerProvider).state.uri.toString(), '/parsha/browse');
   });
 
+  testWidgets('the Parsha tab opens every bookmark and note', (tester) async {
+    // A tablet's app bar, which has room for the button.
+    final c = await open(tester, size: const Size(800, 1000));
+    final notes = find.descendant(of: find.byType(AppBar), matching: find.byTooltip('Bookmarks & notes'));
+    expect(notes, findsOneWidget);
+    // Between the way to every parsha and search.
+    final browse = tester.getRect(find.widgetWithText(TextButton, 'All parshiyot'));
+    final search = tester.getRect(find.byIcon(Icons.search));
+    expect(tester.getCenter(notes).dx, inExclusiveRange(browse.right, search.left));
+    await tester.tap(notes);
+    await tester.pumpAndSettle();
+    expect(tester.widget<NotesScreen>(find.byType(NotesScreen)).weekId, isNull, reason: "every parsha's");
+    expect(c.read(routerProvider).state.uri.toString(), '/notes');
+  });
+
+  // The title revealed on scrolling needs the room on a phone; the menu
+  // holds the way to every bookmark and note as its second item.
+  testWidgets('on a phone, the Parsha tab leaves bookmarks and notes to its menu', (tester) async {
+    final c = await open(tester);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.byTooltip('Bookmarks & notes')), findsNothing);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.byIcon(Icons.search)), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bookmarks & notes'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<NotesScreen>(find.byType(NotesScreen)).weekId, isNull, reason: "every parsha's");
+    expect(c.read(routerProvider).state.uri.toString(), '/notes');
+  });
+
+  group("the week's menu", () {
+    /// Opens the menu, and gives its items' labels, its hairline as "—".
+    Future<List<String>> openMenu(WidgetTester tester) async {
+      await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)));
+      await tester.pumpAndSettle();
+      return [
+        for (final entry in tester.widgetList(find.byWidgetPredicate((w) => w is PopupMenuEntry)))
+          entry is PopupMenuItem ? (entry.child! as Text).data! : '—',
+      ];
+    }
+
+    testWidgets('offers ways to read first, then under a hairline the progress, the clearing last', (tester) async {
+      await open(tester);
+      expect(await openMenu(tester), [
+        'Full text',
+        'Bookmarks & notes',
+        '—',
+        'Mark the whole parsha as read',
+        'Clear this week’s progress',
+      ]);
+      final hairline = tester.widget<PopupMenuDivider>(find.byType(PopupMenuDivider));
+      final sefer = SeferColors.of(tester.element(find.byType(WeekOverview)));
+      expect((hairline.color, hairline.thickness), (sefer.hairline, sefer.hairlineWidth));
+    });
+
+    testWidgets('draws no hairline over nothing in a week with nothing to mark or clear', (tester) async {
+      // Next week's, not yet open, and not begun.
+      await open(tester, route: '/week/5787:2');
+      expect(await openMenu(tester), ['Full text', 'Bookmarks & notes']);
+    });
+
+    testWidgets('opens every bookmark and note from a week', (tester) async {
+      await open(tester, route: '/week/5787:1');
+      await openMenu(tester);
+      await tester.tap(find.text('Bookmarks & notes'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<NotesScreen>(find.byType(NotesScreen)).weekId, isNull);
+    });
+
+    testWidgets('names the parsha a clearing cleared, and Undo brings it back', (tester) async {
+      final c = await open(tester, route: '/week/5787:1');
+      await openMenu(tester);
+      await tester.tap(find.text('Clear this week’s progress'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).week('5787:1').completedUnits, 0);
+      expect(find.text('Progress for Bereshit cleared'), findsOneWidget);
+      await tester.tap(find.widgetWithText(SnackBarAction, 'Undo'));
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).week('5787:1').isAliyahDone(1), isTrue);
+    });
+
+    testWidgets('names it in Hebrew too', (tester) async {
+      await open(tester, route: '/week/5787:1', settings: _settings.copyWith(language: AppLanguage.hebrew));
+      await openMenu(tester);
+      await tester.tap(find.text('ניקוי ההתקדמות של השבוע'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'ניקוי'));
+      await tester.pumpAndSettle();
+      expect(find.text('ההתקדמות בפרשת בראשית נמחקה'), findsOneWidget);
+    });
+  });
+
   testWidgets("the Parsha tab's way to every parsha keeps to its share of the app bar with very large text",
       (tester) async {
     await openRoute(tester, '/parsha', settings: _settings, now: _friday, textScale: 2);
@@ -419,8 +538,8 @@ void main() {
     final browse = tester.getRect(find.widgetWithText(TextButton, 'All parshiyot'));
     expect(browse.width, lessThanOrEqualTo(412 * 0.4 + 24), reason: "40% of the width, and the button's padding");
     expect(tester.takeException(), isNull);
-    for (final button in [find.byIcon(Icons.search), find.byIcon(Icons.more_vert)]) {
-      final rect = tester.getRect(button.first);
+    for (final icon in [Icons.search, Icons.more_vert]) {
+      final rect = tester.getRect(find.byIcon(icon).first);
       expect(rect.left, greaterThanOrEqualTo(browse.right - 1));
       expect(rect.right, lessThanOrEqualTo(bar.right));
     }

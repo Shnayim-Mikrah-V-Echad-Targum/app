@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,10 +8,13 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show BalancedText, DotLine;
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -20,7 +24,10 @@ import '../../helpers.dart';
 final _friday = DateTime(2026, 10, 9, 10);
 final _settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4));
 
-const _regularTitle = 'Also: the regular haftarah of Bereshit';
+/// The regular haftarah's title: one some read too, and for Chabad, whose
+/// custom is to read both, one read as well.
+const _regularTitle = 'The regular haftarah of Bereshit (some read it too)';
+const _chabadRegularTitle = 'Also: the regular haftarah of Bereshit';
 const _fallbackNote = 'Chabad haftarot are being verified; showing the Ashkenazi reading.';
 
 /// The head of the regular haftarah's chapter 43, there only once it is open.
@@ -178,10 +185,11 @@ void main() {
   });
 
   group('the regular haftarah', () {
-    testWidgets("opens Bereshit's own haftarah, folded, after Machar Chodesh's", (tester) async {
+    testWidgets("opens Bereshit's own haftarah, folded, after Machar Chodesh's, as one some read too", (tester) async {
       final c = await _open(tester, '5787:1');
       expect(find.text('Shabbat Machar Chodesh'), findsOneWidget);
       expect(find.text(_regularTitle), findsOneWidget);
+      expect(find.text(_chabadRegularTitle), findsNothing, reason: 'only Chabad reads it as well');
       expect(find.text('Isaiah 42:5–\u206043:10'), findsOneWidget);
       expect(_regularChapter, findsNothing, reason: 'folded');
       expect(find.text(_fallbackNote), findsNothing);
@@ -195,6 +203,20 @@ void main() {
       final verses = c.read(regularHaftarahTextProvider('5787:1')).requireValue;
       expect((verses.first.book, verses.first.hebrew.ref), ('Isaiah', const VerseRef(42, 5)));
       expect(verses.last.hebrew.ref, const VerseRef(43, 10));
+    });
+
+    // On a phone "(some" ended the first line and "read it too)" stood alone
+    // under it.
+    testWidgets('balances its title where it wraps, leaving no words alone on the last line', (tester) async {
+      await _open(tester, '5787:1');
+      final title = find.text(_regularTitle);
+      expect(find.ancestor(of: title, matching: find.byType(BalancedText)), findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(title);
+      double lineOf(String word) =>
+          paragraph.getOffsetForCaret(TextPosition(offset: _regularTitle.indexOf(word)), Rect.zero).dy;
+      expect(lineOf('The'), lessThan(lineOf('too)')), reason: 'it wraps');
+      expect(lineOf('read'), lineOf('too)'));
+      expect(lineOf('it too)'), lineOf('too)'));
     });
 
     testWidgets('comes before the haftarah ends and is marked read', (tester) async {
@@ -228,7 +250,8 @@ void main() {
 
     testWidgets("opens unfolded for Chabad, saying above its verses that it is the Ashkenazi reading", (tester) async {
       await _open(tester, '5787:1', settings: _settings.withNusach(HaftarahNusach.chabad));
-      expect(find.text(_regularTitle), findsOneWidget);
+      expect(find.text(_chabadRegularTitle), findsOneWidget, reason: "Chabad's custom is to read both");
+      expect(find.text(_regularTitle), findsNothing);
       expect(_regularChapter, findsOneWidget, reason: 'unfolded');
       // Machar Chodesh's haftarah is the same in every custom, so the note
       // is only the regular one's: under its heading, above its verses.
@@ -239,7 +262,7 @@ void main() {
       await tester.ensureVisible(note);
       await tester.pumpAndSettle();
       final firstRegularVerse = find.descendant(of: regular, matching: find.byType(ScriptureVerse)).first;
-      expect(tester.getTopLeft(note).dy, greaterThan(tester.getBottomLeft(find.text(_regularTitle)).dy));
+      expect(tester.getTopLeft(note).dy, greaterThan(tester.getBottomLeft(find.text(_chabadRegularTitle)).dy));
       expect(tester.getBottomLeft(note).dy, lessThan(tester.getTopLeft(firstRegularVerse).dy));
     });
 
@@ -266,6 +289,19 @@ void main() {
       expect(find.text(_fallbackNote, skipOffstage: false), findsNothing);
     });
 
+    // Re'eh 5789, on 30 Av: Ashkenazim and Chabad read the Rosh Chodesh
+    // haftarah, and Re'eh's two weeks later with Ki Tetze's.
+    testWidgets("is not offered on Rosh Chodesh Elul to Ashkenazim or Chabad, who read Re'eh's with Ki Tetze's",
+        (tester) async {
+      for (final nusach in [HaftarahNusach.ashkenazi, HaftarahNusach.chabad]) {
+        await _open(tester, '5789:47', settings: _settings.withNusach(nusach), now: DateTime(2029, 8, 9, 11));
+        expect(find.text('Haftarah · Re’eh'), findsOneWidget, reason: nusach.name);
+        expect(find.byType(ScriptureVerse), findsWidgets, reason: "${nusach.name}: the Rosh Chodesh haftarah");
+        expect(find.byType(ExpansionTile), findsNothing, reason: nusach.name);
+        expect(find.textContaining('regular haftarah', skipOffstage: false), findsNothing, reason: nusach.name);
+      }
+    });
+
     testWidgets('is not shown, nor the note, in a week without a special one', (tester) async {
       await _open(tester, '5787:2', now: DateTime(2026, 10, 13, 11));
       expect(find.text('Haftarah · Noach'), findsOneWidget);
@@ -276,25 +312,105 @@ void main() {
   });
 
   group('Today', () {
-    Future<void> openToday(WidgetTester tester, DateTime now) async {
+    Future<void> openToday(WidgetTester tester, DateTime now, {AppSettings? settings}) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await pumpApp(tester, settings: _settings, now: now);
+      await pumpApp(tester, settings: settings ?? _settings, now: now);
       await tester.pumpAndSettle();
     }
 
-    testWidgets("says the haftarah page has the regular haftarah too, in a week it gives way", (tester) async {
-      await openToday(tester, _friday);
-      // Lines of the haftarah row's subtitle, under its reference.
-      expect(find.textContaining('\nSpecial haftarah: Shabbat Machar Chodesh'), findsOneWidget);
-      expect(find.textContaining('\nAlso the regular haftarah'), findsOneWidget);
+    PaperRow haftarahRow(WidgetTester tester) => tester.widget<PaperRow>(find.widgetWithText(PaperRow, 'Haftarah'));
+
+    testWidgets('names the special haftarah under its reference, and nothing of the regular one', (tester) async {
+      for (final nusach in [HaftarahNusach.ashkenazi, HaftarahNusach.sephardi]) {
+        await openToday(tester, _friday, settings: _settings.withNusach(nusach));
+        final row = haftarahRow(tester);
+        expect(row.subtitleParts, ['I\u00A0Samuel 20:18–\u206042'], reason: nusach.name);
+        expect(row.detail, 'Shabbat Machar Chodesh', reason: nusach.name);
+        expect(find.textContaining('regular haftarah'), findsNothing, reason: '${nusach.name}: only some read it too');
+      }
     });
 
-    testWidgets('says nothing of it in other weeks', (tester) async {
-      await openToday(tester, DateTime(2026, 10, 13, 11));
-      expect(find.text('Haftarah'), findsOneWidget);
-      expect(find.textContaining('Also the regular haftarah'), findsNothing);
+    testWidgets('tells Chabad, whose custom is to read both, of the regular haftarah too', (tester) async {
+      await openToday(tester, _friday, settings: _settings.withNusach(HaftarahNusach.chabad));
+      final row = haftarahRow(tester);
+      expect(row.subtitleParts, ['I\u00A0Samuel 20:18–\u206042']);
+      // The dot held to the name before it, so that no line starts with it.
+      expect(row.detail, 'Shabbat Machar Chodesh\u00A0· Chabad custom: the regular haftarah too');
     });
+
+    // Re'eh 5789, on 30 Av.
+    testWidgets("names the Rosh Chodesh haftarah alone for Re'eh on Rosh Chodesh Elul, by each custom",
+        (tester) async {
+      const roshChodesh = 'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh';
+      for (final (nusach, detail) in [
+        (HaftarahNusach.ashkenazi, roshChodesh),
+        // Re'eh's own is read with Ki Tetze's, so not told of now.
+        (HaftarahNusach.chabad, roshChodesh),
+        (HaftarahNusach.sephardi, 'Re’eh on Rosh Chodesh Elul, with verses for Sunday’s Rosh Chodesh'),
+      ]) {
+        await openToday(tester, DateTime(2029, 8, 9, 11), settings: _settings.withNusach(nusach));
+        expect(haftarahRow(tester).detail, detail, reason: nusach.name);
+        expect(find.textContaining('regular haftarah'), findsNothing, reason: nusach.name);
+      }
+    });
+
+    // The longest reference: Re'eh's own haftarah for Sephardim, with the
+    // first and last verses of two more.
+    testWidgets("breaks Re'eh's five passages on Rosh Chodesh Elul between passages, never inside one",
+        (tester) async {
+      String plain(String s) => s.replaceAll(' ', ' ').replaceAll('⁠', '');
+      await openToday(tester, DateTime(2029, 8, 9, 11), settings: _settings.withNusach(HaftarahNusach.sephardi));
+      final row = find.widgetWithText(PaperRow, 'Haftarah');
+      const passages = ['Isaiah 54:11–55:5', 'Isaiah 66:1', 'Isaiah 66:23', 'I Samuel 20:18', 'I Samuel 20:42'];
+      expect(tester.widget<PaperRow>(row).subtitleParts?.map(plain), passages);
+      final dotLine = find.descendant(of: row, matching: find.byType(DotLine));
+      final lines = [
+        for (final text in tester.widgetList<RichText>(find.descendant(of: dotLine, matching: find.byType(RichText))))
+          plain(text.text.toPlainText()),
+      ];
+      expect(lines.length, greaterThan(1), reason: 'too long for one line on a phone');
+      expect(lines.expand((line) => line.split(' · ')), passages, reason: '$lines');
+    });
+
+    // Ki Tetze 5789, two weeks later: Re'eh's haftarah joined to its own,
+    // which the special one so includes.
+    testWidgets('names the special haftarah alone for Chabad where it includes the regular one', (tester) async {
+      await openToday(tester, DateTime(2029, 8, 23, 11), settings: _settings.withNusach(HaftarahNusach.chabad));
+      expect(haftarahRow(tester).detail, 'Ki Tetze, with Aniyah So’arah');
+      expect(find.textContaining('regular haftarah'), findsNothing);
+    });
+
+    testWidgets('says nothing more than the reference in other weeks', (tester) async {
+      for (final nusach in HaftarahNusach.values) {
+        await openToday(tester, DateTime(2026, 10, 13, 11), settings: _settings.withNusach(nusach));
+        expect(haftarahRow(tester).detail, isNull, reason: nusach.name);
+      }
+    });
+  });
+
+  // The week's page has the same row as Today (§9 Parsha tab, 4).
+  testWidgets("a week's page tells Chabad of the regular haftarah too, and other customs only of the special one",
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final (nusach, detail) in [
+      (HaftarahNusach.chabad, 'Shabbat Machar Chodesh\u00A0· Chabad custom: the regular haftarah too'),
+      (HaftarahNusach.ashkenazi, 'Shabbat Machar Chodesh'),
+    ]) {
+      final c = await pumpApp(tester, settings: _settings.withNusach(nusach), now: _friday);
+      c.read(routerProvider).go('/parsha/week/5787:1');
+      await tester.pumpAndSettle();
+      final page = find.byType(WeekOverviewScreen);
+      final row = find.descendant(of: page, matching: find.widgetWithText(PaperRow, 'Haftarah', skipOffstage: false));
+      await tester.scrollUntilVisible(
+        row,
+        300,
+        scrollable: find.descendant(of: page, matching: find.byType(Scrollable)).first,
+      );
+      expect(tester.widget<PaperRow>(row).detail, detail, reason: nusach.name);
+    }
   });
 }

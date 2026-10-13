@@ -149,6 +149,34 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('lay the done arcs over a track of the same seven arcs and gaps, at every size', (tester) async {
+      const all = (1 << (3 * kAliyot)) - 1;
+      final progress = week(2, passes: 1);
+      final done = ringMask(progress);
+      const sefer = Palettes.seferLight;
+      final colors = [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum];
+      for (final size in [ParshaRings.hero, ParshaRings.header, ParshaRings.compact]) {
+        await pumpRings(tester, progress, size: size);
+        final g = RingGeometry(size);
+        // As a Paint holds it, in single precision.
+        final stroke = (Paint()..strokeWidth = g.stroke).strokeWidth;
+        Rect ring(RingArc arc) => Rect.fromCircle(center: Offset(size / 2, size / 2), radius: g.radii[arc.ring]);
+        var expected = paints;
+        for (final arc in ringArcs(weights: weights, from: all, to: all)) {
+          expected = expected
+            ..arc(rect: ring(arc), startAngle: arc.start, sweepAngle: arc.sweep, color: sefer.ringTrack, strokeWidth: stroke);
+        }
+        for (final arc in ringArcs(weights: weights, from: done, to: done)) {
+          expected = expected
+            ..arc(rect: ring(arc), startAngle: arc.start, sweepAngle: arc.sweep, color: colors[arc.ring], strokeWidth: stroke);
+        }
+        final painter = find.descendant(of: find.byType(ParshaRings), matching: find.byType(CustomPaint)).first;
+        expect(painter, expected);
+        // No full circle under them, which would fill the gaps.
+        expect(painter, isNot(paints..circle()));
+      }
+    });
+
     testWidgets('count finished aliyot in the centre, except when compact', (tester) async {
       await pumpRings(tester, week(2, passes: 2));
       final context = tester.element(find.byType(ParshaRings));
@@ -334,11 +362,18 @@ void main() {
   });
 
   group('legend', () {
-    Future<void> pumpLegend(WidgetTester tester, Widget legend, {bool hebrew = false, double width = 360}) =>
+    Future<void> pumpLegend(
+      WidgetTester tester,
+      Widget legend, {
+      bool hebrew = false,
+      double width = 360,
+      AppThemeMode theme = AppThemeMode.light,
+    }) =>
         pumpThemed(
           tester,
           Align(alignment: Alignment.topCenter, child: SizedBox(width: width, child: legend)),
           hebrew: hebrew,
+          theme: theme,
         );
 
     testWidgets('names each ring in its colour with its count, hidden from screen readers', (tester) async {
@@ -363,6 +398,94 @@ void main() {
       expect(count.style?.color, Palettes.light.onSurfaceVariant);
       expect(tester.getTopRight(find.text('3 of 7')).dx, tester.getTopRight(find.byType(RingLegend)).dx);
       handle.dispose();
+    });
+
+    testWidgets('in high contrast, keys each row with the three rings, its own in its colour', (tester) async {
+      const names = ['First reading', 'Second reading', 'Targum'];
+      final legend = find.byType(RingLegend);
+      final keys = find.descendant(of: legend, matching: find.byType(RingKey));
+      await pumpLegend(tester, RingLegend(progress: week(1)));
+      expect(keys, findsNothing);
+      final starts = [for (final name in names) tester.getTopLeft(find.text(name)).dx];
+
+      for (final (theme, scheme, sefer) in [
+        (AppThemeMode.highContrastLight, Palettes.hcLight, Palettes.seferHcLight),
+        (AppThemeMode.highContrastDark, Palettes.hcDark, Palettes.seferHcDark),
+      ]) {
+        await pumpLegend(tester, RingLegend(progress: week(1)), theme: theme);
+        expect(find.descendant(of: legend, matching: find.byType(DecoratedBox)), findsNothing);
+        expect(keys, findsNWidgets(3));
+        final colors = [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum];
+        for (var row = 0; row < 3; row++) {
+          final key = tester.getRect(keys.at(row));
+          expect(key.size, const Size.square(16));
+          // Outermost first: the row's own ring 2 px in its colour, the
+          // others 1 px in ink, each edge a whole pixel from the centre and
+          // a pixel clear of the next ring.
+          var painted = paints;
+          for (final (ring, (thin, own)) in [(7.5, 7.0), (4.5, 5.0), (2.5, 2.0)].indexed) {
+            painted = painted
+              ..circle(
+                radius: ring == row ? own : thin,
+                color: ring == row ? colors[row] : scheme.onSurface,
+                strokeWidth: ring == row ? 2 : 1,
+                style: PaintingStyle.stroke,
+              );
+          }
+          expect(keys.at(row), painted);
+          // 8 clear of the name, which starts 5 further in than beside a dot
+          // (9 and a 10 gap).
+          final name = tester.getTopLeft(find.text(names[row])).dx;
+          expect(name - key.right, 8);
+          expect(name, starts[row] + 5);
+        }
+        // Each count still ends the row, with room to spare.
+        expect(
+          RingLegend.naturalWidth(tester.element(legend), week(1)),
+          lessThanOrEqualTo(tester.getSize(legend).width),
+        );
+      }
+    });
+
+    // A legend set at a fraction of a pixel, as a centred column may set
+    // it: the key's 1 px rings are still drawn on whole pixels at 1x, not
+    // smeared into grey over two.
+    testWidgets('in high contrast, draws the key on whole pixels at 1x', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topLeft,
+          child: RepaintBoundary(
+            key: const ValueKey('boundary'),
+            child: ColoredBox(
+              color: Palettes.hcLight.surface,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10.4, 10.3, 10, 10),
+                child: SizedBox(width: 300, child: RingLegend(progress: week(1))),
+              ),
+            ),
+          ),
+        ),
+        theme: AppThemeMode.highContrastLight,
+      );
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const ValueKey('boundary')));
+      final origin = tester.getTopLeft(find.byKey(const ValueKey('boundary')));
+      final image = (await tester.runAsync(() => boundary.toImage()))!;
+      final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+      int red(int x, int y) => data.getUint8((y * image.width + x) * 4);
+      // The second reading's row: its first-reading ring is 1 px in black,
+      // 7–8 px above the centre, on a white page.
+      final key = tester.getRect(find.byType(RingKey).at(1)).shift(-origin);
+      final x = key.center.dx.round(), y = key.center.dy.round();
+      expect(red(x, y - 8), lessThan(40), reason: 'the ring fills its pixel row');
+      expect(red(x, y - 9), greaterThan(215), reason: 'and leaves the row above it clear');
+      expect(red(x, y - 7), greaterThan(215), reason: 'and the row below it');
+      // Across too: the same ring at the key's end.
+      expect(red(x + 7, y), lessThan(40));
+      expect(red(x + 8, y), greaterThan(215));
+      image.dispose();
     });
 
     testWidgets('names Rashi when Rashi is the third reading, and reads right to left in Hebrew', (tester) async {

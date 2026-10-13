@@ -423,7 +423,7 @@ void main() {
       expect(c.read(routerProvider).state.uri.path, '/settings/reminders');
       expect(find.text(offer), findsNothing);
       expect(
-        find.text('Never on Shabbat or Yom Tov, and at most once a day. '
+        find.text('Never on Shabbat or Yom\u00A0Tov, and at most once a day. '
             'They follow the Shabbat times in \u2068Jerusalem\u2069.'),
         findsOneWidget,
       );

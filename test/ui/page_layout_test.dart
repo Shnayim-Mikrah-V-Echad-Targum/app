@@ -214,20 +214,23 @@ void main() {
     group('on a 1920 dp desktop', () {
       // Within a tab, the extended rail (256 and its hairline) is beside a
       // pane of 1663, whose 720 column's content starts 503.5 in; a page over
-      // the tabs has the whole window. The inset goes before the title alone:
-      // kept after it too, it would leave a title beside actions a few dozen
+      // the tabs has the whole window. A week's page sets its two columns in
+      // 1040 (§9 Parsha tab, 6). The inset goes before the title alone: kept
+      // after it too, it would leave a title beside actions a few dozen
       // pixels.
       const size = Size(1920, 1080);
       const inTab = 257 + (1663 - 720) / 2 + 32;
-      const overTabs = (1920 - 720) / 2 + 32;
-      // The week of Vayakhel-Pekudei 5786, read together: the Parsha tab's
-      // longest title, beside its three actions.
+      const weekInTab = 257 + (1663 - ContentWidth.todayWide) / 2 + 32;
+      const weekOverTabs = (1920 - ContentWidth.todayWide) / 2 + 32;
+      // The week of Vayakhel-Pekudei 5786, read together: a long title,
+      // beside the Parsha tab's actions, where it is the name alone (the tab
+      // says it is a parsha), and over the tabs.
       final combined = findWeekById(const ParshaSchedule(israel: false), '5786:22-23')!.occasion.addDays(-2);
       final inCombinedWeek = DateTime(combined.year, combined.month, combined.day, 10);
 
       for (final (route, title, start, now) in [
-        ('/parsha', 'Parshat Vayakhel-Pekudei', inTab, inCombinedWeek),
-        ('/week/5786:22-23', 'Parshat Vayakhel-Pekudei', overTabs, null),
+        ('/parsha', 'Vayakhel-Pekudei', weekInTab, inCombinedWeek),
+        ('/week/5786:22-23', 'Parshat Vayakhel-Pekudei', weekOverTabs, null),
         ('/community', 'Community', inTab, null),
         ('/community/forum/chavruta', 'Chavruta & encouragement', inTab, null),
         // A thread, named for its forum.

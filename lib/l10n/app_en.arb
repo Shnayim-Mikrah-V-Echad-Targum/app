@@ -713,9 +713,9 @@
     "description": "Button on the divergence notice for a visitor to Israel that opens Settings → Reading & customs, where the Torah reading they hear is chosen."
   },
   "discussThisWeek": "Discuss this week’s parsha",
-  "thisWeek": "This week",
+  "thisWeek": "Also this week",
   "@thisWeek": {
-    "description": "The heading over the haftarah and the discussion on Today."
+    "description": "The heading over the haftarah and the discussion on Today, under the week strip, whose card is headed This week’s plan (weekStripLabel): the rest of what the week holds besides its reading plan."
   },
   "streakParsha": "Parsha streak",
   "streakDays": "Days on track",
@@ -735,9 +735,9 @@
       }
     }
   },
-  "streakBeginsWith": "Begins with {name}",
+  "streakBeginsWith": "Starts when {name} is complete",
   "@streakBeginsWith": {
-    "description": "On the streak card, in place of a parsha streak of 0: the streak starts when this parsha is finished.",
+    "description": "On the streak card, in place of a parsha streak of 0, over the label 'Parsha streak': the streak starts once this week's parsha is finished. Screen readers hear it after the label ('Parsha streak: starts when Bereshit is complete').",
     "placeholders": {
       "name": {
         "type": "String",
@@ -745,16 +745,19 @@
       }
     }
   },
-  "daysBeginToday": "Begins with today’s reading",
+  "daysBeginToday": "Starts with today’s reading",
   "@daysBeginToday": {
-    "description": "On the streak card, in place of 0 days on track."
+    "description": "On the streak card, in place of 0 days on track, over the label 'Days on track': the run starts with today's planned reading. Screen readers hear it after the label ('Days on track: starts with today’s reading')."
   },
   "dayKept": "Read",
   "dayAhead": "Ahead of plan",
   "dayCaughtUp": "Caught up",
   "dayGrace": "Covered by a grace day",
   "dayPaused": "Paused",
-  "dayOpen": "Not yet",
+  "dayOpen": "Still to read",
+  "@dayOpen": {
+    "description": "In the week strip, a planned day gone by whose reading is still to do, in full or in part (a day counts once three readings are done, so a day with one or two read is still to read), and can still be caught up (drawn in the overdue colour), and today until its reading is done. Say nothing of whether any of it was read. Pairs with dayMissed ('Not read'), a day gone by that can no longer be caught up, and with plannedForOverdue's 'still to read' on the week's page."
+  },
   "dayMissed": "Not read",
   "dayRest": "Shabbat or Yom Tov",
   "dayUpcoming": "Upcoming",
@@ -777,7 +780,7 @@
       },
       "status": {
         "type": "String",
-        "example": "Not yet"
+        "example": "Still to read"
       }
     }
   },
@@ -828,6 +831,15 @@
   "clearWeek": "Clear this week’s progress",
   "clearWeekConfirm": "Clear all progress for {name}?",
   "@clearWeekConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weekCleared": "Progress for {name} cleared",
+  "@weekCleared": {
+    "description": "A status message, with Undo, once a week's progress has been cleared from its menu. The parsha's name, as in clearWeekConfirm.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -1067,14 +1079,6 @@
   "translationLabel": "Translation (JPS 1917)",
   "haftarahTitle": "Haftarah",
   "markHaftarahRead": "Mark the haftarah as read",
-  "specialHaftarah": "Special haftarah: {reason}",
-  "@specialHaftarah": {
-    "placeholders": {
-      "reason": {
-        "type": "String"
-      }
-    }
-  },
   "readerFinished": "You’ve finished this aliyah.",
   "shortcutNext": "Next step",
   "shortcutBack": "Previous step",
@@ -1618,10 +1622,13 @@
   "@checkInReminderDescCity": {
     "description": "In place of checkInReminderDesc when a city is chosen for Shabbat times: an hour after nightfall as the days of rest end, unless that is after 10:30 PM."
   },
-  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
-  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
+  "remindersShabbatNote": "Never on Shabbat or Yom Tov, and at most once a day.",
+  "@remindersShabbatNote": {
+    "description": "The note at the top of Settings → Reminders, in a notice whose lines are balanced. Yom Tov is held together by a no-break space, so that a line never ends with Yom and starts the next with Tov."
+  },
+  "remindersShabbatNoteCity": "Never on Shabbat or Yom Tov, and at most once a day. They follow the Shabbat times in {city}.",
   "@remindersShabbatNoteCity": {
-    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times. city is its name.",
+    "description": "In place of remindersShabbatNote when a city is chosen for Shabbat times, Yom Tov held together as there. city is its name.",
     "placeholders": {
       "city": {
         "type": "String"
@@ -2518,16 +2525,30 @@
   },
   "regularHaftarahOf": "Also: the regular haftarah of {portion}",
   "@regularHaftarahOf": {
-    "description": "Heads the portion's own haftarah, shown after the special haftarah that displaces it this week.",
+    "description": "Heads the portion's own haftarah, open under the special haftarah that displaces it this week, for Chabad, whose custom is to read both.",
     "placeholders": {
       "portion": {
         "type": "String"
       }
     }
   },
-  "alsoRegularHaftarah": "Also the regular haftarah",
-  "@alsoRegularHaftarah": {
-    "description": "A line under a special haftarah on Today: the haftarah page also has the portion's own haftarah."
+  "regularHaftarahSomeRead": "The regular haftarah of {portion} (some read it too)",
+  "@regularHaftarahSomeRead": {
+    "description": "Heads the portion's own haftarah, folded under the special haftarah that displaces it this week, for the customs other than Chabad's: only some read it as well. (Chabad, whose custom is to read both, has regularHaftarahOf.)",
+    "placeholders": {
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "haftarahSpecialChabadRegular": "{reason} · Chabad custom: the regular haftarah too",
+  "@haftarahSpecialChabadRegular": {
+    "description": "The detail line of the week's Haftarah row (on Today and a week's page) for Chabad, in a week a special haftarah displaces the portion's own: its name (e.g. \"Shabbat Machar Chodesh\"), and that Chabad's custom is to read the regular haftarah as well, which the haftarah page offers after it. Other customs see the special haftarah's name alone. A no-break space holds the dot to the name, so that no line starts with it.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "chabadFallbackNote": "Chabad haftarot are being verified; showing the Ashkenazi reading.",
   "repeatLastVerseDescChabad": "Repeat the parsha’s last verse in Hebrew after its Targum (Chabad custom: not repeated)",
@@ -2891,6 +2912,16 @@
       }
     }
   },
+  "yearBeginsWith": "Begins with {name}",
+  "@yearBeginsWith": {
+    "description": "On Progress, under the heading 'This year', in place of '0 of 54 parshiyot' while none of this year's parshiyot is finished yet: the reader's year begins with this week's parsha. Its subject is the year (in Hebrew, feminine, agreeing with השנה).",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Bereshit"
+      }
+    }
+  },
   "yearBarSemanticsYear": "{year}: {done} of {total} parshiyot complete",
   "@yearBarSemanticsYear": {
     "description": "Screen-reader label of the year bar for a cycle before this one; year is its Hebrew year (5786).",
@@ -3089,7 +3120,7 @@
       },
       "status": {
         "type": "String",
-        "example": "Not yet"
+        "example": "Still to read"
       }
     }
   },

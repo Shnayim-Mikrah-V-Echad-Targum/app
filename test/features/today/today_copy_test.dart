@@ -62,8 +62,8 @@ void main() {
   testWidgets('a special haftarah is named in words, not by its key in the data', (tester) async {
     // Tuesday of Pinchas 5787, read on 24 July 2027, after 17 Tammuz.
     await openToday(tester, _diaspora.copyWith(joinDate: LocalDate(2027, 7, 18)), DateTime(2027, 7, 20, 10));
-    // A line of its own under the haftarah's reference.
-    expect(find.textContaining('\nSpecial haftarah: First haftarah of the Three Weeks'), findsOneWidget);
+    // The Haftarah row's detail line, under its reference.
+    expect(find.text('First haftarah of the Three Weeks'), findsOneWidget);
   });
 
   group('dates', () {

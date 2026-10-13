@@ -10,6 +10,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
+import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
@@ -56,7 +57,9 @@ void main() {
 
       await tester.tap(find.widgetWithText(TextButton, 'Open Beha’alotcha'));
       await tester.pumpAndSettle();
-      expect(find.text('Parshat Beha’alotcha'), findsOneWidget);
+      // Beha'alotcha's page (its app bar's title, revealed on scrolling, is
+      // left out where the test font makes it too wide).
+      expect(tester.widget<WeekOverview>(find.byType(WeekOverview)).ctx.portion.id, const PortionId(36));
       expect(find.text('Mark the whole parsha as read'), findsOneWidget, reason: "last week's portion in Israel is open");
     });
 

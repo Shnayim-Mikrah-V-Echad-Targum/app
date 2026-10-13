@@ -136,8 +136,9 @@ List<RingArc> ringArcs({required List<int> weights, required int from, required 
 
 /// Three concentric rings: first reading (outermost), second reading,
 /// Targum (docs/DESIGN_SYSTEM.md §6.11). Each is made of seven arcs, one
-/// per aliyah, sized by verse count, and drawn over a full track. At
-/// [header] size and up, the centre counts the finished aliyot ("2/7").
+/// per aliyah, sized by verse count, and drawn over a track of the same seven
+/// arcs. At [header] size and up, the centre counts the finished aliyot
+/// ("2/7").
 ///
 /// Put a [RingLegend] beside or under rings of [header] size or more
 /// ([RingsWithLegend] does both): only the legend says which ring is which.
@@ -353,10 +354,12 @@ class _RingsPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = geometry.stroke
       ..strokeCap = StrokeCap.butt;
-    // Each track is one full circle, under its done arcs.
+    // Each track is the same seven arcs and gaps as the done arcs over it, so
+    // a week not yet begun shows its seven parts to come, not a blank circle.
+    const all = (1 << (3 * kAliyot)) - 1;
     paint.color = track;
-    for (final r in geometry.radii) {
-      canvas.drawCircle(centre, r, paint);
+    for (final arc in ringArcs(weights: weights, from: all, to: all)) {
+      canvas.drawArc(Rect.fromCircle(center: centre, radius: geometry.radii[arc.ring]), arc.start, arc.sweep, false, paint);
     }
     for (final arc in ringArcs(weights: weights, from: from, to: to, t: sweep.value)) {
       paint.color = colors[arc.ring];
@@ -391,8 +394,10 @@ List<_LegendEntry> _legendEntries(BuildContext context, WeekProgress progress, S
 
 /// Which ring is which (docs/DESIGN_SYSTEM.md §6.11): for each reading, a
 /// dot in its ring's colour, its name, and how many of the seven aliyot it
-/// has covered ("3 of 7"). Hidden from screen readers, since the rings'
-/// own label says all of it.
+/// has covered ("3 of 7"). In high contrast a small key of the three rings
+/// takes the dot's place, the row's own ring in its colour, so the legend
+/// tells the rings apart by position as well as by colour. Hidden from
+/// screen readers, since the rings' own label says all of it.
 class RingLegend extends StatelessWidget {
   const RingLegend({super.key, required this.progress, this.thirdLabel});
 
@@ -403,6 +408,15 @@ class RingLegend extends StatelessWidget {
 
   static const double _dot = 9;
   static const double _dotGap = 10;
+
+  /// The gap after the high-contrast key ([RingKey.size]): as much room as
+  /// the dot's, for its size, so the key never runs into the name.
+  static const double _keyGap = 8;
+
+  /// What comes before each name: the dot or the key, and the gap after it.
+  static double _lead(BuildContext context) =>
+      SeferColors.of(context).isHighContrast ? RingKey.size + _keyGap : _dot + _dotGap;
+
   static const double _countGap = 12;
 
   static TextStyle? _labelStyle(BuildContext context) => Theme.of(context).textTheme.bodyMedium;
@@ -446,7 +460,7 @@ class RingLegend extends StatelessWidget {
     final label = entries.map((e) => measure(e.label, _labelStyle(context))).reduce(math.max);
     final count = entries.map((e) => measure(l.countOfTotal(e.done, kAliyot), _countStyle(context))).reduce(math.max);
     final text = split ? math.max(label, count) : label + _countGap + count;
-    return (_dot + _dotGap + text).ceilToDouble();
+    return (_lead(context) + text).ceilToDouble();
   }
 
   @override
@@ -458,6 +472,8 @@ class RingLegend extends StatelessWidget {
     final line = MediaQuery.textScalerOf(context).scale(labelStyle?.fontSize ?? 15) * (labelStyle?.height ?? 1.5);
     final natural = naturalWidth(context, progress, thirdLabel: thirdLabel);
     final entries = _legendEntries(context, progress, thirdLabel);
+    final highContrast = SeferColors.of(context).isHighContrast;
+    final ink = Theme.of(context).colorScheme.onSurface;
     return ExcludeSemantics(
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -468,7 +484,7 @@ class RingLegend extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final e in entries)
+              for (final (ring, e) in entries.indexed)
                 Container(
                   constraints: const BoxConstraints(minHeight: 24),
                   alignment: AlignmentDirectional.centerStart,
@@ -478,13 +494,15 @@ class RingLegend extends StatelessWidget {
                       SizedBox(
                         height: line,
                         child: Center(
-                          child: SizedBox.square(
-                            dimension: _dot,
-                            child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
-                          ),
+                          child: highContrast
+                              ? RingKey(ring: ring, color: e.color, ink: ink)
+                              : SizedBox.square(
+                                  dimension: _dot,
+                                  child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
+                                ),
                         ),
                       ),
-                      const SizedBox(width: _dotGap),
+                      SizedBox(width: highContrast ? _keyGap : _dotGap),
                       if (split)
                         Expanded(
                           child: Column(
@@ -508,6 +526,110 @@ class RingLegend extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// A [RingLegend] row's key in high contrast (docs/DESIGN_SYSTEM.md §6.11):
+/// the three rings in small, [size] across, the row's own [ring] stroked 2 px
+/// in its [color] and the other two 1 px in [ink].
+///
+/// Its centre is set on a corner of the device's pixels, and each ring's
+/// edges fall a whole pixel from it, so at 1x (Windows at 100%) no stroke is
+/// smeared over two pixels: the 1 px rings stay crisp beside the 2 px one.
+class RingKey extends LeafRenderObjectWidget {
+  const RingKey({super.key, required this.ring, required this.color, required this.ink});
+
+  /// 0 for the first reading (outermost), 1 for the second, 2 for the Targum.
+  final int ring;
+  final Color color;
+  final Color ink;
+
+  static const double size = 16;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      RenderRingKey(ring, color, ink, MediaQuery.devicePixelRatioOf(context));
+
+  @override
+  void updateRenderObject(BuildContext context, RenderRingKey renderObject) {
+    renderObject
+      ..ring = ring
+      ..color = color
+      ..ink = ink
+      ..pixelRatio = MediaQuery.devicePixelRatioOf(context);
+  }
+}
+
+/// Draws a [RingKey].
+class RenderRingKey extends RenderBox {
+  RenderRingKey(this._ring, this._color, this._ink, this._pixelRatio);
+
+  // Radii from the centre, outermost first: a 1 px ring spans 7–8, 4–5 and
+  // 2–3, and the row's own, 2 px, 6–8, 4–6 and 1–3, keeping the first
+  // reading's outer edge, the second's inner one and the Targum's outer
+  // one, so a pixel always stands clear between one ring and the next.
+  static const _thin = [7.5, 4.5, 2.5];
+  static const _own = [7.0, 5.0, 2.0];
+
+  int _ring;
+  set ring(int value) {
+    if (value == _ring) return;
+    _ring = value;
+    markNeedsPaint();
+  }
+
+  Color _color;
+  set color(Color value) {
+    if (value == _color) return;
+    _color = value;
+    markNeedsPaint();
+  }
+
+  Color _ink;
+  set ink(Color value) {
+    if (value == _ink) return;
+    _ink = value;
+    markNeedsPaint();
+  }
+
+  double _pixelRatio;
+  set pixelRatio(double value) {
+    if (value == _pixelRatio) return;
+    _pixelRatio = value;
+    markNeedsPaint();
+  }
+
+  @override
+  bool get sizedByParent => true;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.constrain(const Size.square(RingKey.size));
+
+  @override
+  double computeMinIntrinsicWidth(double height) => RingKey.size;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => RingKey.size;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => RingKey.size;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => RingKey.size;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    double snap(double v) => (v * _pixelRatio).roundToDouble() / _pixelRatio;
+    final centre = offset + size.center(Offset.zero);
+    final snapped = Offset(snap(centre.dx), snap(centre.dy));
+    final paint = Paint()..style = PaintingStyle.stroke;
+    for (var i = 0; i < 3; i++) {
+      final own = i == _ring;
+      paint
+        ..color = own ? _color : _ink
+        ..strokeWidth = own ? 2 : 1;
+      context.canvas.drawCircle(snapped, own ? _own[i] : _thin[i], paint);
+    }
   }
 }
 
@@ -625,6 +747,13 @@ class _CandlesPainter extends CustomPainter {
 }
 
 /// Visual and textual description of a day in the week strip.
+/// The mark of reading still to do after its day, always in the overdue
+/// colour: a day of the week strip gone by unread (or read only in part),
+/// an aliyah past its planned day on the week's page, and a week that can
+/// still be finished with the next, on the Torah map and in its badge.
+/// Never `history`, which is what was made up later.
+const stillToReadIcon = Icons.hourglass_bottom_rounded;
+
 enum DayDisplay { kept, ahead, caughtUp, grace, paused, open, missed, rest, upcoming, noReading, today }
 
 DayDisplay dayDisplayFor({
@@ -672,7 +801,9 @@ extension DayDisplayX on DayDisplay {
 
   /// The day's glyph in the week strip (docs/DESIGN_SYSTEM.md §6.13), [size]
   /// square: a filled disc for a day that counts, a ring and dot for today,
-  /// outlines for days still open or to come, the candles for a rest day.
+  /// a day gone by and still to read in the overdue colour (as the week page
+  /// marks its aliyot), an outline for a day to come, the candles for a rest
+  /// day.
   Widget icon(BuildContext context, {double size = 22}) {
     final scheme = Theme.of(context).colorScheme;
     final status = StatusColors.of(context);
@@ -682,7 +813,7 @@ extension DayDisplayX on DayDisplay {
       DayDisplay.caughtUp => _DayDisc(Icons.published_with_changes, size: size),
       DayDisplay.grace => Icon(Icons.shield_outlined, size: size, color: status.grace),
       DayDisplay.paused => Icon(Icons.pause_circle_outline, size: size, color: scheme.onSurfaceVariant),
-      DayDisplay.open => Icon(Icons.radio_button_unchecked, size: size, color: scheme.onSurfaceVariant),
+      DayDisplay.open => Icon(stillToReadIcon, size: size, color: status.overdue),
       DayDisplay.today => TodayMark(size: size),
       DayDisplay.missed => Icon(Icons.remove_circle_outline, size: size, color: status.neutral),
       DayDisplay.rest => ShabbatCandlesIcon(size: size, color: status.rest),
@@ -1159,7 +1290,7 @@ class WeekStatusBadge extends StatelessWidget {
         WeekStatus.madeUp => Icons.history,
         WeekStatus.missed => Icons.radio_button_unchecked,
         WeekStatus.transparent => Icons.pause_circle_outline,
-        WeekStatus.overdue => Icons.schedule,
+        WeekStatus.overdue => stillToReadIcon,
         WeekStatus.inProgress => Icons.timelapse,
       };
 

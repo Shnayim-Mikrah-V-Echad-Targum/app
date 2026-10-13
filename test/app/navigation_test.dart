@@ -210,7 +210,8 @@ void main() {
       final router = await _pump(tester);
       router.go('/parsha');
       await tester.pumpAndSettle();
-      expect(find.text('Parshat Bereshit'), findsOneWidget);
+      // The tab's own app bar, with its way to every parsha.
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('All parshiyot')), findsOneWidget);
       expect(_home, findsNothing);
     });
   });

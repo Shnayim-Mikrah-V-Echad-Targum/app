@@ -17,7 +17,9 @@ class WeekHaftarah {
 
   /// The portion's own haftarah, in a week a special one displaces it,
   /// unless the special one already includes it (as Masei's on Rosh Chodesh
-  /// Av does). Some read it as well; Chabad's custom is to.
+  /// Av does) or the custom reads it on a later Shabbat (Re'eh's on Rosh
+  /// Chodesh Elul, with Ki Tetze's; Acharei Mot's, for Kedoshim). Some read
+  /// it as well; Chabad's custom is to.
   final Haftarah? regular;
 
   /// Whether [parts] is the Ashkenazi reading given for want of the
@@ -109,7 +111,10 @@ class ParshaRepository {
       if (special != null) {
         final parts = special.forNusach(nusach);
         final regular = own.forNusach(nusach);
-        final displaced = !haftarahCovers(parts, regular);
+        // Not offered where the special one includes it, nor where the
+        // custom reads it on a later Shabbat.
+        final displaced =
+            !haftarahCovers(parts, regular) && !regularHaftarahDeferred(occasion, portion, nusach: nusach);
         return WeekHaftarah(
           parts,
           specialKey: key,

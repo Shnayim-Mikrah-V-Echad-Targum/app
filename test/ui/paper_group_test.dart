@@ -327,6 +327,48 @@ void main() {
     expect(tester.getSize(find.byType(PaperRow)).height, greaterThanOrEqualTo(72));
   });
 
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: with a detail line, the icon and chevron share the title\'s line, '
+        'rather than the middle of the row', (tester) async {
+      Future<void> pumpRow({String? detail}) => pumpThemed(
+            tester,
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 400,
+                child: PaperRow(
+                  icon: Icons.auto_stories_outlined,
+                  title: 'Haftarah',
+                  subtitle: 'I Samuel 20:18–42',
+                  detail: detail,
+                  onTap: () {},
+                ),
+              ),
+            ),
+            hebrew: hebrew,
+          );
+
+      await pumpRow(detail: 'Shabbat Machar Chodesh');
+      final title = tester.getRect(find.text('Haftarah'));
+      final icon = tester.getRect(find.byIcon(Icons.auto_stories_outlined));
+      final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+      expect(icon.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      expect(chevron.center.dy, moreOrLessEquals(title.center.dy, epsilon: 0.5));
+      // Still at the row's start and end.
+      final row = tester.getRect(find.byType(PaperRow));
+      expect(hebrew ? row.right - icon.right : icon.left - row.left, 16);
+      expect(hebrew ? chevron.left - row.left : row.right - chevron.right, 12);
+      expect(icon.center.dy, lessThan(row.center.dy - 10), reason: 'not centred on the three lines');
+
+      // With a title and a subtitle alone, both are centred on the row, as
+      // its two lines are.
+      await pumpRow();
+      final middle = tester.getRect(find.byType(PaperRow)).center.dy;
+      expect(tester.getCenter(find.byIcon(Icons.auto_stories_outlined)).dy, moreOrLessEquals(middle, epsilon: 0.5));
+      expect(tester.getCenter(find.byIcon(Icons.chevron_right)).dy, moreOrLessEquals(middle, epsilon: 0.5));
+    });
+  }
+
   testWidgets('a value moves under the title rather than squeeze it, at 200%', (tester) async {
     await pumpGroup(tester);
     // On the title's line while they fit.
@@ -370,11 +412,12 @@ void main() {
     expect(await maxLines(2), isNull);
   });
 
-  // At 300% on a small phone, "haftarah:" and "discussions" are wider than
-  // a row's text beside its icon and chevron.
+  // The Haftarah row for Chabad on Shabbat Machar Chodesh: at 300% on a
+  // small phone, "Samuel", "Chodesh" and "haftarah" are wider than a row's
+  // text beside its icon and chevron.
   testWidgets('enlarged, a subtitle and a detail line keep each word whole', (tester) async {
-    const subtitle = 'Special haftarah: Shabbat Machar Chodesh';
-    const detail = '3 discussions · active 3 hours ago';
+    const subtitle = 'I Samuel 20:18–42';
+    const detail = 'Shabbat Machar Chodesh · Chabad custom: the regular haftarah too';
     await pumpThemed(
       tester,
       const Align(
@@ -649,18 +692,27 @@ void main() {
     expect(find.descendant(of: icon, matching: find.byType(Transform)), findsNothing);
   });
 
-  testWidgets('a subtitle of several facts, a line each, can be let run', (tester) async {
-    const facts = 'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah';
+  // The haftarah of Re'eh for Sephardim on Rosh Chodesh Elul: its own, with
+  // the first and last verses of two more.
+  testWidgets('a subtitle that is never cut short, as a long reference, can be let run', (tester) async {
+    const reference = 'Isaiah 54:11–\u206055:5\u00A0· Isaiah 66:1\u00A0· Isaiah 66:23\u00A0· '
+        'I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42';
     await pumpThemed(
       tester,
       const Align(
         alignment: Alignment.topCenter,
-        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: facts, subtitleMaxLines: null)),
+        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: reference, subtitleMaxLines: null)),
       ),
     );
-    final text = tester.widget<Text>(find.text(facts));
+    final text = tester.widget<Text>(find.text(reference));
     expect((text.maxLines, text.overflow), (null, null));
-    expect(tester.getSize(find.text(facts)).height, greaterThan(3 * 22 - 1), reason: 'every line shows');
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.text(reference), matching: find.byType(RichText)),
+    );
+    final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: reference.length));
+    final lines = {for (final box in boxes) box.top.round()};
+    expect(lines.length, greaterThan(2), reason: 'more than the two lines a subtitle keeps to by default');
+    expect(paragraph.didExceedMaxLines, isFalse, reason: 'every line shows');
   });
 
   group('at large text sizes', () {
