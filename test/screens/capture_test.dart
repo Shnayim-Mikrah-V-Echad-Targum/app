@@ -2007,7 +2007,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     // The page hears of it after a frame, and shows it in the next.
     await tester.pump();
     await tester.pump();
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
+    // The page's own scroll view, not the rail's beside it on a computer.
+    final page = find.ancestor(of: find.byIcon(Icons.content_copy_outlined), matching: find.byType(Scrollable));
+    await tester.drag(page.first, const Offset(0, -2000));
   },
   'legend_week': (tester) async {
     await tester.ensureVisible(find.byType(WeekStripLegendButton));
