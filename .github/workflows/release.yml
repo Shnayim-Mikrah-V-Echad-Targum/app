@@ -38,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Every tag, for the release notes' check.
+          fetch-depth: 0
       - name: Repository variables
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -88,6 +91,17 @@ jobs:
             echo "::error file=pubspec.yaml::The tag $GITHUB_REF_NAME is not the version in pubspec.yaml ($version)"
             exit 1
           fi
+      # Google Play shows them with the bundle: never the last release's.
+      - name: Release notes written since the last release
+        if: ${{ !cancelled() }}
+        run: |
+          previous=$(git describe --tags --abbrev=0 --match 'v*.*.*' "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          if [ -z "$previous" ]; then
+            echo "The first release: there are no earlier notes."
+          elif git diff --quiet "$previous" "$GITHUB_REF_NAME" -- store/play/whatsnew; then
+            echo "::error file=store/play/whatsnew/whatsnew-en-US::The release notes are $previous's: write this release's in store/play/whatsnew and commit them before tagging (docs/RELEASE.md, Version)"
+            exit 1
+          fi
 
   # Every build is numbered 1000 + this workflow's run number: Android's
   # version code and iOS's build number, which each store wants higher with
@@ -129,10 +143,11 @@ jobs:
           flutter build appbundle --release --split-debug-info=build/symbols/android \
             --build-number=$((1000 + GITHUB_RUN_NUMBER)) $DART_DEFINES
       # The bundle, for the first release, which goes to Play Console by hand
-      # (the Play Developer API can't create an app's first release).
+      # (the Play Developer API can't create an app's first release). Named
+      # apart from CI's artifacts, which are never for the store.
       - uses: actions/upload-artifact@v4
         with:
-          name: android
+          name: android-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
       # For flutter symbolize, which reads a crash's stack trace with them.

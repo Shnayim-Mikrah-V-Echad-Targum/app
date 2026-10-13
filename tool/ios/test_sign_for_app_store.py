@@ -5,7 +5,6 @@ every target the app ships.
     python3 -m unittest discover -s tool/ios
 """
 
-import difflib
 import io
 import plistlib
 import re
@@ -29,6 +28,51 @@ def configuration(text: str, target: str) -> str:
     return next(id for name, _, id in signing.shipped_targets(text) if name == target)
 
 
+def configurations(text: str) -> list[str]:
+    """The id of every build configuration in the project: each target's
+    and the project's, Debug, Release and Profile alike."""
+    section = re.search(r'/\* Begin XCBuildConfiguration section \*/\n(.*?)/\* End XCBuildConfiguration section \*/',
+                        text, re.DOTALL)
+    return re.findall(r'^\t\t(\w+) /\* .*? \*/ = \{', section.group(1), re.MULTILINE)
+
+
+def settings(text: str, configuration_id: str) -> list[tuple[str, str]]:
+    """A build configuration's settings, as its lines give them, in order."""
+    start, end = signing._settings(text, configuration_id)
+    return [(signing._unquote(key), signing._unquote(value)) for key, value in
+            re.findall(r'^\t\t\t\t("[^"\n]*"|[^\s=]+) = (.*);$', text[start:end], re.MULTILINE)]
+
+
+def outside(text: str, configuration_ids: list[str]) -> str:
+    """The project file with the settings of [configuration_ids] taken out."""
+    spans = sorted(signing._settings(text, id) for id in configuration_ids)
+    kept, at = [], 0
+    for start, end in spans:
+        kept.append(text[at:start])
+        at = end
+    return ''.join(kept) + text[at:]
+
+
+def set_up_in_xcode(text: str, team: str = 'QWERT54321') -> str:
+    """The project as Xcode leaves it once the development team is set for
+    the app and its widget (docs/RELEASE.md, iOS, Xcode setup): the team and
+    automatic signing in each of their configurations."""
+    lists = re.findall(r'^\t\t\tbuildConfigurationList = (\w+) /\* Build configuration list for PBXNativeTarget '
+                       r'"(Runner|ParshaWidget)" \*/;', text, re.MULTILINE)
+    assert len(lists) == 2, lists
+    for configuration_list, _ in lists:
+        start, end = signing._body(text, configuration_list)
+        for configuration_id in re.findall(r'^\t\t\t\t(\w+) /\*', text[start:end], re.MULTILINE):
+            text = signing._set(text, configuration_id, 'CODE_SIGN_STYLE', 'Automatic')
+            text = signing._set(text, configuration_id, 'DEVELOPMENT_TEAM', team)
+    return text
+
+
+# The project as it is in the repository, and as it will be once someone has
+# set the team in Xcode, which signing must cope with alike.
+PROJECTS = {'as committed': TEXT, 'set up in Xcode': set_up_in_xcode(TEXT)}
+
+
 class SignTest(unittest.TestCase):
     def test_the_app_ships_itself_and_its_widget(self):
         self.assertEqual({(name, bundle_id) for name, bundle_id, _ in signing.shipped_targets(TEXT)},
@@ -49,30 +93,61 @@ class SignTest(unittest.TestCase):
                 # The rest of the configuration is as it was.
                 self.assertEqual(signing.setting(signed, release, 'PRODUCT_BUNDLE_IDENTIFIER'), bundle_id)
 
-    def test_it_only_adds_the_signing_settings_to_those_two_configurations(self):
-        signed = signing.sign(TEXT, TEAM, PROFILES)
-        changes = [line for line in difflib.unified_diff(TEXT.splitlines(), signed.splitlines(), n=0, lineterm='')
-                   if line[:1] in '+-' and line[:3] not in ('+++', '---')]
-        self.assertEqual(len(changes), 10)
-        self.assertTrue(all(line.startswith('+\t\t\t\t') for line in changes), changes)
-        # Debug and Profile keep automatic signing, for builds in Xcode.
-        self.assertEqual(signed.count('PROVISIONING_PROFILE_SPECIFIER'), 2)
-        self.assertNotIn('PROVISIONING_PROFILE_SPECIFIER', TEXT)
-        # In order among the other settings, as Xcode writes them.
-        release = configuration(signed, 'Runner')
-        start, end = signing._settings(signed, release)
-        keys = [signing._unquote(key) for key in
-                re.findall(r'^\t\t\t\t("[^"\n]*"|[^\s=]+) = ', signed[start:end], re.MULTILINE)]
-        self.assertIn('CODE_SIGN_IDENTITY[sdk=iphoneos*]', keys)
-        self.assertEqual(keys, sorted(keys))
+    def test_it_changes_only_the_signing_settings_of_those_two_configurations(self):
+        for project, text in PROJECTS.items():
+            with self.subTest(project):
+                signed = signing.sign(text, TEAM, PROFILES)
+                releases = [configuration(text, 'Runner'), configuration(text, 'ParshaWidget')]
+                self.assertEqual(releases, [configuration(signed, 'Runner'), configuration(signed, 'ParshaWidget')])
+                # Nothing outside their settings.
+                self.assertEqual(outside(signed, releases), outside(text, releases))
+                for configuration_id in configurations(text):
+                    before, after = settings(text, configuration_id), settings(signed, configuration_id)
+                    if configuration_id not in releases:
+                        # Debug and Profile keep their signing, for builds in
+                        # Xcode, and so does everything else.
+                        self.assertEqual(after, before, configuration_id)
+                        continue
+                    bundle_id = signing.setting(text, configuration_id, 'PRODUCT_BUNDLE_IDENTIFIER')
+                    signs = {
+                        'CODE_SIGN_STYLE': 'Manual',
+                        'DEVELOPMENT_TEAM': TEAM,
+                        'CODE_SIGN_IDENTITY': signing.IDENTITY,
+                        'CODE_SIGN_IDENTITY[sdk=iphoneos*]': signing.IDENTITY,
+                        'PROVISIONING_PROFILE_SPECIFIER': PROFILES[bundle_id],
+                    }
+                    # Each signing setting once, and the others as they were.
+                    self.assertEqual([key for key, _ in after if key in signs], sorted(signs))
+                    self.assertEqual(dict(after), {**dict(before), **signs})
+                    self.assertEqual([item for item in after if item[0] not in signs],
+                                     [item for item in before if item[0] not in signs])
+                    # In order among the other settings, as Xcode writes them.
+                    keys = [key for key, _ in after]
+                    self.assertEqual(keys, sorted(keys))
 
     def test_signing_again_replaces_the_settings(self):
-        signed = signing.sign(signing.sign(TEXT, TEAM, PROFILES), 'ZYXWV98765',
-                              {APP: 'Renewed', WIDGET: 'Renewed widget'})
-        self.assertEqual(signed.count('PROVISIONING_PROFILE_SPECIFIER'), 2)
-        self.assertEqual(signed.count('DEVELOPMENT_TEAM'), 2)
-        self.assertEqual(signing.setting(signed, configuration(signed, 'ParshaWidget'),
-                                         'PROVISIONING_PROFILE_SPECIFIER'), 'Renewed widget')
+        for project, text in PROJECTS.items():
+            with self.subTest(project):
+                signed = signing.sign(signing.sign(text, TEAM, PROFILES), 'ZYXWV98765',
+                                      {APP: 'Renewed', WIDGET: 'Renewed widget'})
+                for target, profile in (('Runner', 'Renewed'), ('ParshaWidget', 'Renewed widget')):
+                    keys = [key for key, _ in settings(signed, configuration(signed, target))]
+                    self.assertEqual(keys.count('PROVISIONING_PROFILE_SPECIFIER'), 1)
+                    self.assertEqual(keys.count('DEVELOPMENT_TEAM'), 1)
+                    self.assertEqual(signing.setting(signed, configuration(signed, target), 'DEVELOPMENT_TEAM'),
+                                     'ZYXWV98765')
+                    self.assertEqual(signing.setting(signed, configuration(signed, target),
+                                                     'PROVISIONING_PROFILE_SPECIFIER'), profile)
+                self.assertEqual(signing.sign(text, 'ZYXWV98765', {APP: 'Renewed', WIDGET: 'Renewed widget'}),
+                                 signed)
+
+    def test_the_fixture_is_set_up_as_xcode_sets_it(self):
+        text = PROJECTS['set up in Xcode']
+        for target in ('Runner', 'ParshaWidget'):
+            release = configuration(text, target)
+            self.assertEqual(signing.setting(text, release, 'CODE_SIGN_STYLE'), 'Automatic')
+            self.assertEqual(signing.setting(text, release, 'DEVELOPMENT_TEAM'), 'QWERT54321')
+        self.assertEqual(text.count('DEVELOPMENT_TEAM = QWERT54321;'), 6)
 
     def test_names_are_quoted_as_xcode_quotes_them(self):
         name = 'Shnayim "Mikra" \\ App Store'

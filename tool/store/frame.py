@@ -12,19 +12,20 @@ From the repository root:
 writes build/store/<ios|ipad|play|playtab>/<en-US|he>/NN_<screen>.png
 (docs/RELEASE.md says where each goes). The headlines are shaped by
 HarfBuzz, as the icon's Hebrew is (tool/branding/make_icon.py); a Hebrew
-reader approves the Hebrew ones before upload.
+reader approves the Hebrew ones, and where each breaks, before upload.
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'branding'))
 import make_icon  # noqa: E402  (shaping, SVG paths and rasterizing)
@@ -59,54 +60,73 @@ class Device:
     name: str  # the folder under build/store
     mode: str  # the capture mode; its Hebrew twin adds 'he'
     size: tuple[int, int]  # the store's, in pixels
+    ratio: float  # the capture mode's device pixel ratio
+
+    @property
+    def width_dp(self) -> float:
+        """How wide the app is laid out, in logical pixels."""
+        return self.size[0] / self.ratio
 
 
 DEVICES = (
-    Device('ios', 'storeios', (1320, 2868)),  # 6.9" iPhone
-    Device('ipad', 'storeipad', (2064, 2752)),  # 13" iPad
-    Device('play', 'storeplay', (1080, 1920)),  # phone
-    Device('playtab', 'storeplaytab', (1600, 2560)),  # 10" tablet
+    Device('ios', 'storeios', (1320, 2868), 3.0),  # 6.9" iPhone
+    Device('ipad', 'storeipad', (2064, 2752), 2.0),  # 13" iPad
+    Device('play', 'storeplay', (1080, 1920), 2.625),  # phone
+    Device('playtab', 'storeplaytab', (1600, 2560), 2.0),  # 10" tablet
 )
 LANGUAGES = {'en-US': '', 'he': 'he'}  # the folder, and its mode's suffix
 
 
 @dataclass(frozen=True)
-class Shot:
-    screen: str  # a capture harness screen in its _storeScreens
+class Caption:
+    """A headline in each language, broken where it reads best ('\\n'),
+    approved with the Hebrew."""
     en: str
     he: str
-    # Another screen on some devices: on a tablet's page, the guided reader
-    # shows a section rather than a verse, and large print shows in the full
-    # text; the iPad's full text sets the Targum beside each verse.
+
+    def text(self, language: str) -> str:
+        return self.he if language == 'he' else self.en
+
+
+@dataclass(frozen=True)
+class Shot:
+    screen: str  # a capture harness screen in its _storeScreensByMode
+    caption: Caption
+    # Another screen, and its caption, on some devices: a tablet shows large
+    # print in the full text, which fills its page, and the iPad, wide
+    # enough for the Targum beside each verse, the full text in place of
+    # Listen.
     instead: dict[str, str] = field(default_factory=dict)
+    captions: dict[str, Caption] = field(default_factory=dict)
 
     def screen_on(self, device: Device) -> str:
         return self.instead.get(device.name, self.screen)
 
-    def headline(self, language: str) -> str:
-        return self.he if language == 'he' else self.en
+    def headline(self, language: str, device: Device) -> str:
+        return self.captions.get(device.name, self.caption).text(language)
 
 
-# In order. They describe the app as it is: no streak counts, and nothing
+# In order. They describe the app as it is, on each device: a reader some
+# weeks into the year with nothing overdue, no streak counts, and nothing
 # from the demo community, whose members are made up.
 SHOTS = (
-    Shot('today', 'The parsha twice, the Targum once', 'שניים מקרא ואחד תרגום'),
-    Shot('reader', 'Guided aliyah by aliyah, verse by verse',
-         'עלייה אחר עלייה, פסוק אחר פסוק',
-         instead={'ipad': 'reader_section', 'playtab': 'reader_section'}),
-    Shot('week', 'Always the right parsha, in Israel or abroad',
-         'תמיד הפרשה הנכונה, בארץ ובחו״ל'),
-    Shot('progress', 'A gentle rhythm that respects Shabbat', 'קצב נינוח ששומר שבת'),
-    Shot('reader_listen', 'Listen along, or read Mikra and Targum side by side',
-         'להאזין, או לקרוא מקרא ותרגום זה לצד זה',
-         instead={'ipad': 'reader_full'}),
-    Shot('store_access', 'For every reader: large text, high contrast, screen readers',
-         'לכל קורא: טקסט גדול, ניגודיות גבוהה וקוראי מסך',
+    Shot('store_today', Caption('The parsha twice,\nthe Targum once', 'שניים מקרא\nואחד תרגום')),
+    Shot('store_reader', Caption('Guided aliyah by aliyah,\nverse by verse', 'עלייה אחר עלייה,\nפסוק אחר פסוק')),
+    Shot('store_week', Caption('Always the right parsha,\nin Israel or abroad', 'תמיד הפרשה הנכונה,\nבארץ ובחו״ל')),
+    Shot('store_progress', Caption('A gentle rhythm\nthat respects Shabbat', 'קצב נינוח\nששומר שבת')),
+    Shot('store_listen', Caption('Listen along,\nhands-free', 'להאזין לקריאה,\nבלי לגעת במסך'),
+         instead={'ipad': 'store_full'},
+         captions={'ipad': Caption('Mikra and Targum,\nside by side', 'מקרא ותרגום,\nזה לצד זה')}),
+    Shot('store_access', Caption('For every reader: large text,\nhigh contrast, screen readers',
+                                 'לכל קורא: טקסט גדול,\nניגודיות גבוהה וקוראי מסך'),
          instead={'ipad': 'store_access_full', 'playtab': 'store_access_full'}),
 )
 
-# Every screen the shots use: test/screens/capture_test.dart's _storeScreens.
-SCREENS = frozenset(s.screen_on(d) for s in SHOTS for d in DEVICES)
+
+def screens_on(device: Device) -> list[str]:
+    """The capture harness screens [device]'s shots use, in order: its
+    mode's in test/screens/capture_test.dart's _storeScreensByMode."""
+    return [shot.screen_on(device) for shot in SHOTS]
 
 
 def fail(message: str):
@@ -122,23 +142,6 @@ def ink_width(text: str, px: float, language: str) -> float:
                                direction=direction)[1]
 
 
-def break_lines(text: str, px: float, language: str) -> list[str]:
-    """[text] on two lines of about equal width, preferring a break after a
-    comma or colon when the lines are still nearly even."""
-    words = text.split(' ')
-    if len(words) < 2:
-        return [text]
-    best, best_cost = None, float('inf')
-    for i in range(1, len(words)):
-        lines = [' '.join(words[:i]), ' '.join(words[i:])]
-        cost = max(ink_width(line, px, language) for line in lines)
-        if lines[0][-1] in ',:':
-            cost *= 0.92
-        if cost < best_cost:
-            best, best_cost = lines, cost
-    return best
-
-
 def letter_height(language: str, px: float) -> float:
     """How far a capital (in Hebrew, a ה) rises above the baseline."""
     font_path, _ = FONTS[language]
@@ -151,11 +154,12 @@ def letter_height(language: str, px: float) -> float:
 
 def headline(text: str, language: str, size: tuple[int, int],
              max_width: float, px: float) -> Image.Image:
-    """[text] on two lines in techelet, on a transparent [size], centred,
-    no line wider than [max_width]. The lines' letters, from the top of the
-    first line's capitals to the second's baseline, are centred vertically,
-    so every headline of a set stands on the same baselines."""
-    lines = break_lines(text, px, language)
+    """[text] on its lines (broken at its '\\n's) in techelet, on a
+    transparent [size], centred, no line wider than [max_width]. The lines'
+    letters, from the top of the first line's capitals to the last's
+    baseline, are centred vertically, so every headline of a set stands on
+    the same baselines."""
+    lines = text.split('\n')
     widest = max(ink_width(line, px, language) for line in lines)
     if widest > max_width:
         px *= max_width / widest
@@ -178,25 +182,37 @@ def headline(text: str, language: str, size: tuple[int, int],
 
 
 def rounded_mask(size: tuple[int, int], radius: float) -> Image.Image:
+    """An opaque [size] with its corners rounded to [radius], anti-aliased:
+    each corner drawn at SUPERSAMPLE times and scaled down, the rest as it
+    is, so that no image of SUPERSAMPLE times the whole is needed."""
     w, h = size
-    big = Image.new('L', (w * SUPERSAMPLE, h * SUPERSAMPLE), 0)
-    ImageDraw.Draw(big).rounded_rectangle(
-        (0, 0, w * SUPERSAMPLE - 1, h * SUPERSAMPLE - 1),
-        radius=radius * SUPERSAMPLE, fill=255)
-    return big.resize(size, Image.LANCZOS)
+    mask = Image.new('L', size, 255)
+    r = min(math.ceil(radius), w // 2, h // 2)
+    if r <= 0:
+        return mask
+    big = Image.new('L', (r * SUPERSAMPLE, r * SUPERSAMPLE), 0)
+    d = 2 * radius * SUPERSAMPLE
+    ImageDraw.Draw(big).ellipse((0, 0, d - 1, d - 1), fill=255)
+    corner = big.resize((r, r), Image.LANCZOS)
+    mask.paste(corner, (0, 0))
+    mask.paste(corner.transpose(Image.Transpose.FLIP_LEFT_RIGHT), (w - r, 0))
+    mask.paste(corner.transpose(Image.Transpose.FLIP_TOP_BOTTOM), (0, h - r))
+    mask.paste(corner.transpose(Image.Transpose.ROTATE_180), (w - r, h - r))
+    return mask
 
 
-def hairline(size: tuple[int, int], box: tuple[int, int, int, int],
-             radius: float) -> Image.Image:
-    """A 1 px hairline just outside [box], following its rounded corners."""
-    w, h = size
-    big = Image.new('RGBA', (w * SUPERSAMPLE, h * SUPERSAMPLE), (0, 0, 0, 0))
+def hairline(box: tuple[int, int, int, int], radius: float) -> Image.Image:
+    """A 1 px hairline just outside [box], following its rounded corners, on
+    a transparent image 1 px larger than the box all round, to be laid at
+    the box's corner less 1 px."""
     x0, y0, x1, y1 = box
-    ImageDraw.Draw(big).rounded_rectangle(
-        ((x0 - 1) * SUPERSAMPLE, (y0 - 1) * SUPERSAMPLE,
-         (x1 + 1) * SUPERSAMPLE - 1, (y1 + 1) * SUPERSAMPLE - 1),
-        radius=(radius + 1) * SUPERSAMPLE, outline=HAIRLINE, width=SUPERSAMPLE)
-    return big.resize(size, Image.LANCZOS)
+    w, h = x1 - x0, y1 - y0
+    inside = Image.new('L', (w + 2, h + 2), 0)
+    inside.paste(rounded_mask((w, h), radius), (1, 1))
+    line = ImageChops.subtract(rounded_mask((w + 2, h + 2), radius + 1), inside)
+    image = Image.new('RGBA', line.size, HAIRLINE)
+    image.putalpha(line)
+    return image
 
 
 def flatten(image: Image.Image) -> Image.Image:
@@ -222,8 +238,7 @@ def frame(capture: Image.Image, text: str, language: str) -> Image.Image:
     radius = SHOT_RADIUS * scale
     shot = flatten(capture).resize((shot_w, shot_h), Image.LANCZOS)
     canvas.paste(shot, (x, y), rounded_mask((shot_w, shot_h), radius))
-    canvas.alpha_composite(hairline(capture.size, (x, y, x + shot_w, y + shot_h),
-                                    radius))
+    canvas.alpha_composite(hairline((x, y, x + shot_w, y + shot_h), radius), (x - 1, y - 1))
 
     # The headline in the space above, as wide as the capture at most.
     canvas.alpha_composite(headline(text, language, (width, y), max_width=shot_w,
@@ -249,7 +264,7 @@ def write_device(device: Device, language: str, captures: Path,
             if capture.size != device.size:
                 fail(f'{capture.filename} is {capture.size[0]}×{capture.size[1]}, '
                      f'expected {device.size[0]}×{device.size[1]}')
-            image = frame(capture, shot.headline(language), language)
+            image = frame(capture, shot.headline(language, device), language)
         path = folder / f'{number:02d}_{screen}.png'
         image.save(path, optimize=True)
         written.append(path)

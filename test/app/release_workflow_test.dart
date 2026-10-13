@@ -64,6 +64,16 @@ void main() {
       }
     });
 
+    // Google Play shows them with each bundle: a release that kept the last
+    // one's would be described as "The first release".
+    test('checks the release notes were written since the last release', () {
+      expect((steps(preflight).first['with'] as YamlMap)['fetch-depth'], 0, reason: 'every tag');
+      final run = step(preflight, 'Release notes written since the last release')['run'] as String;
+      expect(run, contains(r'''git describe --tags --abbrev=0 --match 'v*.*.*' "$GITHUB_REF_NAME^"'''));
+      expect(run, contains(r'git diff --quiet "$previous" "$GITHUB_REF_NAME" -- store/play/whatsnew'));
+      expect(run, contains('exit 1'));
+    });
+
     test('checks the tag against the version in pubspec.yaml', () {
       final run = step(preflight, 'The tag is the version in pubspec.yaml')['run'] as String;
       expect(run, contains(r"version=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)"));
@@ -120,6 +130,24 @@ void main() {
         .map((folder) => folder.uri.pathSegments.where((segment) => segment.isNotEmpty).last)
         .where((name) => name != 'whatsnew');
     expect(notes.toSet(), {for (final locale in listings) 'whatsnew-$locale'});
+  });
+
+  // So that the one store build can't be taken for one of CI's, which have
+  // whatever configuration CI has (docs/RELEASE.md, The Release workflow).
+  test("the bundle's artifact is named apart from CI's", () {
+    final upload = steps(jobs['android'] as YamlMap)
+        .firstWhere((step) => step['uses'] == 'actions/upload-artifact@v4' && '${(step['with'] as YamlMap)['path']}'.endsWith('.aab'));
+    expect((upload['with'] as YamlMap)['name'], 'android-release-aab');
+    final ci = File('.github/workflows/ci.yml').readAsStringSync();
+    final names = RegExp(r'^\s+name: (.+)$', multiLine: true)
+        .allMatches(ci.substring(ci.indexOf('actions/upload-artifact')))
+        .map((match) => match[1]!)
+        .join(' ');
+    expect(names, isNot(contains('android-release-aab')));
+    expect(names, isNot(matches(RegExp(r"'android'"))));
+    final release = File('docs/RELEASE.md').readAsStringSync();
+    expect(release, contains('`android-release-aab`'));
+    expect(release, isNot(contains('`android` artifact')));
   });
 
   test('iOS is exported for the App Store', () {

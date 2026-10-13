@@ -25,17 +25,17 @@
   - custom SMTP
   - the OTP email template
   - at least two moderators appointed
-  - a mailbox for the stores' reviewers (*Review access*, under [iOS](#ios-app-store))
+  - a mailbox for the stores' reviewers, all three of them (*Review access*, under [iOS](#ios-app-store))
 - [ ] **Moderation commitment.** Someone checks reports at least daily. Both stores expect timely action on user-generated content.
 
 ## Every release
 
 ### Version
+- [ ] Write this release's notes in English and Hebrew, and commit them before tagging: the workflow uploads the tagged commit's with the bundle. Google Play's are `store/play/whatsnew/whatsnew-en-US` and `whatsnew-iw-IL`, up to 500 characters each (`tool/store` checks them); the Release workflow stops before it builds anything if they haven't changed since the last release's tag. Give the App Store's *What's New* the same text when submitting. The draft GitHub release lists the merged pull requests: write its notes over them before publishing it.
 - [ ] Bump the version name in `pubspec.yaml`, merge, then push tag `vX.Y.Z`. The Release workflow checks the configuration, then uploads to Play internal testing (draft), TestFlight, and a draft GitHub release with the MSIX. Promote from there.
   - The tag is the version name, the `X.Y.Z` of `version: X.Y.Z+N`; if they differ, the workflow stops before it builds anything.
   - Every release needs a new version name: Windows installs an update only over a lower version, and the App Store reviews each version once.
   - The workflow numbers each build 1000 plus its run number, as Android's version code and iOS's build number, which each store wants higher with every upload. The `+N` in `pubspec.yaml` is only for builds made by hand; keep it below 1000. If a job fails, re-run only the failed jobs: a re-run keeps the run's number, and a store refuses a build number it already has. Don't rename `release.yml`: its run numbers would start again from 1.
-- [ ] Write release notes in English and Hebrew. Google Play's are `store/play/whatsnew/whatsnew-en-US` and `whatsnew-iw-IL`, up to 500 characters each (`tool/store` checks them), which the workflow uploads with the bundle; give the App Store's *What's New* the same text when submitting. The draft GitHub release lists the merged pull requests: write its notes over them before publishing it.
 
 ### The Release workflow
 `.github/workflows/release.yml` builds only with the production configuration. Its first job checks that everything below is set, names each setting that isn't, and stops before any build, so that no store build ships the on-device demo community, without backup or a support address. Set them under *Settings → Secrets and variables → Actions*.
@@ -52,8 +52,8 @@
   - `IOS_PROVISIONING_PROFILE_BASE64` and `IOS_WIDGET_PROVISIONING_PROFILE_BASE64`: the App Store profiles themselves ([iOS](#ios-app-store)).
   - `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY`: the App Store Connect API key that uploads to TestFlight ([iOS](#ios-app-store)).
   - `WINDOWS_CERTIFICATE_BASE64` and `WINDOWS_CERTIFICATE_PASSWORD`: the code-signing certificate ([Windows](#windows)).
-- [ ] **The first release** on Google Play is uploaded by hand, because the Play Developer API can't create an app's first release: that run's upload to Google Play fails, and its `android` artifact holds the AAB to upload in Play Console (*Testing*, under [Android](#android-google-play)). Every later release uploads itself. On iOS, create the app in App Store Connect before the first run.
-- CI's artifacts (`.github/workflows/ci.yml`) are never for the stores: CI builds with whatever configuration it has, pull requests from forks in demo mode and without signing, and doesn't number its builds. Besides what it uploads, a release run keeps the Android debug symbols (`android-symbols`), for `flutter symbolize`, and the IPA (`ios`), which Transporter can upload if the TestFlight step fails.
+- [ ] **The first release** on Google Play is uploaded by hand, because the Play Developer API can't create an app's first release: that run's upload to Google Play fails, and its `android-release-aab` artifact holds the AAB to upload in Play Console (*Testing*, under [Android](#android-google-play)). Every later release uploads itself. On iOS, create the app in App Store Connect before the first run.
+- CI's artifacts (`.github/workflows/ci.yml`, its Android one named `android-ci`) are never for the stores: CI builds with whatever configuration it has, pull requests from forks in demo mode and without signing, and doesn't number its builds. Besides what it uploads, a release run keeps the Android debug symbols (`android-symbols`), for `flutter symbolize`, and the IPA (`ios`), which Transporter can upload if the TestFlight step fails.
 
 ### Automated checks
 - [ ] CI is green on the release commit: analysis, all tests, SQL tests, and builds for all four platforms.
@@ -68,7 +68,7 @@
 ### Design checks
 The goldens in `test/goldens/` hold the main screens in every theme and in both languages, and CI fails when they change. These checks cover what they can't see ([DESIGN_SYSTEM.md §11.6](DESIGN_SYSTEM.md#11-tests-and-qa)):
 - [ ] **The icon,** on a device, at 48 px and at 1024 px: a Hebrew reader checks that every icon reads שמו״ת with ש on the right. Regenerate icons only with `tool/branding/make_icon.py` (see the comment above `flutter_launcher_icons` in `pubspec.yaml`).
-- [ ] **The name under the icon,** on a Pixel at the launcher's default grid and on an iPhone at the default text size, in English and Hebrew: it isn't cut off. If the English is, set a shorter label as `app_name` in `android/app/src/main/res/values/strings.xml` (the widget's title before onboarding, too) and as `CFBundleDisplayName` in `ios/Runner/en.lproj/InfoPlist.strings` (and in `ios/Runner/Info.plist`, its fallback), and keep "Shnayim Mikra" as the name in the stores.
+- [ ] **The name under the icon,** on a Pixel at the launcher's default grid and on an iPhone at the default text size, in English and Hebrew: it isn't cut off. Check the installed web app's too, on the same Pixel (Chrome) and iPhone (Safari's *Add to Home Screen*). If the English is cut off, set a shorter label as `app_name` in `android/app/src/main/res/values/strings.xml` (the widget's title before onboarding, too), as `CFBundleDisplayName` in `ios/Runner/en.lproj/InfoPlist.strings` (and in `ios/Runner/Info.plist`, its fallback), and for the web app as `short_name` in `web/manifest.json` (Android's) and `apple-mobile-web-app-title` in `web/index.html` (iOS's); keep "Shnayim Mikra" as the name in the stores.
 - [ ] **TalkBack and VoiceOver on the reader's aliyah ribbon and PassTrack,** in English and Hebrew:
   - Each tab of the ribbon is read as one button, with its name, its number and how far it is read ("Shlishi, aliyah 3 of 7, …"), and the open one as selected. Swiping moves through the tabs in reading order, right to left in Hebrew, and scrolls the ribbon to keep each in view.
   - The PassTrack itself is silent. Its step is read once, as it changes, in the step's announcement ("Read the Hebrew again. Reading 2 of 3. Verse 1 of 14"), never twice.
@@ -78,14 +78,14 @@ The goldens in `test/goldens/` hold the main screens in every theme and in both 
 
 ### Store listing
 The stores' text, screenshots and Google Play's feature graphic come from the app and the repository, never by hand:
-- [ ] After any visible change to the screens they show, take the screenshots again. The capture harness renders them in the light theme, in English and Hebrew, at the stores' sizes: the App Store's 6.9" iPhone (1320 × 2868) and 13" iPad (2064 × 2752), and Google Play's phone (1080 × 1920) and 10" tablet (1600 × 2560). `tool/store/frame.py` sets each on Klaf under its headline, without alpha, in `build/store/<ios|ipad|play|playtab>/<en-US|he>/`, numbered in their order. The feature graphic is the link preview's title block:
+- [ ] After any visible change to the screens they show, take the screenshots again. The capture harness renders them in the light theme, in English and Hebrew, at the stores' sizes: the App Store's 6.9" iPhone (1320 × 2868) and 13" iPad (2064 × 2752), and Google Play's phone (1080 × 1920) and 10" tablet (1600 × 2560). They show a reader some weeks into the year, with nothing overdue and no streak counts, each page scrolled to end between its cards where the screen allows, and never through a line of text (`store_*` in `test/screens/capture_test.dart`), and each device only what can be done on it: the Targum beside each verse on the iPad alone. `tool/store/frame.py` sets each on Klaf under its headline, without alpha, in `build/store/<ios|ipad|play|playtab>/<en-US|he>/`, numbered in their order. The feature graphic is the link preview's title block:
   ```sh
   CAPTURE=1 MODES=storeios,storeioshe,storeipad,storeipadhe,storeplay,storeplayhe,storeplaytab,storeplaytabhe flutter test test/screens/capture_test.dart
   python3 tool/store/frame.py
   python3 tool/branding/make_icon.py --feature-graphic
   ```
-- [ ] The text is in `store/`, in fastlane's layout: `store/play/<en-US|iw-IL>/` as supply reads it, `store/ios/<en-US|he>/` as deliver does. `python3 -m unittest discover -s tool/store` (in CI) checks every field against the stores' limits. Before uploading, replace `<WEB_URL>` in `store/ios/*/support_url.txt` and `privacy_url.txt` with the site's address, the repository variable `WEB_URL`.
-- [ ] The text describes the app as it is, with no endorsement claimed: update it when a feature it names changes. A Hebrew reader approves the Hebrew text and the Hebrew headlines on the screenshots before upload.
+- [ ] The text is in `store/`, in fastlane's layout: `store/play/<en-US|iw-IL>/` as supply reads it, `store/ios/<en-US|he>/` as deliver does; and the Microsoft Store's descriptions, entered by hand, in `store/windows/<en-us|he-il>/description.txt`. `python3 -m unittest discover -s tool/store` (in CI) checks every field against the stores' limits. Before uploading, replace `<WEB_URL>` in `store/ios/*/support_url.txt` and `privacy_url.txt` with the site's address, the repository variable `WEB_URL`.
+- [ ] The text describes the app as it is, with no endorsement claimed, and names its options as the app does (the plans, say): update it when a feature it names changes. A Hebrew reader approves the Hebrew text, and the Hebrew headlines on the screenshots with where each line breaks, before upload.
 
 ### Behaviour on real devices
 - [ ] Fresh install: onboarding reaches the first verse, and that aliyah can be read to completion.
@@ -158,11 +158,11 @@ The stores' text, screenshots and Google Play's feature graphic come from the ap
 
 **Build**
 
-- [ ] The Release workflow builds the bundle and uploads it to internal testing as a draft: roll it out there, then promote it. To build one by hand, run `flutter build appbundle --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY" (as CI's `android-debug-signed` artifact is): Google Play refuses it. Never upload CI's `android` artifact, which has whatever configuration CI has: the demo community, if a variable is missing.
+- [ ] The Release workflow builds the bundle and uploads it to internal testing as a draft: roll it out there, then promote it. To build one by hand, run `flutter build appbundle --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. A build without the keystore ends with "RELEASE BUILD SIGNED WITH DEBUG KEY" (as CI's `android-ci-debug-signed` artifact is): Google Play refuses it. Never upload CI's `android-ci` artifact, which has whatever configuration CI has: the demo community, if a variable is missing.
 
 **Play Console**
 
-- [ ] **Testing:** if the developer account is a personal account created after 13 November 2023, run a closed test with at least 12 testers opted in for 14 consecutive days before applying for production access. Otherwise start with internal testing. Upload the first AAB by hand in Play Console: the Play Developer API can't create an app's first release. Take it from the Release workflow's `android` artifact (that run's own upload fails for the same reason); later releases upload themselves.
+- [ ] **Testing:** if the developer account is a personal account created after 13 November 2023, run a closed test with at least 12 testers opted in for 14 consecutive days before applying for production access. Otherwise start with internal testing. Upload the first AAB by hand in Play Console: the Play Developer API can't create an app's first release. Take it from the Release workflow's `android-release-aab` artifact (that run's own upload fails for the same reason); later releases upload themselves.
 - [ ] **App content:**
   - Privacy policy: `<web address>/legal/privacy.html`.
   - Ads: no.
@@ -231,9 +231,9 @@ The stores' text, screenshots and Google Play's feature graphic come from the ap
 - [ ] **Sign in with Apple** isn't required, because the app has no third-party social login (email code only).
 - [ ] **Export compliance:** the app uses only standard HTTPS. `ITSAppUsesNonExemptEncryption` is set to `false` in Info.plist.
 - [ ] **Age rating:** answer the user-generated-content questions honestly. Expect 12+ or 13+.
-- [ ] **Review access.** Signing in takes a six-digit code sent by email, and reviewers sign in only with what the review notes give them. Without a way in, expect a rejection under Guideline 2.1 on iOS, and for App access on Google Play.
+- [ ] **Review access.** Signing in takes a six-digit code sent by email, and reviewers sign in only with what the review notes give them, on every store. Without a way in, expect a rejection under Guideline 2.1 on iOS, for App access on Google Play, and in the Microsoft Store's certification for content that can't be tested.
   - Create a reviewer mailbox on the support domain (such as `review@<domain>`) whose webmail the reviewer can open. Use it for nothing else, and give it no two-step verification or new-device challenge, which a reviewer can't pass.
-  - In App Store Connect, under *App Review Information*, tick *Sign-in required*, enter the address as the user name and the mailbox's password as the password, and put the webmail URL and the steps below in the notes. In Play Console, give the same under *App content → App access* ("All or some functionality is restricted"). They belong there only, never in this repository.
+  - In App Store Connect, under *App Review Information*, tick *Sign-in required*, enter the address as the user name and the mailbox's password as the password, and put the webmail URL and the steps below in the notes. In Play Console, give the same under *App content → App access* ("All or some functionality is restricted"), and in Partner Center under *Submission options → Notes for certification* ([Windows](#windows)). They belong there only, never in this repository.
   - The steps to give: open *Community → Sign in*, enter the address, read the six-digit code in the mailbox and type it, and the first time, choose a display name.
   - The account has no moderator role. If a reviewer deletes it, as they may to check account deletion, signing in again with the same address makes a new one.
   - Before each submission, sign in with it once to confirm the code arrives.
@@ -281,7 +281,8 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 **Microsoft Store (Partner Center)**
 
-- [ ] Store listings in en-us and he-il, the package's two languages, each with at least one desktop screenshot of 1366 × 768 or larger: `build/screens/desktop_today.png` and `build/screens/deskhe_today.png` (1366 × 860), from `CAPTURE=1 SCREENS=today MODES=desktop,deskhe flutter test test/screens/capture_test.dart`.
+- [ ] Store listings in en-us and he-il, the package's two languages: the description from `store/windows/en-us/description.txt` and `store/windows/he-il/description.txt` (Google Play's, with Windows's screen readers and without the home-screen widget; `tool/store` checks them), and at least one desktop screenshot of 1366 × 768 or larger: `build/screens/desktop_today.png` and `build/screens/deskhe_today.png` (1366 × 860), from `CAPTURE=1 SCREENS=today MODES=desktop,deskhe flutter test test/screens/capture_test.dart`.
+- [ ] *Submission options → Notes for certification:* the reviewer mailbox's webmail URL, its address and password, and the steps to sign in, as under *Review access* for [iOS](#ios-app-store), so that Microsoft's testers reach the community (reporting, blocking and account deletion among it). Say too that the community is moderated, and how to reach the moderators.
 - [ ] The privacy policy URL: `<web address>/legal/privacy.html`.
 - [ ] The age rating (IARC) questionnaire: users can interact and share content (forums), with moderation.
 - [ ] The support contact: the support address, or `<web address>/legal/support.html`.

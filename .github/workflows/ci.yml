@@ -218,8 +218,10 @@ jobs:
         with:
           # Without the keystore secrets (as in pull requests from forks), the
           # release build is signed with the debug key, which Google Play
-          # refuses; the name says so.
-          name: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'android' || 'android-debug-signed' }}
+          # refuses; the name says so. Either way it is CI's, with whatever
+          # configuration CI has, never for the store (docs/RELEASE.md): the
+          # Release workflow's is android-release-aab.
+          name: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'android-ci' || 'android-ci-debug-signed' }}
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab

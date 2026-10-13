@@ -20,6 +20,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -70,7 +71,9 @@ import 'package:shnayim_mikra/services/recent_errors.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/services/web_update.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
+import 'package:shnayim_mikra/ui/theme/layout.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
@@ -657,11 +660,20 @@ const _screens = {
   'progress_years': '/progress',
   'progress_past': '/progress',
   'progress_record': '/progress',
-  // For the stores alone (see [_storeOnlyScreens]): the guided reader, and
-  // the full text for a tablet's page, with Display's Large print and High
-  // contrast presets, dark.
-  'store_access': '/read/5787:1/2',
-  'store_access_full': '/read/5787:1/2?mode=full',
+  // For the stores alone (see [_storeScreensByMode]): Wednesday of Toldot,
+  // a reader some weeks into the year with nothing overdue, Revi'i, today's
+  // aliyah, still to read. The guided reader reads by section, which fills a
+  // page; the full text shows the Targum beside each verse on the iPad.
+  'store_today': '/today',
+  'store_reader': '/read/5787:6/3',
+  'store_week': '/week/5787:6',
+  'store_progress': '/progress',
+  'store_listen': '/read/5787:6/3',
+  'store_full': '/read/5787:6/3?mode=full',
+  // Display's Large print and High contrast presets, dark: the guided reader,
+  // and on a tablet the full text, which fills its page.
+  'store_access': '/read/5787:6/3',
+  'store_access_full': '/read/5787:6/3?mode=full',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -681,9 +693,18 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
+  // The stores' screenshots name no streak counts.
+  for (final screen in ['store_today', 'store_week', 'store_progress', 'store_full'])
+    screen: (s) => s.copyWith(showStreaks: false),
+  for (final screen in ['store_reader', 'store_listen'])
+    screen: (s) => s.copyWith(showStreaks: false, method: ReadingMethod.sectionBySection),
   for (final screen in ['store_access', 'store_access_full'])
     screen: (s) => applyPreset(
-          applyPreset(s, DisplayPreset.largePrint, darkPreferred: true),
+          applyPreset(
+            s.copyWith(showStreaks: false, method: ReadingMethod.sectionBySection),
+            DisplayPreset.largePrint,
+            darkPreferred: true,
+          ),
           DisplayPreset.highContrast,
           darkPreferred: true,
         ),
@@ -820,6 +841,7 @@ class _UpdateWaiting extends WebUpdates {
 /// Screens shown while Listen reads.
 const _listening = {
   'reader_listen',
+  'store_listen',
   'reader_listen_full',
   'reader_listen_paused',
   'reader_listen_focus',
@@ -860,6 +882,7 @@ class _PreparingIndex extends VerseIndexLoader {
 /// Screens shown on another day, with another history: the Torah map in
 /// every tile state, and the days and histories of [_screenSettings].
 final _screenNow = <String, DateTime>{
+  for (final screen in _storeScreens) screen: _storeNow,
   'progress_map': historyNow,
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
@@ -913,6 +936,7 @@ final _screenNow = <String, DateTime>{
   'reader_finished_day': DateTime(2026, 10, 7, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
+  for (final screen in _storeScreens) screen: _storeProgress,
   'progress_map': historyProgress,
   'browse_summer': _yearRead,
   'today_haftarah_left': () => ProgressState(weeks: {
@@ -1020,6 +1044,36 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
 };
+
+/// The day of the stores' screenshots: Wednesday 11 November 2026, in the
+/// week of Toldot, the sixth parsha of the year.
+final _storeNow = DateTime(2026, 11, 11, 10);
+
+/// The reader of the stores' screenshots, as of [_storeNow], who joined on
+/// Simchat Torah ([captureJoinDate]): every week since Bereshit read on its
+/// days, Shevi'i with Shishi on Friday and the haftarah too, and of Toldot,
+/// Rishon to Shlishi on Sunday to Tuesday. Nothing is overdue: Revi'i is
+/// today's.
+ProgressState _storeProgress() {
+  WeekProgress week(String id, LocalDate first, {int aliyot = 7, LocalDate? friday}) {
+    var w = WeekProgress(weekId: id);
+    for (var a = 0; a < aliyot; a++) {
+      final day = first.addDays(a);
+      w = w.withAliyah(a, friday != null && day > friday ? friday : day);
+    }
+    return friday == null ? w : w.withHaftarah(friday);
+  }
+
+  final weeks = [
+    // Bereshit's week began on Monday, after Simchat Torah.
+    week('5787:1', LocalDate(2026, 10, 5), friday: LocalDate(2026, 10, 9)),
+    for (var parsha = 2; parsha <= 5; parsha++)
+      week('5787:$parsha', LocalDate(2026, 10, 11).addDays(7 * (parsha - 2)),
+          friday: LocalDate(2026, 10, 16).addDays(7 * (parsha - 2))),
+    week('5787:6', LocalDate(2026, 11, 8), aliyot: 3),
+  ];
+  return ProgressState(weeks: {for (final w in weeks) w.weekId: w});
+}
 
 /// A reader in their second year, with Bereshit 5787 as in [_progress].
 ProgressState _secondYear() => ProgressState(weeks: {...secondYearProgress(), ..._progress().weeks});
@@ -1459,6 +1513,94 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
   }
 }
 
+/// The page scrolled so that the screen ends between two of its parts (its
+/// cards, notices, tiles, the week's title page and lines of text outside
+/// them) rather than through one, and begins between two as well: as little
+/// as does it, or with [from], with the part that holds the first of them
+/// that can begin the screen so near the top. Where none can, as on a short
+/// phone, the page's first part (or the part that holds [from]'s first)
+/// stands near the top, whole, and the screen ends under a line of a part
+/// rather than through one: that part plainly goes on below. A store's
+/// screenshot then shows nothing cut short.
+Future<void> _endBetweenCards(WidgetTester tester, {List<Finder> from = const []}) async {
+  // The page's own, the largest: not the rail's, say.
+  double area(Element e) {
+    final size = (e.renderObject! as RenderBox).size;
+    return size.width * size.height;
+  }
+
+  final page = find
+      .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
+      .evaluate()
+      .reduce((a, b) => area(a) >= area(b) ? a : b);
+  final scrollable = find.byElementPredicate((e) => e == page);
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final viewport = tester.getRect(scrollable);
+  // In the page's own coordinates.
+  Rect rectOf(Element element) {
+    final box = element.renderObject! as RenderBox;
+    return (box.localToGlobal(Offset.zero) & box.size).shift(Offset(0, position.pixels));
+  }
+
+  // The surfaces a part is drawn on (a card's, a title page's, a notice's,
+  // a tile's), outermost, and larger than an icon's button.
+  final surfaces = find
+      .descendant(of: scrollable, matching: find.byWidgetPredicate((w) => w is Material || w is NoticeBanner))
+      .evaluate()
+      .toSet();
+  bool nested(Element element) {
+    var inside = false;
+    element.visitAncestorElements((ancestor) {
+      inside = surfaces.contains(ancestor);
+      return !inside;
+    });
+    return inside;
+  }
+
+  final parts = [
+    for (final surface in surfaces)
+      if (!nested(surface) && rectOf(surface).width > kMinInteractiveDimension * 2) rectOf(surface),
+  ]..sort((a, b) => a.top.compareTo(b.top));
+  final texts = [
+    for (final text in find.descendant(of: scrollable, matching: find.byType(RichText)).evaluate()) rectOf(text),
+  ];
+  final all = [...parts, ...texts];
+  bool cuts(List<Rect> blocks, double edge) => blocks.any((b) => b.top < edge - 0.5 && b.bottom > edge + 0.5);
+  bool clean(double offset, List<Rect> blocks) =>
+      !cuts(blocks, viewport.top + offset) && !cuts(blocks, viewport.bottom + offset);
+  final last = position.maxScrollExtent.floorToDouble();
+  // The offsets that set [part] a margin or so below the top, nearest first.
+  List<double> near(Rect part) {
+    final ideal = (part.top - viewport.top - Space.md).clamp(0.0, last).floorToDouble();
+    return [for (var o = math.max(0.0, ideal - Space.md); o <= math.min(last, ideal + Space.md); o++) o]
+      ..sort((a, b) => (a - ideal).abs().compareTo((b - ideal).abs()));
+  }
+
+  double? offset;
+  if (from.isEmpty) {
+    for (var o = 0.0; o <= last && offset == null; o++) {
+      if (clean(o, all)) offset = o;
+    }
+    // The first part as high as can be, at most a margin below the top.
+    final lead = parts.firstOrNull;
+    if (offset == null && lead != null) {
+      for (var o = near(lead).reduce(math.max); o >= 0 && offset == null; o--) {
+        if (clean(o, texts)) offset = o;
+      }
+    }
+  } else if (parts.isNotEmpty) {
+    final leads = [
+      for (final finder in from)
+        parts.lastWhere((p) => p.top <= tester.getRect(finder).top + position.pixels, orElse: () => parts.first),
+    ];
+    offset = leads.expand(near).where((o) => clean(o, all)).firstOrNull ??
+        near(leads.first).where((o) => clean(o, texts)).firstOrNull ??
+        near(leads.first).first;
+  }
+  position.jumpTo(offset ?? 0);
+  await tester.pump();
+}
+
 /// Bookmarks and notes on Genesis and Exodus, in both languages, for the
 /// screens that show them.
 final _annotations = jsonEncode({
@@ -1495,7 +1637,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
   },
   'week_notes': _scrollToEnd,
+  'store_today': _endBetweenCards,
+  // From the year, past the word that streak numbers are hidden.
+  'store_progress': (tester) {
+    final l = tester.element(find.byType(Scaffold).last).l10n;
+    Finder eyebrow(String text) => find.byWidgetPredicate((w) => w is Eyebrow && w.text == text);
+    return _endBetweenCards(tester, from: [eyebrow(l.thisYear), eyebrow(l.weekStripLabel)]);
+  },
   's_a11y_speech': _scrollToEnd,
+  // Listen, from the first verse.
+  'store_listen': _tapInTurn([() => find.byIcon(Icons.volume_up_outlined)]),
   for (final screen in [
     'reader_listen',
     'reader_listen_full',
@@ -2141,26 +2292,21 @@ final _storeModes = {
     if (mode.tag.startsWith('store')) mode.tag,
 };
 
-/// What the store listings show (tool/store/frame.py's SHOTS). Not the
-/// demo community: its members are made up.
-const _storeScreens = {
-  'today',
-  'reader',
-  // A tablet's guided reader shows a section, which fills its page.
-  'reader_section',
-  'week',
-  'progress',
-  'reader_listen',
-  // The full text, side by side on the iPad.
-  'reader_full',
-  // Large print and high contrast: the guided reader, and on a tablet the
-  // full text, which fills its page.
-  'store_access',
-  'store_access_full',
+/// What each store's screenshots show, in its mode and the mode's Hebrew
+/// twin: tool/store/frame.py's SHOTS on that device, which
+/// tool/store/test_store.py checks. Not the demo community: its members are
+/// made up. A tablet shows large print in the full text, which fills its
+/// page, and the iPad, wide enough for the Targum beside each verse, the
+/// full text in place of Listen.
+const _storeScreensByMode = {
+  'storeios': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access'},
+  'storeipad': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_full', 'store_access_full'},
+  'storeplay': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access'},
+  'storeplaytab': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access_full'},
 };
 
-/// Store screens no other mode renders.
-const _storeOnlyScreens = {'store_access', 'store_access_full'};
+/// The screens of the store modes, which no other mode renders.
+final _storeScreens = {for (final screens in _storeScreensByMode.values) ...screens};
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
@@ -2602,8 +2748,8 @@ void main() {
     // The modes MODES names, or every mode but the stores'.
     if (!(_onlyModes?.contains(mode.tag) ?? !store)) continue;
     for (final entry in _screens.entries) {
-      if (store && !_storeScreens.contains(entry.key)) continue;
-      if (!store && _storeOnlyScreens.contains(entry.key)) continue;
+      if (store && !_storeScreensByMode[mode.tag.replaceFirst(RegExp(r'he$'), '')]!.contains(entry.key)) continue;
+      if (!store && _storeScreens.contains(entry.key)) continue;
       if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;

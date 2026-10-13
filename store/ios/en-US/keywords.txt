@@ -1,1 +1,1 @@
-parsha,parasha,sedra,torah,chumash,targum,onkelos,rashi,haftarah,shabbat,hebrew,jewish,bible,tanach
+parasha,sedra,torah,chumash,onkelos,rashi,haftarah,shabbat,hebrew,jewish,bible,tanach,shnaim,parshat
