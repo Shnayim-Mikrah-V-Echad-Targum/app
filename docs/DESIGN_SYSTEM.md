@@ -95,6 +95,7 @@ New and changed files:
 - `lib/ui/widgets/year_bar.dart`: `YearBar`.
 - `lib/ui/widgets/progress_widgets.dart`: ParshaRings, the new `RingLegend`, WeekStrip and the candles, per §6.
 - `lib/ui/theme/layout.dart`: the layout tokens of §5 (`Space`, `Breakpoints`, `Gutter`, `ContentWidth`, `Rhythm`).
+- `lib/ui/widgets/page_columns.dart`: `PageColumns`, the two columns of a page on a desktop (Today, Progress, a week's page; §9).
 - `lib/ui/widgets/common.dart`:
   - `PageBody` defaults become maxWidth 720 and padding `fromLTRB(g, 8, g, 40)`, where g is the gutter from §5, plus the safe area below, so a page over the whole screen clears the gesture bar;
   - `PageScaffold`, the scaffold of every routed page, and `DocumentTitle` (§5);
