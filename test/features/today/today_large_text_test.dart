@@ -31,8 +31,9 @@ void main() {
         ),
       );
       // Each set with a word joiner after its hyphen or maqaf, so that no
-      // line ends there; the Hebrew UI names it in English beneath.
-      for (final name in ['Matot-Masei', 'מַטּוֹת־מַסְעֵי']) {
+      // line ends there; the English UI names it in English beneath, and the
+      // Hebrew UI in Hebrew alone.
+      for (final name in [if (!hebrew) 'Matot-Masei', 'מַטּוֹת־מַסְעֵי']) {
         final shown = WholeWords.unbroken(name);
         final paragraph = tester.renderObject<RenderParagraph>(
           find.descendant(of: find.text(shown), matching: find.byType(RichText)),

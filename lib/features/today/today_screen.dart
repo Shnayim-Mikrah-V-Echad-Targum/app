@@ -660,10 +660,10 @@ class _ParshaHeading extends StatelessWidget {
       );
 }
 
-/// The parsha's name in Latin letters, under its pointed name: in the
-/// English UI as the UI names it, in [style] and onSurface, for the eye
-/// alone, as the heading's label already says it; in the Hebrew UI its
-/// English name, small and muted, tagged as English.
+/// The parsha's name in Latin letters, under its pointed name, as the
+/// English UI names it, in [style] and onSurface, for the eye alone, as the
+/// heading's label already says it. The Hebrew UI has none: the pointed name
+/// is the name, and the line under it gives the reading in Hebrew.
 class _LatinName extends StatelessWidget {
   const _LatinName({required this.portion, required this.ashkenazi, required this.style});
 
@@ -673,23 +673,11 @@ class _LatinName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final names = Names(context);
-    final theme = Theme.of(context);
-    if (!context.isHebrewUi) {
-      return ExcludeSemantics(
-        child: WholeWords(
-          names.portion(portion, ashkenazi: ashkenazi),
-          style: style?.copyWith(color: theme.colorScheme.onSurface),
-        ),
-      );
-    }
-    return Lang(
-      const Locale('en'),
-      // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+    if (context.isHebrewUi) return const SizedBox.shrink();
+    return ExcludeSemantics(
       child: WholeWords(
-        names.portionAlt(portion, ashkenazi: ashkenazi),
-        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        textDirection: TextDirection.ltr,
+        Names(context).portion(portion, ashkenazi: ashkenazi),
+        style: style?.copyWith(color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

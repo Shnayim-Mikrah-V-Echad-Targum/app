@@ -22,7 +22,8 @@ private let dayStartsAtHour = 3
 
 struct WidgetTimeline: Decodable {
   struct Week: Decodable {
-    /// The parsha's Hebrew name, and its transliteration.
+    /// The parsha's Hebrew name, and its transliteration, which only the
+    /// English UI shows.
     let he: String
     let name: String
     /// How a screen reader names it, in the app's language.
@@ -388,11 +389,14 @@ struct ParshaWidgetView: View {
         .minimumScaleFactor(0.5)
         .padding(.top, 2)
 
-      Text(week.name)
-        .font(Serif.latin(18))
-        .foregroundColor(.ink)
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
+      // The Hebrew UI names the parsha in Hebrew alone.
+      if !timeline.rtl {
+        Text(week.name)
+          .font(Serif.latin(18))
+          .foregroundColor(.ink)
+          .lineLimit(1)
+          .minimumScaleFactor(0.6)
+      }
 
       if bars {
         VStack(spacing: 3) {

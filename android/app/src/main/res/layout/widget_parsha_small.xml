@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The widget at about 2×2 cells (docs/DESIGN_SYSTEM.md §6.30): the eyebrow,
-     the parsha's Hebrew name and its transliteration, then on a reading day
-     the three readings' bars and the aliyot read, on a day of rest the
-     candles and the day's greeting, or a note. ParshaWidgetProvider fills it
-     in, shows one of the three, and leaves out the lines the widget is too
-     short for. The whole card is one button for TalkBack, read as one
-     sentence (its content description). -->
+     the parsha's Hebrew name and in the English UI its transliteration, then
+     on a reading day the three readings' bars and the aliyot read, on a day
+     of rest the candles and the day's greeting, or a note.
+     ParshaWidgetProvider fills it in, shows one of the three, and leaves out
+     the lines the widget is too short for. The whole card is one button for
+     TalkBack, read as one sentence (its content description). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
