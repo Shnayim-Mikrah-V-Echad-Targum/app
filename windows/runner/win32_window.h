@@ -11,6 +11,12 @@
 // can find the window of the first (see main.cpp).
 inline constexpr wchar_t kWindowClassName[] = L"SHNAYIM_MIKRAH_WINDOW";
 
+// A property the app's window has from the moment it is asked to close until
+// it is gone (FlutterWindow::MessageHandler), so that a second launch waits
+// for it to go rather than bring it forward (see main.cpp). Window properties
+// can be read from another process.
+inline constexpr wchar_t kClosingProperty[] = L"ShnayimMikrah.Closing";
+
 // Brings |window|, which may be another process's, to the front, restoring it
 // if it is minimized. Windows lets a process take the foreground only at
 // times, such as just after the user launched it or clicked one of its

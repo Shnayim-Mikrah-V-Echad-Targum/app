@@ -15,8 +15,8 @@ namespace {
 // second instance would overwrite progress logged in the first.
 constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikrah.app";
 
-// How long a second launch waits for an instance that has no window yet,
-// because it is starting or closing.
+// How long a second launch waits for an instance that has no window yet, or
+// one that is closing.
 constexpr DWORD kInstanceWaitMs = 5000;
 
 // Where COM looks for how to start the app's toast activator: the class that
@@ -29,18 +29,19 @@ constexpr const wchar_t kToastActivatorServerKey[] =
     L"Software\\Classes\\CLSID\\{7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57}"
     L"\\LocalServer32";
 
-// Brings the window of the instance already running to the front. Returns
-// false if it has no window. A window still hidden, as it waits for its
-// first frame, is found too: it shows itself once the frame is drawn, or
-// after a while without one (FlutterWindow::ShowOnce), so an instance stuck
-// before its first frame can't keep every later launch from showing.
-bool ActivateRunningInstance() {
-  HWND window = ::FindWindowW(kWindowClassName, nullptr);
-  if (window == nullptr) {
-    return false;
-  }
-  BringToFront(window);
-  return true;
+// The window of the instance already running, or null if it has none. A
+// window still hidden, as it waits for its first frame, is found too: it
+// shows itself once the frame is drawn, or after a while without one
+// (FlutterWindow::ShowOnce), so an instance stuck before its first frame
+// can't keep every later launch from showing.
+HWND FindRunningWindow() {
+  return ::FindWindowW(kWindowClassName, nullptr);
+}
+
+// Whether |window| is closing (see kClosingProperty): it may already be
+// hidden, and is about to be gone.
+bool IsClosing(HWND window) {
+  return ::GetPropW(window, kClosingProperty) != nullptr;
 }
 
 // Lets a click on a reminder's notification start the app when it isn't
@@ -82,16 +83,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
   HANDLE instance_mutex = ::CreateMutexW(nullptr, TRUE, kInstanceMutexName);
   if (instance_mutex != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
-    if (ActivateRunningInstance()) {
+    HWND running = FindRunningWindow();
+    if (running != nullptr && !IsClosing(running)) {
+      BringToFront(running);
       ::CloseHandle(instance_mutex);
       return EXIT_SUCCESS;
     }
-    // The other instance has no window: it is starting, or closing (say,
-    // the app was closed and opened again at once). Once it has closed,
-    // this one takes over; once it has started, its window is brought up.
+    // The other instance has no window yet, as it starts, or one that is
+    // closing (say, the app was closed and opened again at once). Once it
+    // has closed, this one takes over; once it has started, or should it
+    // not close after all, its window is brought up.
     const DWORD wait = ::WaitForSingleObject(instance_mutex, kInstanceWaitMs);
     if (wait != WAIT_OBJECT_0 && wait != WAIT_ABANDONED) {
-      ActivateRunningInstance();
+      if (HWND window = FindRunningWindow()) {
+        BringToFront(window);
+      }
       ::CloseHandle(instance_mutex);
       return EXIT_SUCCESS;
     }

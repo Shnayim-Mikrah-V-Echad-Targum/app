@@ -148,6 +148,19 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     return 0;
   }
 
+  // Closing, from the first WM_CLOSE, which Flutter holds back while the app
+  // saves (lib/app/pending_saves.dart, which never cancels it), through the
+  // engine's shutdown in WM_DESTROY, with the window hidden by then: a launch
+  // meanwhile waits for it to go (main.cpp), rather than bring forward a
+  // window about to vanish and quietly exit. Before Flutter, which holds the
+  // first WM_CLOSE back from the code below.
+  if (message == WM_CLOSE) {
+    ::SetPropW(hwnd, kClosingProperty,
+               reinterpret_cast<HANDLE>(static_cast<INT_PTR>(1)));
+  } else if (message == WM_NCDESTROY) {
+    ::RemovePropW(hwnd, kClosingProperty);
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
