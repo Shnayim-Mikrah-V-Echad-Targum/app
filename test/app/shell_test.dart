@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/app/shell.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/app/shell.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/widgets/app_mark.dart';
 
 import '../helpers.dart';
 
@@ -166,11 +166,11 @@ void main() {
       expect(tester.getCenter(mark).dx, AppShell.railWidth / 2);
       expect(
         tester.getSemantics(find.descendant(of: mark, matching: find.byType(RawImage))),
-        isSemantics(label: 'Shnayim Mikra', isImage: true, isHeader: false),
+        isSemantics(label: 'Shnayim Mikrah', isImage: true, isHeader: false),
       );
       // Neither the old initials nor the wordmark.
       expect(find.text('SM'), findsNothing);
-      expect(inRail(find.text('Shnayim Mikra')), findsNothing);
+      expect(inRail(find.text('Shnayim Mikrah')), findsNothing);
 
       // The hairline replaces the old divider.
       expect(find.byType(VerticalDivider), findsNothing);
@@ -265,10 +265,10 @@ void main() {
       expect(navigation.extended, isTrue);
       expect(tester.getSize(rail).width, AppShell.extendedRailWidth);
 
-      final wordmark = inRail(find.text('Shnayim Mikra'));
+      final wordmark = inRail(find.text('Shnayim Mikrah'));
       expect(wordmark, findsOneWidget);
       expect(tester.widget<Text>(wordmark).style, SeferType.of(tester.element(wordmark)).wordmark);
-      expect(tester.getSemantics(wordmark), isSemantics(label: 'Shnayim Mikra', isHeader: true));
+      expect(tester.getSemantics(wordmark), isSemantics(label: 'Shnayim Mikrah', isHeader: true));
       // The name is announced, so the mark beside it is not.
       final markImage = tester.widget<Image>(find.descendant(of: mark, matching: find.byType(Image)));
       expect(markImage.excludeFromSemantics, isTrue);
@@ -315,14 +315,14 @@ void main() {
       final width = tester.getSize(rail).width;
       expect(width, inExclusiveRange(AppShell.railWidth, AppShell.extendedRailWidth));
       expect(tester.getSize(destinationOf('Parsha')).width, width);
-      expect(inRail(find.text('Shnayim Mikra')), findsOneWidget);
+      expect(inRail(find.text('Shnayim Mikrah')), findsOneWidget);
       await tester.pumpAndSettle();
       expect(tester.getSize(rail).width, AppShell.extendedRailWidth);
 
       tester.view.physicalSize = tablet;
       await tester.pump();
       expect(tester.getSize(rail).width, AppShell.railWidth);
-      expect(inRail(find.text('Shnayim Mikra')), findsNothing);
+      expect(inRail(find.text('Shnayim Mikrah')), findsNothing);
       expect(tester.getCenter(mark).dx, AppShell.railWidth / 2);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

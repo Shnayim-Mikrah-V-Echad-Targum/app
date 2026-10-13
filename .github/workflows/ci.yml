@@ -215,5 +215,5 @@ jobs:
           # certificate, which a machine must trust before it will install
           # the package (docs/RELEASE.md); the name says so.
           name: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 != '' && 'windows-msix' || 'windows-msix-test-signed' }}
-          path: build/windows/msix/ShnayimMikra.msix
+          path: build/windows/msix/ShnayimMikrah.msix
           if-no-files-found: error

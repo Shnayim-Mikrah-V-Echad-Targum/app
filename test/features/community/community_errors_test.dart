@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/community/data/supabase_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/data/supabase_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
 
 void main() {
   group('a unique violation', () {

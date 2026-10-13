@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/optional_fonts.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/optional_fonts.dart';
 
 import '../helpers.dart';
 
@@ -80,7 +80,7 @@ void main() {
     const testFont = TextStyle(fontFamily: 'NoSuchFamily');
 
     testWidgets('EB Garamond replaces the test font', (tester) async {
-      const text = 'Shnayim Mikra';
+      const text = 'Shnayim Mikrah';
       final garamond = await width(tester, text, const TextStyle(fontFamily: 'EBGaramond', fontWeight: FontWeight.w500));
       expect(await width(tester, text, testFont), 24.0 * text.length);
       expect(garamond, lessThan(24.0 * text.length * 0.7));

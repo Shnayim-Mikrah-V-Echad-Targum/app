@@ -297,7 +297,7 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
               from: _from,
               to: _to,
               sweep: _sweep,
-              colors: [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum],
+              colors: [sefer.ringMikrah1, sefer.ringMikrah2, sefer.ringTargum],
               track: sefer.ringTrack,
             ),
             child: widget.size >= ParshaRings.header ? ExcludeSemantics(child: _centre(context)) : null,
@@ -411,8 +411,8 @@ List<_LegendEntry> _legendEntries(BuildContext context, WeekProgress progress, S
   final sefer = SeferColors.of(context);
   int count(ReadingPass p) => [for (var a = 0; a < kAliyot; a++) a].where((a) => progress.isUnitDone(a, p)).length;
   return [
-    (color: sefer.ringMikra1, label: l.passMikra1, done: count(ReadingPass.mikra1)),
-    (color: sefer.ringMikra2, label: l.passMikra2, done: count(ReadingPass.mikra2)),
+    (color: sefer.ringMikrah1, label: l.passMikrah1, done: count(ReadingPass.mikrah1)),
+    (color: sefer.ringMikrah2, label: l.passMikrah2, done: count(ReadingPass.mikrah2)),
     (color: sefer.ringTargum, label: thirdLabel ?? l.passTargum, done: count(ReadingPass.targum)),
   ];
 }

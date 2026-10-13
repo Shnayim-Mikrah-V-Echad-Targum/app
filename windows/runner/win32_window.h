@@ -9,7 +9,7 @@
 
 // The class of the app's window. Unique to this app, so that a second launch
 // can find the window of the first (see main.cpp).
-inline constexpr wchar_t kWindowClassName[] = L"SHNAYIM_MIKRA_WINDOW";
+inline constexpr wchar_t kWindowClassName[] = L"SHNAYIM_MIKRAH_WINDOW";
 
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
 // inherited from by classes that wish to specialize with custom

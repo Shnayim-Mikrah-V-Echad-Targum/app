@@ -367,7 +367,7 @@ Prefer **human-recorded audio** (Torah readers chanting with te'amim) for the sc
 
 ### 6.3 ADHD and attention-friendly design
 - **One task per screen.** **Focus mode** hides the app bar, nav, and social counters while reading.
-- **Chunking and progress:** split the parasha into aliyot (natural chunks of about 5 minutes) with a progress indicator and an estimated reading time. Make "Read one aliyah a day" a first-class plan (the traditional *shnayim mikra* schedule or a daily-aliyah schedule).
+- **Chunking and progress:** split the parasha into aliyot (natural chunks of about 5 minutes) with a progress indicator and an estimated reading time. Make "Read one aliyah a day" a first-class plan (the traditional *shnayim mikrah* schedule or a daily-aliyah schedule).
 - **No autoplay, no infinite scroll** in forums (use explicit pagination or "load more", which is also better for screen readers. Sefaria acknowledged that infinite scroll harms screen-reader navigation ([Sefaria help section](https://help.sefaria.org/hc/en-us/sections/12756520483868-Text-Formatting-and-Accessibility))).
 - **Notifications:** user-scheduled, batched, quiet hours, and suppressed on Shabbat and Yom Tov. Never guilt-based.
 - **Timers optional** (e.g., "read for 10 minutes" goals should be opt-in).

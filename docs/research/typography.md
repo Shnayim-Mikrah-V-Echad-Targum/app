@@ -275,7 +275,7 @@ Notes:
 - *ArtScroll Stone Chumash*: Hebrew and English in parallel columns, with Targum Onkelos and Rashi below the Hebrew and commentary at the foot of the page.
 - *ArtScroll Schottenstein Interlinear* (also in the ArtScroll digital library): a true interlinear, with an English gloss under each Hebrew word, read right to left.
 - *Mikraot Gedolot* sets Onkelos beside or below the verse.
-- The study practice of *shnayim mikra ve'echad targum* (reading each verse twice and the Targum once) favors interleaving verse by verse: Hebrew verse, Hebrew verse, Aramaic verse.
+- The study practice of *shnayim mikrah ve'echad targum* (reading each verse twice and the Targum once) favors interleaving verse by verse: Hebrew verse, Hebrew verse, Aramaic verse.
 
 **Practical guidance for Flutter:**
 1. **Lay out by verse, not by column.** Make each verse a unit (a row or card) holding the Hebrew text plus either the translation or the Targum. Continuous parallel columns drift out of alignment because Hebrew with ta'amim and English have different line counts.

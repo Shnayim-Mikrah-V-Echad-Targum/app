@@ -4,10 +4,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
 
@@ -276,7 +276,7 @@ void main() {
       await pumpAt(
         tester,
         270,
-        ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), showNumber: false),
+        ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), showNumber: false),
       );
       expect(linesIn(tester, find.byType(ScriptureVerse)), [
         ['אא', 'בב'],
@@ -352,7 +352,7 @@ void main() {
 
     testWidgets('a verse of one line is laid out as it was', (tester) async {
       final verse = Verse.fromJson(const VerseRef(2, 22), ['אא בב גג דד']);
-      await pumpAt(tester, 600, ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings()));
+      await pumpAt(tester, 600, ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings()));
       final paragraph = tester.renderObject<RenderParagraph>(find.byType(RichText));
       final text = paragraph.text.toPlainText(includeSemanticsLabels: false);
       expect(text, endsWith('גג\u00A0דד'));

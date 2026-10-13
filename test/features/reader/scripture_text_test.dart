@@ -3,14 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
-import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show SectionBreakMark;
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/ui/theme/sefer_colors.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show SectionBreakMark;
 
 import '../../helpers.dart';
 
@@ -34,7 +34,7 @@ void main() {
   }) =>
       pumpThemed(
         tester,
-        ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: settings, dimmed: dimmed),
+        ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: settings, dimmed: dimmed),
       );
 
   List<TextSpan> marksIn(WidgetTester tester) {
@@ -182,7 +182,7 @@ void main() {
         for (final (verse, numeral) in [(serpent, 'כב'), (Verse.fromJson(const VerseRef(3, 1), ['וְהַנָּחָשׁ הָיָה עָרוּם']), 'א')]) {
           await pumpThemed(
             tester,
-            ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
             textScale: textScale,
           );
           final box = tester.getRect(find.byType(ScriptureVerse));
@@ -197,7 +197,7 @@ void main() {
           final widest = TextPainter(
             text: TextSpan(
               text: [for (var n = 1; n <= 89; n++) HebrewText.gematria(n, punctuate: false)].join('\n'),
-              style: styles.numberStyle(ScriptureKind.mikra),
+              style: styles.numberStyle(ScriptureKind.mikrah),
             ),
             textDirection: TextDirection.rtl,
             textScaler: TextScaler.linear(textScale),
@@ -230,7 +230,7 @@ void main() {
             Center(
               child: SizedBox(
                 width: width,
-                child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: settings, hangingNumber: true),
+                child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: settings, hangingNumber: true),
               ),
             ),
           );
@@ -270,7 +270,7 @@ void main() {
       for (final (textScale, bold) in [(1.0, false), (2.0, false), (1.0, true), (2.0, true)]) {
         await pumpThemed(
           tester,
-          ScriptureVerse(verse: grain, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+          ScriptureVerse(verse: grain, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
           textScale: textScale,
           boldText: bold,
         );
@@ -282,14 +282,14 @@ void main() {
       for (final (verse, numeral) in [(grain, 'מט'), (serpent, 'כב')]) {
         await pumpThemed(
           tester,
-          ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
         );
         final plain = numberWithinGutter(tester, numeral, 'at 100%');
         // As though the reader had then set the system's text larger, in
         // the same run: the numbers are measured at their new size.
         await pumpThemed(
           tester,
-          ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
           textScaler: const _UnevenTextScaler(),
         );
         final larger = numberWithinGutter(tester, numeral, 'scaled unevenly');
@@ -368,7 +368,7 @@ void main() {
             width: 330,
             child: ScriptureVerse(
               verse: serpent,
-              kind: ScriptureKind.mikra,
+              kind: ScriptureKind.mikrah,
               settings: const AppSettings(justifyMode: JustifyMode.always),
             ),
           ),
@@ -443,7 +443,7 @@ void main() {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
             const HangingIndent(
               settings: AppSettings(),
               child: RashiComments(comments: [Comment('הן האדם', 'הֲרֵי הוּא יָחִיד')], settings: AppSettings(), english: false),
@@ -506,7 +506,7 @@ void main() {
           final context = tester.element(find.byType(SizedBox));
           for (final readingScale in [1.0, 0.5]) {
             final styles = ScriptureStyles(context, AppSettings(readingScale: readingScale));
-            for (final kind in [ScriptureKind.mikra, ScriptureKind.targum, ScriptureKind.rashi]) {
+            for (final kind in [ScriptureKind.mikrah, ScriptureKind.targum, ScriptureKind.rashi]) {
               final measure = ScriptureStyles.justifyMeasure * styles.sizeFor(kind) * textScale;
               final why = '${kind.name} at ${textScale}x text, ${readingScale}x reading';
               expect(styles.justifies(kind, measure), isTrue, reason: why);
@@ -522,10 +522,10 @@ void main() {
         final styles = ScriptureStyles(context, const AppSettings());
         // At the default size, both parallel columns (about 598 and 498)
         // and a desktop's column qualify; a phone's (about 350) doesn't.
-        expect(styles.justifies(ScriptureKind.mikra, 598), isTrue);
+        expect(styles.justifies(ScriptureKind.mikrah, 598), isTrue);
         expect(styles.justifies(ScriptureKind.targum, 498), isTrue);
-        expect(styles.justifies(ScriptureKind.mikra, 656), isTrue);
-        expect(styles.justifies(ScriptureKind.mikra, 350), isFalse);
+        expect(styles.justifies(ScriptureKind.mikrah, 656), isTrue);
+        expect(styles.justifies(ScriptureKind.mikrah, 350), isFalse);
         expect(styles.justifies(ScriptureKind.targum, 350), isFalse);
       });
 
@@ -563,10 +563,10 @@ void main() {
             column(
               width,
               Column(children: [
-                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikra, settings: settings, key: const Key('mikra')),
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikrah, settings: settings, key: const Key('mikrah')),
                 ScriptureVerse(
                   verse: decalogue,
-                  kind: ScriptureKind.mikra,
+                  kind: ScriptureKind.mikrah,
                   settings: settings,
                   hangingNumber: true,
                   key: const Key('hanging'),
@@ -588,7 +588,7 @@ void main() {
             ),
           );
           final expected = justified ? TextAlign.justify : TextAlign.start;
-          expect(alignIn(tester, find.byKey(const Key('mikra'))), expected);
+          expect(alignIn(tester, find.byKey(const Key('mikrah'))), expected);
           // Measured within the gutter the number hangs in.
           expect(alignIn(tester, find.byKey(const Key('hanging'))), expected);
           expect(alignIn(tester, find.byKey(const Key('rashi'))), expected);
@@ -605,7 +605,7 @@ void main() {
             column(
               640,
               Column(children: [
-                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikra, settings: settings),
+                ScriptureVerse(verse: decalogue, kind: ScriptureKind.mikrah, settings: settings),
                 TranslationVerse(text: 'Thou shalt not murder.', number: 13, settings: settings),
               ]),
             ),
@@ -739,7 +739,7 @@ void main() {
           alignment: Alignment.topRight,
           child: SizedBox(
             width: width,
-            child: ScriptureVerse(verse: long, kind: ScriptureKind.mikra, settings: const AppSettings()),
+            child: ScriptureVerse(verse: long, kind: ScriptureKind.mikrah, settings: const AppSettings()),
           ),
         ),
       );
@@ -781,7 +781,7 @@ void main() {
           haptics: true,
           verse: serpent.ref,
           highlighted: highlighted,
-          child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: const AppSettings()),
+          child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikrah, settings: const AppSettings()),
         );
 
     testWidgets('highlights the verse on the paper, with a rule at its start, and moves nothing', (tester) async {

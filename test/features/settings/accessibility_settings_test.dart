@@ -4,14 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
 
 import '../../helpers.dart';
 

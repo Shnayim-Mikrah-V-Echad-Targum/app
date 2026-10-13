@@ -7,11 +7,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/delayed_save.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/delayed_save.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../helpers.dart';
 
@@ -76,14 +76,14 @@ void main() {
       fakeAsync((async) {
         final c = ProviderContainer(overrides: [sharedPreferencesProvider.overrideWithValue(prefs)]);
         c.read(settingsProvider.notifier).update((s) => s.copyWith(showTranslation: true));
-        c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+        c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
         expect(c.read(settingsProvider).showTranslation, isTrue, reason: 'the state changes at once');
         expect(savedSettings(), isNull);
         expect(savedProgress(), isNull);
 
         async.elapse(DelayedSave.delay);
         expect(savedSettings()!.showTranslation, isTrue);
-        expect(savedProgress()!.week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+        expect(savedProgress()!.week('5787:2').isUnitDone(0, ReadingPass.mikrah1), isTrue);
 
         // A step through the reader, then the app goes away before it rests.
         c.read(progressProvider.notifier).savePosition('5787:2', 0, const [3, 2, 0]);
@@ -117,11 +117,11 @@ void main() {
       expect(savedSettings()!.showTranslation, isTrue);
 
       await lifecycle(tester, AppLifecycleState.resumed);
-      progress.markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      progress.markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       expect(savedProgress(), isNull);
       await lifecycle(tester, AppLifecycleState.inactive);
       await lifecycle(tester, AppLifecycleState.hidden);
-      expect(savedProgress()!.week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect(savedProgress()!.week('5787:2').isUnitDone(0, ReadingPass.mikrah1), isTrue);
 
       // Closing the window on a desktop.
       await lifecycle(tester, AppLifecycleState.inactive);

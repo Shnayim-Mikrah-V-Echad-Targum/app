@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/ui/theme/layout.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/ledger.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart' show WeekStrip;
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/ui/theme/layout.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/ledger.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart' show WeekStrip;
 
 import '../../helpers.dart';
 

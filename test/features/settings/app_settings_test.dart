@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/core/calendar/city.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/zmanim.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/city.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
 
 class _FixedToday extends TodayController {
   _FixedToday(this.day);
@@ -314,7 +314,7 @@ void main() {
       expect((stored.justifyMode, stored.theme), (JustifyMode.always, AppThemeMode.sepia));
 
       final backup = parseBackup(jsonEncode({
-        'app': 'shnayim_mikra',
+        'app': 'shnayim_mikrah',
         'progress': const ProgressState().toJson(),
         'settings': {...legacy, 'justify': false},
       }));
@@ -335,7 +335,7 @@ void main() {
       expect(stored.theme, AppThemeMode.sepia);
 
       final backup = parseBackup(jsonEncode({
-        'app': 'shnayim_mikra',
+        'app': 'shnayim_mikrah',
         'progress': const ProgressState().toJson(),
         'settings': legacy,
       }));

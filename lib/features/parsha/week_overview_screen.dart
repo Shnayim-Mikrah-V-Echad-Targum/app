@@ -415,7 +415,7 @@ class _AliyahRow extends ConsumerWidget {
     final done = progress.isAliyahDone(aliyah);
     final passes = [for (final p in ReadingPass.values) progress.isUnitDone(aliyah, p)];
     final secondName = settings.usesRashi && !settings.usesOnkelos ? l.passRashi : l.passTargum;
-    final passNames = [l.passMikra1, l.passMikra2, secondName];
+    final passNames = [l.passMikrah1, l.passMikrah2, secondName];
     final passStates = [
       for (final p in ReadingPass.values)
         l.passSemantics(passNames[p.index], passes[p.index] ? l.stateDone : l.stateNotDone),

@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/config.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/about/about_screen.dart';
-import 'package:shnayim_mikra/features/about/legal_texts.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/config.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/about/about_screen.dart';
+import 'package:shnayim_mikrah/features/about/legal_texts.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
 
@@ -137,7 +137,7 @@ void main() {
       final heading = find.descendant(of: find.byType(ListView), matching: find.text('Privacy'));
       expect(tester.getSemantics(heading), isSemantics(label: 'Privacy', isHeader: true));
       expect(find.text('Last updated: October 2026'), findsOneWidget);
-      expect(find.text('Shnayim Mikra is built to need as little of your data as possible.'), findsOneWidget);
+      expect(find.text('Shnayim Mikrah is built to need as little of your data as possible.'), findsOneWidget);
       // The app bar shows the title only once the heading has scrolled away.
       expect(titleOpacity(tester), 0);
       await tester.drag(find.byType(ListView), const Offset(0, -400));

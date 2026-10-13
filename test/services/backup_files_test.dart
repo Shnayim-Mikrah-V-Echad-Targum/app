@@ -6,7 +6,7 @@ import 'package:file_selector_platform_interface/file_selector_platform_interfac
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
-import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
 
 /// The platform's file dialogs: [toOpen] is the file the reader chooses and
 /// [saveTo] where they save (null for either cancels), and each dialog
@@ -52,8 +52,8 @@ class _ShareSheet extends SharePlatform {
 
 void main() {
   const files = BackupFiles();
-  const name = 'shnayim-mikra-backup-2026-10-12.json';
-  const data = '{"app":"shnayim_mikra"}';
+  const name = 'shnayim-mikrah-backup-2026-10-12.json';
+  const data = '{"app":"shnayim_mikrah"}';
   const origin = Rect.fromLTWH(16, 300, 380, 72);
   late _Dialogs dialogs;
   // SharePlus keeps the platform it first finds, so one sheet serves every
@@ -74,11 +74,11 @@ void main() {
     test('on ${platform.name}, saving shares the file, named, from the control, and leaves the rest to the sheet',
         () async {
       on(platform);
-      final saved = await files.save(data, name, subject: 'Shnayim Mikra', origin: origin);
+      final saved = await files.save(data, name, subject: 'Shnayim Mikrah', origin: origin);
       expect(saved, isFalse, reason: 'the share sheet says for itself what became of it');
       final params = sheet.shared.single;
       expect(params.fileNameOverrides, [name]);
-      expect(params.subject, 'Shnayim Mikra');
+      expect(params.subject, 'Shnayim Mikrah');
       expect(params.sharePositionOrigin, origin, reason: 'where the iPad anchors the sheet');
       final file = params.files!.single;
       expect(file.mimeType, 'application/json');
@@ -98,7 +98,7 @@ void main() {
     test('saving asks where, offering the name and JSON, and saves the file there', () async {
       final path = '${dir.path}/$name';
       dialogs.saveTo = FileSaveLocation(path);
-      expect(await files.save(data, name, subject: 'Shnayim Mikra'), isTrue, reason: 'saved here, to say so');
+      expect(await files.save(data, name, subject: 'Shnayim Mikrah'), isTrue, reason: 'saved here, to say so');
       expect(File(path).readAsStringSync(), data);
       expect(dialogs.suggestedName, name);
       final types = dialogs.saveTypes!.single;
@@ -108,7 +108,7 @@ void main() {
     });
 
     test('saving saves nothing, and says nothing, when the reader cancels', () async {
-      expect(await files.save(data, name, subject: 'Shnayim Mikra'), isFalse);
+      expect(await files.save(data, name, subject: 'Shnayim Mikrah'), isFalse);
       expect(dir.listSync(), isEmpty);
     });
   });

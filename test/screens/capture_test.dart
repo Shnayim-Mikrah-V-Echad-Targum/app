@@ -25,48 +25,48 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shnayim_mikra/app/city_providers.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/city.dart';
-import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/core/calendar/zmanim.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/text_repository.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
-import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
-import 'package:shnayim_mikra/features/parsha/week_context.dart';
-import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
-import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart' show verseText;
-import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
-import 'package:shnayim_mikra/features/search/search_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/features/settings/widgets/shabbat_times_setting.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/ui/l10n.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
-import 'package:shnayim_mikra/services/backup_files.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show Lozenge;
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
-import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
+import 'package:shnayim_mikrah/app/city_providers.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/city.dart';
+import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/text_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/features/community/ui/forum_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/thread_screen.dart';
+import 'package:shnayim_mikrah/features/parsha/week_context.dart';
+import 'package:shnayim_mikrah/features/parsha/week_overview_screen.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
+import 'package:shnayim_mikrah/features/reader/verse_actions_sheet.dart' show verseText;
+import 'package:shnayim_mikrah/features/reader/whole_parsha.dart';
+import 'package:shnayim_mikrah/features/search/search_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/shabbat_times_setting.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/ui/l10n.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show Lozenge;
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/ui/widgets/sefer_choice_chip.dart';
 
 import 'package:timezone/timezone.dart' as tz;
 
@@ -146,7 +146,7 @@ const _screens = {
   'welcome_plan_midweek': '/welcome/plan',
   // Joining on Tisha B'Av 5787, a quiet day: only Friday is left.
   'welcome_plan_tisha_bav': '/welcome/plan',
-  // "I already use Shnayim Mikra": the ways to restore, with an account's
+  // "I already use Shnayim Mikrah": the ways to restore, with an account's
   // backup to sign in to.
   'welcome_restore': '/welcome',
   // Its second way in focused from the keyboard.
@@ -1087,7 +1087,7 @@ final _screenProgress = <String, ProgressState Function()>{
       w = w.withAliyah(a, day);
     }
     for (final a in [2, 6]) {
-      w = w.withUnit(a, ReadingPass.mikra1, day).withUnit(a, ReadingPass.mikra2, day);
+      w = w.withUnit(a, ReadingPass.mikrah1, day).withUnit(a, ReadingPass.mikrah2, day);
     }
     return ProgressState(weeks: {'5787:1': w.withPosition(6, const [16, 16, 0])});
   },
@@ -1108,8 +1108,8 @@ final _screenProgress = <String, ProgressState Function()>{
       w = w.withAliyah(a, day.addDays(a ~/ 2 - 3));
     }
     w = w
-        .withUnit(6, ReadingPass.mikra1, day)
-        .withUnit(6, ReadingPass.mikra2, day)
+        .withUnit(6, ReadingPass.mikrah1, day)
+        .withUnit(6, ReadingPass.mikrah2, day)
         .withPosition(6, const [99, 99, 0]);
     return ProgressState(weeks: {'5787:35': w});
   },
@@ -1129,8 +1129,8 @@ ProgressState _readThrough(int last, {required int partly, LocalDate? on}) {
   }
   final day = on ?? mon.addDays(4);
   w = w
-      .withUnit(partly, ReadingPass.mikra1, day)
-      .withUnit(partly, ReadingPass.mikra2, day)
+      .withUnit(partly, ReadingPass.mikrah1, day)
+      .withUnit(partly, ReadingPass.mikrah2, day)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
@@ -2689,8 +2689,8 @@ void main() {
     }
     // The version About shows, as a release names it.
     PackageInfo.setMockInitialValues(
-      appName: 'Shnayim Mikra',
-      packageName: 'app.shnayimmikra',
+      appName: 'Shnayim Mikrah',
+      packageName: 'app.shnayimmikrah',
       version: '1.0.0',
       buildNumber: '1',
       buildSignature: '',

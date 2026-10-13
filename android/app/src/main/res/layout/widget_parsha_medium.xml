@@ -47,15 +47,15 @@
             android:orientation="vertical">
 
             <ProgressBar
-                android:id="@+id/widget_bar_mikra1"
+                android:id="@+id/widget_bar_mikrah1"
                 style="@style/ParshaWidget.Bar"
-                android:progressDrawable="@drawable/widget_bar_mikra1" />
+                android:progressDrawable="@drawable/widget_bar_mikrah1" />
 
             <ProgressBar
-                android:id="@+id/widget_bar_mikra2"
+                android:id="@+id/widget_bar_mikrah2"
                 style="@style/ParshaWidget.Bar"
                 android:layout_marginTop="@dimen/widget_bar_gap"
-                android:progressDrawable="@drawable/widget_bar_mikra2" />
+                android:progressDrawable="@drawable/widget_bar_mikrah2" />
 
             <ProgressBar
                 android:id="@+id/widget_bar_targum"

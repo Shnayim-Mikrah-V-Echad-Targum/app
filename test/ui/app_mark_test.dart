@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
+import 'package:shnayim_mikrah/ui/widgets/app_mark.dart';
 
 void main() {
   Future<void> pump(WidgetTester tester, Widget mark, {double devicePixelRatio = 1}) async {
@@ -36,13 +36,13 @@ void main() {
   testWidgets('is decorative unless it is given a label', (tester) async {
     final handle = tester.ensureSemantics();
     await pump(tester, const AppMark());
-    expect(find.bySemanticsLabel('Shnayim Mikra'), findsNothing);
+    expect(find.bySemanticsLabel('Shnayim Mikrah'), findsNothing);
     expect(tester.widget<Image>(find.byType(Image)).excludeFromSemantics, isTrue);
 
-    await pump(tester, const AppMark(semanticLabel: 'Shnayim Mikra'));
+    await pump(tester, const AppMark(semanticLabel: 'Shnayim Mikrah'));
     expect(
       tester.getSemantics(find.byType(RawImage)),
-      isSemantics(label: 'Shnayim Mikra', isImage: true, isHeader: false),
+      isSemantics(label: 'Shnayim Mikrah', isImage: true, isHeader: false),
     );
     handle.dispose();
   });

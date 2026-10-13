@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/features/parsha/browse_screen.dart';
-import 'package:shnayim_mikra/features/parsha/week_context.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/widgets/lang.dart';
-import 'package:shnayim_mikra/ui/widgets/lines.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/features/parsha/browse_screen.dart';
+import 'package:shnayim_mikrah/features/parsha/week_context.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/widgets/lang.dart';
+import 'package:shnayim_mikrah/ui/widgets/lines.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -31,7 +31,7 @@ final _chukatBalakWeek = DateTime(2027, 7, 14, 11);
 /// Bereshit read, and Noach begun.
 ProgressState _progress() => ProgressState(weeks: {
       '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
-      '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 11)),
+      '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikrah1, LocalDate(2026, 10, 11)),
     });
 
 void main() {

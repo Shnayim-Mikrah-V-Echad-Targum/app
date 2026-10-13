@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/widgets/theme_swatch_picker.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/widgets/theme_swatch_picker.dart';
 
 import '../helpers.dart';
 

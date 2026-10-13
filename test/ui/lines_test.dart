@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/ui/widgets/lines.dart';
+import 'package:shnayim_mikrah/ui/widgets/lines.dart';
 
 import '../helpers.dart';
 

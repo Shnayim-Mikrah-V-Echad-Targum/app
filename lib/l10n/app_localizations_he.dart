@@ -167,10 +167,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get passMikra1 => 'קריאה ראשונה';
+  String get passMikrah1 => 'קריאה ראשונה';
 
   @override
-  String get passMikra2 => 'קריאה שנייה';
+  String get passMikrah2 => 'קריאה שנייה';
 
   @override
   String get passTargum => 'תרגום';
@@ -889,10 +889,10 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get stepMikra1 => 'קריאת המקרא';
+  String get stepMikrah1 => 'קריאת המקרא';
 
   @override
-  String get stepMikra2 => 'קריאת המקרא שוב';
+  String get stepMikrah2 => 'קריאת המקרא שוב';
 
   @override
   String get stepTargum => 'קריאת התרגום';
@@ -1057,7 +1057,7 @@ class AppLocalizationsHe extends AppLocalizations {
       'עוזר להבין את הפשט, אך אינו בא במקום תרגום אונקלוס.';
 
   @override
-  String get mikraLabel => 'מקרא';
+  String get mikrahLabel => 'מקרא';
 
   @override
   String get targumLabel => 'תרגום אונקלוס';
@@ -3242,7 +3242,7 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
-  String get passTrackMikra => 'מקרא';
+  String get passTrackMikrah => 'מקרא';
 
   @override
   String get finishStep => 'סיום';

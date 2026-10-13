@@ -1,11 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/features/search/reference_parser.dart';
-import 'package:shnayim_mikra/ui/l10n.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/features/search/reference_parser.dart';
+import 'package:shnayim_mikrah/ui/l10n.dart';
 
 import '../../helpers.dart';
 

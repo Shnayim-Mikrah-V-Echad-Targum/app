@@ -4,8 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 
 /// The web build's page, manifest and bootstrap (web/), which no widget test
 /// renders: the loading screen in the app's theme, link previews, the
@@ -42,7 +42,7 @@ void main() {
       for (final tag in [
         '<link rel="canonical" href="./">',
         '<meta property="og:type" content="website">',
-        '<meta property="og:title" content="Shnayim Mikra · שניים מקרא">',
+        '<meta property="og:title" content="Shnayim Mikrah · שניים מקרא">',
         '<meta property="og:image" content="og.png">',
         '<meta property="og:image:width" content="1200">',
         '<meta property="og:image:height" content="630">',

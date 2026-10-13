@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
 
 import '../../helpers.dart';
 
@@ -33,8 +33,8 @@ ProgressState _allButShevii() {
   }
   final on = LocalDate(2026, 10, 5);
   week = week
-      .withUnit(6, ReadingPass.mikra1, on)
-      .withUnit(6, ReadingPass.mikra2, on)
+      .withUnit(6, ReadingPass.mikrah1, on)
+      .withUnit(6, ReadingPass.mikrah2, on)
       .withPosition(6, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': week});
 }
@@ -52,7 +52,7 @@ List<String> _recordHaptics(WidgetTester tester) {
   return sent;
 }
 
-/// Opens aliyah [aliyah] of Bereshit, read aliyah by aliyah (Mikra, Mikra,
+/// Opens aliyah [aliyah] of Bereshit, read aliyah by aliyah (Mikrah, Mikrah,
 /// Targum), with [progress] and [settings]; in the full text if [full].
 Future<ProviderContainer> _open(
   WidgetTester tester, {
@@ -105,7 +105,7 @@ void main() {
       final sent = _recordHaptics(tester);
 
       await _press(tester, 'Next');
-      expect(sent, [_step], reason: 'Mikra to Mikra again');
+      expect(sent, [_step], reason: 'Mikrah to Mikrah again');
       await _press(tester, 'Next');
       expect(sent, [_step, _step], reason: 'on to the Targum');
 
@@ -222,7 +222,7 @@ void main() {
     final sent = _recordHaptics(tester);
 
     await tester.tap(find.byTooltip('Listen'));
-    // Mikra, Mikra again and the Targum, each after its breath.
+    // Mikrah, Mikrah again and the Targum, each after its breath.
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 600));
     }

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/app.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/app/app.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
 
 import '../helpers.dart';
 import 'tolerant_comparator.dart';
@@ -98,7 +98,7 @@ void main() {
           for (final MapEntry(key: theme, value: tag) in themes.entries) {
             c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: theme));
             await tester.pumpAndSettle();
-            await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
+            await expectLater(find.byType(ShnayimMikrahApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
           }
         });
       }, skip: goldensSkipped);
@@ -111,7 +111,7 @@ void main() {
   // alone.
   testWidgets('reader_full, en, on a tablet', (tester) async {
     await show(tester, '/read/5787:1/2?mode=full', hebrew: false, size: const Size(800, 1180), check: (c) async {
-      await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/reader_full_tablet_en_light.png'));
+      await expectLater(find.byType(ShnayimMikrahApp), matchesGoldenFile('screens/reader_full_tablet_en_light.png'));
     });
   }, skip: goldensSkipped);
 }

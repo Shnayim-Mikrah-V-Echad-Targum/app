@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
-import 'package:shnayim_mikra/ui/widgets/lines.dart' show BalancedText;
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/ui/widgets/lines.dart' show BalancedText;
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../../helpers.dart';
 
@@ -32,8 +32,8 @@ ProgressState _readThrough(int last, {required int partly, required LocalDate on
     w = w.withAliyah(a, _monday.addDays(a < 3 ? a : (a < 5 ? 3 : 4)));
   }
   w = w
-      .withUnit(partly, ReadingPass.mikra1, on)
-      .withUnit(partly, ReadingPass.mikra2, on)
+      .withUnit(partly, ReadingPass.mikrah1, on)
+      .withUnit(partly, ReadingPass.mikrah2, on)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
@@ -46,8 +46,8 @@ ProgressState _bereshit(Map<int, LocalDate> read, {required int partly, required
     w = w.withAliyah(a, day);
   }
   w = w
-      .withUnit(partly, ReadingPass.mikra1, on)
-      .withUnit(partly, ReadingPass.mikra2, on)
+      .withUnit(partly, ReadingPass.mikrah1, on)
+      .withUnit(partly, ReadingPass.mikrah2, on)
       .withPosition(partly, const [99, 99, 0]);
   return ProgressState(weeks: {'5787:1': w});
 }
@@ -59,7 +59,7 @@ ProgressState _allButShevii(String id, LocalDate on) {
   for (var a = 0; a < 6; a++) {
     w = w.withAliyah(a, on);
   }
-  w = w.withUnit(6, ReadingPass.mikra1, on).withUnit(6, ReadingPass.mikra2, on).withPosition(6, const [99, 99, 0]);
+  w = w.withUnit(6, ReadingPass.mikrah1, on).withUnit(6, ReadingPass.mikrah2, on).withPosition(6, const [99, 99, 0]);
   return ProgressState(weeks: {id: w});
 }
 
@@ -270,7 +270,7 @@ void main() {
     for (var a = 0; a < 5; a++) {
       w = w.withAliyah(a, LocalDate(2028, 9, 17 + a ~/ 2));
     }
-    w = w.withUnit(5, ReadingPass.mikra1, wednesday).withUnit(5, ReadingPass.mikra2, wednesday).withPosition(5, const [99, 99, 0]);
+    w = w.withUnit(5, ReadingPass.mikrah1, wednesday).withUnit(5, ReadingPass.mikrah2, wednesday).withPosition(5, const [99, 99, 0]);
     await _finish(
       tester,
       week: '5788:53',

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/services/optional_fonts.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
-import 'package:shnayim_mikra/ui/widgets/theme_swatch_picker.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/screens/display_settings_screen.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/services/optional_fonts.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/ui/widgets/theme_swatch_picker.dart';
 
 import '../../helpers.dart';
 

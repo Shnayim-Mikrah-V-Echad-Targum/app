@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 /// Records the calls made to the speech engine.
 class _FakeTts extends Fake implements FlutterTts {
@@ -291,14 +291,14 @@ void main() {
       Future<void> settled() => Future<void>.delayed(const Duration(milliseconds: 5));
 
       test('keeps the session from one item to the next, and ends it once spoken to its end', () async {
-        final done = tts.speakQueue(['mikra 1', 'targum 1', 'mikra 2'], language: 'he-IL', groups: [0, 0, 1]);
+        final done = tts.speakQueue(['mikrah 1', 'targum 1', 'mikrah 2'], language: 'he-IL', groups: [0, 0, 1]);
         await settled();
         expect(engine.autoStop, isFalse);
         engine.finish();
         await settled();
         engine.finish();
         await settled();
-        expect(engine.said, ['mikra 1', 'targum 1', 'mikra 2']);
+        expect(engine.said, ['mikrah 1', 'targum 1', 'mikrah 2']);
         expect(sessionCalls, isEmpty, reason: 'other audio stays ducked between verses');
 
         engine.finish();
@@ -419,13 +419,13 @@ void main() {
       Future<void> settled() => Future<void>.delayed(const Duration(milliseconds: 5));
 
       test('holds focus from one verse to the next, and gives it up once spoken to its end', () async {
-        final done = tts.speakQueue(['mikra 1', 'targum 1', 'mikra 2'], language: 'he-IL', groups: [0, 0, 1]);
+        final done = tts.speakQueue(['mikrah 1', 'targum 1', 'mikrah 2'], language: 'he-IL', groups: [0, 0, 1]);
         await settled();
         engine.finish();
         await settled();
         tts.next();
         await settled();
-        expect(engine.said, ['mikra 1', 'targum 1', 'mikra 2']);
+        expect(engine.said, ['mikrah 1', 'targum 1', 'mikrah 2']);
         expect(sessionCalls, ['activate'], reason: 'music stays ducked between verses');
 
         engine.finish();
@@ -529,7 +529,7 @@ void main() {
   group('the native side', () {
     final dart = File('lib/services/tts.dart').readAsStringSync();
     final android =
-        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+        File('android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah/MainActivity.kt').readAsStringSync();
     final ios = File('ios/Runner/AppDelegate.swift').readAsStringSync();
 
     test('answers on the same channel', () {
@@ -606,9 +606,9 @@ void main() {
       expect(engine.said.last, 'ג');
     });
 
-    test('moves verse by verse, from the Mikra of one to the Mikra of the next', () async {
+    test('moves verse by verse, from the Mikrah of one to the Mikrah of the next', () async {
       unawaited(tts.speakQueue(
-        ['mikra 1', 'targum 1', 'mikra 2', 'targum 2', 'mikra 3'],
+        ['mikrah 1', 'targum 1', 'mikrah 2', 'targum 2', 'mikrah 3'],
         language: 'he-IL',
         groups: [0, 0, 1, 1, 2],
       ));
@@ -620,14 +620,14 @@ void main() {
 
       tts.next();
       await settled();
-      expect((tts.currentIndex.value, engine.said.last), (2, 'mikra 2'));
+      expect((tts.currentIndex.value, engine.said.last), (2, 'mikrah 2'));
       tts.next();
       await settled();
-      expect((tts.currentIndex.value, engine.said.last), (4, 'mikra 3'));
+      expect((tts.currentIndex.value, engine.said.last), (4, 'mikrah 3'));
       expect(tts.hasNext, isFalse);
       tts.previous();
       await settled();
-      expect((tts.currentIndex.value, engine.said.last), (2, 'mikra 2'));
+      expect((tts.currentIndex.value, engine.said.last), (2, 'mikrah 2'));
 
       // Paused, it moves without speaking, and stays paused.
       await tts.pause();
@@ -637,7 +637,7 @@ void main() {
       expect((tts.currentIndex.value, tts.paused.value, engine.said.length), (0, true, said));
       tts.resume();
       await settled();
-      expect(engine.said.last, 'mikra 1');
+      expect(engine.said.last, 'mikrah 1');
     });
 
     test("the report of an utterance stopped isn't taken for the next one's", () async {

@@ -270,7 +270,7 @@ class AppSettings {
   final ReadingMethod method;
   final SecondReading secondReading;
 
-  /// Repeat the final verse in Hebrew after its Targum, to end with Mikra.
+  /// Repeat the final verse in Hebrew after its Targum, to end with Mikrah.
   /// Until the reader sets it ([repeatLastVerseTouched]), it follows the
   /// custom (see [withNusach]).
   final bool repeatLastVerse;
@@ -321,7 +321,7 @@ class AppSettings {
   final bool focusMode;
 
   /// In the guided reader, Listen goes on from each reading to the next by
-  /// itself, to the end of the aliyah: Mikra, Mikra, Targum, hands-free.
+  /// itself, to the end of the aliyah: Mikrah, Mikrah, Targum, hands-free.
   final bool listenAlong;
 
   /// On a wide screen, the full text sets the Targum (or, without it, the

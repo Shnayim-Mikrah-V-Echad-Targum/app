@@ -12,7 +12,7 @@ import WidgetKit
 // entry gives (candle-lighting, nightfall), without the app running.
 
 /// Where the app saves the timeline (kWidgetAppGroup and kWidgetTimelineKey).
-private let appGroup = "group.org.shnayimmikra.app"
+private let appGroup = "group.org.shnayimmikrah.app"
 private let timelineKey = "parsha_widget"
 
 /// The app's day turns at 3 a.m. (rolloverDate in lib/app/providers.dart).
@@ -242,8 +242,8 @@ private extension Color {
   static let inkMuted = Color("WidgetInkMuted")
   static let techelet = Color("WidgetTechelet")
   static let gold = Color("WidgetGold")
-  static let mikra1 = Color("WidgetMikra1")
-  static let mikra2 = Color("WidgetMikra2")
+  static let mikrah1 = Color("WidgetMikrah1")
+  static let mikrah2 = Color("WidgetMikrah2")
   static let targum = Color("WidgetTargum")
   static let track = Color("WidgetTrack")
 }
@@ -396,8 +396,8 @@ struct ParshaWidgetView: View {
 
       if bars {
         VStack(spacing: 3) {
-          Bar(done: week.m1, color: .mikra1)
-          Bar(done: week.m2, color: .mikra2)
+          Bar(done: week.m1, color: .mikrah1)
+          Bar(done: week.m2, color: .mikrah2)
           Bar(done: week.t, color: .targum)
         }
         .padding(.top, 10)

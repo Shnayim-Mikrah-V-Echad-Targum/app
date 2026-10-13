@@ -41,7 +41,7 @@ Future<void> main() async {
       appShortcutsServiceProvider.overrideWithValue(shortcuts),
       homeWidgetServiceProvider.overrideWithValue(homeWidget),
     ],
-    child: const ShnayimMikraApp(),
+    child: const ShnayimMikrahApp(),
   ));
 
   // Flutter web builds its accessibility tree only on request; turn it on so

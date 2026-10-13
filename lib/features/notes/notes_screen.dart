@@ -245,7 +245,7 @@ class _NoteRow extends ConsumerWidget {
         page,
         ChosenVerse(
           at: verse,
-          hebrew: texts.mikra.verse(verse.ref),
+          hebrew: texts.mikrah.verse(verse.ref),
           targum: texts.onkelos?.verse(verse.ref),
           english: texts.english?.verse(verse.ref).readText,
         ),
@@ -257,7 +257,7 @@ class _NoteRow extends ConsumerWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final s = ref.watch(settingsProvider);
-    final hebrew = texts.mikra.verse(verse.ref);
+    final hebrew = texts.mikrah.verse(verse.ref);
     final reference = Names(context).reference(verse.book, verse.ref.chapter, verse.ref.verse);
     final note = marks.note;
     final scaler = MediaQuery.textScalerOf(context);
@@ -281,7 +281,7 @@ class _NoteRow extends ConsumerWidget {
     // One item for a screen reader: the reference, the marks, the verse
     // spoken as the reader's are, tagged as Hebrew, and the note, tagged
     // with its own language where it isn't the interface's.
-    final spoken = spokenVerse(hebrew, s, kind: ScriptureKind.mikra);
+    final spoken = spokenVerse(hebrew, s, kind: ScriptureKind.mikrah);
     final label = StringBuffer('$reference. ');
     if (marks.bookmarked) label.write('${l.verseBookmarked}. ');
     final hebrewStart = label.length;

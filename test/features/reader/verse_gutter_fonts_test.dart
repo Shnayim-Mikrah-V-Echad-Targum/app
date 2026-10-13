@@ -3,11 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/data/models/scripture.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/widgets/fonts_change_scope.dart';
+import 'package:shnayim_mikrah/data/models/scripture.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/widgets/fonts_change_scope.dart';
 
 import '../../helpers.dart';
 
@@ -36,7 +36,7 @@ void main() {
     Future<void> pump({double textScale = 1}) => pumpThemed(
           tester,
           FontsChangeScope(
-            child: ScriptureVerse(verse: grain, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+            child: ScriptureVerse(verse: grain, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
           ),
           textScale: textScale,
         );
@@ -58,7 +58,7 @@ void main() {
     gutterOf(tester, 'at 200%');
     await pumpThemed(
       tester,
-      ScriptureVerse(verse: grain, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+      ScriptureVerse(verse: grain, kind: ScriptureKind.mikrah, settings: const AppSettings(), hangingNumber: true),
       textScale: 2,
       boldText: true,
     );

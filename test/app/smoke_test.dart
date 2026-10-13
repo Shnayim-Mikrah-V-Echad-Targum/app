@@ -3,17 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/about/guide_screen.dart';
-import 'package:shnayim_mikra/features/about/legal_screen.dart';
-import 'package:shnayim_mikra/features/about/sources_screen.dart';
-import 'package:shnayim_mikra/features/notes/notes_screen.dart';
-import 'package:shnayim_mikra/features/parsha/parsha_tab.dart';
-import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
-import 'package:shnayim_mikra/features/progress/progress_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/about/guide_screen.dart';
+import 'package:shnayim_mikrah/features/about/legal_screen.dart';
+import 'package:shnayim_mikrah/features/about/sources_screen.dart';
+import 'package:shnayim_mikrah/features/notes/notes_screen.dart';
+import 'package:shnayim_mikrah/features/parsha/parsha_tab.dart';
+import 'package:shnayim_mikrah/features/parsha/week_overview_screen.dart';
+import 'package:shnayim_mikrah/features/progress/progress_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
 
 import '../helpers.dart';
 

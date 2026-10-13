@@ -7,10 +7,10 @@ import '../../../core/calendar/parsha_schedule.dart';
 /// The three readings of each aliyah.
 enum ReadingPass {
   /// First reading of the Hebrew text.
-  mikra1,
+  mikrah1,
 
   /// Second reading of the Hebrew text.
-  mikra2,
+  mikrah2,
 
   /// Targum Onkelos (or Rashi, per the user's choice).
   targum,

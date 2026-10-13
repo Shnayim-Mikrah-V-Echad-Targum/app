@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/ui/theme/layout.dart';
-import 'package:shnayim_mikra/ui/widgets/page_columns.dart';
+import 'package:shnayim_mikrah/ui/theme/layout.dart';
+import 'package:shnayim_mikrah/ui/widgets/page_columns.dart';
 
 import '../helpers.dart';
 

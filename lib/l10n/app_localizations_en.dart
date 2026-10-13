@@ -12,10 +12,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Shnayim Mikra';
+  String get appTitle => 'Shnayim Mikrah';
 
   @override
-  String get appTitleFull => 'Shnayim Mikra v’Echad Targum';
+  String get appTitleFull => 'Shnayim Mikrah v’Echad Targum';
 
   @override
   String get navToday => 'Today';
@@ -167,10 +167,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passMikra1 => 'First reading';
+  String get passMikrah1 => 'First reading';
 
   @override
-  String get passMikra2 => 'Second reading';
+  String get passMikrah2 => 'Second reading';
 
   @override
   String get passTargum => 'Targum';
@@ -883,10 +883,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get stepMikra1 => 'Read the Hebrew';
+  String get stepMikrah1 => 'Read the Hebrew';
 
   @override
-  String get stepMikra2 => 'Read the Hebrew again';
+  String get stepMikrah2 => 'Read the Hebrew again';
 
   @override
   String get stepTargum => 'Read the Targum';
@@ -898,7 +898,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stepThirdHebrew => 'Read the Hebrew a third time';
 
   @override
-  String get stepRepeatLast => 'End with Mikra: read the last verse once more';
+  String get stepRepeatLast => 'End with Mikrah: read the last verse once more';
 
   @override
   String stepOf(int step, int total) {
@@ -1051,7 +1051,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Helps with the meaning; it doesn’t take the place of the Targum.';
 
   @override
-  String get mikraLabel => 'Mikra';
+  String get mikrahLabel => 'Mikrah';
 
   @override
   String get targumLabel => 'Targum Onkelos';
@@ -1545,7 +1545,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A plain translation is a study aid, not a substitute. Ask your rav about translated Rashi.';
 
   @override
-  String get repeatLastVerse => 'End with Mikra';
+  String get repeatLastVerse => 'End with Mikrah';
 
   @override
   String get repeatLastVerseDesc =>
@@ -2238,7 +2238,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onbHonor =>
-      'Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.';
+      'Shnayim Mikrah runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.';
 
   @override
   String get onbChangeAnytime => 'You can change this anytime in Settings.';
@@ -2252,7 +2252,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbWhyAsk => 'Why we ask';
 
   @override
-  String get guideWhatTitle => 'What is Shnayim Mikra?';
+  String get guideWhatTitle => 'What is Shnayim Mikrah?';
 
   @override
   String get guideQuoteSource => 'Berachot 8a';
@@ -2280,7 +2280,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Read verse by verse — each verse twice and then its Targum — or section by section, reading each paragraph twice and then its Targum. Many repeat the final verse in Hebrew so as to end with the Torah text. If you can, read aloud and with the cantillation.';
 
   @override
-  String get guidePassesCaption => '1 · Mikra  2 · Mikra  3 · Targum';
+  String get guidePassesCaption => '1 · Mikrah  2 · Mikrah  3 · Targum';
 
   @override
   String get guideTargumTitle => 'Targum or Rashi';
@@ -3046,10 +3046,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repeatLastVerseFollowsChabad =>
-      '“End with Mikra” is now off, following the Chabad custom.';
+      '“End with Mikrah” is now off, following the Chabad custom.';
 
   @override
-  String get repeatLastVerseBackOn => '“End with Mikra” is on again.';
+  String get repeatLastVerseBackOn => '“End with Mikrah” is on again.';
 
   @override
   String get divineAdonaiSpoken => 'Adonai';
@@ -3197,7 +3197,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onbStarterTodayDesc => 'Full plan from next week';
 
   @override
-  String get onbRestore => 'I already use Shnayim Mikra';
+  String get onbRestore => 'I already use Shnayim Mikrah';
 
   @override
   String get onbRestoreTitle => 'Restore your progress';
@@ -3239,7 +3239,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get passTrackMikra => 'Mikra';
+  String get passTrackMikrah => 'Mikrah';
 
   @override
   String get finishStep => 'Finish';
@@ -3638,7 +3638,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideAppBody =>
-      'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.';
+      'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.';
 
   @override
   String get saveBackupFirst => 'Save a backup file first';

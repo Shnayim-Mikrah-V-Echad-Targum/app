@@ -26,7 +26,7 @@ CORNER = 0.1875
 RULE_WIDTH = 0.625
 RULE_HEIGHT = 0.094
 RULE_GAP = 0.078
-# Two readings of the Mikra, then the Targum.
+# Two readings of the Mikrah, then the Targum.
 RULE_FILLS = (CREAM, CREAM, GOLD)
 
 

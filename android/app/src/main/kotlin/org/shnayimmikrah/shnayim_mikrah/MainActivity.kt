@@ -1,4 +1,4 @@
-package org.shnayimmikra.shnayim_mikra
+package org.shnayimmikrah.shnayim_mikrah
 
 import android.content.Context
 import android.content.Intent
@@ -76,7 +76,7 @@ class MainActivity : FlutterActivity() {
  */
 private class ListenAudioFocus(context: Context, messenger: BinaryMessenger) : MethodChannel.MethodCallHandler {
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val channel = MethodChannel(messenger, "shnayim_mikra/audio_session")
+    private val channel = MethodChannel(messenger, "shnayim_mikrah/audio_session")
     private val main = Handler(Looper.getMainLooper())
 
     // A brief duck (a notification's sound, a navigation prompt) is no

@@ -123,8 +123,8 @@ class Names {
   /// "First reading", "Second reading", and then "Targum", or "Rashi" for a
   /// reader whose second reading is Rashi alone ([rashi]).
   String readingPass(ReadingPass pass, {bool rashi = false}) => switch (pass) {
-        ReadingPass.mikra1 => _l.passMikra1,
-        ReadingPass.mikra2 => _l.passMikra2,
+        ReadingPass.mikrah1 => _l.passMikrah1,
+        ReadingPass.mikrah2 => _l.passMikrah2,
         ReadingPass.targum => rashi ? _l.passRashi : _l.passTargum,
       };
 

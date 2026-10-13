@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/services/feedback.dart' show forgetCelebrations;
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/services/feedback.dart' show forgetCelebrations;
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 /// Runs before every test file (flutter_test picks this file up by name).
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {

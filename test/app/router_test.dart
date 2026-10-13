@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/about/about_screen.dart';
-import 'package:shnayim_mikra/features/about/guide_screen.dart';
-import 'package:shnayim_mikra/features/about/legal_screen.dart';
-import 'package:shnayim_mikra/features/about/sources_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
-import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
-import 'package:shnayim_mikra/features/progress/progress_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
-import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/services/feedback.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/about/about_screen.dart';
+import 'package:shnayim_mikrah/features/about/guide_screen.dart';
+import 'package:shnayim_mikrah/features/about/legal_screen.dart';
+import 'package:shnayim_mikrah/features/about/sources_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/account_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikrah/features/onboarding/onboarding_screen.dart';
+import 'package:shnayim_mikrah/features/progress/progress_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/screens/accessibility_settings_screen.dart';
+import 'package:shnayim_mikrah/features/settings/screens/settings_screen.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/services/feedback.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
 
 import '../helpers.dart';
 
