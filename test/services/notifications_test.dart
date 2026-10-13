@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -380,6 +381,62 @@ void main() {
       await _service(plugin).reschedule(plan, en, copyIn(en));
       expect(plugin.scheduled, hasLength(plan.length));
       expect({for (final s in plugin.scheduled.values) s.mode}, {AndroidScheduleMode.inexactAllowWhileIdle});
+    });
+
+    // As the plugin hands them to Android, and keeps each until it fires:
+    // after a reboot ReminderBootReceiver (android/app/src/main/kotlin)
+    // dates each by its wall-clock time and zone, and forgets those missed
+    // while the phone was off, which it can do only for one that doesn't
+    // repeat (test/app/reminders_platform_test.dart).
+    test('each once, at its wall-clock time in its zone', () async {
+      await ensureTimeZones();
+      final jerusalem = tz.getLocation('Asia/Jerusalem');
+      tz.setLocalLocation(jerusalem);
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      AndroidFlutterLocalNotificationsPlugin.registerWith();
+      const channel = MethodChannel('dexterous.com/flutter/local_notifications');
+      final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final scheduled = <Map<Object?, Object?>>[];
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'zonedSchedule') scheduled.add(call.arguments as Map<Object?, Object?>);
+        return call.method == 'canScheduleExactNotifications' ? false : null;
+      });
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(channel, null);
+        debugDefaultTargetPlatformOverride = null;
+        tz.setLocalLocation(tz.UTC);
+      });
+
+      final now = DateTime(2026, 10, 11, 8);
+      final plan = planFrom(now);
+      final service =
+          NotificationService.forTesting(FlutterLocalNotificationsPlugin(), loadTimeZones: () async {}, now: () => now);
+      // The plugin refuses a time before its clock's.
+      await withClock(Clock.fixed(now), () => service.reschedule(plan, en, copyIn(en)));
+
+      expect(scheduled, hasLength(plan.length));
+      for (final (i, r) in plan.indexed) {
+        final arguments = scheduled[i];
+        expect(arguments['id'], r.id);
+        // A date and time, as java.time.LocalDateTime reads it, in the zone
+        // the plugin hands to ZoneId.of: together, the moment it is due.
+        final local = arguments['scheduledDateTime'] as String;
+        expect(local, matches(RegExp(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d$')), reason: '$r');
+        expect(arguments['timeZoneName'], 'Asia/Jerusalem');
+        final [year, month, day, hour, minute, second] = local.split(RegExp('[-T:]')).map(int.parse).toList();
+        expect(tz.TZDateTime(jerusalem, year, month, day, hour, minute, second).isAtSameMomentAs(r.localDateTime),
+            isTrue, reason: '$r at $local');
+        for (final field in [
+          'repeatInterval',
+          'repeatIntervalMilliseconds',
+          'matchDateTimeComponents',
+          'scheduledNotificationRepeatFrequency',
+          'millisecondsSinceEpoch',
+        ]) {
+          expect(arguments.containsKey(field), isFalse, reason: '$field for $r');
+        }
+        expect((arguments['platformSpecifics']! as Map)['scheduleMode'], 'inexactAllowWhileIdle');
+      }
     });
   });
 
