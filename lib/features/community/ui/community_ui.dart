@@ -202,6 +202,10 @@ Future<bool> ensureGuidelines(BuildContext context, WidgetRef ref) async {
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
+        // Scrolled with its padding, which the row's focus ring stands in, as
+        // the report dialog is: large text on a short window never cuts it
+        // off.
+        scrollable: true,
         title: Text(l.guidelinesTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
