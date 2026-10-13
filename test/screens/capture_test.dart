@@ -592,9 +592,10 @@ const _screens = {
   'dialog': '/week/5787:1',
   'snackbar': '/week/5787:1',
   // Asked when the whole parsha was read: the days of the week listed one
-  // by one on the Friday, and on the Monday after its Shabbat, the most
-  // there are; on the Tuesday, too many to list, behind Choose a date, whose
-  // picker marks the reading day as today at 1 a.m. on the Wednesday.
+  // by one on the Friday, Simchat Torah before it named as the Yom Tov it
+  // was, and on the Monday after its Shabbat; on the Wednesday, too many to
+  // list, behind Choose a date, whose picker marks the reading day as today
+  // at 1 a.m. on the Thursday.
   'sheet_date': '/week/5787:1',
   'sheet_date_monday': '/week/5787:1',
   'sheet_date_picker': '/week/5787:1',
@@ -856,9 +857,9 @@ final _screenNow = <String, DateTime>{
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
   'sheet_date_monday': DateTime(2026, 10, 12, 11),
-  // Wednesday at 1 a.m.: still Tuesday's reading day.
-  'sheet_date_picker': DateTime(2026, 10, 14, 1),
-  'dialog_date': DateTime(2026, 10, 14, 1),
+  // Thursday at 1 a.m.: still Wednesday's reading day.
+  'sheet_date_picker': DateTime(2026, 10, 15, 1),
+  'dialog_date': DateTime(2026, 10, 15, 1),
   'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
   'today_checkin_vezot': DateTime(2026, 10, 5, 11),
   'today_checkin_vezot_date': DateTime(2026, 10, 5, 11),
@@ -1661,8 +1662,9 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'focus_date': (tester) async {
     await _openWeekMenu(tester, item: 2);
-    // Tuesday, between two other days.
-    await _keyboardFocus(tester, find.descendant(of: find.byType(BottomSheet), matching: find.byType(PaperRow)).at(3));
+    // Tuesday, between two other days (after today, yesterday and Simchat
+    // Torah, and Wednesday).
+    await _keyboardFocus(tester, find.descendant(of: find.byType(BottomSheet), matching: find.byType(PaperRow)).at(4));
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
   'sheet_display_full': (tester) async {

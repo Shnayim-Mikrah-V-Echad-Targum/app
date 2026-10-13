@@ -25,8 +25,10 @@ const kListedReadDays = 6;
 /// Asks when something was read — supporting the honor-system logging of
 /// reading done from a printed Chumash, on Shabbat itself and on each Yom
 /// Tov of [week] (by the reader's custom, [oneDayYomTov]) before [today],
-/// and of the days of rest that run on from its Shabbat (Shavuot on the
-/// Sunday after, say), which the check-in asks about too.
+/// of the days of rest that run on from its Shabbat (Shavuot on the Sunday
+/// after, say), which the check-in asks about too, and of the day of rest
+/// before the week where it is a Yom Tov (Simchat Torah, before a week of
+/// Bereshit that begins on Monday).
 ///
 /// The days it names (today, yesterday, Shabbat, Yom Tov) come first, on
 /// one sheet of paper; then the other days it may have been read on since
@@ -49,10 +51,13 @@ Future<LocalDate?> pickReadDate(
   final onShabbat = week.occasion < today && week.occasion.isShabbat;
   // Latest first, as the rows above them: Vezot HaBerachah's week holds
   // Sukkot, Shemini Atzeret and Simchat Torah, on any of which it may have
-  // been read, and a Shabbat may run on into Yom Tov.
+  // been read, and a Shabbat may run on into Yom Tov. The earliest day is
+  // named too where it is a Yom Tov, as the check-in's line names it, rather
+  // than listed as a plain weekday; the Shabbat before the week is listed
+  // plainly, as "On Shabbat" is this week's.
   final lastRest = JewishHolidays.lastRestDay(week.occasion, israel: oneDayYomTov);
   final yomTov = [
-    for (var d = lastRest < yesterday ? lastRest : yesterday; d >= week.start; d = d.addDays(-1))
+    for (var d = lastRest < yesterday ? lastRest : yesterday; d >= earliest; d = d.addDays(-1))
       if (isNamedYomTov(d, oneDayYomTov: oneDayYomTov) && !(onShabbat && d == week.occasion)) d,
   ];
   final named = <(IconData, String, String, LocalDate)>[

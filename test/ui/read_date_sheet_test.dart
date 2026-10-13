@@ -82,17 +82,19 @@ void main() {
       await open(tester, week: bereshit, today: friday);
       expect(groups, findsNWidgets(2));
       expect(find.descendant(of: sheet, matching: find.byType(ListTile)), findsNothing);
+      // Simchat Torah, the Sunday before the week, is named as the Yom Tov
+      // it was, as the check-in's line names it.
       expect(rows(tester, group: 0), [
         ('Today', 'Friday, October 9'),
         ('Yesterday', 'Thursday, October 8'),
+        ('On Yom Tov', 'Sunday, October 4'),
       ]);
-      // Back to Simchat Torah, the Sunday before the week, latest first,
-      // each over its day in the Hebrew calendar.
+      // Back to the Monday the week began, latest first, each over its day
+      // in the Hebrew calendar.
       expect(rows(tester, group: 1), [
         ('Wednesday, October 7', '26 Tishrei'),
         ('Tuesday, October 6', '25 Tishrei'),
         ('Monday, October 5', '24 Tishrei'),
-        ('Sunday, October 4', '23 Tishrei'),
       ]);
       expect(find.text('Choose a date'), findsNothing);
     });
@@ -102,10 +104,10 @@ void main() {
       expect(rows(tester), [
         ('היום', 'יום שישי, כ״ח בתשרי'),
         ('אתמול', 'יום חמישי, כ״ז בתשרי'),
+        ('ביום טוב', 'יום ראשון, כ״ג בתשרי'),
         ('יום רביעי, כ״ו בתשרי', '7 באוקטובר'),
         ('יום שלישי, כ״ה בתשרי', '6 באוקטובר'),
         ('יום שני, כ״ד בתשרי', '5 באוקטובר'),
-        ('יום ראשון, כ״ג בתשרי', '4 באוקטובר'),
       ]);
     });
 
@@ -119,47 +121,90 @@ void main() {
     });
 
     testWidgets('are listed up to $kListedReadDays', (tester) async {
-      // The Monday after Shabbat: six days besides today, yesterday and
-      // Shabbat.
-      await open(tester, week: bereshit, today: LocalDate(2026, 10, 12));
-      expect([for (final (title, _) in rows(tester, group: 0)) title], ['Today', 'Yesterday', 'On Shabbat']);
+      // The Tuesday after Shabbat: six days besides today, yesterday,
+      // Shabbat and Simchat Torah.
+      await open(tester, week: bereshit, today: LocalDate(2026, 10, 13));
+      expect(
+        [for (final (title, _) in rows(tester, group: 0)) title],
+        ['Today', 'Yesterday', 'On Shabbat', 'On Yom Tov'],
+      );
       expect(rows(tester, group: 1), hasLength(kListedReadDays));
-      expect(rows(tester, group: 1).first, ('Friday, October 9', '28 Tishrei'));
-      expect(rows(tester, group: 1).last, ('Sunday, October 4', '23 Tishrei'));
+      expect(rows(tester, group: 1).first, ('Sunday, October 11', '30 Tishrei'));
+      expect(rows(tester, group: 1).last, ('Monday, October 5', '24 Tishrei'));
       expect(find.text('Choose a date'), findsNothing);
     });
 
     testWidgets('are left to the date picker beyond $kListedReadDays', (tester) async {
-      // The Tuesday after Shabbat: seven.
-      await open(tester, week: bereshit, today: LocalDate(2026, 10, 13));
+      // The Wednesday after Shabbat: seven.
+      await open(tester, week: bereshit, today: LocalDate(2026, 10, 14));
       expect(groups, findsOneWidget);
       expect(rows(tester), [
-        ('Today', 'Tuesday, October 13'),
-        ('Yesterday', 'Monday, October 12'),
+        ('Today', 'Wednesday, October 14'),
+        ('Yesterday', 'Tuesday, October 13'),
         ('On Shabbat', 'Saturday, October 10'),
+        ('On Yom Tov', 'Sunday, October 4'),
         ('Choose a date', null),
       ]);
     });
 
     testWidgets('are none when the week has only begun, and nothing is left to choose', (tester) async {
-      // The Monday the week opens: yesterday was the earliest day.
+      // The Monday the week opens: yesterday was the earliest day, Simchat
+      // Torah, named as the Yom Tov it was.
       await open(tester, week: bereshit, today: LocalDate(2026, 10, 5));
       expect(groups, findsOneWidget);
       expect(rows(tester), [
         ('Today', 'Monday, October 5'),
-        ('Yesterday', 'Sunday, October 4'),
+        ('On Yom Tov', 'Sunday, October 4'),
       ]);
     });
+
+    // A week of the usual shape, Sunday to Shabbat: Noach 5787. The Shabbat
+    // before it, Bereshit's, is a plain day of the list.
+    final noach = ReadingWeek(
+      portion: const PortionId(2),
+      occasion: LocalDate(2026, 10, 17),
+      start: LocalDate(2026, 10, 11),
+      plan: const [],
+      israel: false,
+    );
+
+    testWidgets('of a usual week are listed through the week, back to the Shabbat before it', (tester) async {
+      // Its Friday: five days besides today and yesterday.
+      await open(tester, week: noach, today: LocalDate(2026, 10, 16));
+      expect([for (final (title, _) in rows(tester, group: 0)) title], ['Today', 'Yesterday']);
+      expect(rows(tester, group: 1), hasLength(5));
+      expect(rows(tester, group: 1).last, ('Saturday, October 10', '29 Tishrei'));
+    });
+
+    // After Shabbat, the check-in's usual days, a week of seven days leaves
+    // seven others (Friday back to the Shabbat before), one more than
+    // kListedReadDays, so the date picker offers them, as it does on the
+    // Sunday and the Monday after.
+    for (final (day, today) in [('Sunday', LocalDate(2026, 10, 18)), ('Monday', LocalDate(2026, 10, 19))]) {
+      testWidgets('of a usual week are left to the date picker on the $day after its Shabbat', (tester) async {
+        await open(tester, week: noach, today: today);
+        expect(groups, findsOneWidget);
+        expect([for (final (title, _) in rows(tester)) title], [
+          'Today',
+          if (day == 'Monday') 'Yesterday',
+          'On Shabbat',
+          'Choose a date',
+        ]);
+      });
+    }
   });
 
   group('the rows', () {
     testWidgets('take outlined icons where they name the day, and no chevron, as each chooses in place',
         (tester) async {
-      await open(tester, week: bereshit, today: LocalDate(2026, 10, 12));
+      // The Tuesday after Shabbat: today, yesterday, Shabbat, Simchat Torah,
+      // and six days listed.
+      await open(tester, week: bereshit, today: LocalDate(2026, 10, 13));
       final all = tester.widgetList<PaperRow>(find.descendant(of: sheet, matching: find.byType(PaperRow))).toList();
       expect([for (final r in all) r.icon], [
         Icons.today_outlined,
         Icons.history,
+        Icons.wb_sunny_outlined,
         Icons.wb_sunny_outlined,
         ...List.filled(kListedReadDays, null),
       ]);
@@ -167,7 +212,7 @@ void main() {
     });
 
     testWidgets('choose a date from an outlined calendar with a pen, with no chevron', (tester) async {
-      await open(tester, week: bereshit, today: LocalDate(2026, 10, 13));
+      await open(tester, week: bereshit, today: LocalDate(2026, 10, 14));
       final picker =
           tester.widget<PaperRow>(find.ancestor(of: find.text('Choose a date'), matching: find.byType(PaperRow)));
       expect((picker.icon, picker.chevron), (Icons.edit_calendar_outlined, false));
