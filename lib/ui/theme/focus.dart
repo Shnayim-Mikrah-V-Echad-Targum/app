@@ -192,6 +192,7 @@ class SeferInkWell extends StatefulWidget {
     required this.child,
     this.onTap,
     this.onLongPress,
+    this.longPressFeedback = true,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.focusNode,
     this.autofocus = false,
@@ -201,6 +202,11 @@ class SeferInkWell extends StatefulWidget {
   final Widget child;
   final GestureTapCallback? onTap;
   final GestureLongPressCallback? onLongPress;
+
+  /// Whether a long press gives the platform's feedback (on Android, its
+  /// long-press pulse). False where [onLongPress] gives its own, as one
+  /// that keeps to the reader's Haptic feedback does; a tap still clicks.
+  final bool longPressFeedback;
   final BorderRadius borderRadius;
   final FocusNode? focusNode;
   final bool autofocus;
@@ -276,8 +282,15 @@ class _SeferInkWellState extends State<SeferInkWell> {
             )
           : const BoxDecoration(),
       child: InkWell(
-        onTap: widget.onTap,
+        onTap: switch (widget.onTap) {
+          final onTap? when !widget.longPressFeedback => () {
+              Feedback.forTap(context);
+              onTap();
+            },
+          final onTap => onTap,
+        },
         onLongPress: widget.onLongPress,
+        enableFeedback: widget.longPressFeedback,
         focusNode: _focusNode,
         autofocus: widget.autofocus,
         onFocusChange: _focusChanged,

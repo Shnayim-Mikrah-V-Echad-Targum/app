@@ -443,6 +443,11 @@ class _RenderFitWord extends RenderProxyBox {
 /// wherever the two fit on a line together; where they don't (very large
 /// text on a phone), the words are set at their size rather than smaller.
 ///
+/// It takes the full width it is given, its text placed in it as
+/// [textAlign] says, unless [shrinkWrap]: then it is as wide as its text, on
+/// one line or balanced over several, as a line centred beside an icon
+/// needs.
+///
 /// Like [WholeWords], it answers intrinsic size queries, so it may stand in
 /// a dialog ([IntrinsicWidth]) or a row as tall as its tallest cell
 /// ([IntrinsicHeight]); with [bySentence], or [holdDashes] and a spaced
@@ -456,6 +461,8 @@ class BalancedText extends StatelessWidget {
     this.textAlign = TextAlign.center,
     this.bySentence = false,
     this.holdDashes = false,
+    this.shrinkWrap = false,
+    this.semanticsLabel,
   });
 
   final String text;
@@ -463,6 +470,10 @@ class BalancedText extends StatelessWidget {
   final TextAlign textAlign;
   final bool bySentence;
   final bool holdDashes;
+  final bool shrinkWrap;
+
+  /// What a screen reader says instead of [text], as [Text.semanticsLabel].
+  final String? semanticsLabel;
 
   static final _sentenceBreak = RegExp(r'(?<=[.?!])\s+(?=\S)');
 
@@ -470,7 +481,14 @@ class BalancedText extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget balanced(String text) => _Balanced(
           centred: textAlign == TextAlign.center,
-          child: WholeWords(text, style: style, textAlign: textAlign, breakAtHyphens: true),
+          shrinkWrap: shrinkWrap,
+          child: WholeWords(
+            text,
+            style: style,
+            textAlign: textAlign,
+            breakAtHyphens: true,
+            semanticsLabel: semanticsLabel,
+          ),
         );
 
     final held = holdDashes ? dashHeldToWord(text) : text;
@@ -502,7 +520,7 @@ class BalancedText extends StatelessWidget {
       if (oneLine) return balanced(text);
       return Semantics(
         // One text for screen readers, as it is written.
-        label: text,
+        label: semanticsLabel ?? text,
         excludeSemantics: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -516,30 +534,42 @@ class BalancedText extends StatelessWidget {
 /// Sets its child, a text, as narrow as it can be without taking more
 /// lines than at the width it is given, measuring it by its intrinsic
 /// heights: never narrower than its widest word, and at the full width
-/// where it fits on one line or that word doesn't fit at all. The child is
-/// centred in the width, or [centred] false, at its start.
+/// where it fits on one line (or with [shrinkWrap], at the line's own
+/// width) or that word doesn't fit at all. The child is centred in the
+/// width, or [centred] false, at its start.
 class _Balanced extends SingleChildRenderObjectWidget {
-  const _Balanced({required this.centred, required super.child});
+  const _Balanced({required this.centred, required this.shrinkWrap, required super.child});
 
   final bool centred;
+  final bool shrinkWrap;
 
   @override
-  _RenderBalanced createRenderObject(BuildContext context) => _RenderBalanced(centred, Directionality.of(context));
+  _RenderBalanced createRenderObject(BuildContext context) =>
+      _RenderBalanced(centred, shrinkWrap, Directionality.of(context));
 
   @override
   void updateRenderObject(BuildContext context, _RenderBalanced renderObject) => renderObject
     ..centred = centred
+    ..shrinkWrap = shrinkWrap
     ..textDirection = Directionality.of(context);
 }
 
 class _RenderBalanced extends RenderShiftedBox {
-  _RenderBalanced(this._centred, this._textDirection) : super(null);
+  _RenderBalanced(this._centred, this._shrinkWrap, this._textDirection) : super(null);
 
   bool get centred => _centred;
   bool _centred;
   set centred(bool value) {
     if (value == _centred) return;
     _centred = value;
+    markNeedsLayout();
+  }
+
+  bool get shrinkWrap => _shrinkWrap;
+  bool _shrinkWrap;
+  set shrinkWrap(bool value) {
+    if (value == _shrinkWrap) return;
+    _shrinkWrap = value;
     markNeedsLayout();
   }
 
@@ -552,11 +582,12 @@ class _RenderBalanced extends RenderShiftedBox {
   }
 
   /// The width [child] is set in, within [width].
-  static double _widthFor(RenderBox child, double width) {
+  double _widthFor(RenderBox child, double width) {
     if (!width.isFinite) return width;
     // One line, or a word too wide for the line, which WholeWords sets
     // smaller: nothing to balance.
-    if (child.getMaxIntrinsicWidth(double.infinity) <= width) return width;
+    final line = child.getMaxIntrinsicWidth(double.infinity);
+    if (line <= width) return shrinkWrap ? math.min(width, line.ceilToDouble()) : width;
     final word = child.getMinIntrinsicWidth(double.infinity);
     if (word >= width) return width;
     final height = child.getMinIntrinsicHeight(width);

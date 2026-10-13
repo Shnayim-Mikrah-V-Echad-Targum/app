@@ -126,20 +126,15 @@ List<Milestone> computeMilestones({
   var siyumDone = false;
   ({int from, LocalDate? on})? joinerSiyum;
   for (final c in cycles) {
-    final from = _firstLogged(progress, c);
+    final from = _siyumStart(progress, c, doneByCycle[c]!);
     if (from == null) continue;
-    final rest = [for (var n = from; n <= kParshaCount; n++) n];
-    if (!rest.every(doneByCycle[c]!.contains)) continue;
+    final on = finishedOn(c, [for (var n = from; n <= kParshaCount; n++) n]);
     if (from == 1) {
       siyumDone = true;
-      siyum = finishedOn(c, rest);
+      siyum = on;
       break;
     }
-    // A reader who joined partway through the year completes it from where
-    // they began, as long as that was before Deuteronomy: a siyum from one
-    // of its parshiyot would be that book alone, which its own milestone
-    // marks, or less.
-    if (from < parshiyotOfBook(4).first) joinerSiyum ??= (from: from, on: finishedOn(c, rest));
+    joinerSiyum ??= (from: from, on: on);
   }
 
   return [
@@ -166,6 +161,40 @@ List<Milestone> computeMilestones({
     if (joinerSiyum case final s?) Milestone(MilestoneKind.siyum, achieved: true, achievedOn: s.on, fromParsha: s.from),
     Milestone(MilestoneKind.comeback, achieved: comeback != null, achievedOn: comeback),
   ];
+}
+
+/// The siyum made in the cycle that began in [cycleYear], if its reading
+/// makes one, as the Record counts it: the whole Torah read from Bereshit
+/// in that year ([Milestone.fromParsha] null), or for a reader who joined
+/// partway through a year, every parsha from the one they began with.
+/// Unlike the Record, which dates the whole Torah by the first year read
+/// through, each year read through from Bereshit makes its own; a year
+/// begun partway makes none once an earlier year made one.
+Milestone? cycleSiyum(Map<String, WeekProgress> progress, int cycleYear) {
+  final from = _siyumStart(progress, cycleYear, parshiyotDoneInCycle(progress, cycleYear));
+  if (from == null) return null;
+  if (from > 1 &&
+      cyclesLogged(progress)
+          .any((c) => c < cycleYear && _siyumStart(progress, c, parshiyotDoneInCycle(progress, c)) != null)) {
+    return null;
+  }
+  final done = _completionsInCycle(progress, cycleYear);
+  final on = [for (var n = from; n <= kParshaCount; n++) done[n]!].reduce((a, d) => d > a ? d : a);
+  return Milestone(MilestoneKind.siyum, achieved: true, achievedOn: on, fromParsha: from == 1 ? null : from);
+}
+
+/// Where the reading of [cycleYear] makes a siyum from: the first parsha
+/// logged in it, if every parsha from there to the end of the Torah is
+/// among those completed in it ([done]), and it came before Deuteronomy. A
+/// siyum from one of Deuteronomy's parshiyot would be that book alone,
+/// which its own milestone marks, or less. Null if it makes none.
+int? _siyumStart(Map<String, WeekProgress> progress, int cycleYear, Set<int> done) {
+  final from = _firstLogged(progress, cycleYear);
+  if (from == null || from >= parshiyotOfBook(4).first) return null;
+  for (var n = from; n <= kParshaCount; n++) {
+    if (!done.contains(n)) return null;
+  }
+  return from;
 }
 
 /// The first parsha with any reading logged in [cycleYear], by number, or

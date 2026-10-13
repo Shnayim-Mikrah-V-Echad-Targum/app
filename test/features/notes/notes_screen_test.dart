@@ -233,7 +233,7 @@ void main() {
     for (final scale in [1.0, 1.3, 2.0]) {
       for (final full in [false, true]) {
         testWidgets('the marks keep to the number\'s size at ${(scale * 100).round()}% text, '
-            '${full ? 'in the full text' : 'clear of the verse in the guided reader\'s margin'}', (tester) async {
+            '${full ? 'in the full text' : 'at the inner edge of the guided reader\'s margin'}', (tester) async {
           await open(tester, '/read/5787:1/3${full ? '?mode=full' : ''}', textScale: scale, size: const Size(412, 1400));
           final marks = find.byType(VerseMarks).first;
           final context = tester.element(marks);
@@ -242,13 +242,13 @@ void main() {
           // The ribbon stands 0.72 of the number's size, scaled once with it.
           expect(tester.getRect(marks).height, closeTo(0.72 * number, 0.5));
           if (!full) {
-            // In the margin, after the number or beneath it, never closer
-            // to the verse than the margin keeps.
+            // In the margin, after the number or beneath it, at its inner
+            // edge: as far from the verse as the number stands.
             final gutter = tester.getRect(find.ancestor(of: marks, matching: find.byType(SizedBox)).first);
-            final clearance = MediaQuery.textScalerOf(context).scale(
-              ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikrah),
+            final gap = MediaQuery.textScalerOf(context).scale(
+              ScriptureStyles.numberGap * styles.sizeFor(ScriptureKind.mikrah),
             );
-            expect(tester.getRect(marks).left - gutter.left, greaterThanOrEqualTo(clearance - 0.5));
+            expect(tester.getRect(marks).left - gutter.left, closeTo(gap, 0.5));
           }
         });
       }
@@ -321,6 +321,29 @@ void main() {
       await tester.pumpAndSettle();
       expect(inSheet(find.text('Genesis 1:1')), findsOneWidget);
     });
+
+    testWidgets(
+      "a row's long press is felt once, as a step's tick, and not at all with Haptic feedback off",
+      (tester) async {
+        for (final haptics in [true, false]) {
+          await open(tester, '/notes', settings: AppSettings(onboardingComplete: true, haptics: haptics));
+          final sent = <String>[];
+          final messenger = tester.binding.defaultBinaryMessenger;
+          messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'HapticFeedback.vibrate') sent.add(call.arguments as String? ?? 'vibrate');
+            return null;
+          });
+          addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+          await tester.longPress(find.text('Genesis 1:1'));
+          await tester.pumpAndSettle();
+          expect(inSheet(find.text('Genesis 1:1')), findsOneWidget);
+          expect(sent, haptics ? ['HapticFeedbackType.selectionClick'] : isEmpty);
+          Navigator.pop(tester.element(find.byType(BottomSheet)));
+          await tester.pumpAndSettle();
+        }
+      },
+      variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+    );
 
     testWidgets('a bookmark taken away in the sheet leaves its options whole: the note, a copy, a question',
         (tester) async {

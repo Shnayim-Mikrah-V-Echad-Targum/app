@@ -24,8 +24,9 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
+import '../../ui/widgets/lines.dart' show BalancedText, DotLine, WholeWords;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
-import '../../ui/widgets/progress_widgets.dart' show WeekStatusBadge;
+import '../../ui/widgets/progress_widgets.dart' show ParshaRings, WeekStatusBadge;
 import '../notes/domain/annotations.dart';
 import '../parsha/week_context.dart';
 import '../progress/domain/progress_models.dart';
@@ -40,6 +41,7 @@ import 'pass_track.dart';
 import 'reader_bottom_bar.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
+import 'step_page.dart';
 import 'verse_actions_sheet.dart';
 import 'verse_anchor.dart';
 import 'whole_parsha.dart';
@@ -112,6 +114,29 @@ class ReaderScreen extends ConsumerStatefulWidget {
   /// bar keeps to less (1.34, as Flutter's does).
   static const double chromeMaxTextScale = 2;
 
+  /// The least the app bar's slot for its home or back button narrows to:
+  /// the button's 48 dp target.
+  static const double _minLeadingWidth = 48;
+
+  /// The app bar's leading slot (null for Material's 56) and the title's
+  /// inset after it, for a text that starts [start] from the window's edge
+  /// (DESIGN_SYSTEM.md §9 Reader, guided). The title starts where the text
+  /// does wherever the button leaves room for it: after the usual slot and
+  /// spacing on a wide window; on a tablet, whose column starts just past
+  /// the button, after a narrower slot and a smaller space (at 800 dp, the
+  /// text's 60: a 52 slot and 8). On a phone the text starts under the
+  /// button, and the title keeps the usual spacing after it.
+  @visibleForTesting
+  static (double?, double) titleInset(double start, {required bool hasLeading}) {
+    if (!hasLeading) return (null, start);
+    if (start - kToolbarHeight >= NavigationToolbar.kMiddleSpacing) return (null, start - kToolbarHeight);
+    if (start >= _minLeadingWidth + Space.sm) {
+      final slot = (start - Space.sm).clamp(_minLeadingWidth, kToolbarHeight);
+      return (slot, start - slot);
+    }
+    return (null, NavigationToolbar.kMiddleSpacing);
+  }
+
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -132,6 +157,17 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// last Targum, say, with the last verse's repeat still to come, which
   /// then finishes the aliyah.
   bool _completedOnVisit = false;
+
+  /// Whether the parsha's completion has had its celebrate haptic (§8,
+  /// Haptics), which it has once: as the finished panel's rings close, or
+  /// where no panel shows it, at the press that completed it.
+  bool _celebrated = false;
+
+  /// [celebrationsPlayed] as the parsha was completed: should the book's
+  /// page, opened over the finished panel by the same finish, have given
+  /// the celebrate haptic by the time the rings close beneath it, they
+  /// give none.
+  int _celebrationsAtFinish = 0;
   bool _positioned = false;
 
   /// The aliyah's position counts when it was opened (null if it was read):
@@ -610,7 +646,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
     if (!wasComplete && ref.read(progressProvider).week(ctx.id).isComplete) _completedOnVisit = true;
-    if (!listening) hapticTap(ref);
     setState(() {
       _quietStep = listening;
       if (_step + 1 < steps.length) {
@@ -620,9 +655,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step = flow.entryStep(_chunk, _doneAtOpen);
       } else {
         _finished = true;
-        _justCompleted = _completedOnVisit;
+        // The parsha's moment once a visit: stepped back into from the panel
+        // once its rings have closed, and finished again, the panel tells
+        // only how the week stands.
+        _justCompleted = _completedOnVisit && !_celebrated;
+        _celebrationsAtFinish = celebrationsPlayed;
       }
     });
+    // A step's tick for Next pressed; the press that finishes the aliyah
+    // gives the finish's haptic alone (_onFinished).
+    if (!listening && !_finished) hapticStep(ref);
     if (_finished) {
       // Next goes with the bottom bar: the panel's first button takes over,
       // once the reminders offered after a first aliyah, which take the
@@ -712,8 +754,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _revealVerse(verse, animate: true);
   }
 
-  /// The first verse of the full text whose top is in view: in the whole
-  /// parsha, below the heading held at the top ([topInView]).
+  /// The first verse of the full text whose top is in view: below any
+  /// heading held at the top (in the whole parsha, in focus mode;
+  /// [topInView]).
   int _firstVerseInView(int count) {
     if (!_scroll.hasClients) return 0;
     for (var i = 0; i < count && i < _verseKeys.length; i++) {
@@ -764,7 +807,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _onFinished(WeekContext ctx, {required bool offerReminders}) async {
     final l = context.l10n;
     final names = Names(context);
-    hapticSuccess(ref);
+    // The parsha completed just now has the panel's celebrate haptic, as its
+    // rings close, in place of an aliyah's success.
+    if (!_panelCelebrates) hapticSuccess(ref);
     final week = ref.read(progressProvider).week(ctx.id);
     final settings = ref.read(settingsProvider);
     final parshaName = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
@@ -778,6 +823,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       await maybeOfferReminders(context, ref, celebration: l.firstAliyahDone(l.versesCount(verses), second));
       if (mounted && _finished && !_fullText) _focusAfterFrame(_finishFocus);
     }
+  }
+
+  /// Whether the finished panel about to show gives the celebrate haptic as
+  /// its rings close: for the parsha completed just now, the first time.
+  bool get _panelCelebrates => _justCompleted && !_celebrated;
+
+  /// The parsha's completion felt, once (§8, Haptics): not again where it
+  /// finished a book too, whose page over the panel has been felt already.
+  void _celebrate() {
+    if (_celebrated) return;
+    _celebrated = true;
+    if (celebrationsPlayed == _celebrationsAtFinish) hapticCelebrate(ref);
   }
 
   String _stepTitle(StepKind kind) {
@@ -1207,14 +1264,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     double line(TextStyle style) => scaler.scale(style.fontSize!) * (style.height ?? 1.2);
     final height = max(64.0, line(eyebrow) + line(titleStyle) + 12);
     // Where the text starts: at the column's padding, or with the column
-    // centred.
+    // centred. The full text's verses are inset within their blocks
+    // (VerseGroup), and the title and actions keep to the text, as far as
+    // the column's centring leaves room: on a phone they stay put.
     final width = MediaQuery.sizeOf(context).width;
-    final start = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
+    final column = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
+    final start = column + (_fullText ? min(VerseGroup.padding.left, column - _columnPadding) : 0.0);
     final leading = homeLeading(context);
     final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+    final (leadingWidth, titleStart) = ReaderScreen.titleInset(start, hasLeading: hasLeading);
     return ScrolledUnderRule(
       appBar: AppBar(
         leading: leading,
+        leadingWidth: leadingWidth,
         toolbarHeight: height,
         // The inset goes before the title alone (as PageScaffold's does): as
         // titleSpacing it would be kept after it too, and a wide window would
@@ -1223,10 +1285,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
         notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : _neverScrolledUnder,
         title: Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
-            end: NavigationToolbar.kMiddleSpacing,
-          ),
+          padding: EdgeInsetsDirectional.only(start: titleStart, end: NavigationToolbar.kMiddleSpacing),
           // The app bar makes it a heading; this gives its level, as every
           // page's title has.
           child: Semantics(
@@ -1382,8 +1441,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 context,
                 ctx,
                 s,
-                // The text scrolls under the ribbon, or in the whole parsha
-                // under its aliyah's heading, which have their own rules.
+                // The text scrolls under the ribbon, or in the whole parsha's
+                // focus mode under its aliyah's heading, which have their own
+                // rules.
                 scrolledUnder: !showRibbon && !whole,
                 columnWidth: columnWidth,
                 actions: [
@@ -1533,25 +1593,29 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   ? _Whole(
                                       parsha: parsha,
                                       aliyahKey: (a) => _aliyahKeys[a],
-                                      heading: (a) {
+                                      heading: (a, {required pinned}) {
                                         final r = ctx.portion.aliyot[a];
+                                        Widget header({bool held = false}) => AliyahHeader(
+                                              aliyah: a,
+                                              range: names.range(
+                                                r.book,
+                                                r.start.chapter,
+                                                r.start.verse,
+                                                r.end.chapter,
+                                                r.end.verse,
+                                              ),
+                                              done: ctx.progress.isAliyahDone(a),
+                                              width: columnWidth,
+                                              padding: _columnPadding,
+                                              held: held,
+                                            );
+                                        // Ruled off from the text only while
+                                        // it is held over it.
+                                        if (!pinned) return header();
                                         return HeldHeading(
                                           scroll: _scroll,
                                           start: () => _aliyahOffset(a),
-                                          builder: (context, held) => AliyahHeader(
-                                            aliyah: a,
-                                            range: names.range(
-                                              r.book,
-                                              r.start.chapter,
-                                              r.start.verse,
-                                              r.end.chapter,
-                                              r.end.verse,
-                                            ),
-                                            done: ctx.progress.isAliyahDone(a),
-                                            width: columnWidth,
-                                            padding: _columnPadding,
-                                            held: held,
-                                          ),
+                                          builder: (context, held) => header(held: held),
                                         );
                                       },
                                       hidden: _placing,
@@ -1572,6 +1636,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                       justCompleted: _justCompleted,
                                       firstFocus: _finishFocus,
                                       onGoToAliyah: _goToAliyah,
+                                      onCelebrate: _celebrate,
                                     ),
                                   ),
                                 )
@@ -1668,9 +1733,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     ref.read(progressProvider.notifier).markAliyah(ctx.id, a, today);
     _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
+    _celebrationsAtFinish = celebrationsPlayed;
     final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, a);
     ref.read(progressProvider.notifier).savePosition(ctx.id, a, [verses, verses, verses]);
-    hapticSuccess(ref);
+    if (!_panelCelebrates) {
+      hapticSuccess(ref);
+    } else if (_fullText || a != _aliyah) {
+      // The parsha completed, with no finished panel to show it: its
+      // celebrate haptic now, in place of the success.
+      _celebrate();
+    }
     showStatus(context, context.l10n.markedRead);
     if (a == _aliyah) setState(() => _finished = true);
     // The guided reader shows the finished panel in place of the step. The
@@ -1980,11 +2052,29 @@ class _GuidedStep extends StatelessWidget {
   static const _fade = Duration(milliseconds: 180);
 
   /// The steps cross-fading in place from the top, where the default would
-  /// centre a short step halfway down a long one.
+  /// centre a short step halfway down a long one. Each is given the room
+  /// left on the page, which its verse's neighbours fill.
   static Widget _fromTop(Widget? current, List<Widget> previous) => Stack(
         alignment: AlignmentDirectional.topStart,
+        fit: StackFit.passthrough,
         children: [...previous, ?current],
       );
+
+  /// Between the step's verse and its neighbours.
+  static const double _neighbourGap = 28;
+
+  /// Between one neighbour after the step's verse and the next, as between
+  /// the verses of a step.
+  static const double _gapAfter = 20;
+
+  /// The most verses built after the step's: those that fit whole on the
+  /// page are shown (FitsWhole), so that the page is filled rather than
+  /// left blank below a few short ones, as the Targum's are on a tablet.
+  static const _versesAfter = 8;
+
+  /// The window's height, at the default reading size, from which the
+  /// step's verse is shown among its neighbours.
+  static const _neighbourHeight = 720.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1995,16 +2085,18 @@ class _GuidedStep extends StatelessWidget {
     final refs = flow.stepVerses(chunk, kind);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
+    final amongNeighbours = _amongNeighbours(context, styles, kind);
 
     // Every verse of the guided reader hangs its number in the gutter at its
     // start (§4.7).
-    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) {
+    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false, bool fullInk = false}) {
       final marks = marksOf(r);
       return ScriptureVerse(
         verse: text.verse(r),
         kind: kind,
         settings: settings,
         secondary: secondary,
+        fullInk: fullInk,
         hangingNumber: true,
         onLongPress: () => onVerseOptions(r),
         bookmarked: marks?.bookmarked ?? false,
@@ -2041,7 +2133,10 @@ class _GuidedStep extends StatelessWidget {
             ],
           );
         case StepKind.targum:
-          final targum = verse(texts.onkelos!, r, ScriptureKind.targum);
+          // Among its dimmed neighbours, from which the Targum's quieter ink
+          // would barely stand apart, the step's verse is in full ink, as at
+          // the Hebrew's steps (§9).
+          final targum = verse(texts.onkelos!, r, ScriptureKind.targum, fullInk: amongNeighbours);
           if (!flow.thirdHebrewInTargum(chunk, r)) return targum;
           // Read with others, the verse has no step of its own for its third
           // reading: the Hebrew follows its Onkelos here instead, set apart
@@ -2101,94 +2196,147 @@ class _GuidedStep extends StatelessWidget {
     // that read it, not the Targum's or Rashi's.
     final hebrewStep = kind != StepKind.targum && kind != StepKind.rashi;
 
-    return Scrollbar(
-      controller: scroll,
-      child: SingleChildScrollView(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (notice case final notice?) ...[notice, const Gap(16)],
-                // It stays as the step changes, and its bars fill as it does.
-                // Its labels, and its check, grow to twice their size at
-                // most, as the step's title beneath and the rest of the
-                // chrome.
-                MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: ReaderScreen.chromeMaxTextScale,
-                  child: PassTrack(steps: steps, step: step),
-                ),
-                const Gap(8),
-                AnimatedSwitcher(
-                  duration: Motion.of(context).d(_fade),
-                  layoutBuilder: _fromTop,
-                  child: KeyedSubtree(
-                    key: ValueKey((aliyah, chunk, step)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Semantics(
-                          container: true,
-                          // Spoken by the reader's announcement where there
-                          // is one, and elsewhere as it appears.
-                          liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
-                          label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
-                          child: ExcludeSemantics(
-                            child: Text(
-                              stepTitle,
-                              style: theme.textTheme.bodyLarge,
-                              // At most twice its size, as the rest of the
-                              // chrome, so that the verse shows beneath it.
-                              textScaler: MediaQuery.textScalerOf(context)
-                                  .clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
-                            ),
-                          ),
-                        ),
-                        const Gap(12),
-                        for (final (i, r) in refs.indexed) ...[
-                          if (secondParsha case final second? when r == second.start) second.heading(settings),
-                          if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
-                          // The Targum again, after the Hebrew of a verse read
-                          // a third time among it.
-                          if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
-                            hanging(LayerLabel(l.targumLabel)),
-                          // The verse and what goes with it, highlighted
-                          // together while Listen reads it.
-                          SpeakingVerseMark(
-                            active: r == speakingVerse,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                layerFor(r),
-                                if (settings.showRashi &&
-                                    kind != StepKind.rashi &&
-                                    texts.rashi != null &&
-                                    texts.rashi!.on(r).isNotEmpty) ...[
-                                  const Gap(4),
-                                  hanging(LayerLabel(l.rashiLabel)),
-                                  rashi(texts.rashi!.on(r)),
-                                ],
-                              ],
-                            ),
-                          ),
-                          if (texts.mikrah.breaks[r] case final brk? when hebrewStep)
-                            SectionGap(kind: brk, settings: settings)
-                          else if (i < refs.length - 1)
-                            const Gap(20),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final title = Semantics(
+      container: true,
+      // Spoken by the reader's announcement where there is one, and
+      // elsewhere as it appears.
+      liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
+      label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
+      child: ExcludeSemantics(
+        child: Text(
+          stepTitle,
+          style: theme.textTheme.bodyLarge,
+          // At most twice its size, as the rest of the chrome, so that the
+          // verse shows beneath it.
+          textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
         ),
       ),
     );
+
+    final verses = [
+      for (final (i, r) in refs.indexed) ...[
+        if (secondParsha case final second? when r == second.start) second.heading(settings),
+        if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
+        // The Targum again, after the Hebrew of a verse read a third time
+        // among it.
+        if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
+          hanging(LayerLabel(l.targumLabel)),
+        // The verse and what goes with it, highlighted together while Listen
+        // reads it.
+        SpeakingVerseMark(
+          active: r == speakingVerse,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              layerFor(r),
+              if (settings.showRashi && kind != StepKind.rashi && texts.rashi != null && texts.rashi!.on(r).isNotEmpty) ...[
+                const Gap(4),
+                hanging(LayerLabel(l.rashiLabel)),
+                rashi(texts.rashi!.on(r)),
+              ],
+            ],
+          ),
+        ),
+        if (texts.mikrah.breaks[r] case final brk? when hebrewStep)
+          SectionGap(kind: brk, settings: settings)
+        else if (i < refs.length - 1)
+          const Gap(20),
+      ],
+    ];
+
+    // A neighbour of the step's verse, for context: in the step's own text,
+    // dimmed, and neither heard nor touched, so that the step's verse is the
+    // only one to read, and the one Next and Back go on from.
+    final targumStep = kind == StepKind.targum;
+    Widget neighbour(VerseRef r) => ExcludeSemantics(
+          child: IgnorePointer(
+            child: ScriptureVerse(
+              verse: (targumStep ? texts.onkelos! : texts.mikrah).verse(r),
+              kind: targumStep ? ScriptureKind.targum : ScriptureKind.mikrah,
+              settings: settings,
+              dimmed: true,
+              hangingNumber: true,
+            ),
+          ),
+        );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const padding = EdgeInsets.fromLTRB(20, 16, 20, 24);
+        final page = constraints.maxHeight - padding.vertical;
+        // Among its neighbours, the verse just read is above the step's
+        // verse where the step still fits whole beneath it, and those to
+        // come are after it, as far as they fit whole on the page. A
+        // section's mark after the step's verse keeps the room it takes.
+        final c = flow.chunks[chunk];
+        final body = FitsWhole(
+          lead: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [title, const Gap(12)],
+          ),
+          before: amongNeighbours && c.start > 0 ? neighbour(flow.verses[c.start - 1]) : null,
+          main: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: verses),
+          after: [
+            if (amongNeighbours)
+              for (var i = c.end; i < min(c.end + _versesAfter, flow.verses.length); i++) neighbour(flow.verses[i]),
+          ],
+          beforeGap: _neighbourGap,
+          firstGap: hebrewStep && texts.mikrah.breaks[refs.last] != null ? 0 : _neighbourGap,
+          gap: _gapAfter,
+        );
+        final children = [
+          if (notice case final notice?) ...[notice, const Gap(16)],
+          // It stays as the step changes, and its bars fill as it does. Its
+          // labels, and its check, grow to twice their size at most, as the
+          // step's title beneath and the rest of the chrome.
+          MediaQuery.withClampedTextScaling(
+            maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+            child: PassTrack(steps: steps, step: step),
+          ),
+          const Gap(8),
+          AnimatedSwitcher(
+            duration: Motion.of(context).d(_fade),
+            layoutBuilder: _fromTop,
+            child: KeyedSubtree(key: ValueKey((aliyah, chunk, step)), child: body),
+          ),
+        ];
+        return Scrollbar(
+          controller: scroll,
+          child: SingleChildScrollView(
+            controller: scroll,
+            padding: padding,
+            child: Center(
+              child: ConstrainedBox(
+                // Among its neighbours, the step fills the page, and they
+                // fill what it leaves.
+                constraints: BoxConstraints(
+                  maxWidth: styles.maxLineWidth,
+                  minHeight: amongNeighbours ? max(0.0, page) : 0,
+                ),
+                child: ColumnToPage(children: children),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Whether the step's verse is shown among its neighbours (§9): read verse
+  /// by verse, in a window at least 600 wide and [_neighbourHeight] tall, or
+  /// taller in proportion as the Torah's lines are larger than they are at
+  /// the default size. Not in high contrast, which dims nothing, nor at
+  /// Rashi's step, whose reading is Rashi: his comments have no neighbours,
+  /// and the verse they explain is set in the quieter ink beside them.
+  bool _amongNeighbours(BuildContext context, ScriptureStyles styles, StepKind kind) {
+    if (flow.method != ReadingMethod.verseByVerse) return false;
+    if (kind == StepKind.rashi) return false;
+    if (SeferColors.of(context).isHighContrast) return false;
+    final window = MediaQuery.sizeOf(context);
+    if (window.width < Breakpoints.medium) return false;
+    final line = MediaQuery.textScalerOf(context).scale(styles.sizeFor(ScriptureKind.mikrah)) * styles.lineHeight;
+    final defaultLine = ScriptureStyles.baseHebrewSize * const AppSettings().lineHeight;
+    return window.height >= _neighbourHeight * line / defaultLine;
   }
 }
 
@@ -2208,7 +2356,9 @@ class _Note extends StatelessWidget {
 /// What the reader sees once an aliyah is read (DESIGN_SYSTEM.md §6.23): a
 /// divider whose hairlines draw outward from its lozenge, then the title, a
 /// line about what comes next, and the way on. Once the parsha is read, it
-/// says how the week stands and offers the haftarah.
+/// names it, says how the week stands, greets the Shabbat or Yom Tov that
+/// begins the next day, and offers the haftarah; the parsha completed just
+/// now has its rings close in place of the divider.
 class _FinishedPanel extends ConsumerStatefulWidget {
   const _FinishedPanel({
     required this.ctx,
@@ -2216,6 +2366,7 @@ class _FinishedPanel extends ConsumerStatefulWidget {
     required this.justCompleted,
     required this.firstFocus,
     required this.onGoToAliyah,
+    required this.onCelebrate,
   });
 
   final WeekContext ctx;
@@ -2230,35 +2381,68 @@ class _FinishedPanel extends ConsumerStatefulWidget {
   final FocusNode firstFocus;
   final ValueChanged<int> onGoToAliyah;
 
+  /// The parsha's celebrate haptic, called as its rings close; the reader
+  /// gives it once.
+  final VoidCallback onCelebrate;
+
   @override
   ConsumerState<_FinishedPanel> createState() => _FinishedPanelState();
 }
 
 class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTickerProviderStateMixin {
-  // The completion moment (§8), once: the divider's hairlines draw outward
-  // over Motion.long, then the rest fades in over Motion.short.
-  late final AnimationController _reveal = AnimationController(vsync: this, duration: Motion.long + Motion.short);
+  /// Whether this is the parsha's moment (§8), completed just now: its rings
+  /// close in place of the divider. Set once, as the panel first shows.
+  late final bool _parshaMoment = widget.justCompleted && widget.ctx.progress.isComplete;
+
+  /// Whether the parsha's rings sweep closed (ParshaRings, from what they
+  /// last showed in this run), rather than show closed from the start, as
+  /// after a cold start or a link straight to the reader. Taken as the panel
+  /// first shows, before its rings do.
+  late final bool _sweeps = _parshaMoment && ParshaRings.willSweep(widget.ctx.progress);
+
+  // The completion moment (§8), once. An aliyah's divider draws its
+  // hairlines outward over Motion.long; the parsha's rings close over
+  // Motion.ring. Then the rest fades in over Motion.short, as the last arc
+  // lands. Rings shown closed have nothing to wait for: the rest follows
+  // them after a short beat.
+  late final Duration _lead = _parshaMoment ? (_sweeps ? Motion.ring : Motion.short) : Motion.long;
+  late final double _split = _lead.inMilliseconds / (_lead + Motion.short).inMilliseconds;
+  late final AnimationController _reveal = AnimationController(vsync: this, duration: _lead + Motion.short);
   late final Animation<double> _draw = CurvedAnimation(parent: _reveal, curve: Interval(0, _split, curve: Motion.decelerate));
   late final Animation<double> _fade = CurvedAnimation(parent: _reveal, curve: Interval(_split, 1, curve: Motion.standard));
   bool _started = false;
 
-  static final _split = Motion.long.inMilliseconds / (Motion.long + Motion.short).inMilliseconds;
+  /// The celebrate haptic as the rings close: on a timer, not the reveal's
+  /// ticker, which stops while a page covers the reader, as a book's page
+  /// opened by the same finish does before the rings have closed.
+  Timer? _celebrateTimer;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // Under Reduce Motion it is simply there.
-    if (Motion.of(context).reduced) {
+    final motion = Motion.of(context);
+    // Under Reduce Motion it is simply there, and the haptic comes at once,
+    // as it does where the rings have no sweep to close.
+    if (motion.reduced) {
       _reveal.value = 1;
     } else {
       _reveal.forward();
+    }
+    if (!_parshaMoment) return;
+    if (motion.reduced || !_sweeps) {
+      widget.onCelebrate();
+    } else {
+      _celebrateTimer = Timer(motion.d(Motion.ring), () {
+        if (mounted) widget.onCelebrate();
+      });
     }
   }
 
   @override
   void dispose() {
+    _celebrateTimer?.cancel();
     _reveal.dispose();
     super.dispose();
   }
@@ -2295,17 +2479,28 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     if (later != null) {
       return later.date == today.addDays(1) ? l.todayReadingDone : l.todayReadingDoneOn(Names(context).weekday(later.date));
     }
-    final tomorrow = today.addDays(1);
-    final chag = !tomorrow.isShabbat &&
-        JewishHolidays.isYomTov(HebrewDate.fromLocalDate(tomorrow), israel: settings.oneDayYomTov);
-    final greeting = chag ? 'chag' : 'shabbat';
+    final greeting = _greetingKind(settings);
     return ctx.plan.shabbatAliyot.isEmpty ? l.erevShabbatDone(greeting) : l.erevShabbatDoneMorning(greeting);
+  }
+
+  /// The greeting for the next day, as the select of erevShabbatDone and
+  /// restGreeting names it: Rosh Hashanah's and Yom Kippur's own, on Shabbat
+  /// too, as Today's title page greets them then; chag for another Yom Tov,
+  /// unless it is Shabbat; otherwise Shabbat's.
+  String _greetingKind(AppSettings settings) {
+    final tomorrow = ctx.today.addDays(1);
+    final hebrew = HebrewDate.fromLocalDate(tomorrow);
+    if (JewishHolidays.isYomKippur(hebrew)) return 'yomKippur';
+    if (JewishHolidays.isRoshHashanah(hebrew)) return 'roshHashanah';
+    final chag = !tomorrow.isShabbat && JewishHolidays.isYomTov(hebrew, israel: settings.oneDayYomTov);
+    return chag ? 'chag' : 'shabbat';
   }
 
   /// How the finished parsha stands (on time, after Shabbat, or doubled up),
   /// with the streak where streaks are shown and the parsha was completed
-  /// just now; null for any other standing.
-  (WeekStatus, String)? _standing(AppSettings settings) {
+  /// just now, in parts that a line breaks between; null for any other
+  /// standing.
+  (WeekStatus, List<String>)? _standing(AppSettings settings) {
     final l = context.l10n;
     final summary = ref.watch(streakSummaryProvider);
     final evaluation = summary.weeks.where((e) => e.plan.weekId == ctx.id).lastOrNull;
@@ -2314,18 +2509,20 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     // are earned, not as a parsha read already is stepped through again.
     final streaks = settings.showStreaks && widget.justCompleted;
     final status = evaluation.status;
-    final text = switch (status) {
+    // A sentence is one part, as it is written: the line holds its dash to
+    // the word before it.
+    final parts = switch (status) {
       WeekStatus.onTime when streaks => [
           l.weekOnTime,
           l.parshaStreakLength(summary.parshaStreak),
           if (evaluation.earnedGrace) l.graceDayEarned,
-        ].join(' · '),
-      WeekStatus.onTime => l.weekOnTime,
-      WeekStatus.late => streaks ? l.parshaDoneLateStreak : l.parshaDoneLate,
-      WeekStatus.restored => streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored,
+        ],
+      WeekStatus.onTime => [l.weekOnTime],
+      WeekStatus.late => [streaks ? l.parshaDoneLateStreak : l.parshaDoneLate],
+      WeekStatus.restored => [streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored],
       _ => null,
     };
-    return text == null ? null : (status, text);
+    return parts == null ? null : (status, parts);
   }
 
   @override
@@ -2342,41 +2539,59 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     final haftarah = complete && (settings.haftarahEnabled || ctx.haftarahRequired) && week.haftarah == null;
     final doneForToday = complete || next == null ? null : _doneForToday(settings);
     final standing = complete ? _standing(settings) : null;
+    final parshaName = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
+    // Under the parsha's Hebrew name, the Hebrew UI's title doesn't name it
+    // again.
+    final shortTitle = complete && context.isHebrewUi;
     final title = complete
-        ? l.parshaDoneTitle(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
+        ? (shortTitle ? l.parshaDoneTitleShort : l.parshaDoneTitle(parshaName))
         : l.aliyahDoneTitle(names.aliyah(widget.aliyah));
     // What the reader's announcement says, where there is one; elsewhere
-    // the title's live region says it.
-    final spoken = complete
-        ? l.parshaComplete(names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames))
-        : l.aliyahComplete(names.aliyah(widget.aliyah));
+    // the title's live region says it. The heading names the parsha either
+    // way.
+    final spoken = complete ? l.parshaComplete(parshaName) : l.aliyahComplete(names.aliyah(widget.aliyah));
     final announces = MediaQuery.supportsAnnounceOf(context);
     final wide = MediaQuery.sizeOf(context).width >= Breakpoints.medium;
+    // The eve of Shabbat or Yom Tov: a greeting for it, as the parsha is done.
+    final greeting = complete && JewishHolidays.isRestDay(ctx.today.addDays(1), israel: settings.oneDayYomTov)
+        ? l.restGreeting(_greetingKind(settings))
+        : null;
     final marginalia = type.marginalia;
+    final scaler = MediaQuery.textScalerOf(context);
+    // The gaps between its lines grow with the text, if not as fast.
+    final spacing = scaler.clamp(maxScaleFactor: 1.5);
+    Widget gap(double size) => Gap(spacing.scale(size));
 
     // At most one Filled button (§6.5): the next aliyah, unless the day's
     // reading is done, when Done is, and continuing is a quiet Keep going.
-    // The first button takes the focus.
+    // The first button takes the focus. Each has room around a label that
+    // large text wraps, as Today's have, and a Filled or Tonal one's icon
+    // grows with its label.
     final buttons = <Widget>[];
     FocusNode? focus() => buttons.isEmpty ? widget.firstFocus : null;
     void done() => context.canPop() ? context.pop() : context.go('/today');
+    final roomy = AppButtons.roomy(context, (24, 12, 6));
+    final roomyText = AppButtons.roomy(context, (12, 8, 4), vertical: 8);
+    final themeIcon = theme.filledButtonTheme.style?.iconSize?.resolve(const {}) ?? 18;
+    final buttonIcon = ButtonStyle(iconSize: WidgetStatePropertyAll(scaler.clamp(maxScaleFactor: 1.6).scale(themeIcon)));
+    Widget label(String text) => Text(text, textAlign: TextAlign.center);
     Widget doneButton({required bool filled}) => filled
         ? FilledButton(
             focusNode: focus(),
-            style: FilledButton.styleFrom(minimumSize: const Size(160, 52)),
+            style: roomy.copyWith(minimumSize: const WidgetStatePropertyAll(Size(160, 52))),
             onPressed: done,
-            child: Text(l.actionDone),
+            child: label(l.actionDone),
           )
-        : TextButton(focusNode: focus(), onPressed: done, child: Text(l.actionDone));
+        : TextButton(focusNode: focus(), style: roomyText, onPressed: done, child: label(l.actionDone));
     if (next != null && doneForToday == null) {
       buttons
         ..add(FilledButton.icon(
           focusNode: focus(),
-          style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
+          style: roomy.merge(buttonIcon).copyWith(minimumSize: const WidgetStatePropertyAll(Size(64, 52))),
           onPressed: () => widget.onGoToAliyah(next),
           icon: const Icon(Icons.chevron_right),
           iconAlignment: IconAlignment.end,
-          label: Text(l.nextAliyahAction(names.aliyah(next))),
+          label: label(l.nextAliyahAction(names.aliyah(next))),
         ))
         ..add(doneButton(filled: false));
     } else if (next != null) {
@@ -2384,17 +2599,18 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
         ..add(doneButton(filled: true))
         ..add(TextButton(
           focusNode: focus(),
+          style: roomyText,
           onPressed: () => widget.onGoToAliyah(next),
-          child: Text(l.keepGoingAliyah(names.aliyah(next))),
+          child: label(l.keepGoingAliyah(names.aliyah(next))),
         ));
     } else {
       if (haftarah) {
         buttons.add(FilledButton.tonalIcon(
           focusNode: focus(),
-          style: AppButtons.tonal(context),
+          style: AppButtons.tonal(context).merge(roomy).merge(buttonIcon),
           onPressed: () => replaceWithWeekPage(context, 'haftarah/${ctx.id}'),
           icon: const Icon(Icons.auto_stories_outlined),
-          label: Text(l.readHaftarah),
+          label: label(l.readHaftarah),
         ));
       }
       buttons.add(doneButton(filled: !haftarah));
@@ -2408,11 +2624,19 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedBuilder(
-                animation: _draw,
-                builder: (context, _) => SeferDivider(width: SeferDivider.maxWidth, progress: _draw.value),
-              ),
-              const Gap(16),
+              if (_parshaMoment) ...[
+                // Closed, without a legend: what they say is spoken.
+                ExcludeSemantics(
+                  child: ParshaRings(size: ParshaRings.header, progress: week, aliyahWeights: ctx.aliyahVerses),
+                ),
+                const Gap(Space.md),
+              ] else ...[
+                AnimatedBuilder(
+                  animation: _draw,
+                  builder: (context, _) => SeferDivider(width: SeferDivider.maxWidth, progress: _draw.value),
+                ),
+                const Gap(16),
+              ],
               // Faded in together, but present for screen readers from the
               // start, so that the heading is there to be found.
               FadeTransition(
@@ -2421,39 +2645,67 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (complete) ...[
+                      // The parsha's name, pointed, for the eye: the heading
+                      // under it says it.
+                      ExcludeSemantics(
+                        child: WholeWords(
+                          names.portionPointed(ctx.portion),
+                          textDirection: TextDirection.rtl,
+                          locale: const Locale('he'),
+                          style: type.hebrewDisplay.copyWith(
+                            fontSize: wide ? 44 : 36,
+                            height: wide ? 56 / 44 : 48 / 36,
+                            color: scheme.primary,
+                            fontWeight: SeferColors.of(context).isHighContrast ? FontWeight.w700 : null,
+                          ),
+                        ),
+                      ),
+                      gap(4),
+                    ],
                     Semantics(
                       // Said by the reader's announcement where there is one,
                       // and elsewhere (on Android) as it appears.
                       liveRegion: !announces,
                       header: true,
                       headingLevel: 1,
-                      child: Text(
+                      // Its lines balanced, so that a word is never left
+                      // alone on the last, as with large text.
+                      child: BalancedText(
                         title,
-                        semanticsLabel: announces ? null : spoken,
-                        textAlign: TextAlign.center,
-                        style: (wide ? theme.textTheme.displaySmall : theme.textTheme.headlineMedium)
+                        semanticsLabel: announces ? (shortTitle ? l.parshaDoneTitle(parshaName) : null) : spoken,
+                        style: switch ((complete, wide)) {
+                          (true, true) => theme.textTheme.headlineMedium,
+                          (true, false) => theme.textTheme.headlineSmall,
+                          (false, true) => theme.textTheme.displaySmall,
+                          (false, false) => theme.textTheme.headlineMedium,
+                        }
                             ?.copyWith(color: scheme.onSurface),
                       ),
                     ),
+                    // The marginalia lines balanced, and their words kept
+                    // whole however large the text, as the title's are; a
+                    // line of two sentences too long for one line sets each
+                    // on its own.
                     if (next != null) ...[
-                      const Gap(8),
+                      gap(8),
                       if (doneForToday != null) ...[
-                        Text(doneForToday, textAlign: TextAlign.center, style: marginalia),
-                        const Gap(4),
+                        BalancedText(doneForToday, style: marginalia, bySentence: true),
+                        gap(4),
                       ],
-                      Text(
-                        l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]),
-                        textAlign: TextAlign.center,
-                        style: marginalia,
-                      ),
+                      BalancedText(l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]), style: marginalia),
                     ],
-                    if (standing case (final status, final text)) ...[
-                      const Gap(8),
-                      _StandingLine(status: status, text: text),
+                    if (standing case (final status, final parts)) ...[
+                      gap(8),
+                      _StandingLine(status: status, parts: parts),
                     ],
-                    const Gap(24),
+                    if (greeting != null) ...[
+                      gap(8),
+                      BalancedText(greeting, style: marginalia),
+                    ],
+                    gap(24),
                     for (final (i, button) in buttons.indexed) ...[
-                      if (i > 0) const Gap(8),
+                      if (i > 0) gap(8),
                       button,
                     ],
                   ],
@@ -2467,37 +2719,47 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
   }
 }
 
-/// How a finished parsha stands: its status's icon, in its colour, and a
-/// sentence (§6.23).
+/// How a finished parsha stands: its status's icon, in its colour, and its
+/// parts between middle dots (§6.23), which a line breaks between rather
+/// than inside one, or a sentence, its lines balanced so that none is left
+/// with a word alone, and its dash held to the word before it where the two
+/// fit on a line. Lines after the first start under it, beside the icon,
+/// the whole as wide as its text and centred in the panel.
 class _StandingLine extends StatelessWidget {
-  const _StandingLine({required this.status, required this.text});
+  const _StandingLine({required this.status, required this.parts});
 
   final WeekStatus status;
-  final String text;
+  final List<String> parts;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final style = theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant);
-    // The icon rides with the first word, so the line wraps as one sentence.
-    return Text.rich(
-      TextSpan(children: [
-        WidgetSpan(
-          alignment: PlaceholderAlignment.middle,
-          child: Padding(
-            padding: const EdgeInsetsDirectional.only(end: 6),
-            child: Icon(
-              WeekStatusBadge.icon(status),
-              // Growing with the text, but never outweighing it.
-              size: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(18),
-              color: WeekStatusBadge.color(context, status),
-            ),
+    final style = theme.textTheme.bodyMedium!.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    final scaler = MediaQuery.textScalerOf(context);
+    // Growing with the text, as the buttons' icons do, but never
+    // outweighing it, and centred on the first line.
+    final iconSize = scaler.clamp(maxScaleFactor: 1.6).scale(18);
+    // As the text lays its line out: the system's scale may grow small text
+    // faster than large, so it scales the size, not the line.
+    final line = scaler.scale(style.fontSize!) * (style.height ?? 1);
+    // One stop for a screen reader, however many lines it takes.
+    return MergeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: max(0.0, (line - iconSize) / 2)),
+            child: Icon(WeekStatusBadge.icon(status), size: iconSize, color: WeekStatusBadge.color(context, status)),
           ),
-        ),
-        TextSpan(text: text),
-      ]),
-      textAlign: TextAlign.center,
-      style: style,
+          const SizedBox(width: 6),
+          Flexible(
+            child: parts.length == 1
+                ? BalancedText(parts.single, style: style, textAlign: TextAlign.start, holdDashes: true, shrinkWrap: true)
+                : DotLine(parts, style: style),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2538,8 +2800,9 @@ class _Whole {
   /// The key of each aliyah's part of the text, which finds where it begins.
   final GlobalKey Function(int aliyah) aliyahKey;
 
-  /// Each aliyah's heading, which stays at the top while it is read.
-  final Widget Function(int aliyah) heading;
+  /// Each aliyah's heading, [pinned] where it stays at the top while its
+  /// aliyah is read.
+  final Widget Function(int aliyah, {required bool pinned}) heading;
 
   /// Whether the text is out of sight, while it is brought to the place it
   /// opens at.
@@ -2637,6 +2900,9 @@ class _FullText extends StatelessWidget {
 
   /// The page's side padding, and around the text at its top and end.
   static const _side = 20.0;
+
+  /// Above and below the [notice].
+  static const _noticeGap = 12.0;
 
   /// [child] in the reading column, as a verse's block is set.
   Widget _column(Widget child) => Center(
@@ -2742,7 +3008,7 @@ class _FullText extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: ParallelHeading(
                     torah: l.mikrahLabel,
-                    beside: beside == targum ? l.targumLabel : l.translationLabel,
+                    beside: beside == targum ? l.targumLabel : l.translationHead,
                     besideDirection: beside == targum ? TextDirection.rtl : TextDirection.ltr,
                   ),
                 ),
@@ -2756,6 +3022,7 @@ class _FullText extends StatelessWidget {
                 ChapterHeading(chapter: r.chapter, settings: settings, headingLevel: whole == null ? 2 : 3),
               VerseGroup(
                 verse: r,
+                haptics: settings.haptics,
                 highlighted: highlighted,
                 onTap: focusTap,
                 onLongPress: () => onVerseOptions(r),
@@ -2799,7 +3066,13 @@ class _FullText extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (notice case final notice?) ...[_column(notice), const Gap(8)],
+                // 12 clear of the ribbon above it (with the 8 the text
+                // begins at) and of the text beneath.
+                if (notice case final notice?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: _noticeGap - 8, bottom: _noticeGap),
+                    child: _column(notice),
+                  ),
                 for (final (i, r) in verses.indexed) verse(i, r, first: i == 0, last: i == verses.length - 1),
                 ...end(aliyah),
               ],
@@ -2809,9 +3082,8 @@ class _FullText extends StatelessWidget {
       );
     }
 
-    // The whole parsha, up to 244 verses: each aliyah under its heading,
-    // which stays at the top while it is read, and its verses built only as
-    // they come near the view.
+    // The whole parsha, up to 244 verses: each aliyah under its heading, and
+    // its verses built only as they come near the view.
     final parsha = whole.parsha;
     final last = parsha.aliyot.length - 1;
     return TapObserver(
@@ -2830,14 +3102,22 @@ class _FullText extends StatelessWidget {
               slivers: [
                 if (notice case final notice?)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(_side, 8, _side, 8),
+                    padding: const EdgeInsets.fromLTRB(_side, _noticeGap, _side, _noticeGap),
                     sliver: SliverToBoxAdapter(child: _column(notice)),
                   ),
                 for (final (a, aliyot) in parsha.aliyot.indexed)
                   SliverMainAxisGroup(
                     key: whole.aliyahKey(a),
                     slivers: [
-                      PinnedHeaderSliver(child: whole.heading(a)),
+                      // Held at the top while its aliyah is read only where
+                      // no ribbon names the aliyah, in focus mode; beneath
+                      // the ribbon it would name it a third time, and
+                      // scrolls with the text. The same heading either way,
+                      // so that turning focus mode on or off moves nothing.
+                      if (settings.focusMode)
+                        PinnedHeaderSliver(child: whole.heading(a, pinned: true))
+                      else
+                        SliverToBoxAdapter(child: whole.heading(a, pinned: false)),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(_side, 8, _side, 0),
                         sliver: SliverList.builder(

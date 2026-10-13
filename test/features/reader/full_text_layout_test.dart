@@ -17,6 +17,7 @@ import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikrah/services/tts.dart';
 import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart' show Eyebrow;
 
 import '../../helpers.dart';
 
@@ -123,9 +124,14 @@ void main() {
       expect(heads, findsOneWidget);
       expect(tester.getRect(heads).bottom, lessThan(right.top));
       expect(find.bySemanticsLabel('Mikrah, Targum Onkelos'), findsOneWidget);
+      // As eyebrows, as the guided reader's layer labels are.
+      expect(
+        tester.widgetList<Eyebrow>(find.descendant(of: heads, matching: find.byType(Eyebrow))).map((e) => e.text),
+        ['Mikrah', 'Targum Onkelos'],
+      );
 
-      // The text keeps to its wider measure, centred, and the title and the
-      // ribbon to it.
+      // The text keeps to its wider measure, centred, and the ribbon to it;
+      // the title starts where the verses do, within their blocks.
       final column = tester.getRect(find.byType(VerseGroup).first);
       expect(column.width, ScriptureStyles.parallelWidth);
       expect(column.center.dx, closeTo(wide.width / 2, 0.5));
@@ -133,7 +139,7 @@ void main() {
       expect(tester.getRect(tab('Rishon')).left, greaterThanOrEqualTo(column.left));
       expect(tester.getRect(tab('Shevi’i')).right, lessThanOrEqualTo(column.right + 0.01));
       expect(ribbon.width, wide.width, reason: 'its rule runs the width of the window');
-      expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left, 0.5));
+      expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left + VerseGroup.padding.left, 0.5));
     });
 
     for (final translation in [false, true]) {
@@ -236,7 +242,7 @@ void main() {
       );
       final row = tester.widget<ParallelVerse>(find.byType(ParallelVerse).first);
       expect(row.beside, isA<TranslationVerse>());
-      expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).beside, 'Translation (JPS 1917)');
+      expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).beside, 'English translation');
       expect(tester.widget<ParallelHeading>(find.byType(ParallelHeading)).besideDirection, TextDirection.ltr);
     });
 
@@ -357,6 +363,75 @@ void main() {
     });
   });
 
+  group('the full text, justified automatically', () {
+    // As a printed Chumash is: in parallel columns too, whose ragged edges
+    // would otherwise face each other across the gutter (§4.7).
+    for (final (name, size, translation, justified) in [
+      ('sets both parallel columns flush at both sides', wide, false, true),
+      ('sets a tablet\'s single column flush at both sides', const Size(800, 1180), false, true),
+      ('leaves the translation ragged', const Size(800, 1180), true, true),
+      ('leaves a phone\'s column ragged', phone, true, false),
+    ]) {
+      testWidgets(name, (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0?mode=full',
+          settings: AppSettings(onboardingComplete: true, notificationPromptShown: true, showTranslation: translation),
+          size: size,
+        );
+        TextAlign alignOf(Finder verse) =>
+            tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign;
+        final expected = justified ? TextAlign.justify : TextAlign.start;
+        for (final kind in [ScriptureKind.mikrah, ScriptureKind.targum]) {
+          expect(alignOf(verses(kind).first), expected, reason: kind.name);
+        }
+        if (translation) expect(alignOf(find.byType(TranslationVerse).first), TextAlign.start);
+      });
+    }
+
+    // Wherever the columns are side by side, both are justified, however
+    // narrow the pane (an iPad's 1024) or large the text: decided for the
+    // row, not for each column's own measure, so that neither faces the
+    // gutter ragged, nor one flush beside a ragged one.
+    for (final (name, size, readingScale) in [
+      ('on a 1024 dp pane', const Size(1024, 768), 1.0),
+      ('at a reading size of 1.1', wide, 1.1),
+      ('at a reading size of 1.2', wide, 1.2),
+    ]) {
+      testWidgets('sets both parallel columns alike, flush at both sides, $name', (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/0?mode=full',
+          settings: AppSettings(onboardingComplete: true, notificationPromptShown: true, readingScale: readingScale),
+          size: size,
+        );
+        expect(find.byType(ParallelVerse), findsWidgets, reason: 'side by side');
+        TextAlign alignOf(Finder verse) =>
+            tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign;
+        for (final kind in [ScriptureKind.mikrah, ScriptureKind.targum]) {
+          expect(alignOf(verses(kind).first), TextAlign.justify, reason: kind.name);
+        }
+      });
+    }
+
+    testWidgets('leaves the parallel columns ragged where the reader never justifies', (tester) async {
+      await open(
+        tester,
+        '/read/5787:2/0?mode=full',
+        settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true, justifyMode: JustifyMode.never),
+      );
+      expect(find.byType(ParallelVerse), findsWidgets);
+      for (final kind in [ScriptureKind.mikrah, ScriptureKind.targum]) {
+        final verse = verses(kind).first;
+        expect(
+          tester.widget<RichText>(find.descendant(of: verse, matching: find.byType(RichText)).last).textAlign,
+          TextAlign.start,
+          reason: kind.name,
+        );
+      }
+    });
+  });
+
   group('the whole parsha', () {
     const whole = AppSettings(onboardingComplete: true, notificationPromptShown: true, fullTextWholeParsha: true);
 
@@ -443,6 +518,10 @@ void main() {
       expect(week.isAliyahDone(1), isTrue);
       expect(week.isAliyahDone(0), isFalse);
       expect(tester.widget<AliyahHeader>(heading(1)).done, isTrue);
+      // Its heading, scrolled away with the text beneath the ribbon, says so
+      // once it is back in view.
+      await tester.ensureVisible(heading(1));
+      await tester.pumpAndSettle();
       expect(
         tester.getSemantics(find.bySemanticsLabel('Sheni, aliyah 2 of 7, Genesis 7:1–16, read')),
         isSemantics(isHeader: true),
@@ -549,8 +628,71 @@ void main() {
       });
     }
 
-    testWidgets('Shift+F10 opens the options of the first verse below the heading held at the top', (tester) async {
+    testWidgets('beneath the ribbon, an aliyah\'s heading scrolls away with the text, centred over it', (tester) async {
       await open(tester, '/read/5787:2/0?mode=full', settings: whole, size: phone);
+      final ribbon = tester.getRect(find.byType(AliyahRibbon));
+      final text = tester.getRect(find.byType(CustomScrollView));
+      expect(tester.getRect(heading(0)).top, closeTo(ribbon.bottom, 1), reason: 'Rishon opens at its heading');
+      // Centred over the text, in the English UI too, where it once began
+      // at the start of the line: on one line, or with the verses wrapped
+      // under the name, each line centred.
+      final name = tester.getRect(find.descendant(of: heading(0), matching: find.byType(Row)).first);
+      final range = tester.getRect(find.descendant(of: heading(0), matching: find.text('Genesis 6:9–22')));
+      expect(tester.getRect(find.descendant(of: heading(0), matching: find.text('א'))).left, name.left);
+      if (range.top >= name.bottom - 1) {
+        expect(name.center.dx, closeTo(text.center.dx, 1));
+        expect(range.center.dx, closeTo(text.center.dx, 1));
+      } else {
+        expect((name.left + range.right) / 2, closeTo(text.center.dx, 1));
+      }
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(heading(0)).bottom, lessThan(ribbon.bottom), reason: 'gone with the text: the ribbon names it');
+      expect(titled('Rishon'), findsOneWidget);
+    });
+
+    testWidgets('in focus mode, an aliyah\'s heading is held at the top, and turning it on or off moves nothing',
+        (tester) async {
+      final c = await open(tester, '/read/5787:2/1?mode=full', settings: whole, size: phone);
+      final view = find.byType(CustomScrollView);
+      await tester.drag(view, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      ScrollPosition position() => tester.state<ScrollableState>(find.byType(Scrollable).last).position;
+      final scrolled = position().pixels;
+      double inView(Finder f) => tester.getRect(f).top - tester.getRect(view).top;
+      // A verse well in view, clear of where the heading would be held.
+      final shown = tester
+          .widgetList<VerseGroup>(find.byType(VerseGroup))
+          .firstWhere((g) => inView(find.byWidget(g)) > 100)
+          .verse;
+      final verse = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == shown);
+      final at = inView(verse);
+      expect(inView(heading(1)), lessThan(0), reason: 'Sheni\'s heading scrolled away');
+
+      for (final focus in [true, false]) {
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(focusMode: focus));
+        await tester.pumpAndSettle();
+        expect(find.byType(AliyahRibbon), focus ? findsNothing : findsOneWidget);
+        expect(position().pixels, scrolled, reason: 'focus mode ${focus ? 'on' : 'off'}');
+        expect(inView(verse), at, reason: 'focus mode ${focus ? 'on' : 'off'}');
+        if (focus) {
+          expect(inView(heading(1)), 0, reason: 'held at the top, where no ribbon names the aliyah');
+          expect(tester.getRect(verse).top, greaterThan(tester.getRect(heading(1)).bottom), reason: 'below it');
+        } else {
+          expect(inView(heading(1)), lessThan(0));
+        }
+      }
+    });
+
+    testWidgets('Shift+F10 opens the options of the first verse below the heading held at the top', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full', settings: whole.copyWith(focusMode: true), size: phone);
+      // In focus mode, where the heading is held at the top, with no verse
+      // focused: its first verse, on which focus mode opens, tapped again.
+      final first = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == const VerseRef(6, 9));
+      await tester.tap(first);
+      await tester.pumpAndSettle();
+      expect(tester.widget<VerseGroup>(first).highlighted, isFalse);
       // Scrolled so that a verse begins just above the heading's foot.
       final text = find.byType(CustomScrollView);
       final verse = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == const VerseRef(6, 12));

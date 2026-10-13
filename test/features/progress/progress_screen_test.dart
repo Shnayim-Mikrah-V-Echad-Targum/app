@@ -333,11 +333,14 @@ void main() {
     expect(titles[titles.length - 2], 'First aliyah');
     // A finished book is followed by the words said as one is.
     expect(find.descendant(of: group, matching: find.text('חֲזַק חֲזַק וְנִתְחַזֵּק')), findsNWidgets(4));
-    // One lozenge to a row.
-    expect(
-      find.descendant(of: group, matching: find.byType(Lozenge)),
-      findsNWidgets(tester.widget<PaperGroup>(group).children.length),
-    );
+    // One lozenge to a row: the siyum's the larger one.
+    final lozenges = find.descendant(of: group, matching: find.byType(Lozenge));
+    expect(lozenges, findsNWidgets(tester.widget<PaperGroup>(group).children.length));
+    final sizes = [for (final z in tester.widgetList<Lozenge>(lozenges)) z.size];
+    expect(sizes.first, Lozenge.large);
+    expect(sizes.skip(1), everyElement(Lozenge.small));
+    // Centred on the same line as the rest, under one another.
+    expect(tester.getCenter(lozenges.first).dx, tester.getCenter(lozenges.at(1)).dx);
   });
 
   testWidgets('with streak numbers hidden, the Record leaves out the streaks', (tester) async {

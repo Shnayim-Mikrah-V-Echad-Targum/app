@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -250,11 +251,98 @@ void _dismissCurrent(ScaffoldMessengerState messenger, {required bool reduced}) 
 // message to the next.
 const _snackBarMotion = AnimationStyle(duration: Motion.medium);
 
-/// Light haptic feedback, if the user hasn't turned it off.
-void hapticTap(WidgetRef ref) {
-  if (ref.read(settingsProvider).haptics) HapticFeedback.lightImpact();
+// Haptics, in three levels, each firmer than the last (docs/DESIGN_SYSTEM.md
+// §8, Haptics): at most one for a press, and none for what happens by
+// itself. They are a phone's and a tablet's (hapticsAvailable), or none once
+// the user has turned Haptic feedback off. Android and iOS keep to their own
+// setting too, and play nothing where it is off.
+
+/// Whether the app plays haptics here: on Android and iOS. Not on a
+/// desktop, which has none, nor, by choice, on the web, where only a phone's
+/// browser would vibrate, and coarsely; Settings offers Haptic feedback only
+/// where this is true.
+bool get hapticsAvailable =>
+    !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+
+/// A step: Next, on to the next reading. The faintest, a selection tick
+/// (Android's CLOCK_TICK).
+void hapticStep(WidgetRef ref) {
+  if (_hapticPlatform(ref) != null) HapticFeedback.selectionClick();
 }
 
-void hapticSuccess(WidgetRef ref) {
-  if (ref.read(settingsProvider).haptics) HapticFeedback.mediumImpact();
+/// A long press that opens options (a verse's, a note's): told to screen
+/// readers as a long press, as Flutter's own long-press feedback tells it,
+/// with a step's tick where haptics play and [haptics], the reader's Haptic
+/// feedback, is on. Never the platform's long-press pulse, which on Android
+/// is the celebrate haptic's and on iOS firmer than a success: a long press
+/// records nothing. An ink well that calls this has its own long-press
+/// feedback turned off, so that the press is felt once.
+void hapticLongPress(BuildContext context, {required bool haptics}) {
+  context.findRenderObject()?.sendSemanticsEvent(const LongPressSemanticsEvent());
+  if (haptics && hapticsAvailable) HapticFeedback.selectionClick();
 }
+
+/// Reading recorded: an aliyah finished or marked read, a check-in or the
+/// haftarah logged. A click, firmer than a step's tick; on Android
+/// lightImpact (VIRTUAL_KEY), as mediumImpact plays the same click there.
+void hapticSuccess(WidgetRef ref) => switch (_hapticPlatform(ref)) {
+      TargetPlatform.iOS => HapticFeedback.mediumImpact(),
+      TargetPlatform.android => HapticFeedback.lightImpact(),
+      _ => null,
+    };
+
+/// Reading recorded by a press, as [hapticSuccess], or where it completed a
+/// parsha ([completedParsha], which the caller tells from the week before
+/// and after), the celebrate haptic in its place: a parsha finished feels
+/// the same wherever it is finished (§8). The guided reader's finish has its
+/// own, as its panel's rings close.
+void hapticRecorded(WidgetRef ref, {required bool completedParsha}) =>
+    completedParsha ? hapticCelebrate(ref) : hapticSuccess(ref);
+
+/// A parsha or a book finished, once: iOS's success notification, and on
+/// Android a long press's heavy click (heavyImpact plays a tick there,
+/// lighter than a success's click).
+///
+/// One finish is felt once, though it may complete a parsha and a book
+/// together: the book's page, opening over the finish, gives none if one
+/// played within [celebrateQuiet] ([celebratedWithin]), and a parsha's rings
+/// closing beneath it give none once it has given one
+/// ([celebrationsPlayed]).
+void hapticCelebrate(WidgetRef ref) {
+  final platform = _hapticPlatform(ref);
+  if (platform == null) return;
+  _celebrations++;
+  _lastCelebration = clock.now();
+  platform == TargetPlatform.iOS ? HapticFeedback.successNotification() : HapticFeedback.vibrate();
+}
+
+/// How long after a celebrate haptic another is part of the same finish.
+const celebrateQuiet = Duration(seconds: 1);
+
+var _celebrations = 0;
+DateTime? _lastCelebration;
+
+/// How many celebrate haptics have played in this run: one taken as a
+/// moment begins, and compared as it ends, tells whether one played
+/// meanwhile.
+int get celebrationsPlayed => _celebrations;
+
+/// Whether a celebrate haptic played less than [within] ago. Either way
+/// round, should the device's clock have been set back since.
+bool celebratedWithin(Duration within) {
+  final last = _lastCelebration;
+  return last != null && clock.now().difference(last).abs() < within;
+}
+
+/// Forgets the celebrate haptics played, as though the app had just
+/// started: for tests, each of which is a new run.
+@visibleForTesting
+void forgetCelebrations() {
+  _celebrations = 0;
+  _lastCelebration = null;
+}
+
+/// The platform whose haptics play, if any do: Android or iOS, with Haptic
+/// feedback on.
+TargetPlatform? _hapticPlatform(WidgetRef ref) =>
+    hapticsAvailable && ref.read(settingsProvider).haptics ? defaultTargetPlatform : null;

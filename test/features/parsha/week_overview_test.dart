@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
@@ -427,6 +429,31 @@ void main() {
     expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
     expect(mark, findsNothing);
   });
+
+  testWidgets(
+    'marking the whole parsha read celebrates it, as finishing it anywhere does',
+    (tester) async {
+      await open(tester);
+      final sent = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'HapticFeedback.vibrate') sent.add(call.arguments as String? ?? 'vibrate');
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      final mark = find.widgetWithText(TextButton, 'Mark the whole parsha as read');
+      await tester.ensureVisible(mark);
+      await tester.pumpAndSettle();
+      await tester.tap(mark);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
+      await tester.pumpAndSettle();
+      // The celebrate in place of the success: Android's heavy click, iOS's
+      // success notification.
+      expect(sent, [if (defaultTargetPlatform == TargetPlatform.iOS) 'HapticFeedbackType.successNotification' else 'vibrate']);
+    },
+    variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
+  );
 
   testWidgets('the Parsha tab names its way to every parsha', (tester) async {
     final c = await open(tester);

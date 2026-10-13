@@ -1063,6 +1063,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get translationLabel => 'Translation (JPS 1917)';
 
   @override
+  String get translationHead => 'English translation';
+
+  @override
   String get haftarahTitle => 'Haftarah';
 
   @override
@@ -1721,6 +1724,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get justifyText => 'Justify text';
+
+  @override
+  String get justifyHelp =>
+      'Auto justifies Hebrew and Aramaic in a wide column, as in a printed Chumash.';
+
+  @override
+  String get justifyAuto => 'Auto';
+
+  @override
+  String get justifyAlways => 'Always';
+
+  @override
+  String get justifyNever => 'Never';
 
   @override
   String get lineWidthLabel => 'Line width';
@@ -3272,6 +3288,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get parshaDoneTitleShort => 'The parsha is complete';
+
+  @override
+  String restGreeting(String greeting) {
+    String _temp0 = intl.Intl.selectLogic(greeting, {
+      'chag': 'Chag sameach!',
+      'roshHashanah': 'Shanah tovah!',
+      'yomKippur': 'G’mar chatimah tovah!',
+      'other': 'Shabbat shalom!',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String nextAliyahLength(String aliyah, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -3304,6 +3334,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String erevShabbatDone(String greeting) {
     String _temp0 = intl.Intl.selectLogic(greeting, {
       'chag': 'Chag sameach!',
+      'roshHashanah': 'Shanah tovah!',
+      'yomKippur': 'G’mar chatimah tovah!',
       'other': 'Shabbat shalom!',
     });
     return 'That’s this week’s reading. $_temp0';
@@ -3313,6 +3345,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String erevShabbatDoneMorning(String greeting) {
     String _temp0 = intl.Intl.selectLogic(greeting, {
       'chag': 'Chag sameach!',
+      'roshHashanah': 'Shanah tovah!',
+      'yomKippur': 'G’mar chatimah tovah!',
       'other': 'Shabbat shalom!',
     });
     return 'The rest is for Shabbat morning. $_temp0';
@@ -3355,12 +3389,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String seferDoneBody(String book, int count, String second) {
+  String seferDoneFacts(int count, String second) {
     final intl.NumberFormat countNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);
     final String countString = countNumberFormat.format(count);
 
-    return '$book complete — $countString verses, twice, with $second.';
+    return '$countString verses, twice, with $second.';
+  }
+
+  @override
+  String seferDoneOn(String weekday, String date) {
+    return 'Finished on $weekday, $date';
+  }
+
+  @override
+  String siyumBody(int count, String second, String year) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'The whole Torah — $countString verses, twice, with $second, in the cycle of $year.';
+  }
+
+  @override
+  String siyumFromBody(int count, String second, String year) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString verses, twice, with $second, in the cycle of $year.';
   }
 
   @override

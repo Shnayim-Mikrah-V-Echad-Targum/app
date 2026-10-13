@@ -7,6 +7,7 @@ import '../../core/text/hebrew_text.dart';
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/feedback.dart' show hapticLongPress;
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/fonts_change_scope.dart';
@@ -46,15 +47,15 @@ class ScriptureStyles {
   /// Ketiv and alternate readings, to their verse.
   static const ketivScale = 0.62;
 
-  /// The guided reader's hanging verse numbers sit in a gutter this many
-  /// times the Torah's size wide, whatever the layer, so the text's edge stays
-  /// put from one reading to the next.
-  static const gutterScale = 1.4;
+  /// The room the guided reader's gutter keeps between what it holds (the
+  /// number, and the reader's marks after it) and the verse, as a fraction of
+  /// the Torah's size: the number stands at the gutter's inner edge, this far
+  /// from its verse, and marks with no room beside it go beneath it.
+  static const numberGap = 0.3;
 
-  /// The least room the guided reader's gutter leaves between what it holds
-  /// (the number, and the reader's marks after it) and the verse, as a
-  /// fraction of the Torah's size: marks with less go beneath the number.
-  static const gutterClearance = 0.2;
+  /// The most verses a chapter of the Torah has (Numbers 7), whose numbers
+  /// the guided reader's gutter has room for.
+  static const _mostVerses = 89;
 
   /// An accessibility font (Atkinson, Lexend or OpenDyslexic) replaces the
   /// translation's serif, as it replaces the interface's.
@@ -179,17 +180,59 @@ class ScriptureStyles {
     );
   }
 
-  /// The width of the guided reader's verse-number gutter, before the system
-  /// text scale.
-  double get gutterWidth => gutterScale * sizeFor(ScriptureKind.mikrah);
+  /// [numberGap] at the system text scale.
+  double get numberGapWidth => MediaQuery.textScalerOf(context).scale(numberGap * sizeFor(ScriptureKind.mikrah));
+
+  /// The width of the guided reader's verse-number gutter, at the system text
+  /// scale: the widest verse number of the Torah, as [numberStyle] sets it
+  /// beside the Torah, and [numberGapWidth] between it and the verse. The
+  /// same in every layer, so that the text's edge stays put from one reading
+  /// to the next.
+  double get gutterWidth {
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = numberStyle(ScriptureKind.mikrah);
+    if (!_watchingFonts) {
+      // Measured again once a font arrives (on the web, the bundled ones
+      // too), rather than keep a stand-in's widths.
+      _watchingFonts = true;
+      PaintingBinding.instance.systemFonts.addListener(_widestNumbers.clear);
+    }
+    // Keyed by the size the numbers are set at, which is all their widths
+    // depend on: a text scale's factor wouldn't do, as the system's may grow
+    // small text faster than large (Android 14's).
+    final size = scaler.scale(style.fontSize!);
+    final widest = _widestNumbers[(size, style.fontWeight)] ??= _widestNumber(style.copyWith(fontSize: size));
+    return widest + numberGapWidth;
+  }
+
+  /// The widest verse number from 1 to [_mostVerses] in [style], to the
+  /// next whole pixel, so that no number wraps for a rounding.
+  static double _widestNumber(TextStyle style) {
+    // One number to a line: the paragraph is as wide as the widest.
+    final painter = TextPainter(
+      text: TextSpan(
+        text: [for (var n = 1; n <= _mostVerses; n++) HebrewText.gematria(n, punctuate: false)].join('\n'),
+        style: style,
+      ),
+      textDirection: TextDirection.rtl,
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
+  }
+
+  /// [_widestNumber]'s widths, by the size the numbers are set at, at the
+  /// system text scale, and their weight.
+  static final _widestNumbers = <(double, FontWeight?), double>{};
+  static var _watchingFonts = false;
 
   /// The gutter the guided reader hangs a verse's number in, in a column
-  /// [maxWidth] wide: [gutterWidth] at the system text scale, or none where
-  /// numbers are hidden, or where so wide a gutter would take more than a
-  /// quarter of each line and the number leads the first line instead.
+  /// [maxWidth] wide: [gutterWidth], or none where numbers are hidden, or
+  /// where so wide a gutter would take more than a quarter of each line and
+  /// the number leads the first line instead.
   double hangingGutter(double maxWidth) {
     if (!settings.showVerseNumbers) return 0;
-    final gutter = MediaQuery.textScalerOf(context).scale(gutterWidth);
+    final gutter = gutterWidth;
     return gutter > maxWidth / 4 ? 0 : gutter;
   }
 
@@ -260,6 +303,34 @@ class ScriptureStyles {
   /// otherwise the reading column's.
   double fullTextWidth({required bool parallel}) => parallel ? parallelWidth : maxLineWidth;
 
+  /// The narrowest column, in ems of its text's size, that Auto justifies:
+  /// about 20, where a line holds words enough for its spaces to stretch
+  /// evenly. At the default sizes, a tablet's or a desktop's single column
+  /// has it; a phone's hasn't.
+  static const justifyMeasure = 20.0;
+
+  /// Whether a paragraph of [kind] in a column [measure] wide is justified
+  /// (§4.7): as the reader chose ([AppSettings.justifyMode]), or, under
+  /// Auto, the Hebrew and Aramaic wherever the column is at least
+  /// [justifyMeasure] ems of their size at the system text scale, and in
+  /// either of the full text's parallel columns ([ParallelVerse]) whatever
+  /// their width: the two are decided together, so that neither faces the
+  /// gutter with a ragged edge, and they are set side by side only where
+  /// each holds a measure of words ([parallelFits]). English, which nothing
+  /// hyphenates, keeps its ragged edge unless justified always.
+  bool justifies(ScriptureKind kind, double measure) => switch (settings.justifyMode) {
+        JustifyMode.always => true,
+        JustifyMode.never => false,
+        JustifyMode.auto => kind != ScriptureKind.translation &&
+            (context.getInheritedWidgetOfExactType<_InParallelColumns>() != null ||
+                measure >= justifyMeasure * MediaQuery.textScalerOf(context).scale(sizeFor(kind))),
+      };
+
+  /// The alignment of a paragraph of [kind] in a column [measure] wide:
+  /// justified where it [justifies], and otherwise flush at its start.
+  TextAlign alignFor(ScriptureKind kind, double measure) =>
+      justifies(kind, measure) ? TextAlign.justify : TextAlign.start;
+
   static const _hebrewFallback = ['NotoSerifHebrew', 'NotoSansHebrew', 'NotoSans'];
 }
 
@@ -276,10 +347,10 @@ String displayHebrew(String text, AppSettings s) =>
 String keepLinesSound(String hebrew) =>
     hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
-/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits]
-/// after it), as it is copied: without the no-break spaces and word joiners
-/// set for the screen.
-String asCopied(String shown) => shown.replaceAll('\u00a0׀', ' ׀').replaceAll('\u2060', '');
+/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits] and
+/// [holdLastPair] after it), as it is copied: without the no-break spaces and
+/// word joiners set for the screen.
+String asCopied(String shown) => shown.replaceAll('\u00a0', ' ').replaceAll('\u2060', '');
 
 /// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
 /// with the word joiner after a maqaf left out wherever the words it joins
@@ -319,29 +390,10 @@ InlineSpan joinWhereFits(
   // A hair under the line, so that rounding never breaks the words after all.
   final limit = maxWidth - 1;
 
-  // No run is wider than an em of the largest type for each of its letters,
-  // with the widest spacing after each, and the widest widget in place of
-  // each widget: where that fits every run, as at ordinary sizes, the
-  // paragraph isn't measured.
-  var em = 0.0;
-  var spacing = 0.0;
-  void largest(InlineSpan span, TextStyle inherited) {
-    final s = inherited.merge(span.style);
-    em = math.max(em, textScaler.scale(s.fontSize ?? kDefaultFontSize));
-    spacing = math.max(spacing, math.max(s.letterSpacing ?? 0, 0) + math.max(s.wordSpacing ?? 0, 0));
-    if (span is TextSpan) {
-      for (final child in span.children ?? const <InlineSpan>[]) {
-        largest(child, s);
-      }
-    }
-  }
-
-  largest(text, style ?? const TextStyle());
-  final letter = placeholders.fold(em, (w, p) => math.max(w, p.size.width)) + spacing;
-  bool surelyFits((int, int, List<int>) r) {
-    final run = plain.substring(r.$1, r.$2);
-    return (run.length - _zeroWidth.allMatches(run).length) * letter <= limit;
-  }
+  // Where every run surely fits, as at ordinary sizes, the paragraph isn't
+  // measured.
+  final letter = _widestLetter(text, style: style, textScaler: textScaler, placeholders: placeholders);
+  bool surelyFits((int, int, List<int>) r) => _letters(plain.substring(r.$1, r.$2)) * letter <= limit;
 
   if (runs.every(surelyFits)) return text;
 
@@ -380,11 +432,246 @@ InlineSpan joinWhereFits(
 
 const _maqaf = 0x05BE;
 const _joiner = 0x2060;
+const _space = 0x20;
 final _unbreakable = RegExp('[^ ]+');
 
 /// What takes no room of its own: the points and cantillation, and the
 /// joiners and marks of direction.
 final _zeroWidth = RegExp('[\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u034F\u200B-\u200F\u2060]');
+
+/// How many of [text]'s characters take room of their own.
+int _letters(String text) => text.length - _zeroWidth.allMatches(text).length;
+
+/// The most room one character of [text] can take, as a [Text] lays it out
+/// within [style] at [textScaler] (as [joinWhereFits] takes them): an em of
+/// its largest type with the widest spacing after it, or where it is a
+/// widget, the widest of [placeholders] with that spacing. No run of [text]
+/// is wider than this for each of its [_letters].
+double _widestLetter(
+  InlineSpan text, {
+  required TextStyle? style,
+  required TextScaler textScaler,
+  required List<PlaceholderDimensions> placeholders,
+}) {
+  var em = 0.0;
+  var spacing = 0.0;
+  void largest(InlineSpan span, TextStyle inherited) {
+    final s = inherited.merge(span.style);
+    em = math.max(em, textScaler.scale(s.fontSize ?? kDefaultFontSize));
+    spacing = math.max(spacing, math.max(s.letterSpacing ?? 0, 0) + math.max(s.wordSpacing ?? 0, 0));
+    if (span is TextSpan) {
+      for (final child in span.children ?? const <InlineSpan>[]) {
+        largest(child, s);
+      }
+    }
+  }
+
+  largest(text, style ?? const TextStyle());
+  return placeholders.fold(em, (w, p) => math.max(w, p.size.width)) + spacing;
+}
+
+/// [text], a paragraph of scripture or of what goes with it, with its last
+/// two words held together by a no-break space, so that its last line never
+/// holds one word alone, wherever the two take no more than half a line
+/// [maxWidth] wide: where they take more, the line before would be left
+/// short, which is the greater fault. A word is what stands between two
+/// spaces (U+0020): words a maqaf joins ([keepLinesSound]) stand as one, as
+/// a verse's number does with its first word. The two fit in half a line,
+/// and a word joiner binds each hyphen or dash in the last word
+/// ("sin-offering."), after which a line could otherwise end: so they
+/// never break inside a word, and a paragraph of one line is laid out as it
+/// was.
+///
+/// The no-break space is as wide as the space it stands for: the text engine
+/// widens only spaces where a line may break, so it carries the paragraph's
+/// word spacing as letter spacing, as a section mark's does. Screen readers
+/// hear it as the space it stands for.
+///
+/// The two words are measured as [joinWhereFits] measures a paragraph, with
+/// the same arguments, and only where an em of their largest type for each
+/// of their letters might be too wide.
+InlineSpan holdLastPair(
+  InlineSpan text, {
+  required double maxWidth,
+  required TextScaler textScaler,
+  TextStyle? style,
+  Locale? locale,
+  List<PlaceholderDimensions> placeholders = const [],
+}) {
+  if (!maxWidth.isFinite) return text;
+  final plain = text.toPlainText(includeSemanticsLabels: false);
+  // The last word ends at [end], before any spaces at the paragraph's end,
+  // and the spaces before it run from [gap] to [last]; the word before them
+  // begins at [start].
+  var end = plain.length;
+  while (end > 0 && plain.codeUnitAt(end - 1) == _space) {
+    end--;
+  }
+  if (end == 0) return text;
+  final last = plain.lastIndexOf(' ', end - 1) + 1;
+  if (last == 0) return text;
+  var gap = last - 1;
+  while (gap > 0 && plain.codeUnitAt(gap - 1) == _space) {
+    gap--;
+  }
+  if (gap == 0) return text;
+  final start = plain.lastIndexOf(' ', gap - 1) + 1;
+  if (plain.substring(start, end).contains('\n')) return text;
+
+  final half = maxWidth / 2;
+  final (pair, widgetsBefore, widgets) = _slice(text, start, end);
+  // Each widget is as large as [placeholders] says, if it says.
+  if (widgets > 0 && widgetsBefore + widgets > placeholders.length) return text;
+  final sized = widgets == 0 ? const <PlaceholderDimensions>[] : placeholders.sublist(widgetsBefore, widgetsBefore + widgets);
+  final letter = _widestLetter(pair, style: style, textScaler: textScaler, placeholders: sized);
+  if (_letters(plain.substring(start, end)) * letter > half) {
+    // Laid out alone, on one line: as wide as the two words are together.
+    final painter = TextPainter(
+      text: TextSpan(style: style, children: [pair]),
+      textDirection: TextDirection.rtl,
+      textScaler: textScaler,
+      locale: locale,
+    )
+      ..setPlaceholderDimensions(sized)
+      ..layout();
+    final width = painter.width;
+    painter.dispose();
+    if (width > half) return text;
+  }
+  // Nor may the line break inside the last word, after a hyphen or a dash
+  // ("sin-offering."), or before an em dash, which would leave its end
+  // alone after all: a word joiner binds each.
+  final joins = <int>{
+    for (var i = last + 1; i < end; i++)
+      if ((_breaksAfter.contains(plain.codeUnitAt(i - 1)) || plain.codeUnitAt(i) == _emDash) &&
+          plain.codeUnitAt(i) != _joiner &&
+          plain.codeUnitAt(i - 1) != _joiner)
+        i,
+  };
+  return _held(text, {for (var i = gap; i < last; i++) i}, style ?? const TextStyle(), joins: joins);
+}
+
+/// The marks a line may break after within a word: a hyphen, an en or em
+/// dash, and a maqaf.
+const _breaksAfter = {0x2D, 0x2010, 0x2013, _emDash, _maqaf};
+const _emDash = 0x2014;
+
+/// What of [span] stands from [start] to [end] of its plain text (in which a
+/// widget is one character), in the styles it has there; and how many of
+/// [span]'s widgets stand before [start], and how many within.
+(InlineSpan, int, int) _slice(InlineSpan span, int start, int end) {
+  var at = 0;
+  var before = 0;
+  var within = 0;
+  InlineSpan? cut(InlineSpan span) {
+    if (span is! TextSpan) {
+      final kept = at >= start && at < end;
+      if (at < start) before++;
+      if (kept) within++;
+      at++;
+      return kept ? span : null;
+    }
+    var text = span.text;
+    if (text != null) {
+      final from = at;
+      at += text.length;
+      text = text.substring((start - from).clamp(0, text.length), (end - from).clamp(0, text.length));
+    }
+    final children = [for (final child in span.children ?? const <InlineSpan>[]) ?cut(child)];
+    if ((text == null || text.isEmpty) && children.isEmpty) return null;
+    return TextSpan(
+      text: text == null || text.isEmpty ? null : text,
+      children: children.isEmpty ? null : children,
+      style: span.style,
+      locale: span.locale,
+    );
+  }
+
+  return (cut(span) ?? const TextSpan(), before, within);
+}
+
+/// [span] with each of the spaces at [offsets] of its plain text (in which a
+/// widget is one character) a no-break space as wide, within [style] (the
+/// ambient style its own styles merge with), and a word joiner before each
+/// character at [joins]. A screen reader hears the space as a space, and
+/// nothing of the joiner. A space whose span a [TextSpan.semanticsLabel] or
+/// [TextSpan.semanticsIdentifier] speaks for is left as it is; a widget
+/// takes no joiner before it.
+InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style, {Set<int> joins = const {}}) {
+  var at = 0;
+  InlineSpan hold(InlineSpan span, TextStyle inherited) {
+    if (span is! TextSpan) {
+      at++;
+      return span;
+    }
+    final s = inherited.merge(span.style);
+    final from = at;
+    var text = span.text;
+    at += text?.length ?? 0;
+    final children = [for (final child in span.children ?? const <InlineSpan>[]) hold(child, s)];
+    final labelled = span.semanticsLabel != null || span.semanticsIdentifier != null;
+    bool spaceAt(int i) => !labelled && offsets.contains(from + i) && text!.codeUnitAt(i) == _space;
+    if (text != null && labelled) {
+      // What it says is its label's: the joiners go in its text.
+      text = String.fromCharCodes([
+        for (var i = 0; i < text.length; i++) ...[if (joins.contains(from + i)) _joiner, text.codeUnitAt(i)],
+      ]);
+    }
+    if (text == null || labelled || !Iterable.generate(text.length).any((i) => spaceAt(i) || joins.contains(from + i))) {
+      return TextSpan(
+        text: text,
+        children: span.children == null ? null : children,
+        style: span.style,
+        recognizer: span.recognizer,
+        mouseCursor: span.mouseCursor,
+        onEnter: span.onEnter,
+        onExit: span.onExit,
+        semanticsLabel: span.semanticsLabel,
+        semanticsIdentifier: span.semanticsIdentifier,
+        locale: span.locale,
+        spellOut: span.spellOut,
+      );
+    }
+    // The span's text in pieces, each answering the pointer as it did, and
+    // its children after them.
+    TextSpan piece(String piece, {TextStyle? style, String? semanticsLabel}) => TextSpan(
+          text: piece,
+          style: style,
+          semanticsLabel: semanticsLabel,
+          recognizer: span.recognizer,
+          mouseCursor: span.mouseCursor,
+          onEnter: span.onEnter,
+          onExit: span.onExit,
+        );
+    final space = TextStyle(letterSpacing: (s.letterSpacing ?? 0) + (s.wordSpacing ?? 0));
+    final pieces = <InlineSpan>[];
+    var rest = 0;
+    for (var i = 0; i < text.length; i++) {
+      final join = joins.contains(from + i);
+      final held = spaceAt(i);
+      if (!join && !held) continue;
+      if (i > rest) pieces.add(piece(text.substring(rest, i)));
+      rest = i;
+      if (join) pieces.add(piece('\u2060', semanticsLabel: ''));
+      if (held) {
+        pieces.add(piece('\u00A0', style: space, semanticsLabel: ' '));
+        rest = i + 1;
+      }
+    }
+    if (rest < text.length) pieces.add(piece(text.substring(rest)));
+    return TextSpan(
+      children: [...pieces, ...children],
+      style: span.style,
+      mouseCursor: span.mouseCursor,
+      onEnter: span.onEnter,
+      onExit: span.onExit,
+      locale: span.locale,
+      spellOut: span.spellOut,
+    );
+  }
+
+  return hold(span, style);
+}
 
 /// [span] without the characters at [offsets] of its plain text, in which a
 /// widget is one character, as [InlineSpan.toPlainText] writes it.
@@ -422,10 +709,15 @@ InlineSpan _without(InlineSpan span, Set<int> offsets) {
   return strip(span);
 }
 
-/// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
-/// laid out by [builder] with only the joiners after a maqaf that the width
-/// it is given has room for ([joinWhereFits]). [style] and [locale] are the
-/// ones [builder] gives its [Text], and [placeholders] size [text]'s widgets.
+/// [text], a paragraph of scripture whose words [keepLinesSound] has joined
+/// (or of what goes with it: Rashi, or the translation), laid out by
+/// [builder] with only the joins that the width it is given has room for:
+/// the joiners after a maqaf ([joinWhereFits]), and the no-break space that
+/// holds its last two words together on its last line ([holdLastPair]).
+/// [builder] is given that width too, the paragraph's measure, which decides
+/// whether it is justified ([ScriptureStyles.alignFor]). [style] and
+/// [locale] are the ones [builder] gives its [Text], and [placeholders] size
+/// [text]'s widgets.
 class JoinsThatFit extends StatelessWidget {
   const JoinsThatFit({
     super.key,
@@ -440,7 +732,7 @@ class JoinsThatFit extends StatelessWidget {
   final TextStyle? style;
   final Locale? locale;
   final List<PlaceholderDimensions> placeholders;
-  final Widget Function(BuildContext context, InlineSpan text) builder;
+  final Widget Function(BuildContext context, InlineSpan text, double measure) builder;
 
   @override
   Widget build(BuildContext context) {
@@ -450,16 +742,26 @@ class JoinsThatFit extends StatelessWidget {
       builder: (context, constraints) {
         var effective = DefaultTextStyle.of(context).style.merge(style);
         if (MediaQuery.boldTextOf(context)) effective = effective.merge(const TextStyle(fontWeight: FontWeight.bold));
+        final textScaler = MediaQuery.textScalerOf(context);
+        final joined = joinWhereFits(
+          text,
+          maxWidth: constraints.maxWidth,
+          textScaler: textScaler,
+          style: effective,
+          locale: locale,
+          placeholders: placeholders,
+        );
         return builder(
           context,
-          joinWhereFits(
-            text,
+          holdLastPair(
+            joined,
             maxWidth: constraints.maxWidth,
-            textScaler: MediaQuery.textScalerOf(context),
+            textScaler: textScaler,
             style: effective,
             locale: locale,
             placeholders: placeholders,
           ),
+          constraints.maxWidth,
         );
       },
     );
@@ -526,6 +828,7 @@ class ScriptureVerse extends StatelessWidget {
     required this.settings,
     this.dimmed = false,
     this.secondary = false,
+    this.fullInk = false,
     this.showNumber = true,
     this.hangingNumber = false,
     this.ruled = false,
@@ -547,14 +850,19 @@ class ScriptureVerse extends StatelessWidget {
   /// Supporting text (the Torah beside Rashi, the Targum beneath the verse):
   /// a quieter ink that still meets text contrast requirements.
   final bool secondary;
+
+  /// In the Torah's full ink whatever its [kind]: the Targum read at its step
+  /// among its dimmed neighbours (§9), from which its own quieter ink would
+  /// stand barely apart (about 1.45:1).
+  final bool fullInk;
   final bool showNumber;
 
   /// The number hangs in a gutter at the verse's start, as in the guided
   /// reader, rather than leading its first line, as in the full text.
   final bool hangingNumber;
 
-  /// Set off by a gold rule at its start, as the Targum beneath each verse of
-  /// the full text is.
+  /// Set off by a gold rule at its start (in outline in high contrast), as
+  /// the Targum beneath each verse of the full text is.
   final bool ruled;
 
   /// Opens the verse's options (copy, share, ask): on a long press or a
@@ -594,7 +902,7 @@ class ScriptureVerse extends StatelessWidget {
     final styles = ScriptureStyles(context, settings);
     final base = styles.style(
       kind,
-      color: dimmed ? dimInk : (secondary ? scheme.onSurfaceVariant : null),
+      color: dimmed ? dimInk : (secondary ? scheme.onSurfaceVariant : (fullInk ? scheme.onSurface : null)),
     );
     final muted = base.copyWith(
       color: dimmed ? dimInk : scheme.onSurfaceVariant,
@@ -706,7 +1014,9 @@ class ScriptureVerse extends StatelessWidget {
 
     Widget paragraph({required bool withNumber}) {
       final lead = withNumber && (numeral != null || marks != null);
-      // A maqaf's words stay on one line where the line has room for them.
+      // A maqaf's words stay on one line where the line has room for them,
+      // and the verse's last two words end it together where they fit in
+      // half a line.
       Widget text = JoinsThatFit(
         text: TextSpan(
           style: base,
@@ -735,10 +1045,10 @@ class ScriptureVerse extends StatelessWidget {
               baseline: TextBaseline.alphabetic,
             ),
         ],
-        builder: (context, fitted) => Text.rich(
+        builder: (context, fitted, measure) => Text.rich(
           fitted,
           textDirection: TextDirection.rtl,
-          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          textAlign: styles.alignFor(kind, measure),
           strutStyle: strut,
         ),
       );
@@ -759,14 +1069,12 @@ class ScriptureVerse extends StatelessWidget {
     if (hangingNumber && numeral != null) {
       content = LayoutBuilder(
         builder: (context, constraints) {
+          // The gutter is measured: measured again when a font arrives.
+          FontsChangeScope.watch(context);
           final gutter = styles.hangingGutter(constraints.maxWidth);
           // At a very large size a gutter would take too much of each line:
           // the number leads the first line instead, as in the full text.
           if (gutter == 0) return paragraph(withNumber: true);
-          // The room the marks keep from the verse, at their left.
-          final clearance = marks == null
-              ? 0.0
-              : MediaQuery.textScalerOf(context).scale(ScriptureStyles.gutterClearance * styles.sizeFor(ScriptureKind.mikrah));
           // The verse begins on the right in either language of the app.
           return Row(
             textDirection: TextDirection.rtl,
@@ -775,14 +1083,16 @@ class ScriptureVerse extends StatelessWidget {
             children: [
               SizedBox(
                 width: gutter,
-                // The marks after the number, or beneath it where the gutter
-                // has no room for both and the room it keeps from the verse.
+                // At the gutter's inner edge, close by its verse, about a
+                // word's space from it: the number, and the marks after it,
+                // or beneath it where the gutter has no room for both.
                 child: Padding(
-                  padding: EdgeInsets.only(left: clearance),
+                  padding: EdgeInsets.only(left: styles.numberGapWidth),
                   child: Text.rich(
                     TextSpan(text: numeral, children: [?marks]),
                     style: numberStyle,
                     textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.end,
                   ),
                 ),
               ),
@@ -797,17 +1107,17 @@ class ScriptureVerse extends StatelessWidget {
 
     if (ruled) {
       // At the scripture's start, the right, in either language of the app.
-      // High contrast keeps the inset but not the rule, a decoration (§3.1).
       // Dimmed, it recedes with its verse to a hairline, leaving the gold to
-      // the verse being read.
+      // the verse being read. High contrast draws it in outline, undimmed: it
+      // marks the Targum off from the Torah, which is structure, not
+      // decoration (§3.1).
       content = Container(
         padding: const EdgeInsets.only(right: ruleGap),
         decoration: BoxDecoration(
           border: Border(
             right: BorderSide(
-              color: dimmed ? sefer.hairline : sefer.goldLeaf,
+              color: sefer.isHighContrast ? scheme.outline : (dimmed ? sefer.hairline : sefer.goldLeaf),
               width: ruleWidth,
-              style: sefer.isHighContrast ? BorderStyle.none : BorderStyle.solid,
             ),
           ),
         ),
@@ -821,7 +1131,7 @@ class ScriptureVerse extends StatelessWidget {
         // The spaces between its words and lines are the verse's too.
         behavior: HitTestBehavior.opaque,
         onLongPress: () {
-          Feedback.forLongPress(context);
+          hapticLongPress(context, haptics: settings.haptics);
           onLongPress();
         },
         onSecondaryTap: onLongPress,
@@ -960,6 +1270,7 @@ class VerseGroup extends StatelessWidget {
     super.key,
     required this.verse,
     required this.child,
+    required this.haptics,
     this.highlighted = false,
     this.onTap,
     this.onLongPress,
@@ -967,6 +1278,10 @@ class VerseGroup extends StatelessWidget {
 
   final VerseRef verse;
   final Widget child;
+
+  /// The reader's Haptic feedback, which a long press keeps to
+  /// ([hapticLongPress]).
+  final bool haptics;
 
   /// The verse focus mode is on, or the one Listen is reading.
   final bool highlighted;
@@ -1016,8 +1331,23 @@ class VerseGroup extends StatelessWidget {
         // Screen readers find focus mode's tap and the verse's options on
         // its verses, where they hear them.
         child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
+          // A long press is felt as hapticLongPress gives it, not as the
+          // platform's pulse; a tap still clicks.
+          enableFeedback: false,
+          onTap: switch (onTap) {
+            final onTap? => () {
+                Feedback.forTap(context);
+                onTap();
+              },
+            null => null,
+          },
+          onLongPress: switch (onLongPress) {
+            final onLongPress? => () {
+                hapticLongPress(context, haptics: haptics);
+                onLongPress();
+              },
+            null => null,
+          },
           onSecondaryTap: onLongPress,
           excludeFromSemantics: true,
           // ↑ and ↓ move from verse to verse: a Tab stop on each would put
@@ -1076,43 +1406,55 @@ class ParallelVerse extends StatelessWidget {
     return Semantics(
       container: true,
       explicitChildNodes: true,
-      child: Row(
-        textDirection: TextDirection.rtl,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Expanded(
-            flex: torahFlex,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ordered(0, torah),
-                for (final (i, child) in below.indexed) ordered(i + 2, child),
-              ],
+      // Its columns justified together (ScriptureStyles.justifies).
+      child: _InParallelColumns(
+        child: Row(
+          textDirection: TextDirection.rtl,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              flex: torahFlex,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ordered(0, torah),
+                  for (final (i, child) in below.indexed) ordered(i + 2, child),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: gutter),
-          Expanded(
-            flex: besideFlex,
-            // A verse of one short line is still a target as tall as a
-            // finger for its long press: no taller than the verse's own line
-            // beside it, which sets the row's height.
-            child: ordered(
-              1,
-              ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+            const SizedBox(width: gutter),
+            Expanded(
+              flex: besideFlex,
+              // A verse of one short line is still a target as tall as a
+              // finger for its long press: no taller than the verse's own
+              // line beside it, which sets the row's height.
+              child: ordered(
+                1,
+                ConstrainedBox(constraints: const BoxConstraints(minHeight: kMinInteractiveDimension), child: beside),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
+/// Marks what stands in a [ParallelVerse]'s columns, which Auto justifies
+/// together ([ScriptureStyles.justifies]).
+class _InParallelColumns extends InheritedWidget {
+  const _InParallelColumns({required super.child});
+
+  @override
+  bool updateShouldNotify(_InParallelColumns oldWidget) => false;
+}
+
 /// The heads of the full text's parallel columns ([ParallelVerse]), above
 /// its first verse: "Mikrah" over the Torah's column and "Targum Onkelos" (or
-/// the translation's name) over the other, each where its text begins, over
-/// a hairline as wide as its column. They are inset as the verses' text is
-/// within its block ([VerseGroup.padding]).
+/// the translation's name) over the other, as eyebrows, each where its text
+/// begins, over a hairline as wide as its column. They are inset as the
+/// verses' text is within its block ([VerseGroup.padding]).
 class ParallelHeading extends StatelessWidget {
   const ParallelHeading({super.key, required this.torah, required this.beside, this.besideDirection = TextDirection.rtl});
 
@@ -1125,13 +1467,12 @@ class ParallelHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final sefer = SeferColors.of(context);
-    final style = theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    // Eyebrows, as the guided reader's layer labels are.
     Widget head(String label, TextDirection direction) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(label, style: style, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
+            Eyebrow(label, textAlign: direction == TextDirection.rtl ? TextAlign.right : TextAlign.left),
             const SizedBox(height: 6),
             SizedBox(height: sefer.hairlineWidth, child: ColoredBox(color: sefer.hairline)),
           ],
@@ -1411,15 +1752,18 @@ class TranslationVerse extends StatelessWidget {
     final theme = Theme.of(context);
     final sefer = SeferColors.of(context);
     final dimInk = sefer.dimInk;
-    final style = ScriptureStyles(context, settings).style(ScriptureKind.translation, color: dimmed ? dimInk : null);
+    final styles = ScriptureStyles(context, settings);
+    final style = styles.style(ScriptureKind.translation, color: dimmed ? dimInk : null);
     final accessibleFont = settings.uiFont.family != null;
     final bold = settings.boldText || MediaQuery.boldTextOf(context);
+    const english = Locale('en');
     return Lang(
-      const Locale('en'),
+      english,
       child: Directionality(
         textDirection: TextDirection.ltr,
-        child: Text.rich(
-          TextSpan(children: [
+        // Its last two words held together, as the verse's are.
+        child: JoinsThatFit(
+          text: TextSpan(children: [
             TextSpan(
               text: '$number ',
               style: style.copyWith(
@@ -1432,7 +1776,13 @@ class TranslationVerse extends StatelessWidget {
             TextSpan(text: text),
           ]),
           style: style,
-          textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
+          locale: english,
+          // Justified only where the reader asks for it always.
+          builder: (context, held, measure) => Text.rich(
+            held,
+            style: style,
+            textAlign: styles.alignFor(ScriptureKind.translation, measure),
+          ),
         ),
       ),
     );
@@ -1461,13 +1811,15 @@ class RashiComments extends StatelessWidget {
     final styles = ScriptureStyles(context, settings);
     final theme = Theme.of(context);
     final ink = dimmed ? SeferColors.of(context).dimInk : null;
-    final style = styles.style(english ? ScriptureKind.translation : ScriptureKind.rashi, color: ink);
+    final kind = english ? ScriptureKind.translation : ScriptureKind.rashi;
+    final style = styles.style(kind, color: ink);
     // The words explained in bold full ink (never techelet): Frank Ruhl Libre
     // over Rashi's Hebrew, the comment's own face over English.
     final heading = english
         ? style.copyWith(fontWeight: FontWeight.w700, color: ink ?? theme.colorScheme.onSurface)
         : styles.dibburStyle(dimmed: dimmed);
     final dir = english ? TextDirection.ltr : TextDirection.rtl;
+    final locale = english ? const Locale('en') : _hebrew;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1479,19 +1831,25 @@ class RashiComments extends StatelessWidget {
             // for Android and iOS.
             child: Semantics(
               container: true,
-              localeForSubtree: english ? const Locale('en') : _hebrew,
+              localeForSubtree: locale,
               attributedLabel: english ? spokenRashiEnglish(c, settings) : _hebrewLabel(c),
               textDirection: dir,
               child: ExcludeSemantics(
-                child: Text.rich(
-                  TextSpan(children: [
+                // Its last two words held together, as the verse's are.
+                child: JoinsThatFit(
+                  text: TextSpan(children: [
                     if (c.heading != null) TextSpan(text: '${c.heading} ', style: heading),
                     TextSpan(text: english ? c.text : HebrewText.forDisplay(c.text, nikud: settings.showNikud, teamim: true)),
                   ]),
                   style: style,
-                  textDirection: dir,
-                  textAlign: settings.justify ? TextAlign.justify : TextAlign.start,
-                  strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
+                  locale: locale,
+                  builder: (context, held, measure) => Text.rich(
+                    held,
+                    style: style,
+                    textDirection: dir,
+                    textAlign: styles.alignFor(kind, measure),
+                    strutStyle: english ? null : styles.strut(ScriptureKind.rashi),
+                  ),
                 ),
               ),
             ),
@@ -1549,12 +1907,16 @@ class HangingIndent extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => Padding(
-          padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
-          child: child,
-        ),
-      );
+  Widget build(BuildContext context) {
+    // The gutter is measured: measured again when a font arrives.
+    FontsChangeScope.watch(context);
+    return LayoutBuilder(
+      builder: (context, constraints) => Padding(
+        padding: EdgeInsets.only(right: ScriptureStyles(context, settings).hangingGutter(constraints.maxWidth)),
+        child: child,
+      ),
+    );
+  }
 }
 
 /// A label above a block of text in the guided reader ("Targum Onkelos"): an

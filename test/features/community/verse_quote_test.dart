@@ -124,9 +124,10 @@ void main() {
 
   group('copiedFromQuestion', () {
     // A verse with a maqaf and a paseq, as VerseQuote sets it: a word joiner
-    // after the maqaf, a no-break space before the paseq.
+    // after the maqaf, a no-break space before the paseq, and another holding
+    // its last two words together.
     const quoted = 'כִּי־טוֹב ׀ מְאֹד';
-    const shown = 'כִּי־\u2060טוֹב\u00a0׀ מְאֹד';
+    const shown = 'כִּי־\u2060טוֹב\u00a0׀\u00a0מְאֹד';
 
     test('copies the verse without what sets its words on the screen', () {
       expect(copiedFromQuestion(shown, verse: quoted, question: question), quoted);
@@ -141,6 +142,15 @@ void main() {
     test('parts the verse and the question by a blank line, as the post has as text', () {
       expect(copiedFromQuestion('$shown$question', verse: quoted, question: question), '$quoted\n\n$question');
       expect(copiedFromQuestion('מְאֹדWhy', verse: quoted, question: question), 'מְאֹד\n\nWhy');
+    });
+
+    test("keeps the question's own no-break spaces, alone or after the verse's end", () {
+      // Typed with Option+Space, say, or pasted in.
+      const spaced = 'Why\u00a0here?';
+      expect(copiedFromQuestion(spaced, verse: quoted, question: spaced), spaced);
+      expect(copiedFromQuestion('here?', verse: quoted, question: spaced), 'here?');
+      expect(copiedFromQuestion('׀\u00a0מְאֹד$spaced', verse: quoted, question: spaced), '׀ מְאֹד\n\n$spaced');
+      expect(copiedFromQuestion('$shown$spaced', verse: quoted, question: spaced), '$quoted\n\n$spaced');
     });
   });
 

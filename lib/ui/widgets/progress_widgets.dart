@@ -174,6 +174,14 @@ class ParshaRings extends StatefulWidget {
   @visibleForTesting
   static void forgetShown() => _ParshaRingsState._shown.clear();
 
+  /// Whether rings of [progress]'s week, shown now, would sweep: only where
+  /// rings of the week were seen in this run, showing other progress. After
+  /// a cold start, or a link straight to a page, they show it as it is.
+  static bool willSweep(WeekProgress progress) {
+    final shown = _ParshaRingsState._shown[progress.weekId];
+    return shown != null && shown != ringMask(progress);
+  }
+
   @override
   State<ParshaRings> createState() => _ParshaRingsState();
 }
@@ -194,6 +202,11 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
   /// route covers them, or their tab is in the background), so the sweep
   /// waits until they can be seen.
   bool _pending = true;
+
+  /// How many times the rings have taken up, as they came into view, what
+  /// other rings had shown since: the centre's count then changes without a
+  /// fade.
+  int _jumps = 0;
 
   String get _week => widget.progress.weekId;
 
@@ -234,6 +247,17 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
   void _showIfVisible() {
     if (!_pending || !TickerMode.valuesOf(context).enabled) return;
     _pending = false;
+    // From what the eye last saw of the week, here or elsewhere: other rings
+    // may have shown the change since these were set, hidden, as the reader's
+    // finished panel does above the week's page, and it is not swept twice.
+    final seen = _shown[_week];
+    if (seen != null && seen != _from) {
+      _from = seen;
+      _controller.value = _from == _to ? 1 : 0;
+      // The count shows the progress at once too, rather than fade from the
+      // one these rings were set with.
+      _jumps++;
+    }
     _shown[_week] = _to;
     if (_controller.value < 1) {
       _controller
@@ -305,8 +329,9 @@ class _ParshaRingsState extends State<ParshaRings> with SingleTickerProviderStat
                   // The old count until the sweep sets off.
                   final n = _aliyotDone(_controller.value > 0 ? _to : _from);
                   return AnimatedSwitcher(
-                    // Another week in the same place is not a change to fade.
-                    key: ValueKey(_week),
+                    // Another week in the same place is not a change to fade,
+                    // nor progress other rings have shown already.
+                    key: ValueKey((_week, _jumps)),
                     duration: duration,
                     child: Text(
                       '$n/$kAliyot',
