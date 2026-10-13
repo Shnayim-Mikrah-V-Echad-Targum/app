@@ -125,11 +125,12 @@ void main() {
       return (icon.icon, icon.color);
     }
 
-    // As the week page marks the aliyot still to read.
+    // As the week page marks the aliyot still to read, and the Torah map a
+    // week that can still be finished: never history, what was made up.
     for (final weekday in ['Monday', 'Tuesday']) {
-      expect(glyphOf(weekday), (Icons.history, status.overdue), reason: weekday);
+      expect(glyphOf(weekday), (stillToReadIcon, status.overdue), reason: weekday);
     }
-    expect(find.bySemanticsLabel('Tuesday: Not read yet. Sheni'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tuesday: Still to read. Sheni'), findsOneWidget);
     for (final weekday in ['Thursday', 'Friday']) {
       expect(glyphOf(weekday), (Icons.circle_outlined, scheme.outline), reason: weekday);
     }
@@ -140,18 +141,18 @@ void main() {
   testWidgets("today's label says so, the weekday first, read or not", (tester) async {
     final handle = tester.ensureSemantics();
     await pumpThemed(tester, strip());
-    const unread = 'Friday, today: Not read yet. Shishi and Shevi’i';
+    const unread = 'Friday, today: Still to read. Shishi and Shevi’i';
     expect(tester.getSemantics(dayOf('Friday')), isSemantics(label: unread, isButton: true, isSelected: false));
     expect(find.byTooltip(unread), findsOneWidget);
     // No other day is taken for today.
     expect(find.bySemanticsLabel(RegExp('today')), findsOneWidget);
-    expect(find.bySemanticsLabel('Thursday: Not read yet. Revi’i and Chamishi'), findsOneWidget);
+    expect(find.bySemanticsLabel('Thursday: Still to read. Revi’i and Chamishi'), findsOneWidget);
 
     await pumpThemed(tester, strip(statuses: {day(5): DayStatus.kept}));
     expect(find.bySemanticsLabel(RegExp(r'^Friday, today: Read\. ')), findsOneWidget);
 
     await pumpThemed(tester, strip(), hebrew: true);
-    expect(find.bySemanticsLabel(RegExp(r'^יום שישי, היום: עדיין לא נקרא\. ')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^יום שישי, היום: עדיין לקריאה\. ')), findsOneWidget);
     handle.dispose();
   });
 
@@ -403,13 +404,13 @@ void main() {
     await pumpThemed(tester, strip(onDayTap: (d) => tapped = d));
     expect(
       tester.getSemantics(dayOf('Tuesday')),
-      isSemantics(label: 'Tuesday: Not read yet. Sheni', isButton: true, hasTapAction: true, isFocusable: true),
+      isSemantics(label: 'Tuesday: Still to read. Sheni', isButton: true, hasTapAction: true, isFocusable: true),
     );
     // Simchat Torah has nothing to open.
     expect(tester.getSemantics(dayOf('Sunday')), isSemantics(isButton: false, hasTapAction: false));
     await tester.tap(dayOf('Tuesday'));
     expect(tapped?.aliyot, [1]);
-    expect(find.byTooltip('Tuesday: Not read yet. Sheni'), findsOneWidget);
+    expect(find.byTooltip('Tuesday: Still to read. Sheni'), findsOneWidget);
     handle.dispose();
   });
 
@@ -468,7 +469,7 @@ void main() {
       'Ahead of plan',
       'Caught up',
       'Covered by a grace day',
-      'Not read yet',
+      'Still to read',
       'Not read',
       'Paused',
       'Upcoming',

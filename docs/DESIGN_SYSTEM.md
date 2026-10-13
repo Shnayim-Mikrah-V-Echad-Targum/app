@@ -707,14 +707,14 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
   - Ahead / caught up: the same disc with the existing fast_forward / published_with_changes glyph.
   - Grace: `shield_outlined` in grace.
   - Missed: `remove_circle_outline` in neutral.
-  - Open (past, unread): `history` in overdue, as the week page's overdue line; labelled `dayOpen` ("Not read yet" / "עדיין לא נקרא"), the pair of Missed's `dayMissed` ("Not read").
+  - Open (past, and still to read in full or in part): `hourglass_bottom_rounded` in overdue (`stillToReadIcon`), the mark of reading still to do after its day, as on the week page's overdue line and the Torah map's tile that can still be finished; never `history`, which means made up later (the map's made-up tile, the badge of a week made up, the make-up list). Labelled `dayOpen` ("Still to read" / "עדיין לקריאה", as the week page's "still to read"), which stays true of a day with one or two readings done, as a day counts once three are; the pair of Missed's `dayMissed` ("Not read").
   - Upcoming: `circle_outlined` in **outline** (was outlineVariant, D16).
   - No reading: `horizontal_rule` in outline.
 - Fills are `Ink`, so a press shows on them. A glyph that changes cross-fades over `Motion.medium` (§8).
 - `LayoutBuilder`: when a seventh of the width is under 48, or under the widest weekday label at the current text size, the strip takes two rows, Sunday to Wednesday and then Thursday to Shabbat, in a four-column grid.
 - A card around the strip alone uses `WeekStrip.cardPadding` (8), so the days stay in one row on a 412 dp phone (52 each).
 - `WeekStripLegendButton`: an `info_outline` IconButton (tooltip `statusLegend`) for the strip's card or section header. It opens a sheet that shows every glyph beside its label, today and rest days on their fills.
-- Each day is one node with the ink well's tap and focus, its label and tooltip `dayChipLabel` ("Tuesday: Not read yet. Sheni"). Today's says so, so a screen reader can find it (WCAG 1.3.1): `dayChipLabelToday` ("Friday, today: Not read yet. Shishi and Shevi’i" / "יום שישי, היום: …"), the weekday still first. It is not marked selected: today is not a choice the strip makes.
+- Each day is one node with the ink well's tap and focus, its label and tooltip `dayChipLabel` ("Tuesday: Still to read. Sheni"). Today's says so, so a screen reader can find it (WCAG 1.3.1): `dayChipLabelToday` ("Friday, today: Still to read. Shishi and Shevi’i" / "יום שישי, היום: …"), the weekday still first. It is not marked selected: today is not a choice the strip makes.
 
 ### 6.14 Torah map (progress_screen.dart tile())
 
@@ -737,7 +737,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 | finished with the next parsha (`restored`) | late | none | onLate | done_all |
 | made up | paper | 1.5 px late | onSurface | history in late |
 | missed | paper | 1 px outline (2 in high contrast) | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
-| can still be finished with the next parsha (`overdue`) | paper | 1.5 px overdue (2 in high contrast) | onSurface | hourglass_bottom_rounded in overdue (not history, the made-up tile's) |
+| can still be finished with the next parsha (`overdue`) | paper | 1.5 px overdue (2 in high contrast) | onSurface | hourglass_bottom_rounded in overdue (`stillToReadIcon`, the glyph of `WeekStatusBadge` for `overdue` too, so the Recent weeks row and the week's page mark it alike; not history, the made-up tile's) |
 | current | primaryContainer | 2 px primary | onPrimaryContainer w700 | timelapse |
 | upcoming | paper | hairline | onSurfaceVariant | none |
 | untracked | paper | hairline | onSurfaceVariant | pause_circle_outline |
@@ -1206,9 +1206,9 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
    - Leading 40 disc, 16 from the start and 16 before the text: done = primary fill with an onPrimary check 20; otherwise ringTrack fill with the Hebrew ordinal (FRL 600 18, onSurface).
    - Title in titleMedium, e.g. "Rishon" (read out as `aliyahWithName`, "Rishon · aliyah 1"); subtitle bodySmall "1:1–2:3 · 34 verses · about 15 min", without the book, which the header names, so that it keeps to one line on a phone; a second line bodySmall "Planned for Monday":
      - today's aliyot: `plannedForToday` ("Planned for today") in onSurface w700;
-     - an aliyah still to read after its day: its day in `overdue`, after a 14 px `history` icon, and read as `plannedForOverdue` ("Planned for Wednesday, still to read"; `plannedForShabbatOverdue` for Shabbat morning), since the colour and mark say it to the eye alone. Never for a day that doesn't count: before the reader joined, one a pause covered, any while paused, or in a week not counted (`WeekStatus.transparent`), which stays neutral (§3.4).
+     - an aliyah still to read after its day: its day in `overdue`, after a 14 px `hourglass_bottom_rounded` icon (`stillToReadIcon`, as the week strip marks a day still to read), and read as `plannedForOverdue` ("Planned for Wednesday, still to read"; `plannedForShabbatOverdue` for Shabbat morning), since the colour and mark say it to the eye alone. Never for a day that doesn't count: before the reader joined, one a pause covered, any while paused, or in a week not counted (`WeekStatus.transparent`), which stays neutral (§3.4).
    - In a week of two parshiyot read together, the aliyah the second begins in says where, in a line of marginalia under its plan: `secondParshaBegins` ("Pekudei begins at 38:21", under Revi’i of Vayakhel-Pekudei; "פרשת פקודי מתחילה ב־לח, כא"), the verse without the book.
-   - The alternative-division note becomes a third line in bodySmall onSurfaceVariant after a 14 px `info_outline` in onSurfaceVariant, 4 before the words ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line): a line of meta, quieter than the aliyah's name and lines. The mark leads it in the line, on its first line's middle, as `history` leads an overdue plan, and grows with the text as that does, so that the two lines wrap alike with large text.
+   - The alternative-division note becomes a third line in bodySmall onSurfaceVariant after a 14 px `info_outline` in onSurfaceVariant, 4 before the words ("Some sources use 4:19–26", `aliyahOtherDivision`, in either UI, its verses kept on one line): a line of meta, quieter than the aliyah's name and lines. The mark leads it in the line, on its first line's middle, as the hourglass leads an overdue plan, and grows with the text as that does, so that the two lines wrap alike with large text.
    - Trailing: PassPips (size 12) on the title's line, the reading under way ringed in the row of the aliyah the reading continues at, above the existing overflow menu, in a 52 column 4 from the text and 10 from the end.
    - Large text: where the text between the disc and that column would be narrower than 112 as scaled (`PaperRow.squeezes`, as a PaperRow stacks), the row stacks: the disc and the name on one line, the lines under them the row's full width ("1:1–2:3 · 34 verses", a fact to a line where two don't fit), then the pips at the start and the menu at the end of a line of their own.
    - Tap opens the reader. The row is one button whose value is the state of each reading; the menu keeps its own item.

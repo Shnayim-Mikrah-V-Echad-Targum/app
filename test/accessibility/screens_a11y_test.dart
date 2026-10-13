@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart' show NoticeBanner;
 import 'package:shnayim_mikra/ui/widgets/lines.dart' show WholeWords;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 import 'routes.dart';
@@ -254,7 +255,7 @@ void main() {
         expect(find.textContaining('covered by a grace day'), findsOneWidget);
         expect(find.textContaining('Shabbat Machar Chodesh'), findsOneWidget);
       }
-      if (route == '/parsha') expect(find.byIcon(Icons.history), findsWidgets);
+      if (route == '/parsha') expect(find.byIcon(stillToReadIcon), findsWidgets);
       if (route == '/community/forum/questions') expect(find.textContaining('thanked'), findsWidgets);
       for (final language in [AppLanguage.system, AppLanguage.hebrew]) {
         c.read(settingsProvider.notifier).update((s) => s.copyWith(language: language));

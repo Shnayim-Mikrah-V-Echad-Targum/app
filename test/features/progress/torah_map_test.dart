@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
+import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/palette.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
@@ -123,7 +124,7 @@ void main() {
         sefer.paper,
         BorderSide(color: status.overdue, width: 1.5),
         scheme.onSurface,
-        Icons.hourglass_bottom_rounded,
+        stillToReadIcon,
         status.overdue,
       ),
     ]) {
@@ -147,6 +148,30 @@ void main() {
       final icons = tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)));
       expect(icons.map((i) => (i.icon, i.color)), [(icon, iconColor)], reason: label);
     }
+  });
+
+  // One state, one glyph: Shemot's tile, its row under Recent weeks, and
+  // the status line of the week's page that the tile opens.
+  testWidgets('a parsha that can still be finished has one glyph on the map, in its row and on its page',
+      (tester) async {
+    final c = await openProgress(tester, now: rescueNow, progress: rescueProgress());
+    expect(stillToReadIcon, Icons.hourglass_bottom_rounded);
+    expect(WeekStatusBadge.icon(WeekStatus.overdue), stillToReadIcon);
+    IconData? iconIn(Finder of) => tester.widget<Icon>(find.descendant(of: of, matching: find.byType(Icon)).first).icon;
+    expect(iconIn(tileOf('Shemot')), stillToReadIcon);
+    final row = find.ancestor(of: find.text('Can still be finished with the next parsha'), matching: find.byType(Row)).first;
+    await tester.ensureVisible(row);
+    expect(iconIn(row), stillToReadIcon);
+    // History is what was made up, and nothing still to read uses it.
+    expect(find.descendant(of: tileOf('Shemot'), matching: find.byIcon(Icons.history)), findsNothing);
+
+    c.read(routerProvider).go('/progress/week/5787:13');
+    await tester.pumpAndSettle();
+    // The status line under the header: the glyph, then the label.
+    final status = find.textContaining('Can still be finished with the next parsha', findRichText: true);
+    expect(status, findsOneWidget);
+    expect(find.descendant(of: status, matching: find.byIcon(stillToReadIcon)), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsNothing);
   });
 
   testWidgets('in high contrast, the tile that can still be finished is edged 2 px', (tester) async {

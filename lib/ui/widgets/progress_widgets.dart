@@ -747,6 +747,13 @@ class _CandlesPainter extends CustomPainter {
 }
 
 /// Visual and textual description of a day in the week strip.
+/// The mark of reading still to do after its day, always in the overdue
+/// colour: a day of the week strip gone by unread (or read only in part),
+/// an aliyah past its planned day on the week's page, and a week that can
+/// still be finished with the next, on the Torah map and in its badge.
+/// Never `history`, which is what was made up later.
+const stillToReadIcon = Icons.hourglass_bottom_rounded;
+
 enum DayDisplay { kept, ahead, caughtUp, grace, paused, open, missed, rest, upcoming, noReading, today }
 
 DayDisplay dayDisplayFor({
@@ -806,7 +813,7 @@ extension DayDisplayX on DayDisplay {
       DayDisplay.caughtUp => _DayDisc(Icons.published_with_changes, size: size),
       DayDisplay.grace => Icon(Icons.shield_outlined, size: size, color: status.grace),
       DayDisplay.paused => Icon(Icons.pause_circle_outline, size: size, color: scheme.onSurfaceVariant),
-      DayDisplay.open => Icon(Icons.history, size: size, color: status.overdue),
+      DayDisplay.open => Icon(stillToReadIcon, size: size, color: status.overdue),
       DayDisplay.today => TodayMark(size: size),
       DayDisplay.missed => Icon(Icons.remove_circle_outline, size: size, color: status.neutral),
       DayDisplay.rest => ShabbatCandlesIcon(size: size, color: status.rest),
@@ -1283,7 +1290,7 @@ class WeekStatusBadge extends StatelessWidget {
         WeekStatus.madeUp => Icons.history,
         WeekStatus.missed => Icons.radio_button_unchecked,
         WeekStatus.transparent => Icons.pause_circle_outline,
-        WeekStatus.overdue => Icons.schedule,
+        WeekStatus.overdue => stillToReadIcon,
         WeekStatus.inProgress => Icons.timelapse,
       };
 

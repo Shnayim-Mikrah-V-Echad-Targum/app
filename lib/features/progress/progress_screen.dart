@@ -890,14 +890,15 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         iconColor: status.neutral,
       ),
     // The one state that still asks something of the reader: edged in the
-    // overdue colour, as the week page marks aliyot still to read, with an
-    // hourglass rather than the made-up tile's history.
+    // overdue colour, with the mark of reading still to do, as the week
+    // page marks aliyot and the strip days still to read (not the made-up
+    // tile's history).
     _TileState.overdue => (
         fill: sefer.paper,
         border: BorderSide(color: status.overdue, width: sefer.isHighContrast ? 2 : 1.5),
         text: scheme.onSurface,
         bold: false,
-        icon: Icons.hourglass_bottom_rounded,
+        icon: stillToReadIcon,
         iconColor: status.overdue,
       ),
     _TileState.current => (

@@ -161,11 +161,11 @@ void main() {
       }
       for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
         expect(textIn(tester, row(name), 'Planned for $day').style?.color, overdue, reason: name);
-        expect(find.descendant(of: row(name), matching: find.byIcon(Icons.history)), findsOneWidget, reason: name);
+        expect(find.descendant(of: row(name), matching: find.byIcon(stillToReadIcon)), findsOneWidget, reason: name);
       }
       // Read on their days: plain.
       expect(textIn(tester, row('Rishon'), 'Planned for Monday').style?.color, scheme.onSurfaceVariant);
-      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(Icons.history)), findsNothing);
+      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(stillToReadIcon)), findsNothing);
     });
 
     testWidgets('planned for a day before the reader joined are never overdue', (tester) async {
@@ -175,15 +175,15 @@ void main() {
         settings: _settings.copyWith(joinDate: LocalDate(2026, 10, 7), starterCatchUp: false),
         progress: const ProgressState(),
       );
-      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(Icons.history)), findsNothing);
-      expect(find.descendant(of: row('Sheni'), matching: find.byIcon(Icons.history)), findsNothing);
-      expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.history)), findsOneWidget);
+      expect(find.descendant(of: row('Rishon'), matching: find.byIcon(stillToReadIcon)), findsNothing);
+      expect(find.descendant(of: row('Sheni'), matching: find.byIcon(stillToReadIcon)), findsNothing);
+      expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(stillToReadIcon)), findsOneWidget);
     });
 
     group('are never overdue on a day that does not count', () {
       void expectNoneOverdue(WidgetTester tester) {
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
-        expect(find.byIcon(Icons.history), findsNothing);
+        expect(find.byIcon(stillToReadIcon), findsNothing);
         for (final (name, day) in [('Shlishi', 'Wednesday'), ('Revi’i', 'Thursday'), ('Chamishi', 'Thursday')]) {
           expect(textIn(tester, row(name), 'Planned for $day').style?.color, isNot(overdue), reason: name);
         }
@@ -217,7 +217,7 @@ void main() {
         );
         expect(find.textContaining('Not counted'), findsOneWidget);
         expectNoneOverdue(tester);
-        expect(find.descendant(of: row('Shishi'), matching: find.byIcon(Icons.history)), findsNothing);
+        expect(find.descendant(of: row('Shishi'), matching: find.byIcon(stillToReadIcon)), findsNothing);
       });
     });
 
@@ -228,7 +228,7 @@ void main() {
         await open(tester, settings: shabbatPlan);
         final line = textIn(tester, row('Shevi’i'), 'Shabbat morning');
         expect(line.data, 'Shabbat morning — log it after Shabbat');
-        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsNothing);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(stillToReadIcon)), findsNothing);
       });
 
       testWidgets('are still to read once Shabbat has passed', (tester) async {
@@ -247,7 +247,7 @@ void main() {
         );
         final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
         expect(textIn(tester, row('Shevi’i'), 'Shabbat morning').style?.color, overdue);
-        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(Icons.history)), findsOneWidget);
+        expect(find.descendant(of: row('Shevi’i'), matching: find.byIcon(stillToReadIcon)), findsOneWidget);
         expect(
           tester.getSemantics(find.text('Shevi’i')).getSemanticsData().label,
           contains('Planned for Shabbat morning, still to read'),
@@ -263,7 +263,7 @@ void main() {
       }
       await open(tester, route: '/week/5787:1', now: DateTime(2026, 10, 22, 10), progress: ProgressState(weeks: {'5787:1': w}));
       expect(find.text('Planned for today'), findsNothing);
-      expect(find.byIcon(Icons.history), findsNothing);
+      expect(find.byIcon(stillToReadIcon), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
       expect(find.descendant(of: row('Shlishi'), matching: find.byIcon(Icons.check)), findsOneWidget);
     });
@@ -272,7 +272,7 @@ void main() {
       await open(tester, route: '/week/5787:2');
       expect(findWords('Preview — you can log this parsha from'), findsOneWidget);
       expect(find.text('Planned for today'), findsNothing);
-      expect(find.byIcon(Icons.history), findsNothing);
+      expect(find.byIcon(stillToReadIcon), findsNothing);
       expect([for (final p in tester.widgetList<PassPips>(find.byType(PassPips))) p.current], everyElement(isNull));
     });
 
@@ -388,7 +388,7 @@ void main() {
       expect(tester.widget<Icon>(mark).size, 14);
       expect(tester.widget<Icon>(mark).color, theme.colorScheme.onSurfaceVariant);
       final text = tester.getRect(find.descendant(of: chamishi, matching: find.textContaining('Some sources use')));
-      final plan = tester.getRect(find.descendant(of: chamishi, matching: find.byIcon(Icons.history)));
+      final plan = tester.getRect(find.descendant(of: chamishi, matching: find.byIcon(stillToReadIcon)));
       expect(tester.getRect(mark).left, moreOrLessEquals(text.left, epsilon: 0.5));
       expect(tester.getRect(mark).left, moreOrLessEquals(plan.left, epsilon: 0.5));
       final firstLine = style.fontSize! * style.height!;

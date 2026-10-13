@@ -1059,10 +1059,10 @@ abstract class AppLocalizations {
   /// **'Paused'**
   String get dayPaused;
 
-  /// In the week strip, a planned day gone by whose reading is still to do and can still be caught up (drawn in the overdue colour), and today until its reading is done. Pairs with dayMissed ('Not read'), a day gone by that can no longer be caught up.
+  /// In the week strip, a planned day gone by whose reading is still to do, in full or in part (a day counts once three readings are done, so a day with one or two read is still to read), and can still be caught up (drawn in the overdue colour), and today until its reading is done. Say nothing of whether any of it was read. Pairs with dayMissed ('Not read'), a day gone by that can no longer be caught up, and with plannedForOverdue's 'still to read' on the week's page.
   ///
   /// In en, this message translates to:
-  /// **'Not read yet'**
+  /// **'Still to read'**
   String get dayOpen;
 
   /// No description provided for @dayMissed.

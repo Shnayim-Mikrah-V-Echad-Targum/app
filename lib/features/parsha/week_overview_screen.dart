@@ -608,7 +608,7 @@ class _AliyahRow extends ConsumerWidget {
           alignment: PlaceholderAlignment.middle,
           child: Padding(
             padding: const EdgeInsetsDirectional.only(end: 4),
-            child: Icon(Icons.history, size: _iconScaler(context).scale(14), color: color),
+            child: Icon(stillToReadIcon, size: _iconScaler(context).scale(14), color: color),
           ),
         ),
         TextSpan(text: label),
