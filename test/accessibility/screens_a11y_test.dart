@@ -201,7 +201,7 @@ void main() {
 
   // A name of two parshiyot, of more than one word, stays whole: "Acharei"
   // over "Mot-Kedoshim", never "Acharei Mot-" over "Kedoshim". The Hebrew
-  // UI names it in English under the Hebrew.
+  // UI names it in Hebrew alone, its words as whole.
   for (final hebrew in [false, true]) {
     testWidgets(
         'no overflow or broken word at 300% on a 320 dp phone: /today in a week of two parshiyot${hebrew ? ', Hebrew' : ''}',
@@ -215,7 +215,7 @@ void main() {
         textScale: 3,
       );
       expect(tester.takeException(), isNull);
-      expect(find.text(WholeWords.unbroken('Acharei Mot-Kedoshim')), findsOneWidget);
+      expect(find.text(WholeWords.unbroken('Acharei Mot-Kedoshim')), hebrew ? findsNothing : findsOneWidget);
       expectWholeWords(tester);
     });
   }
