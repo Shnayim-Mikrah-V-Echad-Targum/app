@@ -447,25 +447,33 @@ void main() {
     });
 
     group("stand above the page's own controls", () {
-      testWidgets("a forum's floating button", (tester) async {
-        await openRoute(tester, '/community/forum/questions', size: const Size(1366, 860));
-        final button = tester.getRect(find.byType(FloatingActionButton));
-        final shown = await show(tester);
-        expect(shown.bottom, button.top - 16);
-        expect(shown.center.dx, 257 + 1109 / 2);
-        expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
-      });
+      // The page's own Scaffold shows the message, on a phone as beside the
+      // rail, rather than the shell's over the page's foot.
+      for (final (device, size, centre) in [
+        ('on a desktop', const Size(1366, 860), 257 + 1109 / 2),
+        ('on a phone', const Size(412, 915), 412 / 2),
+      ]) {
+        testWidgets("$device, a forum's floating button", (tester) async {
+          await openRoute(tester, '/community/forum/questions', size: size);
+          final button = tester.getRect(find.byType(FloatingActionButton));
+          final shown = await show(tester);
+          expect(shown.bottom, button.top - 16);
+          expect(shown.center.dx, centre);
+          expect(tester.getRect(find.byType(FloatingActionButton)), button, reason: 'the button stays where it is');
+        });
 
-      testWidgets("a thread's reply box", (tester) async {
-        await openRoute(tester, '/community/thread/1', size: const Size(1366, 860));
-        final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
-        final shown = await show(tester);
-        expect(shown.bottom, box.top - 16);
-        expect(shown.center.dx, 257 + 1109 / 2);
-      });
+        testWidgets("$device, a thread's reply box", (tester) async {
+          await openRoute(tester, '/community/thread/1', size: size);
+          final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+          final shown = await show(tester);
+          expect(find.byType(SnackBar), findsOneWidget);
+          expect(shown.bottom, box.top - 16);
+          expect(shown.center.dx, centre);
+        });
+      }
 
-      testWidgets('on a phone, the navigation bar, as before', (tester) async {
-        await openRoute(tester, '/community/thread/1');
+      testWidgets('on a phone, the navigation bar, where the page has neither', (tester) async {
+        await openRoute(tester, '/settings');
         final shown = await show(tester);
         // The bar, under its hairline.
         expect(shown.bottom, tester.getRect(find.byType(NavigationBar)).top - 1 - 16);

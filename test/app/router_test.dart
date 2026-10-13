@@ -270,9 +270,17 @@ void main() {
         expect(opacityOf(tester, find.byType(ProgressScreen)), inExclusiveRange(0, 1));
         await tester.pumpAndSettle();
       }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+    });
 
-      testWidgets('is there at once while a status message is on show, which carries across unbroken', (tester) async {
-        await _pump(tester, size: const Size(1024, 800));
+    // Each page's own Scaffold shows a status message, on a phone as beside
+    // the rail (§6.19).
+    for (final (device, size, platform) in [
+      ('a phone', const Size(412, 915), TargetPlatform.android),
+      ('a desktop', const Size(1024, 800), TargetPlatform.windows),
+    ]) {
+      testWidgets('on $device, is there at once while a status message is on show, which carries across unbroken',
+          (tester) async {
+        await _pump(tester, size: size);
         showStatus(tester.element(find.byType(TodayScreen)), 'Logged');
         await tester.pumpAndSettle();
         expect(find.text('Logged'), findsOneWidget);
@@ -295,7 +303,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
         expect(opacityOf(tester, find.byType(TodayScreen)), inExclusiveRange(0, 1));
         await tester.pumpAndSettle();
-      }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
-    });
+      }, variant: TargetPlatformVariant.only(platform));
+    }
   });
 }

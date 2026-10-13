@@ -207,10 +207,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 /// The tabs' navigators, each kept as it was left and only the chosen one
 /// shown, as go_router's indexed stack keeps them; and only the chosen one's
-/// heroes take part in a page's transition. On a tablet or desktop each
-/// tab's page on show is the Scaffold that shows a status message (§6.19),
-/// whose copy of it, a hero, would otherwise be one of several alike. The
-/// tab chosen fades in, and the one left goes at once.
+/// heroes take part in a page's transition. Each tab's page on show is the
+/// Scaffold that shows a status message (§6.19), whose copy of it, a hero,
+/// would otherwise be one of several alike. The tab chosen fades in, and the
+/// one left goes at once.
 Widget _tabStack(BuildContext context, StatefulNavigationShell shell, List<Widget> children) => IndexedStack(
       index: shell.currentIndex,
       children: [
@@ -237,10 +237,10 @@ bool tabsFadeOn(TargetPlatform platform, {bool web = kIsWeb}) =>
 
 /// A tab that fades in over [Motion.short] each time it is chosen (§8), as
 /// its indicator moves to it; shown at once where tabs don't fade
-/// ([tabsFadeOn]) and while motion is reduced. On a tablet or desktop, while
-/// a status message is on show, it is shown at once too: there each page's
-/// own Scaffold shows the message (§6.19), which would fade out and in with
-/// the tab, and it carries across unbroken instead.
+/// ([tabsFadeOn]) and while motion is reduced. While a status message is on
+/// show, it is shown at once too: each page's own Scaffold shows the message
+/// (§6.19), which would fade out and in with the tab, and it carries across
+/// unbroken instead.
 class _TabFadeIn extends StatefulWidget {
   const _TabFadeIn({required this.active, required this.child});
 
@@ -262,8 +262,7 @@ class _TabFadeInState extends State<_TabFadeIn> with SingleTickerProviderStateMi
   void didUpdateWidget(_TabFadeIn oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.active || oldWidget.active) return;
-    final message = MediaQuery.sizeOf(context).width >= Breakpoints.medium && statusMessageShown(context);
-    if (!tabsFadeOn(Theme.of(context).platform) || Motion.of(context).reduced || message) {
+    if (!tabsFadeOn(Theme.of(context).platform) || Motion.of(context).reduced || statusMessageShown(context)) {
       _controller.value = 1;
     } else {
       _controller.forward(from: 0);
