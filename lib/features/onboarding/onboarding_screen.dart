@@ -6,6 +6,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/providers.dart';
+import '../../app/router.dart' show heldLocationProvider, openFromOutside;
 import '../../core/calendar/local_date.dart';
 import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
@@ -325,16 +326,27 @@ class OnboardingStepScreen extends ConsumerWidget {
 
   /// Ends onboarding on the reader. Reading the whole parsha this week, it
   /// opens on the first aliyah not yet read: Rishon, for a new reader.
-  /// Starting with today's reading, it opens on that.
+  /// Starting with today's reading, it opens on that. Over Today, or over
+  /// the page a link opened before onboarding (a discussion shared with the
+  /// reader, say), which closing the reader then shows.
   void _finish(BuildContext context, WidgetRef ref) {
+    // Taken first: ending onboarding would otherwise send the welcome there.
+    final held = ref.read(heldLocationProvider).take();
     final today = ref.read(todayProvider);
     _update(ref, (s) => s.copyWith(onboardingComplete: true, joinDate: s.joinDate ?? today));
     final ctx = ref.read(currentWeekContextProvider);
     final first = ref.read(settingsProvider).starterCatchUp
         ? ctx.nextAliyah ?? 0
         : _firstFrom(ctx.plan, ctx.today) ?? ctx.nextAliyah ?? 0;
-    context.go('/today');
-    context.push('/read/${ctx.id}/$first');
+    final router = GoRouter.of(context);
+    if (held == null) {
+      router.go('/today');
+    } else {
+      openFromOutside(router, held);
+      // A link to the reader itself opens it, and no other.
+      if (Uri.parse(held).path.startsWith('/read/')) return;
+    }
+    router.push('/read/${ctx.id}/$first');
   }
 
   /// The first aliyah planned for [day], or else for the next day with

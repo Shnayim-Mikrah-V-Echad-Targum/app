@@ -120,6 +120,25 @@ void main() {
       expect(json(c.read(settingsProvider)), json(was));
     });
 
+    // Not the device's brightness alone: Android holds the app in the night
+    // mode of a theme chosen in it, and reports that as the device's.
+    for (final (device, theme, expected) in [
+      (Brightness.dark, AppThemeMode.light, AppThemeMode.highContrastLight),
+      (Brightness.dark, AppThemeMode.sepia, AppThemeMode.highContrastLight),
+      (Brightness.light, AppThemeMode.dark, AppThemeMode.highContrastDark),
+      (Brightness.dark, AppThemeMode.system, AppThemeMode.highContrastDark),
+      (Brightness.light, AppThemeMode.system, AppThemeMode.highContrastLight),
+    ]) {
+      testWidgets('High contrast, from ${theme.name} on a ${device.name} device, is ${expected.name}', (tester) async {
+        tester.platformDispatcher.platformBrightnessTestValue = device;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        final c = await open(tester, AppSettings(onboardingComplete: true, theme: theme));
+        await tester.tap(card('High contrast'));
+        await tester.pumpAndSettle();
+        expect(c.read(settingsProvider).theme, expected);
+      });
+    }
+
     testWidgets('are cards two by two, 88 high at least', (tester) async {
       await open(tester, const AppSettings(onboardingComplete: true));
       final large = tester.getRect(card('Large print'));

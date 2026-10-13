@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SelectedContent;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../../app/retry.dart';
 import '../../../l10n/app_localizations.dart';
@@ -19,6 +21,7 @@ import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/sefer_tag.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
+import '../data/forum_repository.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
@@ -153,6 +156,36 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFa
     }
   }
 
+  /// Copies the thread's address on the web, for the member to share, and
+  /// says so.
+  Future<void> _copyLink() async {
+    final l = context.l10n;
+    final link = '${AppConfig.webUrl}community/thread/${Uri.encodeComponent(widget.threadId)}';
+    try {
+      await Clipboard.setData(ClipboardData(text: link));
+    } on PlatformException {
+      // A browser that refuses the page its clipboard.
+      if (mounted) showStatus(context, l.errorGeneric);
+      return;
+    }
+    if (mounted) showStatus(context, l.linkCopied);
+  }
+
+  /// What the app bar's menu offers for [t]: its link, to every member,
+  /// where the build knows the site's address and the discussion is on the
+  /// community's server ([linkable]): the on-device demo's discussions are
+  /// the device's own, and a link would find another's or none. To a
+  /// moderator, its pin and its lock.
+  List<PopupMenuEntry<String>> _menu(AppLocalizations l, ThreadSummary t, {required bool isMod, required bool linkable}) => [
+        if (linkable && AppConfig.webUrl.isNotEmpty) SeferMenuItem(value: _copyLinkAction, child: Text(l.copyLink)),
+        if (isMod) ...[
+          SeferMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
+          SeferMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
+        ],
+      ];
+
+  static const _copyLinkAction = 'copy_link';
+
   /// Fetches the thread and its latest posts again. Fails as the backend does.
   Future<void> _refresh() async {
     _retry();
@@ -221,7 +254,27 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFa
     final forums = watchFresh(forumsProvider);
     final forum = t == null ? null : forums.value?.where((f) => f.id == t.forumId).firstOrNull;
     final forumName = forum?.name(context.isHebrewUi) ?? (forums.isLoading || t == null ? null : l.communityTitle);
+    // A link to a discussion that isn't there (deleted, say) says so, with a
+    // way to the forums, as a forum's does.
+    if (thread.error case CommunityException(code: ForumRepository.threadNotFound) when !thread.hasValue) {
+      return PageScaffold(
+        titleText: l.notFoundTitle,
+        body: CenteredMessage(
+          text: l.threadNotFound,
+          actions: [
+            FilledButton.tonal(
+              style: AppButtons.tonal(context),
+              onPressed: () => context.go('/community'),
+              child: Text(l.allForums),
+            ),
+          ],
+        ),
+      );
+    }
     final canReply = t != null && (!t.locked || isMod);
+    final menu = t == null
+        ? const <PopupMenuEntry<String>>[]
+        : _menu(l, t, isMod: isMod, linkable: !ref.watch(forumRepositoryProvider).isDemo);
     // The reply box, docked only under the posts: none while they load, or
     // can't.
     final docked = canReply && posts.hasValue;
@@ -248,15 +301,12 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> with FetchAgainIfFa
         actions: [
           const DemoTag(),
           refreshButton,
-          if (isMod && t != null)
+          if (menu.isNotEmpty)
             PopupMenuButton<String>(
               tooltip: l.actionMore,
               popUpAnimationStyle: Motion.of(context).style,
-              onSelected: _moderate,
-              itemBuilder: (context) => [
-                SeferMenuItem(value: t.pinned ? 'unpin_thread' : 'pin_thread', child: Text(t.pinned ? l.unpinThread : l.pinThread)),
-                SeferMenuItem(value: t.locked ? 'unlock_thread' : 'lock_thread', child: Text(t.locked ? l.unlockThread : l.lockThread)),
-              ],
+              onSelected: (action) => action == _copyLinkAction ? _copyLink() : _moderate(action),
+              itemBuilder: (context) => menu,
             ),
         ],
         body: RefreshIndicator(

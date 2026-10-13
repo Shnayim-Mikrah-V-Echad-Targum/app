@@ -26,14 +26,19 @@ class Win32Window {
   Win32Window();
   virtual ~Win32Window();
 
-  // Creates a win32 window with |title|, centred on the monitor Windows opens
-  // it on (the one the app was launched from). |size| is in logical pixels:
-  // it is scaled for that monitor, and shrunk to fit 90% of its work area if
-  // need be. The window is invisible until |Show| is called. Returns true if
-  // the window was created successfully.
+  // Creates a win32 window with |title|, where it was when it was last closed
+  // (the place is kept in the registry when the window is destroyed, or as
+  // Windows ends the session), fitted to its monitor's work area if part of
+  // it would be off screen. The first time, or once that monitor is gone, it
+  // is centred on the monitor Windows opens it on (the one the app was
+  // launched from): |size| is in logical pixels, scaled for that monitor, and
+  // shrunk to fit 90% of its work area if need be. The window is invisible
+  // until |Show| is called. Returns true if the window was created
+  // successfully.
   bool Create(const std::wstring& title, const Size& size);
 
-  // Show the current window. Returns true if the window was successfully shown.
+  // Show the current window, maximized if it was when it was last closed.
+  // Returns true if the window was successfully shown.
   bool Show();
 
   // Release OS resources associated with window.
@@ -96,6 +101,9 @@ class Win32Window {
   static void ApplyDarkTitleBar(HWND const window, bool dark);
 
   bool quit_on_close_ = false;
+
+  // Whether |Show| maximizes the window, as it was when it was last closed.
+  bool show_maximized_ = false;
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;

@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../l10n.dart';
 import '../theme/app_theme.dart';
+import '../theme/palette.dart';
 import 'common.dart';
 import 'ornaments.dart';
 
@@ -220,6 +223,143 @@ class _RetryButton extends StatelessWidget {
       // presses meanwhile do nothing.
       onPressed: retrying ? () {} : onRetry,
     );
+  }
+}
+
+/// What a widget that fails to build shows in its place, in a release or
+/// profile build (see [install]), where Flutter's own is a grey box: the
+/// surface it lies on, a card's or the page's, left as it is, with
+/// "Something on this page didn’t load." centred on it where the line has
+/// room, and said to screen readers either way. The error itself reaches
+/// `recentErrors` (lib/services/recent_errors.dart) by FlutterError.onError,
+/// as every error does, and About offers to copy it for support.
+///
+/// It stands in a tree that a failure has left in disarray, so, as the
+/// framework asks, it does as little as it can and copes with any
+/// constraints: it looks up only what has a fallback, and takes its words
+/// straight from the app's translations, in the interface's language,
+/// rather than through the Localizations it may have failed under.
+class AppErrorPanel extends StatelessWidget {
+  const AppErrorPanel({super.key});
+
+  /// Has each widget that fails to build show an [AppErrorPanel], but in a
+  /// [debug] build, whose red screen says what went wrong.
+  static void install({bool debug = kDebugMode}) {
+    if (!debug) ErrorWidget.builder = (_) => const AppErrorPanel();
+  }
+
+  static const _fontSize = 16.0;
+  static const _lineHeight = 24.0;
+
+  /// The least room the sentence is shown in: a row's height, and a few
+  /// words' width.
+  static const _minHeight = 48.0;
+  static const _minWidth = 120.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final hebrew = Localizations.maybeLocaleOf(context)?.languageCode == 'he';
+    final message = lookupAppLocalizations(Locale(hebrew ? 'he' : 'en')).errorPanelMessage;
+    // The sentence's own direction, whatever its surroundings'.
+    final direction = hebrew ? TextDirection.rtl : TextDirection.ltr;
+    final (paper, ink) = _colors(context);
+    final scaler = MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
+    final line = scaler.scale(_fontSize) * _lineHeight / _fontSize;
+    return Semantics(
+      container: true,
+      label: message,
+      textDirection: direction,
+      child: ExcludeSemantics(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final boundedHeight = constraints.hasBoundedHeight;
+            // As many lines as fit a bounded height, the last ending in an
+            // ellipsis should the sentence need more.
+            final lines = boundedHeight ? (constraints.maxHeight / line + 0.001).floor() : null;
+            final room = constraints.maxWidth >= _minWidth && constraints.maxHeight >= _minHeight && (lines ?? 1) > 0;
+            final sentence = Center(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: room
+                  ? Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: boundedHeight ? 0 : 12),
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        textDirection: direction,
+                        maxLines: lines,
+                        overflow: lines == null ? null : TextOverflow.ellipsis,
+                        style: TextStyle(
+                          inherit: false,
+                          color: ink,
+                          fontFamily: hebrew ? 'NotoSansHebrew' : 'NotoSans',
+                          fontFamilyFallback: hebrew ? const ['NotoSans'] : const ['NotoSansHebrew'],
+                          fontSize: _fontSize,
+                          height: _lineHeight / _fontSize,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    )
+                  : null,
+            );
+            return ConstrainedBox(
+              // The whole of a bounded slot; in a list as tall as the line
+              // and 12 either side, in a row as wide as it.
+              constraints: BoxConstraints(
+                minWidth: constraints.hasBoundedWidth ? constraints.maxWidth : 0,
+                minHeight: boundedHeight ? constraints.maxHeight : 0,
+              ),
+              child: paper == null ? sentence : ColoredBox(color: paper, child: sentence),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// The paper the panel paints, if any, and its ink. Within the app's
+  /// theme it paints none: the surface it lies on shows through, whatever
+  /// paints it (a card, a sheet, a group's row with its hairline, a notice's
+  /// wash, the page), so that it is of a piece with it. Its ink is the
+  /// theme's, or where the nearest Material beneath is of the other
+  /// brightness, as a filled button is, the theme's surface. Above the app's
+  /// theme, where nothing else would paint, it paints the light or dark
+  /// theme's paper, as the device is set, and writes in its ink.
+  static (Color?, Color) _colors(BuildContext context) {
+    if (context.findAncestorWidgetOfExactType<Theme>() == null) {
+      final scheme = switch (MediaQuery.maybePlatformBrightnessOf(context) ?? Brightness.light) {
+        Brightness.light => Palettes.light,
+        Brightness.dark => Palettes.dark,
+      };
+      return (scheme.surface, scheme.onSurface);
+    }
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final beneath = _materialBeneath(context, theme) ?? scheme.surface;
+    final brightness = ThemeData.estimateBrightnessForColor;
+    return (null, brightness(beneath) == brightness(scheme.surface) ? scheme.onSurface : scheme.surface);
+  }
+
+  /// The colour of the nearest Material above [context] that paints one, as
+  /// it paints it.
+  static Color? _materialBeneath(BuildContext context, ThemeData theme) {
+    Color? found;
+    context.visitAncestorElements((element) {
+      if (element.widget case final Material material when material.type != MaterialType.transparency) {
+        final color = material.color ??
+            switch (material.type) {
+              MaterialType.canvas => theme.canvasColor,
+              MaterialType.card => theme.cardColor,
+              _ => null,
+            };
+        if (color != null && color.a > 0) {
+          found = ElevationOverlay.applySurfaceTint(color, material.surfaceTintColor, material.elevation);
+        }
+      }
+      return found == null;
+    });
+    return found;
   }
 }
 

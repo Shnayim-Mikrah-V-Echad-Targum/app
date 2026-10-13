@@ -1078,6 +1078,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutBack => 'Previous step';
 
   @override
+  String get shortcutGoBack =>
+      'Close the reader, as the mouse’s back button does';
+
+  @override
   String get shortcutLarger => 'Larger text';
 
   @override
@@ -2179,6 +2183,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutGroupContact => 'Contact';
 
   @override
+  String get copySupportDetails => 'Copy details for support';
+
+  @override
+  String get copySupportDetailsDesc =>
+      'What went wrong since the app opened, to paste into a message to us';
+
+  @override
+  String get supportDetailsCopied => 'Details copied';
+
+  @override
+  String get webUpdateReady => 'A new version is ready.';
+
+  @override
+  String get webUpdateRestart => 'Restart';
+
+  @override
+  String get errorPanelMessage => 'Something on this page didn’t load.';
+
+  @override
   String get linkOpenFailed => 'The link couldn’t be opened here.';
 
   @override
@@ -2315,6 +2338,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allForums => 'All forums';
+
+  @override
+  String get threadNotFound =>
+      'This discussion couldn’t be found. It may have been deleted.';
 
   @override
   String thisWeeksThread(String name) {
@@ -2561,6 +2588,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unpinThread => 'Unpin';
+
+  @override
+  String get copyLink => 'Copy link';
+
+  @override
+  String get linkCopied => 'Link copied';
 
   @override
   String get hidePost => 'Hide post';

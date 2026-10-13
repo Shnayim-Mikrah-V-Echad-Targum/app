@@ -16,6 +16,7 @@ import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/data/parsha_repository.dart';
 import 'package:shnayim_mikrah/features/onboarding/onboarding_screen.dart';
@@ -103,6 +104,7 @@ final _vayeraMonday = DateTime(2026, 10, 26, 9);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(ensureTimeZones);
   late ParshaRepository repo;
   setUpAll(() async => repo = await loadRepo());
 

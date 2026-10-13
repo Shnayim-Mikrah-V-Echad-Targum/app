@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'city.dart';
 import 'local_date.dart';
+import 'tz_database.dart';
 
 /// When Shabbat ends, as the reader's luach has it. Persisted by name.
 enum HavdalahRule {
@@ -63,8 +63,10 @@ class Zmanim {
   /// The times of [city] on [date]: candles lit [candleMinutes] before
   /// sunset, or the city's own minutes ([City.candleMinutes]), and Shabbat
   /// ending by the [havdalah] rule. Every time is null in a time zone the
-  /// device doesn't know ([timeZoneKnown]).
+  /// device doesn't know ([timeZoneKnown]). Only once the time-zone database
+  /// is in ([ensureTimeZones]): before, every zone would read as unknown.
   factory Zmanim.of(City city, LocalDate date, {int? candleMinutes, HavdalahRule havdalah = HavdalahRule.degrees85}) {
+    assert(timeZonesLoaded, 'A city’s times before the time-zone database is in (ensureTimeZones)');
     final location = timeZone(city.timeZone);
     if (location == null) return Zmanim._(date, timeZoneKnown: false);
     final lat = city.latitude, lon = city.longitude;
@@ -132,11 +134,10 @@ class Zmanim {
   /// The sun's centre 8.5° below the horizon.
   static const _havdalahZenith = 98.5;
 
-  /// The IANA time zone [name], or null if the device doesn't know it.
+  /// The IANA time zone [name], or null if the device doesn't know it, or
+  /// until the time-zone database is in ([ensureTimeZones]).
   static tz.Location? timeZone(String name) {
-    // The notification service also loads the database, and loading it again
-    // would reset its local time zone.
-    if (!tz.timeZoneDatabase.isInitialized) tzdata.initializeTimeZones();
+    if (!timeZonesLoaded) return null;
     try {
       return tz.getLocation(name);
     } on tz.LocationNotFoundException {
@@ -149,7 +150,7 @@ class Zmanim {
   /// night, so noon tells the day's offset. When it doesn't, as for a
   /// traveller who has left the city behind, the city's times are not the
   /// device's, and given on its clock they would mislead. False in a time
-  /// zone the device doesn't know.
+  /// zone the device doesn't know, and until the time-zone database is in.
   static bool keepsClock(City city, LocalDate date, Duration offset) {
     final location = timeZone(city.timeZone);
     return location != null && tz.TZDateTime(location, date.year, date.month, date.day, 12).timeZoneOffset == offset;

@@ -13,6 +13,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../data/models/parsha.dart';
 import '../../services/feedback.dart';
+import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_icon.dart';
@@ -25,6 +26,7 @@ import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../../ui/widgets/web_update_banner.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
 import '../parsha/week_rows.dart';
@@ -113,8 +115,14 @@ class TodayScreen extends ConsumerWidget {
             !awaitsCheckIn(previous, today: today, settings: settings)
         ? previous
         : null;
+    // On the web, a new version of the app, until put away for the session.
+    final offerUpdate = ref.watch(webUpdateReadyProvider) && !ref.watch(webUpdateDismissedProvider);
 
     final reading = [
+      if (offerUpdate) ...[
+        WebUpdateBanner(onDismiss: () => ref.read(webUpdateDismissedProvider.notifier).dismiss()),
+        const Gap(Rhythm.cardGap),
+      ],
       if (paused) ...[
         NoticeBanner(
           icon: Icons.pause_circle_outline,

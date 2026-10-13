@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 
 import 'fixtures.dart';
@@ -22,6 +23,7 @@ City _place(String name, double lat, double lon, String tz) =>
     City(id: 0, nameEn: name, countryCode: '', latitude: lat, longitude: lon, timeZone: tz);
 
 void main() {
+  setUpAll(ensureTimeZones);
   final cities = {
     for (final c in (jsonDecode(File('assets/data/cities.json').readAsStringSync())['cities'] as List))
       (c as Map<String, dynamic>)['id'] as int: City.fromJson(c),

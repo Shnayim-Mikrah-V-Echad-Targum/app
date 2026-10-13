@@ -1084,6 +1084,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortcutBack => 'השלב הקודם';
 
   @override
+  String get shortcutGoBack => 'סגירת מסך הקריאה, כמו בכפתור החזרה של העכבר';
+
+  @override
   String get shortcutLarger => 'הגדלת טקסט';
 
   @override
@@ -2179,6 +2182,25 @@ class AppLocalizationsHe extends AppLocalizations {
   String get aboutGroupContact => 'יצירת קשר';
 
   @override
+  String get copySupportDetails => 'העתקת פרטים לתמיכה';
+
+  @override
+  String get copySupportDetailsDesc =>
+      'מה שהשתבש מאז שהאפליקציה נפתחה, להדבקה בהודעה אלינו';
+
+  @override
+  String get supportDetailsCopied => 'הפרטים הועתקו';
+
+  @override
+  String get webUpdateReady => 'גרסה חדשה מוכנה.';
+
+  @override
+  String get webUpdateRestart => 'הפעלה מחדש';
+
+  @override
+  String get errorPanelMessage => 'חלק מהדף לא נטען.';
+
+  @override
   String get linkOpenFailed => 'לא ניתן היה לפתוח את הקישור כאן.';
 
   @override
@@ -2313,6 +2335,9 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get allForums => 'כל הפורומים';
+
+  @override
+  String get threadNotFound => 'הדיון לא נמצא. ייתכן שנמחק.';
 
   @override
   String thisWeeksThread(String name) {
@@ -2558,6 +2583,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get unpinThread => 'ביטול נעיצה';
+
+  @override
+  String get copyLink => 'העתקת קישור';
+
+  @override
+  String get linkCopied => 'הקישור הועתק';
 
   @override
   String get hidePost => 'הסתרת הודעה';

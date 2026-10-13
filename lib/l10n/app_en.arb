@@ -1082,6 +1082,10 @@
   "readerFinished": "You’ve finished this aliyah.",
   "shortcutNext": "Next step",
   "shortcutBack": "Previous step",
+  "shortcutGoBack": "Close the reader, as the mouse’s back button does",
+  "@shortcutGoBack": {
+    "description": "In the Windows app’s list of the reader’s keyboard shortcuts, beside Alt+←: close the reading screen and return to the page it was opened from, as the system’s Back would. Not a page of text, nor the reader’s previous step, which are rows of their own."
+  },
   "shortcutLarger": "Larger text",
   "shortcutSmaller": "Smaller text",
   "shortcutTeamim": "Show or hide cantillation",
@@ -1852,7 +1856,31 @@
   },
   "aboutGroupContact": "Contact",
   "@aboutGroupContact": {
-    "description": "Heading over About's links to email us and to send feedback."
+    "description": "Heading over About's links to email us and to send feedback, and, after something has gone wrong, the row that copies details for support."
+  },
+  "copySupportDetails": "Copy details for support",
+  "@copySupportDetails": {
+    "description": "A row in About, shown only after something has gone wrong since the app started: it copies the app's version and what went wrong, to paste into a message to the maintainers."
+  },
+  "copySupportDetailsDesc": "What went wrong since the app opened, to paste into a message to us",
+  "@copySupportDetailsDesc": {
+    "description": "Under copySupportDetails."
+  },
+  "supportDetailsCopied": "Details copied",
+  "@supportDetailsCopied": {
+    "description": "A status message once copySupportDetails has copied the details to the clipboard."
+  },
+  "webUpdateReady": "A new version is ready.",
+  "@webUpdateReady": {
+    "description": "In the web app, at the top of Today and in About, once a new version of the app has downloaded and is waiting to replace the one open."
+  },
+  "webUpdateRestart": "Restart",
+  "@webUpdateRestart": {
+    "description": "The button beside webUpdateReady, which reloads the app in the new version, keeping the reader's progress and settings."
+  },
+  "errorPanelMessage": "Something on this page didn’t load.",
+  "@errorPanelMessage": {
+    "description": "Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built."
   },
   "linkOpenFailed": "The link couldn’t be opened here.",
   "@linkOpenFailed": {
@@ -1947,6 +1975,10 @@
   "forumsHeading": "Forums",
   "forumNotFound": "This forum couldn’t be found. It may have moved or closed.",
   "allForums": "All forums",
+  "threadNotFound": "This discussion couldn’t be found. It may have been deleted.",
+  "@threadNotFound": {
+    "description": "A link to a discussion that isn't there, or that the reader may not see, under the title notFoundTitle, above All forums."
+  },
   "thisWeeksThread": "This week: Parshat {name}",
   "@thisWeeksThread": {
     "placeholders": {
@@ -2121,6 +2153,14 @@
   "unlockThread": "Unlock discussion",
   "pinThread": "Pin to top",
   "unpinThread": "Unpin",
+  "copyLink": "Copy link",
+  "@copyLink": {
+    "description": "In a discussion's menu (More options, in its app bar): copies the discussion's address on the web app, for the member to share."
+  },
+  "linkCopied": "Link copied",
+  "@linkCopied": {
+    "description": "A status message once copyLink has copied the discussion's address to the clipboard."
+  },
   "hidePost": "Hide post",
   "moderationQueue": "Reports to review",
   "noReports": "No open reports.",

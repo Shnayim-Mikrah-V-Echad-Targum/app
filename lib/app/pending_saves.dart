@@ -3,6 +3,7 @@ import 'dart:ui' show AppExitResponse;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import 'providers.dart';
 
@@ -30,10 +31,15 @@ class PendingSaves {
   late final AppLifecycleListener _lifecycle;
 
   /// Writes whatever is waiting now.
-  Future<void> flush() async {
+  Future<void> flush() => flushWith(container.read);
+
+  /// Writes whatever the settings and progress are holding back now, reading
+  /// them with [read]: a container's, or a provider's own (a restart into a
+  /// new version of the web app saves them first).
+  static Future<void> flushWith(T Function<T>(ProviderListenable<T> provider) read) async {
     await Future.wait([
-      container.read(settingsProvider.notifier).flush(),
-      container.read(progressProvider.notifier).flush(),
+      read(settingsProvider.notifier).flush(),
+      read(progressProvider.notifier).flush(),
     ]);
   }
 

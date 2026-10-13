@@ -1,0 +1,42 @@
+Shnayim Mikrah v’Echad Targum is the weekly practice of reading the parsha twice in Hebrew and once in Targum Onkelos. This app guides you through it, calmly and at your own pace, and keeps out of the way on Shabbat.
+
+Guided, verse by verse
+• Read verse by verse, section by section, or aliyah by aliyah: the Hebrew twice, then the Targum.
+• Pick up exactly where you left off, in each of the three readings.
+• Read Rashi in the Targum’s place, or both, as the Shulchan Aruch allows. The English translation is there as a study aid.
+• Or open the full text, with the Targum under each verse, or beside it in a wide window, and read the whole parsha at once on Erev Shabbat.
+
+The right parsha, wherever you are
+• The calendar is worked out on your computer, for Israel or the Diaspora, double parshiyot and the weeks when the two readings differ included.
+• Visiting Israel? Set the reading you hear and the days of Yom Tov you keep separately.
+• Works offline: the texts and the calendar are built in.
+
+A rhythm that respects Shabbat
+• Choose a plan: an aliyah a day, Shevi’i on Shabbat morning, or all on Friday.
+• At most one gentle reminder a day, never on Shabbat or Yom Tov, and none in the last hours before them.
+• On Shabbat and Yom Tov the app rests. Read from a printed Chumash, and log it afterwards.
+• Two streaks with grace days, and a pause for when life happens. No points, no leaderboards, no guilt.
+
+The haftarah of your custom
+• Ashkenazi, Sephardi or Chabad, with the special haftarot of the year.
+
+Listen along
+• Hear the text read aloud, verse by verse, in your computer’s Hebrew voice: an aid to follow by, not a chanting of the cantillation.
+• Listen along reads Mikrah, Mikrah and Targum hands-free.
+
+For every reader
+• Made for Narrator and NVDA: each verse is read cleanly, and everything can be reached from the keyboard.
+• Scripture up to five times the system text size, high-contrast, dark and sepia themes, and fonts for low vision and dyslexia.
+• Keyboard shortcuts for every action in the reader.
+• In English and in Hebrew.
+
+And also
+• Search the Torah, the Targum and the translation, offline, or go straight to a verse by its reference.
+• Bookmarks and notes on verses.
+• A moderated community: a discussion for each week’s parsha, and questions and answers, with reporting and blocking.
+• Optional backup of your progress to an account. Without one, everything stays on your computer.
+
+Private by design
+No ads, no analytics and no tracking. The app never asks for your location. Your reading is self-reported, on the honor system.
+
+The Hebrew text is Miqra according to the Masorah (CC BY-SA 4.0), with Targum Onkelos, Rashi and the public-domain JPS 1917 translation. The app shows the halachic sources behind its choices; for your own practice, ask your rav.

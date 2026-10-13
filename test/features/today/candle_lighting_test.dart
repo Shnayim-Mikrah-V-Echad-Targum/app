@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/app/city_providers.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -33,7 +34,7 @@ final _friday = DateTime(2026, 10, 16, 10);
 void main() {
   // Loaded as the app loads it once the first frame is up, which tests never
   // report.
-  setUpAll(() => Zmanim.timeZone('UTC'));
+  setUpAll(ensureTimeZones);
 
   /// Opens Today on a device keeping London's clock, or [clock]'s.
   Future<void> openToday(WidgetTester tester, AppSettings settings, DateTime now, {String clock = 'Europe/London'}) async {

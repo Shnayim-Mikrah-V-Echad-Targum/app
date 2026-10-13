@@ -213,8 +213,16 @@ class SupabaseForumRepository implements ForumRepository {
 
   @override
   Future<ThreadSummary> thread(String id) => _call(() async {
-        final r = await _db.from('threads').select(_oneThreadColumns).eq('id', int.parse(id)).single();
-        return _thread(r);
+        final threadId = int.tryParse(id);
+        if (threadId == null) throw const CommunityException(ForumRepository.threadNotFound);
+        try {
+          final r = await _db.from('threads').select(_oneThreadColumns).eq('id', threadId).single();
+          return _thread(r);
+        } on PostgrestException catch (e) {
+          // No row: none by that number, or none the policies show the reader.
+          if (e.code == 'PGRST116') throw const CommunityException(ForumRepository.threadNotFound);
+          rethrow;
+        }
       });
 
   @override

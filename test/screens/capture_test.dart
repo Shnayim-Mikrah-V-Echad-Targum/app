@@ -5,6 +5,10 @@
 //   CAPTURE=1 SCREENS=today,reader flutter test test/screens/capture_test.dart
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
 //   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe,hugewide flutter test test/screens/capture_test.dart
+//   CAPTURE=1 MODES=storeplay,storeplayhe flutter test test/screens/capture_test.dart
+//
+// The store modes ([_storeModes]) render only when MODES names them, at the
+// stores' screenshot sizes; tool/store/frame.py frames them for upload.
 //
 // WORDS=1 also lists every word broken across lines, in
 // build/screens/broken_words.txt (remove it before a new run).
@@ -16,8 +20,10 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -26,11 +32,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shnayim_mikrah/app/city_providers.dart';
+import 'package:shnayim_mikrah/app/config.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/data/models/parsha.dart';
 import 'package:shnayim_mikrah/data/models/verse_ref.dart';
@@ -52,16 +60,20 @@ import 'package:shnayim_mikrah/features/reader/verse_actions_sheet.dart' show ve
 import 'package:shnayim_mikrah/features/reader/whole_parsha.dart';
 import 'package:shnayim_mikrah/features/search/search_screen.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
 import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikrah/features/settings/widgets/shabbat_times_setting.dart';
 import 'package:shnayim_mikrah/features/today/today_screen.dart';
 import 'package:shnayim_mikrah/l10n/app_localizations.dart';
-import 'package:shnayim_mikrah/ui/l10n.dart';
-import 'package:shnayim_mikrah/features/settings/backup.dart';
 import 'package:shnayim_mikrah/services/backup_files.dart';
+import 'package:shnayim_mikrah/services/recent_errors.dart';
 import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/services/web_update.dart';
+import 'package:shnayim_mikrah/ui/l10n.dart';
 import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/theme/layout.dart';
 import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 import 'package:shnayim_mikrah/ui/widgets/sefer_choice_chip.dart';
@@ -136,6 +148,9 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
+  // On the web, a new version ready: Today offers it, and so does About.
+  'today_update': '/today',
+  'about_update': '/settings/about',
   // With a city for Shabbat times: on Erev Shabbat, candle-lighting there,
   // by the reader's luach (30 minutes before sunset, not Jerusalem's 40).
   'today_candles': '/today',
@@ -297,6 +312,7 @@ const _screens = {
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
+  'reader_keys_windows': '/read/5787:1/2',
   // The display sheet, scrolled to its line spacing.
   'reader_display': '/read/5787:1/2',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
@@ -414,6 +430,10 @@ const _screens = {
   // above the button that begins a discussion.
   'thread_refreshed': '/community/thread/1',
   'forum_refreshed': '/community/forum/questions',
+  // A moderator's menu in the app bar, where the build knows the site's
+  // address: Copy link above the pin and the lock; and the link copied.
+  'thread_menu': '/community/thread/1',
+  'thread_link_copied': '/community/thread/1',
   'compose': '/community/new',
   // Its empty title field focused: the caret at the start of the UI's direction.
   'compose_focused': '/community/new',
@@ -521,6 +541,7 @@ const _screens = {
   // The sources, the guide and the policies within Settings, as About,
   // Settings and Accessibility open them, beside the navigation bar or rail.
   'about': '/settings/about',
+  'about_support': '/settings/about',
   'sources': '/settings/about/sources',
   'guide': '/settings/guide',
   // From Today's help button, within Today.
@@ -538,6 +559,8 @@ const _screens = {
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
+  // A link to a discussion that is gone.
+  'thread_missing': '/community/thread/0',
   // Search: the index being built the first time, then the page as it
   // opens, a phrase, a word in many verses, a word found only in the
   // Targum, English, a word the Torah has in no spelling, and one it spells
@@ -639,6 +662,8 @@ const _screens = {
   'kit_focus': '/today',
   'kit_progress': '/today',
   'kit_week': '/today',
+  // What stands for a widget that fails, where one might.
+  'kit_error': '/today',
   // The legends behind the info buttons, and the Torah map in every tile
   // state (see [_screenProgress]).
   'legend_week': '/progress',
@@ -662,6 +687,20 @@ const _screens = {
   'progress_years': '/progress',
   'progress_past': '/progress',
   'progress_record': '/progress',
+  // For the stores alone (see [_storeScreensByMode]): Wednesday of Toldot,
+  // a reader some weeks into the year with nothing overdue, Revi'i, today's
+  // aliyah, still to read. The guided reader reads by section, which fills a
+  // page; the full text shows the Targum beside each verse on the iPad.
+  'store_today': '/today',
+  'store_reader': '/read/5787:6/3',
+  'store_week': '/week/5787:6',
+  'store_progress': '/progress',
+  'store_listen': '/read/5787:6/3',
+  'store_full': '/read/5787:6/3?mode=full',
+  // Display's Large print and High contrast presets, dark: the guided reader,
+  // and on a tablet the full text, which fills its page.
+  'store_access': '/read/5787:6/3',
+  'store_access_full': '/read/5787:6/3?mode=full',
 };
 
 /// Screens that need more than a route: extra settings, and a first tap once
@@ -681,6 +720,21 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_display_small': (s) => s.copyWith(readingScale: 0.6, focusMode: true, theme: AppThemeMode.sepia),
   's_display_rashi': (s) => s.copyWith(showRashi: true),
   's_a11y_active': (s) => applyPreset(s, DisplayPreset.largePrint, darkPreferred: false),
+  // The stores' screenshots name no streak counts.
+  for (final screen in ['store_today', 'store_week', 'store_progress', 'store_full'])
+    screen: (s) => s.copyWith(showStreaks: false),
+  for (final screen in ['store_reader', 'store_listen'])
+    screen: (s) => s.copyWith(showStreaks: false, method: ReadingMethod.sectionBySection),
+  for (final screen in ['store_access', 'store_access_full'])
+    screen: (s) => applyPreset(
+          applyPreset(
+            s.copyWith(showStreaks: false, method: ReadingMethod.sectionBySection),
+            DisplayPreset.largePrint,
+            darkPreferred: true,
+          ),
+          DisplayPreset.highContrast,
+          darkPreferred: true,
+        ),
   's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   'guide_end_bold': (s) => s.copyWith(boldText: true),
@@ -804,11 +858,19 @@ final _screenOverrides = <String, List<Override>>{
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
   for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
   'city_error': [cityDirectoryProvider.overrideWith((ref) async => throw Exception('offline'))],
+  for (final screen in ['today_update', 'about_update']) screen: [webUpdatesProvider.overrideWithValue(_UpdateWaiting())],
 };
+
+/// A new version of the web app, installed and waiting.
+class _UpdateWaiting extends WebUpdates {
+  @override
+  bool get waiting => true;
+}
 
 /// Screens shown while Listen reads.
 const _listening = {
   'reader_listen',
+  'store_listen',
   'reader_listen_full',
   'reader_listen_paused',
   'reader_listen_focus',
@@ -849,6 +911,7 @@ class _PreparingIndex extends VerseIndexLoader {
 /// Screens shown on another day, with another history: the Torah map in
 /// every tile state, and the days and histories of [_screenSettings].
 final _screenNow = <String, DateTime>{
+  for (final screen in _storeScreens) screen: _storeNow,
   'progress_map': historyNow,
   'progress_history': historyNow,
   // The Wednesday of Acharei Mot-Kedoshim 5788.
@@ -912,6 +975,7 @@ final _screenNow = <String, DateTime>{
   'reader_finished_day': DateTime(2026, 10, 7, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
+  for (final screen in _storeScreens) screen: _storeProgress,
   'progress_map': historyProgress,
   'progress_history': historyProgress,
   'progress_map_rescue': rescueProgress,
@@ -1023,6 +1087,36 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_week': () => _readThrough(5, partly: 6),
 };
 
+/// The day of the stores' screenshots: Wednesday 11 November 2026, in the
+/// week of Toldot, the sixth parsha of the year.
+final _storeNow = DateTime(2026, 11, 11, 10);
+
+/// The reader of the stores' screenshots, as of [_storeNow], who joined on
+/// Simchat Torah ([captureJoinDate]): every week since Bereshit read on its
+/// days, Shevi'i with Shishi on Friday and the haftarah too, and of Toldot,
+/// Rishon to Shlishi on Sunday to Tuesday. Nothing is overdue: Revi'i is
+/// today's.
+ProgressState _storeProgress() {
+  WeekProgress week(String id, LocalDate first, {int aliyot = 7, LocalDate? friday}) {
+    var w = WeekProgress(weekId: id);
+    for (var a = 0; a < aliyot; a++) {
+      final day = first.addDays(a);
+      w = w.withAliyah(a, friday != null && day > friday ? friday : day);
+    }
+    return friday == null ? w : w.withHaftarah(friday);
+  }
+
+  final weeks = [
+    // Bereshit's week began on Monday, after Simchat Torah.
+    week('5787:1', LocalDate(2026, 10, 5), friday: LocalDate(2026, 10, 9)),
+    for (var parsha = 2; parsha <= 5; parsha++)
+      week('5787:$parsha', LocalDate(2026, 10, 11).addDays(7 * (parsha - 2)),
+          friday: LocalDate(2026, 10, 16).addDays(7 * (parsha - 2))),
+    week('5787:6', LocalDate(2026, 11, 8), aliyot: 3),
+  ];
+  return ProgressState(weeks: {for (final w in weeks) w.weekId: w});
+}
+
 /// A reader in their second year, with Bereshit 5787 as in [_progress].
 ProgressState _secondYear() => ProgressState(weeks: {...secondYearProgress(), ..._progress().weeks});
 
@@ -1055,6 +1149,13 @@ const _unsettled = {'today_completing'};
 
 /// Screens shown as on the web, where the reader takes single keys.
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
+
+/// Screens shown as in the Windows app, where Alt+← goes back.
+const _windowsKeys = {'reader_keys_windows'};
+
+/// Screens of a build that knows the site's address (WEB_URL), which a
+/// discussion's Copy link gives.
+const _webUrlKeys = {'thread_menu', 'thread_link_copied'};
 
 /// Screens captured after typing into their only text field.
 const _typed = {
@@ -1127,6 +1228,12 @@ Future<ForumRepository> _signedIn() async {
   return repo;
 }
 
+Future<ForumRepository> _signedInOnServer() async {
+  final repo = _Cloud();
+  await repo.verifyCode('reader@example.org', '123456');
+  return repo;
+}
+
 /// Signed in as Rivka, who has accepted the guidelines and blocked a member.
 Future<ForumRepository> _member() async {
   final repo = DemoForumRepository();
@@ -1143,6 +1250,8 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_weekly': _withWeeklyThread,
   'forum_weekly': _withWeeklyThread,
   'thread_report': _signedIn,
+  // On a server: the demo's discussions have no link.
+  for (final screen in _webUrlKeys) screen: _signedInOnServer,
   'community_member': _signedIn,
   'account_name': _signedIn,
   for (final screen in ['compose_member', 'compose_verse_posted', 'account_member', 'account_edit', 'account_blocked', 'account_delete'])
@@ -1379,6 +1488,7 @@ final _taps = {
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
   'week_discuss': () => find.widgetWithIcon(PaperRow, Icons.forum_outlined),
   for (final screen in ['thread_refreshed', 'forum_refreshed']) screen: () => find.byIcon(Icons.refresh),
+  'thread_link_copied': () => find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'copy_link'),
   'account_code': () => find.byType(FilledButton).first,
   'compose_errors': () => find.byType(FilledButton).last,
 };
@@ -1445,6 +1555,94 @@ Future<void> _scrollToEnd(WidgetTester tester) async {
   }
 }
 
+/// The page scrolled so that the screen ends between two of its parts (its
+/// cards, notices, tiles, the week's title page and lines of text outside
+/// them) rather than through one, and begins between two as well: as little
+/// as does it, or with [from], with the part that holds the first of them
+/// that can begin the screen so near the top. Where none can, as on a short
+/// phone, the page's first part (or the part that holds [from]'s first)
+/// stands near the top, whole, and the screen ends under a line of a part
+/// rather than through one: that part plainly goes on below. A store's
+/// screenshot then shows nothing cut short.
+Future<void> _endBetweenCards(WidgetTester tester, {List<Finder> from = const []}) async {
+  // The page's own, the largest: not the rail's, say.
+  double area(Element e) {
+    final size = (e.renderObject! as RenderBox).size;
+    return size.width * size.height;
+  }
+
+  final page = find
+      .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
+      .evaluate()
+      .reduce((a, b) => area(a) >= area(b) ? a : b);
+  final scrollable = find.byElementPredicate((e) => e == page);
+  final position = tester.state<ScrollableState>(scrollable).position;
+  final viewport = tester.getRect(scrollable);
+  // In the page's own coordinates.
+  Rect rectOf(Element element) {
+    final box = element.renderObject! as RenderBox;
+    return (box.localToGlobal(Offset.zero) & box.size).shift(Offset(0, position.pixels));
+  }
+
+  // The surfaces a part is drawn on (a card's, a title page's, a notice's,
+  // a tile's), outermost, and larger than an icon's button.
+  final surfaces = find
+      .descendant(of: scrollable, matching: find.byWidgetPredicate((w) => w is Material || w is NoticeBanner))
+      .evaluate()
+      .toSet();
+  bool nested(Element element) {
+    var inside = false;
+    element.visitAncestorElements((ancestor) {
+      inside = surfaces.contains(ancestor);
+      return !inside;
+    });
+    return inside;
+  }
+
+  final parts = [
+    for (final surface in surfaces)
+      if (!nested(surface) && rectOf(surface).width > kMinInteractiveDimension * 2) rectOf(surface),
+  ]..sort((a, b) => a.top.compareTo(b.top));
+  final texts = [
+    for (final text in find.descendant(of: scrollable, matching: find.byType(RichText)).evaluate()) rectOf(text),
+  ];
+  final all = [...parts, ...texts];
+  bool cuts(List<Rect> blocks, double edge) => blocks.any((b) => b.top < edge - 0.5 && b.bottom > edge + 0.5);
+  bool clean(double offset, List<Rect> blocks) =>
+      !cuts(blocks, viewport.top + offset) && !cuts(blocks, viewport.bottom + offset);
+  final last = position.maxScrollExtent.floorToDouble();
+  // The offsets that set [part] a margin or so below the top, nearest first.
+  List<double> near(Rect part) {
+    final ideal = (part.top - viewport.top - Space.md).clamp(0.0, last).floorToDouble();
+    return [for (var o = math.max(0.0, ideal - Space.md); o <= math.min(last, ideal + Space.md); o++) o]
+      ..sort((a, b) => (a - ideal).abs().compareTo((b - ideal).abs()));
+  }
+
+  double? offset;
+  if (from.isEmpty) {
+    for (var o = 0.0; o <= last && offset == null; o++) {
+      if (clean(o, all)) offset = o;
+    }
+    // The first part as high as can be, at most a margin below the top.
+    final lead = parts.firstOrNull;
+    if (offset == null && lead != null) {
+      for (var o = near(lead).reduce(math.max); o >= 0 && offset == null; o--) {
+        if (clean(o, texts)) offset = o;
+      }
+    }
+  } else if (parts.isNotEmpty) {
+    final leads = [
+      for (final finder in from)
+        parts.lastWhere((p) => p.top <= tester.getRect(finder).top + position.pixels, orElse: () => parts.first),
+    ];
+    offset = leads.expand(near).where((o) => clean(o, all)).firstOrNull ??
+        near(leads.first).where((o) => clean(o, texts)).firstOrNull ??
+        near(leads.first).first;
+  }
+  position.jumpTo(offset ?? 0);
+  await tester.pump();
+}
+
 /// Bookmarks and notes on Genesis and Exodus, in both languages, for the
 /// screens that show them.
 final _annotations = jsonEncode({
@@ -1481,7 +1679,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(find.byIcon(Icons.sticky_note_2_outlined));
   },
   'week_notes': _scrollToEnd,
+  'store_today': _endBetweenCards,
+  // From the year, past the word that streak numbers are hidden.
+  'store_progress': (tester) {
+    final l = tester.element(find.byType(Scaffold).last).l10n;
+    Finder eyebrow(String text) => find.byWidgetPredicate((w) => w is Eyebrow && w.text == text);
+    return _endBetweenCards(tester, from: [eyebrow(l.thisYear), eyebrow(l.weekStripLabel)]);
+  },
   's_a11y_speech': _scrollToEnd,
+  // Listen, from the first verse.
+  'store_listen': _tapInTurn([() => find.byIcon(Icons.volume_up_outlined)]),
   for (final screen in [
     'reader_listen',
     'reader_listen_full',
@@ -1523,6 +1730,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reader's menu, then Keyboard shortcuts.
   'reader_keys': _openShortcuts,
   'reader_keys_web': _openShortcuts,
+  'reader_keys_windows': _openShortcuts,
+  // The discussion's menu, in the app bar.
+  for (final screen in _webUrlKeys)
+    screen: (tester) => tester.tap(find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>))),
   // The week's menu, then Clear.
   'week_clear': _tapInTurn([
     () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
@@ -1847,6 +2058,19 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'kit_rows': (tester) => _showGallery(tester, const RowsGallery()),
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
   'kit_week': (tester) => _showGallery(tester, const WeekGallery()),
+  'kit_error': (tester) => _showGallery(tester, const ErrorPanelGallery()),
+  // Something has gone wrong: the row that copies the details for support,
+  // last among the ways to reach us.
+  'about_support': (tester) async {
+    recentErrors.add(FlutterErrorDetails(exception: StateError('broken')));
+    addTearDown(recentErrors.clear);
+    // The page hears of it after a frame, and shows it in the next.
+    await tester.pump();
+    await tester.pump();
+    // The page's own scroll view, not the rail's beside it on a computer.
+    final page = find.ancestor(of: find.byIcon(Icons.content_copy_outlined), matching: find.byType(Scrollable));
+    await tester.drag(page.first, const Offset(0, -2000));
+  },
   'legend_week': (tester) async {
     await tester.ensureVisible(find.byType(WeekStripLegendButton));
     await tester.tap(find.byType(WeekStripLegendButton));
@@ -2059,13 +2283,18 @@ Future<void> _keyboardFocus(WidgetTester tester, Finder target) async {
 }
 
 class _Mode {
-  const _Mode(this.tag, this.size, this.settings, {this.textScale = 1});
+  const _Mode(this.tag, this.size, this.settings, {this.textScale = 1, this.pixelRatio = 1});
   final String tag;
+
+  /// The view's size in logical pixels.
   final Size size;
   final AppSettings Function(AppSettings) settings;
 
   /// The system text size.
   final double textScale;
+
+  /// Physical pixels per logical pixel: the capture is [size] times this.
+  final double pixelRatio;
 }
 
 final _modes = [
@@ -2115,7 +2344,43 @@ final _modes = [
   // System text at 300% on a 412 dp phone, tall, for the screens in
   // [_hugeWideScreens]: a stacked row keeps its icon on the title's line.
   _Mode('hugewide', const Size(412, 3600), (s) => s, textScale: 3),
+  // The stores' screenshot sizes, light, in English and in Hebrew, for the
+  // screens in [_storeScreens]: the App Store's 6.9" iPhone (1320 × 2868)
+  // and 13" iPad (2064 × 2752), and Google Play's phone (1080 × 1920, a
+  // 411 dp phone at a Pixel's 2.625) and 10" tablet (1600 × 2560), within
+  // Play's 2:1 limit.
+  for (final (tag, size, ratio) in const [
+    ('storeios', Size(440, 956), 3.0),
+    ('storeipad', Size(1032, 1376), 2.0),
+    ('storeplay', Size(1080 / 2.625, 1920 / 2.625), 2.625),
+    ('storeplaytab', Size(800, 1280), 2.0),
+  ]) ...[
+    _Mode(tag, size, (s) => s, pixelRatio: ratio),
+    _Mode('${tag}he', size, (s) => s.copyWith(language: AppLanguage.hebrew), pixelRatio: ratio),
+  ],
 ];
+
+/// The store modes, which render only when MODES names them.
+final _storeModes = {
+  for (final mode in _modes)
+    if (mode.tag.startsWith('store')) mode.tag,
+};
+
+/// What each store's screenshots show, in its mode and the mode's Hebrew
+/// twin: tool/store/frame.py's SHOTS on that device, which
+/// tool/store/test_store.py checks. Not the demo community: its members are
+/// made up. A tablet shows large print in the full text, which fills its
+/// page, and the iPad, wide enough for the Targum beside each verse, the
+/// full text in place of Listen.
+const _storeScreensByMode = {
+  'storeios': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access'},
+  'storeipad': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_full', 'store_access_full'},
+  'storeplay': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access'},
+  'storeplaytab': {'store_today', 'store_reader', 'store_week', 'store_progress', 'store_listen', 'store_access_full'},
+};
+
+/// The screens of the store modes, which no other mode renders.
+final _storeScreens = {for (final screens in _storeScreensByMode.values) ...screens};
 
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
@@ -2146,6 +2411,7 @@ const _hugeModes = {'huge', 'hugehe'};
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
 const _hugeScreens = {
   'today',
+  'today_update',
   'today_shabbat',
   // The read-date sheet's rows stacked, their dates whole.
   'sheet_date',
@@ -2164,6 +2430,7 @@ const _hugeScreens = {
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
+  'today_update',
   'today_shabbat',
   'parsha',
   'week',
@@ -2212,6 +2479,12 @@ const _narrowDesktopScreens = {
 };
 
 const _desktopScreens = {
+  // Today's offer of a new version, at the top of its reading column.
+  'today_update',
+  'about_update',
+  // A widget that failed, and the row that copies the details for support.
+  'kit_error',
+  'about_support',
   'notes',
   'reader_full_marks',
   'today',
@@ -2269,6 +2542,7 @@ const _desktopScreens = {
   'reader_rashi',
   'reader_keys',
   'reader_keys_web',
+  'reader_keys_windows',
   'reader_gaps',
   'progress',
   'progress_years',
@@ -2322,6 +2596,9 @@ const _desktopScreens = {
   's_a11y_undo_keys',
   'thread_refreshed',
   'forum_refreshed',
+  'thread_menu',
+  'thread_link_copied',
+  'thread_missing',
   'sheet_display',
   'focus_nav',
   'focus_nav_today',
@@ -2377,6 +2654,8 @@ const _tallScreens = {
 };
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {
+  // Restart under the sentence, which beside it would wrap.
+  'today_update',
   'welcome',
   'welcome_plan',
   'settings',
@@ -2406,6 +2685,11 @@ const _narrowScreens = {
 };
 const _bigTextScreens = {
   'today_chabad',
+  'today_update',
+  'about_update',
+  // A widget that failed, and the row that copies the details for support.
+  'kit_error',
+  'about_support',
   // A held message with Undo and Close, at twice the text size.
   's_a11y_undo_keys',
   // A focus ring on a menu item and on tiles, at twice the text size.
@@ -2546,6 +2830,9 @@ Future<void> _write(WidgetTester tester, String name) async {
 
 void main() {
   setUpAll(() async {
+    // As the app loads it once the first frame is up, which tests never
+    // report.
+    await ensureTimeZones();
     if (_capture) await loadBundledFonts();
     if (_capture) {
       final verse = await TextRepository().hebrewVerse(const BookVerse('Genesis', VerseRef(3, 22)));
@@ -2562,8 +2849,12 @@ void main() {
   });
 
   for (final mode in _modes) {
-    if (!(_onlyModes?.contains(mode.tag) ?? true)) continue;
+    final store = _storeModes.contains(mode.tag);
+    // The modes MODES names, or every mode but the stores'.
+    if (!(_onlyModes?.contains(mode.tag) ?? !store)) continue;
     for (final entry in _screens.entries) {
+      if (store && !_storeScreensByMode[mode.tag.replaceFirst(RegExp(r'he$'), '')]!.contains(entry.key)) continue;
+      if (!store && _storeScreens.contains(entry.key)) continue;
       if (_wideModes.contains(mode.tag) && !_desktopScreens.contains(entry.key)) continue;
       if (mode.tag == 'phonetall' && !_tallScreens.contains(entry.key)) continue;
       if (_bigTextModes.contains(mode.tag) && !_bigTextScreens.contains(entry.key)) continue;
@@ -2578,8 +2869,9 @@ void main() {
       final only = _only;
       if (only != null && !only.contains(entry.key)) continue;
       testWidgets('${mode.tag} ${entry.key}', (tester) async {
-        tester.view.physicalSize = mode.size;
-        tester.view.devicePixelRatio = 1;
+        final physical = mode.size * mode.pixelRatio;
+        tester.view.physicalSize = Size(physical.width.roundToDouble(), physical.height.roundToDouble());
+        tester.view.devicePixelRatio = mode.pixelRatio;
         addTearDown(tester.view.reset);
         tester.platformDispatcher.textScaleFactorTestValue = mode.textScale;
         addTearDown(tester.platformDispatcher.clearAllTestValues);
@@ -2592,9 +2884,19 @@ void main() {
           ReaderScreen.singleKeyPlatform = true;
           addTearDown(() => ReaderScreen.singleKeyPlatform = false);
         }
+        if (_webUrlKeys.contains(entry.key)) {
+          AppConfig.debugWebUrl = 'https://example.org/app/';
+          addTearDown(() => AppConfig.debugWebUrl = null);
+          // A clipboard that takes the link, as a device's does.
+          final messenger = tester.binding.defaultBinaryMessenger;
+          messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async => null);
+          addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+        }
         // Soft shadows, as a device draws them; tests otherwise draw them as
-        // solid lines. Restored before the test ends, as the binding checks.
+        // solid lines. Restored before the test ends, as the binding checks,
+        // and so is the platform.
         debugDisableShadows = false;
+        if (_windowsKeys.contains(entry.key)) debugDefaultTargetPlatformOverride = TargetPlatform.windows;
         try {
           final blocked = _syncBlocked.contains(entry.key);
           final onboarding = entry.key.startsWith('welcome');
@@ -2650,6 +2952,7 @@ void main() {
           await _write(tester, '${mode.tag}_${entry.key}');
         } finally {
           debugDisableShadows = true;
+          debugDefaultTargetPlatformOverride = null;
         }
       }, skip: !_capture);
     }

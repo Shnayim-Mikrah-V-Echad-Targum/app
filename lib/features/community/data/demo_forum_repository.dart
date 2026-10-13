@@ -296,7 +296,7 @@ class DemoForumRepository implements ForumRepository {
 
   @override
   Future<ThreadSummary> thread(String id) async => _listed(
-        _threads.firstWhere((t) => t.id == id, orElse: () => throw const CommunityException('thread_not_found')),
+        _threads.firstWhere((t) => t.id == id, orElse: () => throw const CommunityException(ForumRepository.threadNotFound)),
         _posts.where((p) => p.threadId == id),
       );
 

@@ -29,5 +29,19 @@ abstract final class AppConfig {
   /// need it. Empty → not offered.
   static const installUrl = String.fromEnvironment('INSTALL_URL');
 
+  /// The web app's public address, ending in a slash
+  /// ('https://example.org/app/'), that links to its pages begin with, such
+  /// as a discussion's Copy link. Empty → no links are offered.
+  static String get webUrl {
+    final url = debugWebUrl ?? _webUrl;
+    return url.isEmpty || url.endsWith('/') ? url : '$url/';
+  }
+
+  static const _webUrl = String.fromEnvironment('WEB_URL');
+
+  /// Stands in for [webUrl] in tests, which can't define it at build time.
+  @visibleForTesting
+  static String? debugWebUrl;
+
   static bool get hasBackend => supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
 }
