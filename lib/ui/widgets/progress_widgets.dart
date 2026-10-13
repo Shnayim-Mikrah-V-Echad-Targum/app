@@ -409,10 +409,13 @@ class RingLegend extends StatelessWidget {
   static const double _dot = 9;
   static const double _dotGap = 10;
 
-  /// The high-contrast key, and the gap after it: together as wide as the
-  /// dot and its gap, so the names start at the same x in every theme.
-  static const double _key = 16;
-  static const double _keyGap = _dot + _dotGap - _key;
+  /// The gap after the high-contrast key ([RingKey.size]): as much room as
+  /// the dot's, for its size, so the key never runs into the name.
+  static const double _keyGap = 8;
+
+  /// What comes before each name: the dot or the key, and the gap after it.
+  static double _lead(BuildContext context) =>
+      SeferColors.of(context).isHighContrast ? RingKey.size + _keyGap : _dot + _dotGap;
 
   static const double _countGap = 12;
 
@@ -457,7 +460,7 @@ class RingLegend extends StatelessWidget {
     final label = entries.map((e) => measure(e.label, _labelStyle(context))).reduce(math.max);
     final count = entries.map((e) => measure(l.countOfTotal(e.done, kAliyot), _countStyle(context))).reduce(math.max);
     final text = split ? math.max(label, count) : label + _countGap + count;
-    return (_dot + _dotGap + text).ceilToDouble();
+    return (_lead(context) + text).ceilToDouble();
   }
 
   @override
@@ -492,10 +495,7 @@ class RingLegend extends StatelessWidget {
                         height: line,
                         child: Center(
                           child: highContrast
-                              ? CustomPaint(
-                                  size: const Size.square(_key),
-                                  painter: _RingKey(ring: ring, color: e.color, ink: ink),
-                                )
+                              ? RingKey(ring: ring, color: e.color, ink: ink)
                               : SizedBox.square(
                                   dimension: _dot,
                                   child: DecoratedBox(decoration: BoxDecoration(color: e.color, shape: BoxShape.circle)),
@@ -529,33 +529,115 @@ class RingLegend extends StatelessWidget {
   }
 }
 
-/// A [RingLegend] row's key in high contrast: the three rings in small,
-/// 16 px across, the row's own [ring] stroked 2 px in its [color] and the
-/// other two 1 px in [ink].
-class _RingKey extends CustomPainter {
-  const _RingKey({required this.ring, required this.color, required this.ink});
+/// A [RingLegend] row's key in high contrast (docs/DESIGN_SYSTEM.md §6.11):
+/// the three rings in small, [size] across, the row's own [ring] stroked 2 px
+/// in its [color] and the other two 1 px in [ink].
+///
+/// Its centre is set on a corner of the device's pixels, and each ring's
+/// edges fall a whole pixel from it, so at 1x (Windows at 100%) no stroke is
+/// smeared over two pixels: the 1 px rings stay crisp beside the 2 px one.
+class RingKey extends LeafRenderObjectWidget {
+  const RingKey({super.key, required this.ring, required this.color, required this.ink});
 
   /// 0 for the first reading (outermost), 1 for the second, 2 for the Targum.
   final int ring;
   final Color color;
   final Color ink;
 
-  static const _radii = [7.0, 4.5, 2.0];
+  static const double size = 16;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final centre = size.center(Offset.zero);
-    final paint = Paint()..style = PaintingStyle.stroke;
-    for (final (i, r) in _radii.indexed) {
-      paint
-        ..color = i == ring ? color : ink
-        ..strokeWidth = i == ring ? 2 : 1;
-      canvas.drawCircle(centre, r, paint);
-    }
+  RenderObject createRenderObject(BuildContext context) => _RenderRingKey(
+        ring: ring,
+        color: color,
+        ink: ink,
+        pixelRatio: MediaQuery.devicePixelRatioOf(context),
+      );
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderRingKey renderObject) {
+    renderObject
+      ..ring = ring
+      ..color = color
+      ..ink = ink
+      ..pixelRatio = MediaQuery.devicePixelRatioOf(context);
+  }
+}
+
+class _RenderRingKey extends RenderBox {
+  _RenderRingKey({required int ring, required Color color, required Color ink, required double pixelRatio})
+      : _ring = ring,
+        _color = color,
+        _ink = ink,
+        _pixelRatio = pixelRatio;
+
+  // Radii from the centre, outermost first: a 1 px ring spans 7–8, 4–5 and
+  // 2–3, and the row's own, 2 px, 6–8, 4–6 and 1–3, keeping the first
+  // reading's outer edge, the second's inner one and the Targum's outer
+  // one, so a pixel always stands clear between one ring and the next.
+  static const _thin = [7.5, 4.5, 2.5];
+  static const _own = [7.0, 5.0, 2.0];
+
+  int _ring;
+  set ring(int value) {
+    if (value == _ring) return;
+    _ring = value;
+    markNeedsPaint();
+  }
+
+  Color _color;
+  set color(Color value) {
+    if (value == _color) return;
+    _color = value;
+    markNeedsPaint();
+  }
+
+  Color _ink;
+  set ink(Color value) {
+    if (value == _ink) return;
+    _ink = value;
+    markNeedsPaint();
+  }
+
+  double _pixelRatio;
+  set pixelRatio(double value) {
+    if (value == _pixelRatio) return;
+    _pixelRatio = value;
+    markNeedsPaint();
   }
 
   @override
-  bool shouldRepaint(_RingKey old) => old.ring != ring || old.color != color || old.ink != ink;
+  bool get sizedByParent => true;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) => constraints.constrain(const Size.square(RingKey.size));
+
+  @override
+  double computeMinIntrinsicWidth(double height) => RingKey.size;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) => RingKey.size;
+
+  @override
+  double computeMinIntrinsicHeight(double width) => RingKey.size;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => RingKey.size;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    double snap(double v) => (v * _pixelRatio).roundToDouble() / _pixelRatio;
+    final centre = offset + size.center(Offset.zero);
+    final snapped = Offset(snap(centre.dx), snap(centre.dy));
+    final paint = Paint()..style = PaintingStyle.stroke;
+    for (var i = 0; i < 3; i++) {
+      final own = i == _ring;
+      paint
+        ..color = own ? _color : _ink
+        ..strokeWidth = own ? 2 : 1;
+      context.canvas.drawCircle(snapped, own ? _own[i] : _thin[i], paint);
+    }
+  }
 }
 
 /// [ParshaRings] with their [RingLegend] (docs/DESIGN_SYSTEM.md §6.11): side

@@ -677,7 +677,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 
 **RingLegend** (always beside or under rings of size 88 or more)
 - Three rows, each 24 high: a 9 px dot in the ring colour, a 10 gap, the label in bodyMedium (`passMikra1`, `passMikra2`, `passTargum`/`passRashi`), and the count end-aligned "3 of 7" in bodyMedium onSurfaceVariant with tabular figures.
-- In high contrast a 16 px key takes each dot's place: three concentric circles at radii 7, 4.5 and 2, the row's own ring stroked 2 px in its colour and the other two 1 px in onSurface, then a 3 gap, so the labels keep their x. It names each ring by its position as well as its shade.
+- In high contrast a 16 px key (`RingKey`) takes each dot's place, then an 8 gap, so it never runs into the name (the names start 5 further in than beside a dot; two themes are never seen side by side). It names each ring by its position as well as its shade: three concentric rings, the row's own stroked 2 px in its colour and the other two 1 px in onSurface. Each edge falls a whole pixel from the centre, which is set on a corner of the device's pixels, so at 1x no stroke smears into grey over two pixels and a pixel stands clear between rings: a 1 px ring spans 7–8, 4–5 and 2–3 px from the centre (radii 7.5, 4.5, 2.5), and the row's own 6–8, 4–6 and 1–3 (radii 7, 5, 2).
 - Excluded from semantics: the rings' label already says it.
 - `RingsWithLegend` sets the legend beside the rings whenever it fits there, each count under its name if the two can't share a line (as on a 360 dp phone); otherwise, on a narrower phone or with large text, the rings sit centred above it. Beside the rings on a wide card, the legend grows at most 40 past its natural width, so the counts stay near their names.
 
