@@ -111,6 +111,29 @@ class ReaderScreen extends ConsumerStatefulWidget {
   /// bar keeps to less (1.34, as Flutter's does).
   static const double chromeMaxTextScale = 2;
 
+  /// The least the app bar's slot for its home or back button narrows to:
+  /// the button's 48 dp target.
+  static const double _minLeadingWidth = 48;
+
+  /// The app bar's leading slot (null for Material's 56) and the title's
+  /// inset after it, for a text that starts [start] from the window's edge
+  /// (DESIGN_SYSTEM.md §9 Reader, guided). The title starts where the text
+  /// does wherever the button leaves room for it: after the usual slot and
+  /// spacing on a wide window; on a tablet, whose column starts just past
+  /// the button, after a narrower slot and a smaller space (at 800 dp, the
+  /// text's 60: a 52 slot and 8). On a phone the text starts under the
+  /// button, and the title keeps the usual spacing after it.
+  @visibleForTesting
+  static (double?, double) titleInset(double start, {required bool hasLeading}) {
+    if (!hasLeading) return (null, start);
+    if (start - kToolbarHeight >= NavigationToolbar.kMiddleSpacing) return (null, start - kToolbarHeight);
+    if (start >= _minLeadingWidth + Space.sm) {
+      final slot = (start - Space.sm).clamp(_minLeadingWidth, kToolbarHeight);
+      return (slot, start - slot);
+    }
+    return (null, NavigationToolbar.kMiddleSpacing);
+  }
+
   @override
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -1211,9 +1234,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final start = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
     final leading = homeLeading(context);
     final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
+    final (leadingWidth, titleStart) = ReaderScreen.titleInset(start, hasLeading: hasLeading);
     return ScrolledUnderRule(
       appBar: AppBar(
         leading: leading,
+        leadingWidth: leadingWidth,
         toolbarHeight: height,
         // The inset goes before the title alone (as PageScaffold's does): as
         // titleSpacing it would be kept after it too, and a wide window would
@@ -1222,10 +1247,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         actionsPadding: EdgeInsetsDirectional.only(end: start - _columnPadding),
         notificationPredicate: scrolledUnder ? defaultScrollNotificationPredicate : _neverScrolledUnder,
         title: Padding(
-          padding: EdgeInsetsDirectional.only(
-            start: hasLeading ? max(NavigationToolbar.kMiddleSpacing, start - kToolbarHeight) : start,
-            end: NavigationToolbar.kMiddleSpacing,
-          ),
+          padding: EdgeInsetsDirectional.only(start: titleStart, end: NavigationToolbar.kMiddleSpacing),
           // The app bar makes it a heading; this gives its level, as every
           // page's title has.
           child: Semantics(
@@ -1381,8 +1403,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 context,
                 ctx,
                 s,
-                // The text scrolls under the ribbon, or in the whole parsha
-                // under its aliyah's heading, which have their own rules.
+                // The text scrolls under the ribbon, or in the whole parsha's
+                // focus mode under its aliyah's heading, which have their own
+                // rules.
                 scrolledUnder: !showRibbon && !whole,
                 columnWidth: columnWidth,
                 actions: [
@@ -1532,25 +1555,29 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   ? _Whole(
                                       parsha: parsha,
                                       aliyahKey: (a) => _aliyahKeys[a],
-                                      heading: (a) {
+                                      heading: (a, {required pinned}) {
                                         final r = ctx.portion.aliyot[a];
+                                        Widget header({bool held = false}) => AliyahHeader(
+                                              aliyah: a,
+                                              range: names.range(
+                                                r.book,
+                                                r.start.chapter,
+                                                r.start.verse,
+                                                r.end.chapter,
+                                                r.end.verse,
+                                              ),
+                                              done: ctx.progress.isAliyahDone(a),
+                                              width: columnWidth,
+                                              padding: _columnPadding,
+                                              held: held,
+                                            );
+                                        // Ruled off from the text only while
+                                        // it is held over it.
+                                        if (!pinned) return header();
                                         return HeldHeading(
                                           scroll: _scroll,
                                           start: () => _aliyahOffset(a),
-                                          builder: (context, held) => AliyahHeader(
-                                            aliyah: a,
-                                            range: names.range(
-                                              r.book,
-                                              r.start.chapter,
-                                              r.start.verse,
-                                              r.end.chapter,
-                                              r.end.verse,
-                                            ),
-                                            done: ctx.progress.isAliyahDone(a),
-                                            width: columnWidth,
-                                            padding: _columnPadding,
-                                            held: held,
-                                          ),
+                                          builder: (context, held) => header(held: held),
                                         );
                                       },
                                       hidden: _placing,
@@ -2535,8 +2562,9 @@ class _Whole {
   /// The key of each aliyah's part of the text, which finds where it begins.
   final GlobalKey Function(int aliyah) aliyahKey;
 
-  /// Each aliyah's heading, which stays at the top while it is read.
-  final Widget Function(int aliyah) heading;
+  /// Each aliyah's heading, [pinned] where it stays at the top while its
+  /// aliyah is read.
+  final Widget Function(int aliyah, {required bool pinned}) heading;
 
   /// Whether the text is out of sight, while it is brought to the place it
   /// opens at.
@@ -2634,6 +2662,9 @@ class _FullText extends StatelessWidget {
 
   /// The page's side padding, and around the text at its top and end.
   static const _side = 20.0;
+
+  /// Above and below the [notice].
+  static const _noticeGap = 12.0;
 
   /// [child] in the reading column, as a verse's block is set.
   Widget _column(Widget child) => Center(
@@ -2796,7 +2827,13 @@ class _FullText extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (notice case final notice?) ...[_column(notice), const Gap(8)],
+                // 12 clear of the ribbon above it (with the 8 the text
+                // begins at) and of the text beneath.
+                if (notice case final notice?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: _noticeGap - 8, bottom: _noticeGap),
+                    child: _column(notice),
+                  ),
                 for (final (i, r) in verses.indexed) verse(i, r, first: i == 0, last: i == verses.length - 1),
                 ...end(aliyah),
               ],
@@ -2806,9 +2843,8 @@ class _FullText extends StatelessWidget {
       );
     }
 
-    // The whole parsha, up to 244 verses: each aliyah under its heading,
-    // which stays at the top while it is read, and its verses built only as
-    // they come near the view.
+    // The whole parsha, up to 244 verses: each aliyah under its heading, and
+    // its verses built only as they come near the view.
     final parsha = whole.parsha;
     final last = parsha.aliyot.length - 1;
     return TapObserver(
@@ -2827,14 +2863,22 @@ class _FullText extends StatelessWidget {
               slivers: [
                 if (notice case final notice?)
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(_side, 8, _side, 8),
+                    padding: const EdgeInsets.fromLTRB(_side, _noticeGap, _side, _noticeGap),
                     sliver: SliverToBoxAdapter(child: _column(notice)),
                   ),
                 for (final (a, aliyot) in parsha.aliyot.indexed)
                   SliverMainAxisGroup(
                     key: whole.aliyahKey(a),
                     slivers: [
-                      PinnedHeaderSliver(child: whole.heading(a)),
+                      // Held at the top while its aliyah is read only where
+                      // no ribbon names the aliyah, in focus mode; beneath
+                      // the ribbon it would name it a third time, and
+                      // scrolls with the text. The same heading either way,
+                      // so that turning focus mode on or off moves nothing.
+                      if (settings.focusMode)
+                        PinnedHeaderSliver(child: whole.heading(a, pinned: true))
+                      else
+                        SliverToBoxAdapter(child: whole.heading(a, pinned: false)),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(_side, 8, _side, 0),
                         sliver: SliverList.builder(

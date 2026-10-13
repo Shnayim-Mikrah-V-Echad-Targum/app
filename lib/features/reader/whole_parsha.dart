@@ -54,12 +54,13 @@ double topInView(RenderBox box, ScrollPosition position) {
   return viewport.getOffsetToReveal(box, 0).offset - position.pixels;
 }
 
-/// The head of an aliyah in the full text of the whole parsha, which stays
-/// at the top of the text while its aliyah is read: the aliyah's Hebrew
-/// ordinal in gold, its name and its verses, and a check once it is read.
-/// On the page's own colour, so the text passes under it, and ruled off from
-/// it by a hairline while it does ([held]), as the app bar is. One heading
-/// to a screen reader: "Revi'i, aliyah 4 of 7, Genesis 3:22–4:18, read".
+/// The head of an aliyah in the full text of the whole parsha, centred over
+/// its text, which in focus mode stays at the top of the text while its
+/// aliyah is read: the aliyah's Hebrew ordinal in gold, its name and its
+/// verses, and a check once it is read. On the page's own colour, so the
+/// text passes under it, and ruled off from it by a hairline while it does
+/// ([held]), as the app bar is. One heading to a screen reader: "Revi'i,
+/// aliyah 4 of 7, Genesis 3:22–4:18, read".
 class AliyahHeader extends StatelessWidget {
   const AliyahHeader({
     super.key,
@@ -125,38 +126,51 @@ class AliyahHeader extends StatelessWidget {
               headingLevel: 2,
               label: label,
               child: ExcludeSemantics(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                // Centred over the text, as a Chumash heads its aliyot, in
+                // either language. The verses, with the check, wrap beneath
+                // the name, each line centred, rather than squeeze it at a
+                // large text size; the ordinal stays with the name.
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 12,
                   children: [
-                    Text(
-                      HebrewText.gematria(aliyah + 1, punctuate: false),
-                      style: SeferType.of(context).ordinal.copyWith(color: scheme.secondary),
-                      textDirection: TextDirection.rtl,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          HebrewText.gematria(aliyah + 1, punctuate: false),
+                          style: SeferType.of(context).ordinal.copyWith(color: scheme.secondary),
+                          textDirection: TextDirection.rtl,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(name, style: theme.textTheme.titleMedium?.copyWith(color: scheme.onSurface)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    // The name and the verses wrap, rather than squeeze, at a
-                    // large text size.
-                    Expanded(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.end,
-                        spacing: 12,
-                        children: [
-                          Text(name, style: theme.textTheme.titleMedium?.copyWith(color: scheme.onSurface)),
-                          Text(
+                    // The check centred on the verses' line, and never on
+                    // a line alone.
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
                             range,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                               fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
+                        ),
+                        if (done) ...[
+                          const SizedBox(width: 12),
+                          Icon(Icons.check, size: scaler.clamp(maxScaleFactor: 1.3).scale(20), color: scheme.primary),
                         ],
-                      ),
+                      ],
                     ),
-                    if (done) ...[
-                      const SizedBox(width: 12),
-                      Icon(Icons.check, size: scaler.clamp(maxScaleFactor: 1.3).scale(20), color: scheme.primary),
-                    ],
                   ],
                 ),
               ),

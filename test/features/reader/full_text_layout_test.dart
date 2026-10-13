@@ -449,6 +449,10 @@ void main() {
       expect(week.isAliyahDone(1), isTrue);
       expect(week.isAliyahDone(0), isFalse);
       expect(tester.widget<AliyahHeader>(heading(1)).done, isTrue);
+      // Its heading, scrolled away with the text beneath the ribbon, says so
+      // once it is back in view.
+      await tester.ensureVisible(heading(1));
+      await tester.pumpAndSettle();
       expect(
         tester.getSemantics(find.bySemanticsLabel('Sheni, aliyah 2 of 7, Genesis 7:1–16, read')),
         isSemantics(isHeader: true),
@@ -555,8 +559,71 @@ void main() {
       });
     }
 
-    testWidgets('Shift+F10 opens the options of the first verse below the heading held at the top', (tester) async {
+    testWidgets('beneath the ribbon, an aliyah\'s heading scrolls away with the text, centred over it', (tester) async {
       await open(tester, '/read/5787:2/0?mode=full', settings: whole, size: phone);
+      final ribbon = tester.getRect(find.byType(AliyahRibbon));
+      final text = tester.getRect(find.byType(CustomScrollView));
+      expect(tester.getRect(heading(0)).top, closeTo(ribbon.bottom, 1), reason: 'Rishon opens at its heading');
+      // Centred over the text, in the English UI too, where it once began
+      // at the start of the line: on one line, or with the verses wrapped
+      // under the name, each line centred.
+      final name = tester.getRect(find.descendant(of: heading(0), matching: find.byType(Row)).first);
+      final range = tester.getRect(find.descendant(of: heading(0), matching: find.text('Genesis 6:9–22')));
+      expect(tester.getRect(find.descendant(of: heading(0), matching: find.text('א'))).left, name.left);
+      if (range.top >= name.bottom - 1) {
+        expect(name.center.dx, closeTo(text.center.dx, 1));
+        expect(range.center.dx, closeTo(text.center.dx, 1));
+      } else {
+        expect((name.left + range.right) / 2, closeTo(text.center.dx, 1));
+      }
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(heading(0)).bottom, lessThan(ribbon.bottom), reason: 'gone with the text: the ribbon names it');
+      expect(titled('Rishon'), findsOneWidget);
+    });
+
+    testWidgets('in focus mode, an aliyah\'s heading is held at the top, and turning it on or off moves nothing',
+        (tester) async {
+      final c = await open(tester, '/read/5787:2/1?mode=full', settings: whole, size: phone);
+      final view = find.byType(CustomScrollView);
+      await tester.drag(view, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      ScrollPosition position() => tester.state<ScrollableState>(find.byType(Scrollable).last).position;
+      final scrolled = position().pixels;
+      double inView(Finder f) => tester.getRect(f).top - tester.getRect(view).top;
+      // A verse well in view, clear of where the heading would be held.
+      final shown = tester
+          .widgetList<VerseGroup>(find.byType(VerseGroup))
+          .firstWhere((g) => inView(find.byWidget(g)) > 100)
+          .verse;
+      final verse = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == shown);
+      final at = inView(verse);
+      expect(inView(heading(1)), lessThan(0), reason: 'Sheni\'s heading scrolled away');
+
+      for (final focus in [true, false]) {
+        c.read(settingsProvider.notifier).update((s) => s.copyWith(focusMode: focus));
+        await tester.pumpAndSettle();
+        expect(find.byType(AliyahRibbon), focus ? findsNothing : findsOneWidget);
+        expect(position().pixels, scrolled, reason: 'focus mode ${focus ? 'on' : 'off'}');
+        expect(inView(verse), at, reason: 'focus mode ${focus ? 'on' : 'off'}');
+        if (focus) {
+          expect(inView(heading(1)), 0, reason: 'held at the top, where no ribbon names the aliyah');
+          expect(tester.getRect(verse).top, greaterThan(tester.getRect(heading(1)).bottom), reason: 'below it');
+        } else {
+          expect(inView(heading(1)), lessThan(0));
+        }
+      }
+    });
+
+    testWidgets('Shift+F10 opens the options of the first verse below the heading held at the top', (tester) async {
+      await open(tester, '/read/5787:2/0?mode=full', settings: whole.copyWith(focusMode: true), size: phone);
+      // In focus mode, where the heading is held at the top, with no verse
+      // focused: its first verse, on which focus mode opens, tapped again.
+      final first = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == const VerseRef(6, 9));
+      await tester.tap(first);
+      await tester.pumpAndSettle();
+      expect(tester.widget<VerseGroup>(first).highlighted, isFalse);
       // Scrolled so that a verse begins just above the heading's foot.
       final text = find.byType(CustomScrollView);
       final verse = find.byWidgetPredicate((w) => w is VerseGroup && w.verse == const VerseRef(6, 12));

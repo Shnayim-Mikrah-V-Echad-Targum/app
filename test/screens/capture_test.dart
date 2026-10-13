@@ -235,8 +235,12 @@ const _screens = {
   'week_tab': '/today/week/5787:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
-  // Next week's, not yet open: the notice at the top of the text.
+  // Next week's, not yet open: the notice at the top of the text, in the
+  // guided reader, the full text and the whole parsha, where it scrolls
+  // away with the text.
   'reader_preview': '/read/5787:2/0',
+  'reader_preview_full': '/read/5787:2/0?mode=full',
+  'reader_preview_parsha': '/read/5787:2/0?mode=full',
   // Revi'i open after Rishon and Sheni, with Shlishi under way.
   'reader_ribbon': '/read/5787:1/3',
   // Chamishi of Acharei Mot-Kedoshim (5786), the longest title the reader's
@@ -281,13 +285,16 @@ const _screens = {
   'reader_full_rashi_english': '/read/5787:1/2?mode=full',
   // The whole parsha, opened at Shlishi: its heading at the top.
   'reader_parsha': '/read/5787:1/2?mode=full',
-  // Read on into Shlishi, its heading kept at the top.
+  // In focus mode, read on into Shlishi, its heading kept at the top (with
+  // the ribbon, it scrolls with the text).
   'reader_parsha_pinned': '/read/5787:1/2?mode=full',
   // The end of Shlishi and the start of Revi'i: the button that marks
   // Shlishi read, then Revi'i's heading.
   'reader_parsha_join': '/read/5787:1/2?mode=full',
   // The parsha's end, Shevi'i read.
   'reader_parsha_end': '/read/5787:1/2?mode=full',
+  // Opened at Sheni, read: its heading's check.
+  'reader_parsha_read': '/read/5787:1/1?mode=full',
   // In focus mode, read on from Shlishi into Revi'i.
   'reader_parsha_focus': '/read/5787:1/2?mode=full',
   // The reader's menu in the full text: the whole parsha.
@@ -670,9 +677,16 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_full_english': (s) => s.copyWith(showTranslation: true),
   'reader_full_rashi_english': (s) => s.copyWith(showTranslation: true, secondReading: SecondReading.rashi),
-  for (final screen in ['reader_parsha', 'reader_parsha_pinned', 'reader_parsha_join', 'reader_parsha_end'])
+  for (final screen in [
+    'reader_parsha',
+    'reader_parsha_join',
+    'reader_parsha_end',
+    'reader_parsha_read',
+    'reader_preview_parsha',
+  ])
     screen: (s) => s.copyWith(fullTextWholeParsha: true),
-  'reader_parsha_focus': (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
+  for (final screen in ['reader_parsha_pinned', 'reader_parsha_focus'])
+    screen: (s) => s.copyWith(fullTextWholeParsha: true, focusMode: true),
   'reader_section': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_combined_guided': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah),
   'reader_rashi': (s) => s.copyWith(showRashi: true),
@@ -2514,6 +2528,10 @@ const _bigTextScreens = {
   'reader_listen_full',
   'haftarah_listen',
   'reader_parsha',
+  // An aliyah's heading mid-text, its verses wrapped under its name, and
+  // with its check.
+  'reader_parsha_join',
+  'reader_parsha_read',
 };
 
 Future<void> _settle(WidgetTester tester) async {
