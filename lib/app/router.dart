@@ -31,6 +31,7 @@ import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
+import '../ui/theme/motion.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'app_page.dart';
 import 'providers.dart';
@@ -203,20 +204,71 @@ final routerProvider = Provider<GoRouter>((ref) {
 /// shown, as go_router's indexed stack keeps them; and only the chosen one's
 /// heroes take part in a page's transition. On a tablet or desktop each
 /// tab's page on show is the Scaffold that shows a status message (§6.19),
-/// whose copy of it, a hero, would otherwise be one of several alike.
+/// whose copy of it, a hero, would otherwise be one of several alike. The
+/// tab chosen fades in, and the one left goes at once.
 Widget _tabStack(BuildContext context, StatefulNavigationShell shell, List<Widget> children) => IndexedStack(
       index: shell.currentIndex,
       children: [
         for (final (i, child) in children.indexed)
           Offstage(
             offstage: i != shell.currentIndex,
-            child: TickerMode(
-              enabled: i == shell.currentIndex,
-              child: HeroMode(enabled: i == shell.currentIndex, child: child),
+            child: _TabFadeIn(
+              active: i == shell.currentIndex,
+              child: TickerMode(
+                enabled: i == shell.currentIndex,
+                child: HeroMode(enabled: i == shell.currentIndex, child: child),
+              ),
             ),
           ),
       ],
     );
+
+/// A tab that fades in over [Motion.short] each time it is chosen (§8), as
+/// its indicator moves to it; shown at once on Apple platforms, whose tabs
+/// switch without a transition, and while motion is reduced.
+class _TabFadeIn extends StatefulWidget {
+  const _TabFadeIn({required this.active, required this.child});
+
+  /// Whether this is the tab on show.
+  final bool active;
+
+  final Widget child;
+
+  @override
+  State<_TabFadeIn> createState() => _TabFadeInState();
+}
+
+class _TabFadeInState extends State<_TabFadeIn> with SingleTickerProviderStateMixin {
+  // Settled until a tab is chosen, so the first tab shown simply is there.
+  late final _controller = AnimationController(vsync: this, duration: Motion.short, value: 1);
+  late final _opacity = _controller.drive(CurveTween(curve: Motion.decelerate));
+
+  @override
+  void didUpdateWidget(_TabFadeIn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.active || oldWidget.active) return;
+    final apple = switch (Theme.of(context).platform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+    if (apple || Motion.of(context).reduced) {
+      _controller.value = 1;
+    } else {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // Heard by screen readers from its first frame, as its content is there.
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _opacity, alwaysIncludeSemantics: true, child: widget.child);
+}
 
 /// The roots of the navigation tabs.
 const _tabs = ['/today', '/parsha', '/progress', '/community', '/settings'];

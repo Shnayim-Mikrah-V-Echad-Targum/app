@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/features/about/legal_screen.dart';
 import 'package:shnayim_mikra/features/about/sources_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
 import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
+import 'package:shnayim_mikra/features/progress/progress_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
@@ -182,5 +183,55 @@ void main() {
         expect(router.state.uri.path, '/welcome');
       });
     }
+  });
+
+  group('a tab chosen', () {
+    /// The opacity [finder]'s widget is painted at: the product of the fades
+    /// above it.
+    double opacityOf(WidgetTester tester, Finder finder) {
+      var opacity = 1.0;
+      tester.element(finder).visitAncestorElements((e) {
+        final w = e.widget;
+        if (w is FadeTransition) opacity *= w.opacity.value;
+        if (w is Opacity) opacity *= w.opacity;
+        return true;
+      });
+      return opacity;
+    }
+
+    StatefulNavigationShell shell(WidgetTester tester) =>
+        tester.widget<StatefulNavigationShell>(find.byType(StatefulNavigationShell));
+
+    testWidgets('fades in over 150 ms, and the tab left goes at once', (tester) async {
+      await _pump(tester);
+      expect(opacityOf(tester, find.byType(TodayScreen)), 1, reason: 'the first tab shown is simply there');
+      for (final (branch, page, left) in [
+        (2, find.byType(ProgressScreen), find.byType(TodayScreen)),
+        (0, find.byType(TodayScreen), find.byType(ProgressScreen)),
+      ]) {
+        shell(tester).goBranch(branch);
+        await tester.pump();
+        expect(find.byType(TodayScreen, skipOffstage: false), findsOneWidget);
+        expect(left.hitTestable(), findsNothing);
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacityOf(tester, page), inExclusiveRange(0, 1));
+        await tester.pump(const Duration(milliseconds: 150));
+        expect(opacityOf(tester, page), 1);
+      }
+    }, variant: TargetPlatformVariant({TargetPlatform.android, TargetPlatform.windows, TargetPlatform.linux}));
+
+    testWidgets('is there at once on Apple platforms', (tester) async {
+      await _pump(tester);
+      shell(tester).goBranch(2);
+      await tester.pump();
+      expect(opacityOf(tester, find.byType(ProgressScreen)), 1);
+    }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.macOS}));
+
+    testWidgets('is there at once with Reduce Motion', (tester) async {
+      await _pump(tester, settings: const AppSettings(onboardingComplete: true, reduceMotion: true));
+      shell(tester).goBranch(2);
+      await tester.pump();
+      expect(opacityOf(tester, find.byType(ProgressScreen)), 1);
+    });
   });
 }

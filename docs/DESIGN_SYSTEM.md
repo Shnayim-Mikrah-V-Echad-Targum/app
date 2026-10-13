@@ -1082,6 +1082,8 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
 - An Android back swipe keeps the predictive back gesture (on by default from Android 16 for apps targeting it): the page follows the finger and reveals the one beneath, in the framework's `PredictiveBackPageTransitionsBuilder`. Every other push and pop uses the directional slides.
 
+**Tabs:** the incoming tab fades in over 150 ms (`Motion.short`, decelerate) on Android, the web and desktop (Windows and Linux), as its indicator moves to it; the tab left goes offstage at once. None on Apple platforms (iOS and macOS, in a browser too), whose tabs switch without a transition, or with Reduce Motion. The tab is heard by screen readers from its first frame (`_TabFadeIn`, lib/app/router.dart).
+
 **Welcome entrance** (§9 Onboarding): once a run, as the app opens on the welcome. A static flag in the welcome's State keeps it from playing again when the page is built anew (back from step 1, or in the other language). One 900 ms controller (`Motion.frame`), each part arriving on decelerate:
 - the frame, with its lozenge and the Hebrew title: opacity 0→1 at 0–250 ms, rising 8 px into place (`Transform.translate`);
 - the SeferDivider's hairlines draw outward from its lozenge (`progress`) at 150–550 ms;
