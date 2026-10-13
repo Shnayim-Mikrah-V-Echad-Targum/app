@@ -7,6 +7,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/features/parsha/week_overview_screen.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -272,6 +273,19 @@ void main() {
       expect(find.text(_fallbackNote, skipOffstage: false), findsNothing);
     });
 
+    // Re'eh 5789, on 30 Av: Ashkenazim and Chabad read the Rosh Chodesh
+    // haftarah, and Re'eh's two weeks later with Ki Tetze's.
+    testWidgets("is not offered on Rosh Chodesh Elul to Ashkenazim or Chabad, who read Re'eh's with Ki Tetze's",
+        (tester) async {
+      for (final nusach in [HaftarahNusach.ashkenazi, HaftarahNusach.chabad]) {
+        await _open(tester, '5789:47', settings: _settings.withNusach(nusach), now: DateTime(2029, 8, 9, 11));
+        expect(find.text('Haftarah · Re’eh'), findsOneWidget, reason: nusach.name);
+        expect(find.byType(ScriptureVerse), findsWidgets, reason: "${nusach.name}: the Rosh Chodesh haftarah");
+        expect(find.byType(ExpansionTile), findsNothing, reason: nusach.name);
+        expect(find.textContaining('regular haftarah', skipOffstage: false), findsNothing, reason: nusach.name);
+      }
+    });
+
     testWidgets('is not shown, nor the note, in a week without a special one', (tester) async {
       await _open(tester, '5787:2', now: DateTime(2026, 10, 13, 11));
       expect(find.text('Haftarah · Noach'), findsOneWidget);
@@ -309,11 +323,59 @@ void main() {
       expect(row.detail, 'Shabbat Machar Chodesh\u00A0· Chabad custom: the regular haftarah too');
     });
 
+    // Re'eh 5789, on 30 Av.
+    testWidgets("names the Rosh Chodesh haftarah alone for Re'eh on Rosh Chodesh Elul, by each custom",
+        (tester) async {
+      const roshChodesh = 'Shabbat Rosh Chodesh, with verses for Sunday’s Rosh Chodesh';
+      for (final (nusach, detail) in [
+        (HaftarahNusach.ashkenazi, roshChodesh),
+        // Re'eh's own is read with Ki Tetze's, so not told of now.
+        (HaftarahNusach.chabad, roshChodesh),
+        (HaftarahNusach.sephardi, 'Re’eh on Rosh Chodesh Elul, with verses for Sunday’s Rosh Chodesh'),
+      ]) {
+        await openToday(tester, DateTime(2029, 8, 9, 11), settings: _settings.withNusach(nusach));
+        expect(haftarahRow(tester).detail, detail, reason: nusach.name);
+        expect(find.textContaining('regular haftarah'), findsNothing, reason: nusach.name);
+      }
+    });
+
+    // Ki Tetze 5789, two weeks later: Re'eh's haftarah joined to its own,
+    // which the special one so includes.
+    testWidgets('names the special haftarah alone for Chabad where it includes the regular one', (tester) async {
+      await openToday(tester, DateTime(2029, 8, 23, 11), settings: _settings.withNusach(HaftarahNusach.chabad));
+      expect(haftarahRow(tester).detail, 'Ki Tetze, with Aniyah So’arah');
+      expect(find.textContaining('regular haftarah'), findsNothing);
+    });
+
     testWidgets('says nothing more than the reference in other weeks', (tester) async {
       for (final nusach in HaftarahNusach.values) {
         await openToday(tester, DateTime(2026, 10, 13, 11), settings: _settings.withNusach(nusach));
         expect(haftarahRow(tester).detail, isNull, reason: nusach.name);
       }
     });
+  });
+
+  // The week's page has the same row as Today (§9 Parsha tab, 4).
+  testWidgets("a week's page tells Chabad of the regular haftarah too, and other customs only of the special one",
+      (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final (nusach, detail) in [
+      (HaftarahNusach.chabad, 'Shabbat Machar Chodesh\u00A0· Chabad custom: the regular haftarah too'),
+      (HaftarahNusach.ashkenazi, 'Shabbat Machar Chodesh'),
+    ]) {
+      final c = await pumpApp(tester, settings: _settings.withNusach(nusach), now: _friday);
+      c.read(routerProvider).go('/parsha/week/5787:1');
+      await tester.pumpAndSettle();
+      final page = find.byType(WeekOverviewScreen);
+      final row = find.descendant(of: page, matching: find.widgetWithText(PaperRow, 'Haftarah', skipOffstage: false));
+      await tester.scrollUntilVisible(
+        row,
+        300,
+        scrollable: find.descendant(of: page, matching: find.byType(Scrollable)).first,
+      );
+      expect(tester.widget<PaperRow>(row).detail, detail, reason: nusach.name);
+    }
   });
 }
