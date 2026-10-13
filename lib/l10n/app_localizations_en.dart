@@ -3356,12 +3356,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String seferDoneBody(String book, int count, String second) {
+  String seferDoneFacts(int count, String second) {
     final intl.NumberFormat countNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);
     final String countString = countNumberFormat.format(count);
 
-    return '$book complete — $countString verses, twice, with $second.';
+    return '$countString verses, twice, with $second.';
+  }
+
+  @override
+  String seferDoneOn(String weekday, String date) {
+    return 'Finished on $weekday, $date';
+  }
+
+  @override
+  String siyumBody(int count, String second, String year) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'The whole Torah — $countString verses, twice, with $second, in $year.';
   }
 
   @override

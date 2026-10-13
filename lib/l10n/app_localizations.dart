@@ -5259,11 +5259,23 @@ abstract class AppLocalizations {
   /// **'{book} is complete'**
   String seferDoneTitle(String book);
 
-  /// Under "Chazak chazak venitchazek" once a whole book is read, e.g. "Genesis complete — 1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
+  /// On the page shown once a whole book of the Torah is read, under "Genesis is complete": what was read, e.g. "1,533 verses, twice, with Targum." {second} is what was read after the Torah's two readings. A book has hundreds of verses.
   ///
   /// In en, this message translates to:
-  /// **'{book} complete — {count} verses, twice, with {second}.'**
-  String seferDoneBody(String book, int count, String second);
+  /// **'{count} verses, twice, with {second}.'**
+  String seferDoneFacts(int count, String second);
+
+  /// The last line of the page shown once a whole book of the Torah is read, as a printed book's colophon dates it: e.g. "Finished on Friday, 28 Tishrei 5787".
+  ///
+  /// In en, this message translates to:
+  /// **'Finished on {weekday}, {date}'**
+  String seferDoneOn(String weekday, String date);
+
+  /// On the page shown once the whole Torah is read in a year, as Deuteronomy is finished (under "Siyum HaTorah"): e.g. "The whole Torah — 5,846 verses, twice, with Targum, in 5787."
+  ///
+  /// In en, this message translates to:
+  /// **'The whole Torah — {count} verses, twice, with {second}, in {year}.'**
+  String siyumBody(int count, String second, String year);
 
   /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
   ///

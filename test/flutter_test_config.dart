@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikra/services/feedback.dart' show forgetCelebrations;
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
 /// Runs before every test file (flutter_test picks this file up by name).
@@ -11,5 +12,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // the same week sweep from the other test's progress, and pass or fail by
   // the order the tests run in.
   setUp(ParshaRings.forgetShown);
+  // Nor has a celebrate haptic played yet, which would leave a test's book
+  // page silent as though it followed another test's parsha.
+  setUp(forgetCelebrations);
   await testMain();
 }

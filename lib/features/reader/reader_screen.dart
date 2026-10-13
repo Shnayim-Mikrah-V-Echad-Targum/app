@@ -161,6 +161,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// Haptics), which it has once: as the finished panel's rings close, or
   /// where no panel shows it, at the press that completed it.
   bool _celebrated = false;
+
+  /// [celebrationsPlayed] as the parsha was completed: should the book's
+  /// page, opened over the finished panel by the same finish, have given
+  /// the celebrate haptic by the time the rings close beneath it, they
+  /// give none.
+  int _celebrationsAtFinish = 0;
   bool _positioned = false;
 
   /// The aliyah's position counts when it was opened (null if it was read):
@@ -649,6 +655,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       } else {
         _finished = true;
         _justCompleted = _completedOnVisit;
+        _celebrationsAtFinish = celebrationsPlayed;
       }
     });
     // A step's tick for Next pressed; the press that finishes the aliyah
@@ -817,11 +824,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// its rings close: for the parsha completed just now, the first time.
   bool get _panelCelebrates => _justCompleted && !_celebrated;
 
-  /// The parsha's completion felt, once (§8, Haptics).
+  /// The parsha's completion felt, once (§8, Haptics): not again where it
+  /// finished a book too, whose page over the panel has been felt already.
   void _celebrate() {
     if (_celebrated) return;
     _celebrated = true;
-    hapticCelebrate(ref);
+    if (celebrationsPlayed == _celebrationsAtFinish) hapticCelebrate(ref);
   }
 
   String _stepTitle(StepKind kind) {
@@ -1717,6 +1725,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     ref.read(progressProvider.notifier).markAliyah(ctx.id, a, today);
     _justCompleted = !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete;
+    _celebrationsAtFinish = celebrationsPlayed;
     final verses = ref.read(parshaRepositoryProvider).aliyahVerseCount(ctx.portion, a);
     ref.read(progressProvider.notifier).savePosition(ctx.id, a, [verses, verses, verses]);
     if (!_panelCelebrates) {

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -274,11 +275,45 @@ void hapticSuccess(WidgetRef ref) => switch (_hapticPlatform(ref)) {
 /// A parsha or a book finished, once: iOS's success notification, and on
 /// Android a long press's heavy click (heavyImpact plays a tick there,
 /// lighter than a success's click).
-void hapticCelebrate(WidgetRef ref) => switch (_hapticPlatform(ref)) {
-      TargetPlatform.iOS => HapticFeedback.successNotification(),
-      TargetPlatform.android => HapticFeedback.vibrate(),
-      _ => null,
-    };
+///
+/// One finish is felt once, though it may complete a parsha and a book
+/// together: the book's page, opening over the finish, gives none if one
+/// played within [celebrateQuiet] ([celebratedWithin]), and a parsha's rings
+/// closing beneath it give none once it has given one
+/// ([celebrationsPlayed]).
+void hapticCelebrate(WidgetRef ref) {
+  final platform = _hapticPlatform(ref);
+  if (platform == null) return;
+  _celebrations++;
+  _lastCelebration = clock.now();
+  platform == TargetPlatform.iOS ? HapticFeedback.successNotification() : HapticFeedback.vibrate();
+}
+
+/// How long after a celebrate haptic another is part of the same finish.
+const celebrateQuiet = Duration(seconds: 1);
+
+var _celebrations = 0;
+DateTime? _lastCelebration;
+
+/// How many celebrate haptics have played in this run: one taken as a
+/// moment begins, and compared as it ends, tells whether one played
+/// meanwhile.
+int get celebrationsPlayed => _celebrations;
+
+/// Whether a celebrate haptic played less than [within] ago. Either way
+/// round, should the device's clock have been set back since.
+bool celebratedWithin(Duration within) {
+  final last = _lastCelebration;
+  return last != null && clock.now().difference(last).abs() < within;
+}
+
+/// Forgets the celebrate haptics played, as though the app had just
+/// started: for tests, each of which is a new run.
+@visibleForTesting
+void forgetCelebrations() {
+  _celebrations = 0;
+  _lastCelebration = null;
+}
 
 /// The platform whose haptics play, if any do: Android or iOS, with Haptic
 /// feedback on.

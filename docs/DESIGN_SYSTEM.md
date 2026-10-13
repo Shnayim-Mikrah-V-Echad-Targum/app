@@ -918,7 +918,19 @@ Centred, max width 480:
    - on the eve of Shabbat or Yom Tov (`JewishHolidays.isRestDay(today + 1)`, by the reader's days of Yom Tov), a marginalia line, centred, 8 below: `restGreeting`, the next day's own greeting, chosen as `erevShabbatDone`'s (5): "Shanah tovah!" before Rosh Hashanah and "G’mar chatimah tovah!" before Yom Kippur, on Shabbat too, as Today's title page greets those days; "Chag sameach!" before another Yom Tov that is not Shabbat; otherwise "Shabbat shalom!". There is none on any other day, Tisha B'Av among them, which is never the eve of Shabbat or Yom Tov;
    - a Tonal "Read the haftarah" (if enabled and not read) over a Text "Done", or else a Filled "Done".
 
-**Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, centred, max width 480. SeferDivider, then "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 primary, untranslated (a level-1 heading, read from its letters), then SeferDivider, then bodyMedium onSurfaceVariant `seferDoneBody`, "Genesis complete — 1,533 verses, twice, with Targum.", then a Filled "Continue". It fades in over 400 ms (at once under Reduce Motion) and never auto-dismisses.
+**Sefer complete** (`lib/features/reader/sefer_complete_screen.dart`, `/celebrate/sefer:5787:0`): a one-time full-screen page, set as a printed book's colophon. Centred, max width 480 (560 from 600 dp), with nothing to share and no streak:
+1. A TitlePageFrame, padding 40 above, 32 below and 24 at the sides (28, 24 and 16 under 360 dp), holding:
+   - "חֲזַק חֲזַק וְנִתְחַזֵּק" in hebrewDisplay 40/56 (48/64 from 600 dp) primary (w700 in high contrast), untranslated, its words whole (`WholeWords`): the page's level-1 heading, read from its letters;
+   - 16, one SeferDivider, 16;
+   - the title in headlineSmall onSurface, its lines balanced (`BalancedText`): `seferDoneTitle`, "Genesis is complete" ("ספר בראשית הושלם");
+   - 4, then a marginalia line on what was read, balanced: `seferDoneFacts`, "1,533 verses, twice, with Targum." ("1,533 פסוקים, שניים מקרא ותרגום."), the count the book's verses (`chapterLengths`), and what follows the two readings as the settings say (`Names.secondReading`);
+   - 8, then the day the book was finished, as a colophon dates its book, in bodySmall onSurfaceVariant: `seferDoneOn`, "Finished on Friday, 15 Tevet 5787" ("נשלם ביום שישי, ט״ו בטבת תשפ״ז"): the day its last parsha was completed (`seferCompletions`), its weekday and Hebrew date (`Names.weekday`, `Names.hebrewDate`). Where it takes two lines, they break after the weekday, never inside the date (`DotLine`). A link to a book not finished has no date.
+2. 32 below the frame, a Filled "Continue", at least 200×52, with room around a label that large text wraps (`AppButtons.roomy`).
+- It fades in over 400 ms, then the frame's goldLeaf rule draws around it once over 900 ms (§8), and it never auto-dismisses. Under Reduce Motion it is whole at once. High contrast keeps its 2 px outline, with no rule.
+- **Siyum HaTorah:** Deuteronomy finished with the year's reading (`cycleSiyum`: every parsha of that year read, from Bereshit, or for a reader who joined partway through a year, from the parsha they began with, as the Record counts it, §9 Progress; each year read through from Bereshit makes one) shows the same page, but:
+  - the title is `milestoneSiyum`, "Siyum HaTorah" ("סיום התורה"), or for the reader who joined partway `milestoneSiyumFrom`, "Siyum from Parshat Vayera";
+  - the line on what was read is `siyumBody`, "The whole Torah — 5,846 verses, twice, with Targum, in 5786." ("כל התורה כולה — 5,846 פסוקים, שניים מקרא ותרגום, בשנת תשפ״ו."), counted over the five books' `chapterLengths`, never written in, and the year the reading began, as Progress names it (`Names.hebrewYear`). The reader who joined partway keeps `seferDoneFacts`, of Deuteronomy;
+  - five 8 px goldLeaf lozenges, 8 apart and centred, take the divider's place, one for each book: still two ornaments, the frame and the lozenges.
 - `celebrationListenerProvider` (`lib/app/celebrations.dart`), which the app watches, opens it whenever the reading log changes and a book of this cycle or the last is newly finished, however it was finished: in the reader, from Today, on the week's page or by the check-in.
 - The books celebrated are kept on the device alone (`celebrated.v1`), never synced or backed up, so each is celebrated once on each device that sees it finished there. Books already finished when the app starts, and a book that arrives finished from elsewhere (a sync with another device, or a backup restored: `ProgressController.logChangeArrived`), are recorded without a celebration, which would otherwise be pushed over whatever the reader is doing; so is a book of the reader's own reading finished more than a week before (logged late with an earlier day), or finished before onboarding is complete.
 
@@ -1035,7 +1047,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 4. **TitlePageFrame:**
    - outer: a 1 px hairline at radius 12;
    - inner: a 1 px goldLeaf rule inset 6 at radius 8;
-   - used ONLY on the Today hero, the Welcome title block and the About header at ≥600;
+   - used ONLY on the Today hero, the Welcome title block, the About header at ≥600 and the Sefer complete page (§6.23), whose one divider, or the Siyum's five lozenges, makes its second ornament;
    - in high contrast: a 2 px outline, with no inner rule.
 5. **PassPips:**
    - three lozenges (size 12 with gap 8, or mini 6 with gap 3) in reading order; the Row follows Directionality;
@@ -1144,7 +1156,7 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - Parsha, in the reader (§6.23): its rings close over 600 ms (the sweep above, from what Today or the week's page last showed in this run; closed at once after a cold start or a link straight to the reader), then the name, the title and the rest fade in over 150 ms as the last arc lands; `hapticCelebrate` as the rings close, in place of the success.
 - Parsha, on Today: the rings close (600 ms), then the hero's inner goldLeaf frame rule draws around the card once over 900 ms (`PathMetric.extractPath`), then stays static. It draws when the week is finished while the app is open (the hero has shown it unfinished in this run), once per week, and waits until the hero can be seen; a restarted app shows it static, as the rings show progress without a sweep. The rings close once: finished in the reader, they are closed already when Today is seen again, and the rule draws after the same pause. In high contrast, which has no frame rule, the closing rings are the moment.
 - Under Reduce Motion, each is whole at once: the rings closed, the frame drawn, the panel there, and its haptic at once.
-- Sefer: a panel fade of 400 ms.
+- Sefer (§6.23): the page fades in over 400 ms (decelerate), then the frame's goldLeaf rule draws around it once over 900 ms (standard; `PathMetric.extractPath`, clockwise from the top centre) and stays; `hapticCelebrate` as the rule closes. The Siyum HaTorah is the same moment, its five lozenges there from the first frame. In high contrast, which has no rule, the haptic comes at the same moment. Under Reduce Motion the page is whole at once, and its haptic comes at once.
 
 **Haptics** (`lib/services/feedback.dart`): three levels, each firmer than the last, so that a finish never feels like a Next.
 
@@ -1152,9 +1164,10 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 |---|---|---|---|
 | Step (`hapticStep`) | Next, in the guided reader | `selectionClick` | `selectionClick` (CLOCK_TICK, a tick) |
 | Success (`hapticSuccess`) | Reading recorded: an aliyah finished, Mark as read (the reader's and the week page's), the whole week marked, a check-in or the printed Chumash logged, the haftarah marked read | `mediumImpact` | `lightImpact` (VIRTUAL_KEY, a click) |
-| Celebrate (`hapticCelebrate`) | A parsha or a book finished, once: in the reader, as the finished panel's rings close (at once under Reduce Motion), or at the press of Mark as read in the full text, where no panel shows it | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
+| Celebrate (`hapticCelebrate`) | A parsha or a book finished, once: in the reader, as the finished panel's rings close (at once under Reduce Motion), or at the press of Mark as read in the full text, where no panel shows it; a book, as its page's frame closes (§6.23) | `successNotification` | `vibrate` (LONG_PRESS, a heavy click) |
 
 - One press, one haptic: the press that finishes an aliyah gives its success alone, not a step as well, and the press that finishes the parsha its celebrate alone, as the rings close, not a success first. The parsha is celebrated once a visit: stepped back into from the panel and finished again, it gives an aliyah's success.
+- One finish, one celebrate, though it may complete a parsha and a book together: the book's page, opening over the finish, gives none if one played in the second before it opened, or plays while it is open (`celebrateQuiet`, `celebratedWithin` and `celebrationsPlayed` in feedback.dart): the full text's Mark as read, or the rings closed at once under Reduce Motion. Otherwise the page gives it, since the page covers the panel before its rings close, and the rings, closing beneath it as it is left, give none once it has.
 - Only for what the reader pressed: none for Listen along going on by itself, a page opening, a sync or a reminder.
 - Android's `mediumImpact` plays the same click as `lightImpact`, and `heavyImpact` a lighter tick (CONTEXT_CLICK), so neither is used there.
 - All off with Haptic feedback (Settings → Accessibility), and none on the web or a desktop. The system's own setting holds too: Android and iOS play nothing where it is off.
@@ -1353,7 +1366,7 @@ In order:
 9. **Record** (replaces Milestones, progress_screen.dart:337-376):
    - GroupHeader `recordTitle`;
    - achieved items only, newest first (on the same day, a siyum before the book that completed it), dated by the day each was first reached and never stored (DESIGN.md §4);
-   - each row: an 8 px lozenge where a row's icon sits, the title in bodyLarge, the date in bodySmall; hairlines inset 54;
+   - each row: an 8 px lozenge where a row's icon sits, the title in bodyLarge, the date in bodySmall; hairlines inset 54. The siyum's lozenge is the large one, 12 px, on the same centre;
    - a completed sefer adds "חֲזַק חֲזַק וְנִתְחַזֵּק" in FRL 500 17 in `secondary` under its row;
    - a reader who joined partway through a year has `milestoneSiyumFrom`, "Siyum from Parshat Vayera";
    - "Welcome back" (`milestoneComeback`) follows a week missed, made up or paused, never the week the reader joined after it began;

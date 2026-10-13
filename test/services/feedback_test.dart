@@ -354,5 +354,24 @@ void main() {
       (tester) async => expect(await play(tester, on: false), nothing),
       variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}),
     );
+
+    testWidgets('a celebrate haptic played is counted, and known for a second as just played', (tester) async {
+      expect(celebrationsPlayed, 0);
+      expect(celebratedWithin(celebrateQuiet), isFalse);
+      await play(tester);
+      expect(celebrationsPlayed, 1, reason: 'the celebrate alone, not the step or the success');
+      expect(celebratedWithin(celebrateQuiet), isTrue);
+      await tester.pump(celebrateQuiet - const Duration(milliseconds: 50));
+      expect(celebratedWithin(celebrateQuiet), isTrue);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(celebratedWithin(celebrateQuiet), isFalse);
+      expect(celebrationsPlayed, 1);
+    });
+
+    testWidgets('a celebrate haptic that plays nothing is not counted', (tester) async {
+      await play(tester, on: false);
+      expect(celebrationsPlayed, 0);
+      expect(celebratedWithin(celebrateQuiet), isFalse);
+    });
   });
 }

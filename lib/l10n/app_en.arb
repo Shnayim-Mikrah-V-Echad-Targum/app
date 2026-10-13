@@ -2852,19 +2852,51 @@
       }
     }
   },
-  "seferDoneBody": "{book} complete — {count} verses, twice, with {second}.",
-  "@seferDoneBody": {
-    "description": "Under \"Chazak chazak venitchazek\" once a whole book is read, e.g. \"Genesis complete — 1,533 verses, twice, with Targum.\" {second} is what was read after the Torah's two readings. A book has hundreds of verses.",
+  "seferDoneFacts": "{count} verses, twice, with {second}.",
+  "@seferDoneFacts": {
+    "description": "On the page shown once a whole book of the Torah is read, under \"Genesis is complete\": what was read, e.g. \"1,533 verses, twice, with Targum.\" {second} is what was read after the Torah's two readings. A book has hundreds of verses.",
     "placeholders": {
-      "book": {
-        "type": "String"
-      },
       "count": {
         "type": "int",
         "format": "decimalPattern"
       },
       "second": {
-        "type": "String"
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
+      }
+    }
+  },
+  "seferDoneOn": "Finished on {weekday}, {date}",
+  "@seferDoneOn": {
+    "description": "The last line of the page shown once a whole book of the Torah is read, as a printed book's colophon dates it: e.g. \"Finished on Friday, 28 Tishrei 5787\".",
+    "placeholders": {
+      "weekday": {
+        "type": "String",
+        "example": "Friday"
+      },
+      "date": {
+        "type": "String",
+        "description": "The Hebrew date, with its year.",
+        "example": "28 Tishrei 5787"
+      }
+    }
+  },
+  "siyumBody": "The whole Torah — {count} verses, twice, with {second}, in {year}.",
+  "@siyumBody": {
+    "description": "On the page shown once the whole Torah is read in a year, as Deuteronomy is finished (under \"Siyum HaTorah\"): e.g. \"The whole Torah — 5,846 verses, twice, with Targum, in 5787.\"",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
+      },
+      "year": {
+        "type": "String",
+        "description": "The Hebrew year the reading began in, as Progress names it.",
+        "example": "5787"
       }
     }
   },

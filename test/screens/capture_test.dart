@@ -29,6 +29,7 @@ import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
+import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
@@ -62,6 +63,7 @@ import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/ornaments.dart' show Lozenge;
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 import 'package:shnayim_mikra/ui/widgets/sefer_choice_chip.dart';
@@ -100,6 +102,24 @@ ProgressState _yearRead() {
     read[id] = begun
         ? WeekProgress(weekId: id).withAliyah(0, week.start).withAliyah(1, week.start.addDays(1))
         : WeekProgress(weekId: id).withAll(day);
+  }
+  return ProgressState(weeks: read);
+}
+
+/// The cycle of [cycle] read through to parsha [upTo], every week whole on
+/// the last weekday before it is read: Vayechi 5787 on Friday 25 December
+/// 2026, and Vezot HaBerakhah 5786 on Hoshana Rabbah, Friday 2 October 2026.
+ProgressState _cycleRead(int cycle, {int upTo = 54}) {
+  final weeks = cycleWeeks(const ParshaSchedule(israel: false), cycle);
+  final read = <String, WeekProgress>{};
+  for (var n = 1; n <= upTo; n++) {
+    final week = weeks[n]!;
+    var day = week.occasion.addDays(-1);
+    while (JewishHolidays.isRestDay(day, israel: false)) {
+      day = day.addDays(-1);
+    }
+    final id = weekIdFor(week.portion, week.occasion);
+    read[id] = WeekProgress(weekId: id).withAll(day);
   }
   return ProgressState(weeks: read);
 }
@@ -370,8 +390,11 @@ const _screens = {
   // the first and last verses of Machar Chodesh, under I Samuel's head.
   'haftarah_rosh_chodesh': '/haftarah/5788:38',
   'haftarah_rosh_chodesh_sunday': '/haftarah/5788:38',
-  // A book of the Torah just finished: Genesis, in the cycle of 5787.
+  // A book of the Torah just finished: Genesis, in the cycle of 5787, on
+  // the Friday before Vayechi (see [_cycleRead]).
   'celebrate': '/celebrate/sefer:5787:0',
+  // Deuteronomy finished with every parsha of 5786 read: the Siyum HaTorah.
+  'celebrate_siyum': '/celebrate/sefer:5786:4',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -677,7 +700,8 @@ const _screens = {
   // The sheet behind the grace row's "About streaks".
   'progress_about': '/progress',
   // A reader in their second year (see [_secondYear]): the year chips, last
-  // year chosen, and what they have finished so far at the page's end.
+  // year chosen, and what they have finished so far at the page's end, from
+  // its newest: the siyum of the year they joined.
   'progress_years': '/progress',
   'progress_past': '/progress',
   'progress_record': '/progress',
@@ -941,8 +965,12 @@ final _screenNow = <String, DateTime>{
   'reader_finished_late': DateTime(2026, 10, 11, 11),
   // Thursday 10 June 2027, Erev Shavuot.
   'reader_finished_chag': DateTime(2027, 6, 10, 11),
+  // Friday 25 December 2026, the day Genesis was finished.
+  'celebrate': DateTime(2026, 12, 25, 11),
 };
 final _screenProgress = <String, ProgressState Function()>{
+  'celebrate': () => _cycleRead(5787, upTo: 12),
+  'celebrate_siyum': () => _cycleRead(5786),
   'progress_map': historyProgress,
   'progress_history': historyProgress,
   'progress_map_rescue': rescueProgress,
@@ -1950,7 +1978,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _settle(tester);
     await Scrollable.ensureVisible(tester.element(chip), alignment: 0.1);
   },
-  'progress_record': _scrollToEnd,
+  'progress_record': (tester) async {
+    await _scrollToEnd(tester);
+    // Back up to the Record's head, the siyum of 5786 (its large lozenge)
+    // its newest row.
+    final siyum = find.byWidgetPredicate((w) => w is Lozenge && w.size == Lozenge.large);
+    await Scrollable.ensureVisible(tester.element(siyum), alignment: 0.3);
+  },
   // The middle row of a paper group: its ring must clear the hairlines.
   'kit_focus': (tester) async {
     await _showGallery(tester, const RowsGallery());
@@ -2263,6 +2297,9 @@ const _hugeTallScreens = {
   'thread_verse',
   // A moderator's card: the tag beside the initial, its words whole.
   'account_member',
+  // The colophon's frame at its narrowest padding, its lines balanced.
+  'celebrate',
+  'celebrate_siyum',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 
@@ -2323,6 +2360,7 @@ const _desktopScreens = {
   'reader_offer',
   'reader_offer_city',
   'celebrate',
+  'celebrate_siyum',
   'reader_full',
   'reader_full_end',
   'reader_combined',
@@ -2538,6 +2576,7 @@ const _bigTextScreens = {
   'reader_finished_week',
   'reader_finished_late',
   'celebrate',
+  'celebrate_siyum',
   'haftarah',
   'haftarah_read',
   'goto_verse',
