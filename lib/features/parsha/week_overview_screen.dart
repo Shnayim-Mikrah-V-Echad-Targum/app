@@ -86,8 +86,9 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     Future<void> markWeek() async {
       final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
       if (date == null || !context.mounted) return;
+      final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
       ref.read(progressProvider.notifier).markWeek(ctx.id, date);
-      hapticSuccess(ref);
+      hapticRecorded(ref, completedParsha: !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete);
       showStatus(context, l.parshaComplete(name));
     }
 
@@ -441,8 +442,9 @@ class _AliyahRow extends ConsumerWidget {
     Future<void> markRead() async {
       final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
       if (date == null || !context.mounted) return;
+      final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
       ref.read(progressProvider.notifier).markAliyah(ctx.id, aliyah, date);
-      hapticSuccess(ref);
+      hapticRecorded(ref, completedParsha: !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete);
       showStatus(context, l.markedRead);
     }
 

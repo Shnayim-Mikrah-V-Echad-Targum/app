@@ -230,7 +230,12 @@ void main() {
   group('one finish is felt once', () {
     /// Opens the last aliyah of Vayechi, all of Genesis read but it, and
     /// marks it read from the menu, which finishes the book.
-    Future<List<String>> finishGenesis(WidgetTester tester, {bool full = false, bool reduceMotion = false}) async {
+    Future<List<String>> finishGenesis(
+      WidgetTester tester, {
+      bool full = false,
+      bool reduceMotion = false,
+      bool settle = true,
+    }) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -257,8 +262,14 @@ void main() {
       // The menu's, over the full text's button at the aliyah's end.
       await tester.tap(find.text('Mark this aliyah as read').last);
       await tester.pump();
-      await tester.pumpAndSettle();
-      expect(find.byType(SeferCompleteScreen), findsOneWidget);
+      if (settle) {
+        await tester.pumpAndSettle();
+        expect(find.byType(SeferCompleteScreen), findsOneWidget);
+      } else {
+        // The book's page, pushed on the next frame.
+        await tester.pump();
+        await tester.pump();
+      }
       return sent;
     }
 
@@ -268,12 +279,52 @@ void main() {
     const phones = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS});
 
     testWidgets(
-      'in the guided reader, by the book’s page, and not again as the rings close beneath it',
+      'in the guided reader, once: not again by the book’s page, nor as the rings close beneath it',
       (tester) async {
         final sent = await finishGenesis(tester);
         expect(sent, [celebrate()]);
         await tester.tap(find.text('Continue'));
         await tester.pumpAndSettle();
+        expect(find.text('Parshat Vayechi is complete'), findsOneWidget);
+        expect(sent, [celebrate()]);
+      },
+      variant: phones,
+    );
+
+    testWidgets(
+      "in the guided reader, as the rings close beneath the book's page, before it is left",
+      (tester) async {
+        // Today showed the week's rings as the app opened, so the panel's
+        // sweep. The page covers the reader before they have closed, which
+        // stops the reader's tickers; the haptic comes as they close all the
+        // same, not only once the page is left.
+        final sent = await finishGenesis(tester, settle: false);
+        expect(find.byType(SeferCompleteScreen), findsOneWidget);
+        expect(sent, isEmpty);
+        // Frame by frame, as a device draws them, so that the page's
+        // transition ends, and the reader is hidden, before the rings close.
+        for (var t = 0; t < 700; t += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        expect(sent, [celebrate()], reason: 'as the rings close, 600 ms after the finish');
+        await tester.pumpAndSettle();
+        expect(sent, [celebrate()], reason: 'the page gives none');
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        expect(sent, [celebrate()]);
+      },
+      variant: phones,
+    );
+
+    testWidgets(
+      "Continue pressed before the page's rule closes still leaves the one celebrate",
+      (tester) async {
+        final sent = await finishGenesis(tester, settle: false);
+        await tester.pump(const Duration(milliseconds: 800));
+        expect(find.byType(SeferCompleteScreen), findsOneWidget);
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SeferCompleteScreen), findsNothing);
         expect(find.text('Parshat Vayechi is complete'), findsOneWidget);
         expect(sent, [celebrate()]);
       },

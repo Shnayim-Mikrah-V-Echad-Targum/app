@@ -291,6 +291,14 @@ void hapticSuccess(WidgetRef ref) => switch (_hapticPlatform(ref)) {
       _ => null,
     };
 
+/// Reading recorded by a press, as [hapticSuccess], or where it completed a
+/// parsha ([completedParsha], which the caller tells from the week before
+/// and after), the celebrate haptic in its place: a parsha finished feels
+/// the same wherever it is finished (§8). The guided reader's finish has its
+/// own, as its panel's rings close.
+void hapticRecorded(WidgetRef ref, {required bool completedParsha}) =>
+    completedParsha ? hapticCelebrate(ref) : hapticSuccess(ref);
+
 /// A parsha or a book finished, once: iOS's success notification, and on
 /// Android a long press's heavy click (heavyImpact plays a tick there,
 /// lighter than a success's click).

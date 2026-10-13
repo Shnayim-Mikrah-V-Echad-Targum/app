@@ -981,8 +981,9 @@ class _TodayCard extends ConsumerWidget {
     if (chosen == null || chosen.isEmpty || !context.mounted) return;
     final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
     if (date == null || !context.mounted) return;
+    final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     ref.read(progressProvider.notifier).markAliyot(ctx.id, chosen, date);
-    hapticSuccess(ref);
+    hapticRecorded(ref, completedParsha: !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete);
     showStatus(context, l.markedRead);
   }
 }

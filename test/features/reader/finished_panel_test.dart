@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -86,8 +87,10 @@ Future<void> _finish(
   double textScale = 1,
   String next = 'Next',
   String finish = 'Finish',
+  Size size = const Size(412, 915),
+  bool linked = false,
 }) async {
-  tester.view.physicalSize = const Size(412, 915);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
@@ -107,6 +110,9 @@ Future<void> _finish(
     now: day,
     progress: progress,
   );
+  // Opened from a link, as after a cold start: no rings of the week seen in
+  // this run, as Today's are as the app opens.
+  if (linked) ParshaRings.forgetShown();
   c.read(routerProvider).go('/read/$week/$aliyah');
   await _loadTexts(tester);
   // Read whole already, an aliyah starts again from its first step.
@@ -116,6 +122,20 @@ Future<void> _finish(
   }
   await tester.tap(find.text(finish));
   if (settle) await tester.pumpAndSettle();
+}
+
+/// The haptics sent to the platform from now on, each by its type as
+/// HapticFeedback sends it ('vibrate' for HapticFeedback.vibrate(),
+/// Android's celebrate).
+List<String> _recordHaptics(WidgetTester tester) {
+  final sent = <String>[];
+  final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    if (call.method == 'HapticFeedback.vibrate') sent.add(call.arguments as String? ?? 'vibrate');
+    return null;
+  });
+  addTearDown(() => messenger.setMockMethodCallHandler(SystemChannels.platform, null));
+  return sent;
 }
 
 bool _focused(WidgetTester tester, String label) => Focus.of(tester.element(find.text(label))).hasFocus;
@@ -638,5 +658,143 @@ void main() {
     final fade = find.ancestor(of: find.text('בְּרֵאשִׁית'), matching: find.byType(FadeTransition)).first;
     expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
     expect(tester.binding.transientCallbackCount, 0, reason: 'nothing moves, the rings included');
+  });
+
+  group("the parsha's moment", () {
+    const success = 'HapticFeedbackType.lightImpact';
+    const celebrate = 'vibrate';
+    // Back from the panel, as the keyboard goes back (the panel has no Back).
+    Future<void> back(WidgetTester tester) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opened from a link, shows its rings closed from the first frame, and celebrates at once',
+        (tester) async {
+      await _finish(
+        tester,
+        aliyah: 6,
+        day: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+        settle: false,
+        linked: true,
+      );
+      final sent = _recordHaptics(tester);
+      await tester.pump();
+      // Nothing to sweep from: closed at once, and the haptic with them,
+      // not 600 ms later with nothing moving.
+      expect(find.text('7/7'), findsOneWidget);
+      expect(find.text('6/7'), findsNothing);
+      expect(sent, [celebrate]);
+      // The rest follows after a short beat.
+      final fade = find.ancestor(of: find.text('בְּרֵאשִׁית'), matching: find.byType(FadeTransition)).first;
+      await tester.pump(Motion.short + Motion.short);
+      expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+      await tester.pumpAndSettle();
+      expect(sent, [celebrate]);
+    });
+
+    testWidgets('stepped back from before its rings close and finished again, celebrates once, at the second',
+        (tester) async {
+      await _finish(
+        tester,
+        aliyah: 6,
+        day: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+        settle: false,
+      );
+      // Finish has been pressed already; the haptics from here on.
+      final sent = _recordHaptics(tester);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('6/7'), findsOneWidget, reason: 'still closing');
+      await back(tester);
+      expect(sent, isEmpty, reason: 'the first panel went before its rings closed');
+      await tester.tap(find.text('Finish'));
+      await tester.pumpAndSettle();
+      // The parsha's moment still, its rings closed already, felt once.
+      expect(find.byType(ParshaRings), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), startsWith('On time · 1-week parsha streak'));
+      expect(sent, [celebrate]);
+    });
+
+    testWidgets('stepped back from once its rings have closed and finished again, only tells how it stands',
+        (tester) async {
+      await _finish(tester, aliyah: 6, day: DateTime(2026, 10, 9, 10), progress: _readThrough(5, partly: 6, on: _monday));
+      expect(find.byType(ParshaRings), findsOneWidget);
+      final sent = _recordHaptics(tester);
+      await back(tester);
+      await tester.tap(find.text('Finish'));
+      await tester.pumpAndSettle();
+      // Once a visit: its divider, the plain standing, an aliyah's success.
+      expect(find.byType(ParshaRings), findsNothing);
+      expect(find.byType(SeferDivider), findsOneWidget);
+      expect(_standing(tester, WeekStatus.onTime), 'On time');
+      expect(sent, [success]);
+    });
+
+    testWidgets("finished from the week's page, its rings close once: back on the page they are closed",
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: const AppSettings(
+          onboardingComplete: true,
+          notificationPromptShown: true,
+          method: ReadingMethod.aliyahByAliyah,
+        ).withRepeatLastVerse(false),
+        now: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+      );
+      c.read(routerProvider).go('/parsha/week/5787:1');
+      await _loadTexts(tester);
+      expect(find.text('6/7'), findsOneWidget);
+      c.read(routerProvider).push('/read/5787:1/6');
+      await _loadTexts(tester);
+      await tester.tap(find.text('Finish'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      // The panel's rings sweep from what the week's page showed.
+      expect(find.text('6/7'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('6/7'), findsNothing);
+
+      await tester.tap(find.text('Done'));
+      await tester.pump();
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.text('6/7'), findsNothing, reason: 'not swept closed a second time');
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('7/7'), findsOneWidget);
+    });
+
+    for (final (what, size, theme, nameSize, nameWeight, titleSize) in [
+      ('from 600 dp, its name and title a size larger', const Size(1000, 900), AppThemeMode.light, 44.0, null, 'medium'),
+      ('in high contrast, its name in bold', const Size(412, 915), AppThemeMode.highContrastLight, 36.0, FontWeight.w700, 'small'),
+    ]) {
+      testWidgets(what, (tester) async {
+        await _finish(
+          tester,
+          aliyah: 6,
+          day: DateTime(2026, 10, 9, 10),
+          progress: _readThrough(5, partly: 6, on: _monday),
+          settings: AppSettings(theme: theme),
+          size: size,
+        );
+        final name = tester.widget<Text>(find.text('בְּרֵאשִׁית')).style!;
+        expect(name.fontSize, nameSize);
+        if (nameWeight != null) expect(name.fontWeight, nameWeight);
+        final textTheme = Theme.of(tester.element(find.text('בְּרֵאשִׁית'))).textTheme;
+        expect(
+          tester.widget<Text>(find.text('Parshat Bereshit is complete')).style?.fontSize,
+          (titleSize == 'medium' ? textTheme.headlineMedium : textTheme.headlineSmall)!.fontSize,
+        );
+      });
+    }
   });
 }

@@ -654,7 +654,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _step = flow.entryStep(_chunk, _doneAtOpen);
       } else {
         _finished = true;
-        _justCompleted = _completedOnVisit;
+        // The parsha's moment once a visit: stepped back into from the panel
+        // once its rings have closed, and finished again, the panel tells
+        // only how the week stands.
+        _justCompleted = _completedOnVisit && !_celebrated;
         _celebrationsAtFinish = celebrationsPlayed;
       }
     });
@@ -2384,42 +2387,55 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
   /// close in place of the divider. Set once, as the panel first shows.
   late final bool _parshaMoment = widget.justCompleted && widget.ctx.progress.isComplete;
 
+  /// Whether the parsha's rings sweep closed (ParshaRings, from what they
+  /// last showed in this run), rather than show closed from the start, as
+  /// after a cold start or a link straight to the reader. Taken as the panel
+  /// first shows, before its rings do.
+  late final bool _sweeps = _parshaMoment && ParshaRings.willSweep(widget.ctx.progress);
+
   // The completion moment (§8), once. An aliyah's divider draws its
   // hairlines outward over Motion.long; the parsha's rings close over
-  // Motion.ring (ParshaRings sweeps them, from what they last showed in this
-  // run). Then the rest fades in over Motion.short, as the last arc lands.
-  late final Duration _lead = _parshaMoment ? Motion.ring : Motion.long;
+  // Motion.ring. Then the rest fades in over Motion.short, as the last arc
+  // lands. Rings shown closed have nothing to wait for: the rest follows
+  // them after a short beat.
+  late final Duration _lead = _parshaMoment ? (_sweeps ? Motion.ring : Motion.short) : Motion.long;
   late final double _split = _lead.inMilliseconds / (_lead + Motion.short).inMilliseconds;
   late final AnimationController _reveal = AnimationController(vsync: this, duration: _lead + Motion.short);
   late final Animation<double> _draw = CurvedAnimation(parent: _reveal, curve: Interval(0, _split, curve: Motion.decelerate));
   late final Animation<double> _fade = CurvedAnimation(parent: _reveal, curve: Interval(_split, 1, curve: Motion.standard));
   bool _started = false;
 
+  /// The celebrate haptic as the rings close: on a timer, not the reveal's
+  /// ticker, which stops while a page covers the reader, as a book's page
+  /// opened by the same finish does before the rings have closed.
+  Timer? _celebrateTimer;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    // Under Reduce Motion it is simply there, and the haptic comes at once.
-    if (Motion.of(context).reduced) {
+    final motion = Motion.of(context);
+    // Under Reduce Motion it is simply there, and the haptic comes at once,
+    // as it does where the rings have no sweep to close.
+    if (motion.reduced) {
       _reveal.value = 1;
-      if (_parshaMoment) widget.onCelebrate();
     } else {
-      if (_parshaMoment) _reveal.addListener(_celebrateAtClose);
       _reveal.forward();
     }
-  }
-
-  /// The celebrate haptic, as the rings close: never once the panel has
-  /// gone, whose controller then stops.
-  void _celebrateAtClose() {
-    if (_reveal.value < _split) return;
-    _reveal.removeListener(_celebrateAtClose);
-    widget.onCelebrate();
+    if (!_parshaMoment) return;
+    if (motion.reduced || !_sweeps) {
+      widget.onCelebrate();
+    } else {
+      _celebrateTimer = Timer(motion.d(Motion.ring), () {
+        if (mounted) widget.onCelebrate();
+      });
+    }
   }
 
   @override
   void dispose() {
+    _celebrateTimer?.cancel();
     _reveal.dispose();
     super.dispose();
   }
