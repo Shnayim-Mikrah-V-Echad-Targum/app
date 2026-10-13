@@ -600,6 +600,9 @@ const _screens = {
   'legend_week': '/progress',
   'legend_map': '/progress',
   'progress_map': '/progress',
+  // The map with a parsha finished with the next and one that still can
+  // be (see [rescueProgress]), Genesis opened above Exodus.
+  'progress_map_rescue': '/progress',
   // Progress paused, and asked how long to extend the pause.
   'progress_paused': '/progress',
   'progress_extend': '/progress',
@@ -798,6 +801,7 @@ class _PreparingIndex extends VerseIndexLoader {
 /// every tile state, and the days and histories of [_screenSettings].
 final _screenNow = <String, DateTime>{
   'progress_map': historyNow,
+  'progress_map_rescue': rescueNow,
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
   'today_haftarah_left': DateTime(2026, 10, 13, 11),
@@ -853,6 +857,7 @@ final _screenNow = <String, DateTime>{
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
+  'progress_map_rescue': rescueProgress,
   'browse_summer': _yearRead,
   'today_haftarah_left': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withAll(LocalDate(2026, 10, 9)),
@@ -1655,6 +1660,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   // The map's section heading at the top of the page.
   'progress_map': (tester) => Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last)),
+  // Genesis's header is the first with a chevron.
+  'progress_map_rescue': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.expand_more).first);
+    await tester.tap(find.byIcon(Icons.expand_more).first);
+    await tester.pumpAndSettle();
+    await Scrollable.ensureVisible(tester.element(find.byIcon(Icons.info_outline).last));
+  },
   'progress_paused': _scrollToEnd,
   'progress_extend': (tester) async {
     await tester.ensureVisible(find.text(_l10n(tester).extendPause));
@@ -2067,6 +2079,7 @@ const _desktopScreens = {
   'kit_progress',
   'kit_week',
   'progress_map',
+  'progress_map_rescue',
   'city_search',
   'search',
   'search_many',

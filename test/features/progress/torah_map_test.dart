@@ -24,6 +24,7 @@ void main() {
     Size size = const Size(412, 2600),
     double textScale = 1,
     DateTime? now,
+    ProgressState? progress,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -34,7 +35,7 @@ void main() {
       tester,
       settings: AppSettings(onboardingComplete: true, joinDate: historyJoinDate),
       now: now ?? historyNow,
-      progress: historyProgress(),
+      progress: progress ?? historyProgress(),
     );
     c.read(routerProvider).go('/progress');
     await tester.pumpAndSettle();
@@ -98,6 +99,74 @@ void main() {
     // The current parsha is the one in bold.
     final toldot = tester.widget<Text>(find.descendant(of: tileOf('Toldot'), matching: find.text('Toldot')));
     expect(toldot.style?.fontWeight, FontWeight.w700);
+  });
+
+  testWidgets('a parsha finished with the next, and one that still can be, each have a tile of their own',
+      (tester) async {
+    await openProgress(tester, now: rescueNow, progress: rescueProgress());
+    const scheme = Palettes.light;
+    final status = Palettes.statusLight;
+    final sefer = Palettes.seferLight;
+    // Exodus is the book being read; Genesis opens from its header.
+    await tester.tap(headerOf('Genesis'));
+    await tester.pumpAndSettle();
+
+    for (final (label, fill, border, text, icon, iconColor) in [
+      // Finished late too, so on the late fill, with a check for each of the
+      // two parshiyot.
+      ('Noach: Finished with the next parsha', status.late, null, status.onLate, Icons.done_all, status.onLate),
+      ('Lech Lecha: On time', status.done, null, status.onDone, Icons.check, status.onDone),
+      // The one tile still asking something: edged in the overdue colour,
+      // with an hourglass rather than the made-up tile's history.
+      (
+        'Shemot: Can still be finished with the next parsha',
+        sefer.paper,
+        BorderSide(color: status.overdue, width: 1.5),
+        scheme.onSurface,
+        Icons.hourglass_bottom_rounded,
+        status.overdue,
+      ),
+    ]) {
+      final tile = find.bySemanticsLabel(label);
+      expect(tile, findsOneWidget, reason: label);
+      final ink = tester.widget<Ink>(find.descendant(of: tile, matching: find.byType(Ink)));
+      expect((ink.decoration! as BoxDecoration).color, fill, reason: label);
+      final drawn = find.descendant(
+        of: tile,
+        matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+      );
+      if (border == null) {
+        expect(drawn, findsNothing, reason: label);
+      } else {
+        final box = tester.widget<Container>(drawn).foregroundDecoration! as BoxDecoration;
+        expect((box.border! as Border).top, border, reason: label);
+      }
+      final name = label.substring(0, label.indexOf(':'));
+      final nameText = tester.widget<Text>(find.descendant(of: tile, matching: find.text(name)));
+      expect(nameText.style?.color, text, reason: label);
+      final icons = tester.widgetList<Icon>(find.descendant(of: tile, matching: find.byType(Icon)));
+      expect(icons.map((i) => (i.icon, i.color)), [(icon, iconColor)], reason: label);
+    }
+  });
+
+  testWidgets('in high contrast, the tile that can still be finished is edged 2 px', (tester) async {
+    tester.view.physicalSize = const Size(412, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: AppSettings(onboardingComplete: true, theme: AppThemeMode.highContrastDark, joinDate: historyJoinDate),
+      now: rescueNow,
+      progress: rescueProgress(),
+    );
+    c.read(routerProvider).go('/progress');
+    await tester.pumpAndSettle();
+    final drawn = find.descendant(
+      of: tileOf('Shemot'),
+      matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+    );
+    final box = tester.widget<Container>(drawn).foregroundDecoration! as BoxDecoration;
+    expect((box.border! as Border).top, BorderSide(color: Palettes.statusHcDark.overdue, width: 2));
   });
 
   testWidgets('only the book being read starts open; its header folds it', (tester) async {
@@ -322,8 +391,29 @@ void main() {
       // As it is set: a dash held to the word before it by a no-break space.
       expect(find.descendant(of: sheet, matching: find.text(dashHeldToWord(label))), findsOneWidget, reason: label);
     }
-    // Each label beside a swatch of its tile.
-    expect(find.descendant(of: sheet, matching: find.byType(Ink)), findsNWidgets(9));
+    // Each label beside a swatch of its tile, no two alike, and each icon
+    // its own.
+    final swatches = find.descendant(of: sheet, matching: find.byType(Ink));
+    expect(swatches, findsNWidgets(9));
+    (Color?, BoxBorder?, IconData?) lookOf(Finder swatch) {
+      final drawn = find.descendant(
+        of: swatch,
+        matching: find.byWidgetPredicate((w) => w is Container && w.foregroundDecoration != null),
+      );
+      final icon = find.descendant(of: swatch, matching: find.byType(Icon));
+      final edge = drawn.evaluate().isEmpty ? null : tester.widget<Container>(drawn).foregroundDecoration;
+      return (
+        (tester.widget<Ink>(swatch).decoration! as BoxDecoration).color,
+        (edge as BoxDecoration?)?.border,
+        icon.evaluate().isEmpty ? null : tester.widget<Icon>(icon).icon,
+      );
+    }
+
+    final looks = [for (var i = 0; i < 9; i++) lookOf(swatches.at(i))];
+    expect(looks.toSet(), hasLength(9));
+    final icons = looks.map((look) => look.$3).nonNulls;
+    expect(icons, hasLength(8), reason: 'every state but Upcoming has an icon');
+    expect(icons.toSet(), hasLength(8));
     final colours = tester
         .widgetList<Ink>(find.descendant(of: sheet, matching: find.byType(Ink)))
         .map((i) => (i.decoration! as BoxDecoration).color)

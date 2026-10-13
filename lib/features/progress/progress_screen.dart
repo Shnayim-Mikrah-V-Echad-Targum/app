@@ -786,7 +786,7 @@ class _RecordRow extends StatelessWidget {
 }
 
 /// A parsha's state on the Torah map (docs/DESIGN_SYSTEM.md §6.14).
-enum _TileState { onTime, late, madeUp, missed, current, upcoming, untracked }
+enum _TileState { onTime, late, restored, madeUp, missed, overdue, current, upcoming, untracked }
 
 /// How a tile in a [_TileState] is drawn. Text is only ever set on a solid
 /// fill, never a translucent one.
@@ -815,6 +815,16 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         icon: Icons.check_circle_outline,
         iconColor: status.onLate,
       ),
+    // Finished late too, so on the same fill; two checks for the two
+    // parshiyot finished together.
+    _TileState.restored => (
+        fill: status.late,
+        border: BorderSide.none,
+        text: status.onLate,
+        bold: false,
+        icon: Icons.done_all,
+        iconColor: status.onLate,
+      ),
     _TileState.madeUp => (
         fill: sefer.paper,
         border: BorderSide(color: status.late, width: 1.5),
@@ -832,6 +842,17 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         bold: false,
         icon: Icons.remove,
         iconColor: status.neutral,
+      ),
+    // The one state that still asks something of the reader: edged in the
+    // overdue colour, as the week page marks aliyot still to read, with an
+    // hourglass rather than the made-up tile's history.
+    _TileState.overdue => (
+        fill: sefer.paper,
+        border: BorderSide(color: status.overdue, width: sefer.isHighContrast ? 2 : 1.5),
+        text: scheme.onSurface,
+        bold: false,
+        icon: Icons.hourglass_bottom_rounded,
+        iconColor: status.overdue,
       ),
     _TileState.current => (
         fill: scheme.primaryContainer,
@@ -914,11 +935,11 @@ class _TorahMapState extends ConsumerState<_TorahMap> {
     return switch (_standings[p.id.number - 1]) {
       ParshaStanding.onTime => (_TileState.onTime, l.weekOnTime),
       ParshaStanding.late => (_TileState.late, l.weekLate),
-      ParshaStanding.restored => (_TileState.late, l.weekRestored),
+      ParshaStanding.restored => (_TileState.restored, l.weekRestored),
       ParshaStanding.inProgress => (_TileState.current, l.weekInProgress),
       ParshaStanding.madeUp => (_TileState.madeUp, l.weekMadeUp),
       ParshaStanding.missed => (_TileState.missed, l.weekMissed),
-      ParshaStanding.overdue => (_TileState.missed, l.weekOverdue),
+      ParshaStanding.overdue => (_TileState.overdue, l.weekOverdue),
       ParshaStanding.upcoming => (_TileState.upcoming, l.dayUpcoming),
       ParshaStanding.untracked => (_TileState.untracked, l.weekTransparent),
     };
@@ -1332,11 +1353,10 @@ Future<void> _showTorahMapLegend(BuildContext context) => showAppSheet<void>(
         final entries = [
           (_TileState.onTime, l.weekOnTime),
           (_TileState.late, l.weekLate),
-          (_TileState.late, l.weekRestored),
+          (_TileState.restored, l.weekRestored),
           (_TileState.madeUp, l.weekMadeUp),
           (_TileState.missed, l.weekMissed),
-          // A tile's tooltip names it, so the legend names it too.
-          (_TileState.missed, l.weekOverdue),
+          (_TileState.overdue, l.weekOverdue),
           (_TileState.current, l.weekInProgress),
           (_TileState.upcoming, l.dayUpcoming),
           (_TileState.untracked, l.weekTransparent),

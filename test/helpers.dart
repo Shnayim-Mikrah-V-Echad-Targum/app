@@ -111,6 +111,24 @@ final historyNow = DateTime(2026, 11, 11, 10);
 /// Sunday 4 October 2026, Simchat Torah in the Diaspora.
 final historyJoinDate = LocalDate(2026, 10, 4);
 
+/// The two Torah-map states of a parsha missed and then finished with the
+/// next, as of [rescueNow]: a reader who joined on [historyJoinDate] read
+/// every parsha of Genesis on the Thursday before its Shabbat but Noach,
+/// read on the Thursday after its Shabbat together with Lech Lecha (so
+/// finished with the next parsha), and has yet to finish Shemot, which can
+/// still be finished with Va'era, this week's parsha.
+ProgressState rescueProgress() {
+  WeekProgress week(int parsha, LocalDate done) => WeekProgress(weekId: '5787:$parsha').withAll(done);
+  final thursday = LocalDate(2026, 10, 8);
+  return ProgressState(weeks: {
+    for (var parsha = 1; parsha <= 12; parsha++)
+      '5787:$parsha': week(parsha, parsha == 2 ? LocalDate(2026, 10, 22) : thursday.addDays(7 * (parsha - 1))),
+  });
+}
+
+/// Wednesday 6 January 2027, in the week of Va'era (see [rescueProgress]).
+final rescueNow = DateTime(2027, 1, 6, 10);
+
 /// The Sunday of Vayera 5786, when the reader of [secondYearProgress]
 /// joined.
 final secondYearJoinDate = LocalDate(2025, 11, 2);
