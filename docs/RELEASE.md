@@ -274,6 +274,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
   - The title bar, the taskbar button and Alt+Tab name the window in the app's language: choosing Hebrew in the app's *Settings → Language* renames it שניים מקרא at once, and English back to Shnayim Mikra; following the system, it takes Windows's display language.
   - The title bar follows the app's theme: choosing *Dark* in the app darkens it, even when Windows is light, and the reverse. With the app following the system, switching Windows between light and dark switches it too. Check this on a Windows 10 older than version 2004 as well (1809, as in Enterprise LTSC 2019, up to 1909), which numbers the setting differently.
   - A reminder's notification opens the app, also when it is already running.
+  - The mouse's back button, Alt+← and a keyboard's Back key go back, as Back does on Android: they close a sheet, a dialog or a page (the reader too), and from the root of another tab return to Today. On Today they do nothing, and the app stays open. In a text field, such as Search's, Alt+← moves to the start of the line instead, and the mouse's back button still goes back. The reader's shortcuts (F1) list Alt+←.
 - [ ] Check with Narrator and NVDA, using the keyboard only, at 200% display scaling.
 - [ ] Launching the app while it is already running brings the open window forward, restoring it if minimized, and opens no second window. Closing it and launching it again at once opens it.
 - [ ] A reminder toast carries the three-rule mark as its icon.

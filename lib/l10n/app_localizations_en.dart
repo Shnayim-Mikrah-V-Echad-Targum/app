@@ -1078,6 +1078,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcutBack => 'Previous step';
 
   @override
+  String get shortcutGoBack =>
+      'Go back a page, as the mouse’s back button does';
+
+  @override
   String get shortcutLarger => 'Larger text';
 
   @override

@@ -24,6 +24,7 @@ import 'router.dart';
 import 'shell.dart';
 import 'system_bars.dart';
 import 'window_title_bar.dart';
+import 'windows_back.dart';
 
 class ShnayimMikraApp extends ConsumerStatefulWidget {
   const ShnayimMikraApp({super.key});
@@ -288,11 +289,15 @@ class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsB
             ),
             child: SystemBars(
               child: WindowTitleBar(
-                child: FontsChangeScope(
-                  // Status messages set for pages as wide as the window: those
-                  // over the tabs, and a phone's (the shell sets them for the
-                  // pane beside the rail).
-                  child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                // The mouse's back button and Alt+←, in the Windows app.
+                child: WindowsBack(
+                  router: router,
+                  child: FontsChangeScope(
+                    // Status messages set for pages as wide as the window:
+                    // those over the tabs, and a phone's (the shell sets them
+                    // for the pane beside the rail).
+                    child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                  ),
                 ),
               ),
             ),

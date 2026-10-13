@@ -22,6 +22,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -291,6 +292,7 @@ const _screens = {
   // The keyboard shortcuts, in the app and on the web.
   'reader_keys': '/read/5787:1/2',
   'reader_keys_web': '/read/5787:1/2',
+  'reader_keys_windows': '/read/5787:1/2',
   // The display sheet, scrolled to its line spacing.
   'reader_display': '/read/5787:1/2',
   // Yitro, the sixth aliyah: the Decalogue, with section gaps inside verses.
@@ -1034,6 +1036,9 @@ const _unsettled = {'today_completing'};
 /// Screens shown as on the web, where the reader takes single keys.
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
 
+/// Screens shown as in the Windows app, where Alt+← goes back.
+const _windowsKeys = {'reader_keys_windows'};
+
 /// Screens captured after typing into their only text field.
 const _typed = {
   'account_code': 'reader@example.org',
@@ -1501,6 +1506,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The reader's menu, then Keyboard shortcuts.
   'reader_keys': _openShortcuts,
   'reader_keys_web': _openShortcuts,
+  'reader_keys_windows': _openShortcuts,
   // The week's menu, then Clear.
   'week_clear': _tapInTurn([
     () => find.descendant(of: find.byType(AppBar), matching: find.byType(PopupMenuButton<String>)),
@@ -2255,6 +2261,7 @@ const _desktopScreens = {
   'reader_rashi',
   'reader_keys',
   'reader_keys_web',
+  'reader_keys_windows',
   'reader_gaps',
   'progress',
   'progress_years',
@@ -2580,8 +2587,10 @@ void main() {
           addTearDown(() => ReaderScreen.singleKeyPlatform = false);
         }
         // Soft shadows, as a device draws them; tests otherwise draw them as
-        // solid lines. Restored before the test ends, as the binding checks.
+        // solid lines. Restored before the test ends, as the binding checks,
+        // and so is the platform.
         debugDisableShadows = false;
+        if (_windowsKeys.contains(entry.key)) debugDefaultTargetPlatformOverride = TargetPlatform.windows;
         try {
           final blocked = _syncBlocked.contains(entry.key);
           final onboarding = entry.key.startsWith('welcome');
@@ -2637,6 +2646,7 @@ void main() {
           await _write(tester, '${mode.tag}_${entry.key}');
         } finally {
           debugDisableShadows = true;
+          debugDefaultTargetPlatformOverride = null;
         }
       }, skip: !_capture);
     }

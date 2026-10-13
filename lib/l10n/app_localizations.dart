@@ -1635,6 +1635,12 @@ abstract class AppLocalizations {
   /// **'Previous step'**
   String get shortcutBack;
 
+  /// In the Windows app’s list of keyboard shortcuts, beside Alt+←: leave the page for the one before it (the reader closes), as the system’s Back would. Not the reader’s previous step, which is a row of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Go back a page, as the mouse’s back button does'**
+  String get shortcutGoBack;
+
   /// No description provided for @shortcutLarger.
   ///
   /// In en, this message translates to:

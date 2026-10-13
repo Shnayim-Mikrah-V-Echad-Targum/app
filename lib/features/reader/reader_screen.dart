@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../app/providers.dart';
 import '../../app/routes.dart';
+import '../../app/windows_back.dart' show WindowsBack;
 import '../../core/calendar/hebrew_date.dart';
 import '../../core/calendar/jewish_holidays.dart';
 import '../../core/text/hebrew_text.dart';
@@ -1701,6 +1702,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       (const [[_Key('Page Up')]], l.shortcutPageUp),
       ([[alt, down]], l.shortcutNext),
       ([[alt, up]], l.shortcutBack),
+      // Bound by the app as a whole, in the Windows app alone.
+      if (WindowsBack.applies) ([[alt, left]], l.shortcutGoBack),
       if (settings.focusMode) ([[up], [down]], l.shortcutFocusVerse),
       if (!web) ...[
         ([[mod, const _Key('=')]], l.shortcutLarger),
