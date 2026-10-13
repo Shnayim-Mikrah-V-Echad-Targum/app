@@ -1082,6 +1082,15 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - The Android slides mirror in RTL, as Android's own do: in Hebrew the next page arrives from the left (`FadeForwardsDirectionalPageTransitionsBuilder`).
 - An Android back swipe keeps the predictive back gesture (on by default from Android 16 for apps targeting it): the page follows the finger and reveals the one beneath, in the framework's `PredictiveBackPageTransitionsBuilder`. Every other push and pop uses the directional slides.
 
+**Welcome entrance** (§9 Onboarding): once a run, as the app opens on the welcome. A static flag in the welcome's State keeps it from playing again when the page is built anew (back from step 1, or in the other language). One 900 ms controller (`Motion.frame`), each part arriving on decelerate:
+- the frame, with its lozenge and the Hebrew title: opacity 0→1 at 0–250 ms, rising 8 px into place (`Transform.translate`);
+- the SeferDivider's hairlines draw outward from its lozenge (`progress`) at 150–550 ms;
+- the English name and the body fade in at 400–650 ms;
+- the Filled button, the restore link and the disclaimer at 550–800 ms.
+- The language, the page's own control, is there from the first frame.
+- Every fade is `FadeTransition(alwaysIncludeSemantics: true)`, with nothing ignoring the pointer, so the page is tappable, focusable and heard from its first frame.
+- With Reduce Motion the controller starts at 1: the page is whole from its first frame.
+
 **Floating button:** it fades in as it appears (Material's entrance for an extended button, 200 ms), never scaling and turning in as a round one does; the forum's appears so once its discussions come.
 
 **Reduce Motion everywhere:** dialogs, sheets, snackbars, a page's floating button (`floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation`, in `PageScaffold`) and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and ink doesn't spread: `ThemeData.splashFactory` is `PressWash(reduced: true)` (below), whose wash holds 100 ms after a press and goes at once.
@@ -1431,6 +1440,7 @@ In order:
 - Outside the frame: 24 gap, a Filled "Start this week’s parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet (§6.19): one PaperGroup of sign in (`cloud_download_outlined`, with a chevron, as it leads to the account page; only with a real community backend), a backup file (`restore_page_outlined`) or pasted text (`content_paste_outlined`), each with what it restores from under it, never cut short. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
+- As the app opens on it, it enters once (§8, Welcome entrance): the frame and the title rise into place, the divider draws outward, then come the English name and the body, and last the way on and the disclaimer, all within 900 ms. It is whole from its first frame with Reduce Motion, and tappable and heard from its first frame either way.
 
 **Steps 2–4**
 - At the top, 16 below the app bar (clear of its rule): three 12 px lozenges, one for each step (the welcome is none), 12 apart and centred: filled up to the current step, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title says the same in words ("Step 1 of 3"), so that the marks agree with it: one of three filled on the first step.
