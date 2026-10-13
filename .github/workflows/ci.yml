@@ -82,6 +82,10 @@ jobs:
         run: |
           flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
             --base-href "${{ vars.WEB_BASE_HREF || '/' }}" $DART_DEFINES
+      # The first frame waits for every font in the manifest: index.html
+      # starts downloading them all while the engine loads.
+      - name: Preload the start-up fonts
+        run: node tool/web/preload_fonts.mjs build/web
       # The public privacy, support and account-deletion pages the stores
       # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
       - name: Static policy, support and account-deletion pages

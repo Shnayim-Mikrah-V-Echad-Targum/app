@@ -1,7 +1,7 @@
 // Tests for the web build's JavaScript, run against fixtures in Node's vm:
 // the loading screen's script in web/index.html, web/flutter_bootstrap.js,
-// and the service worker's update script (tool/web/sw_update.js and
-// sw_build.cjs).
+// the service worker's update script (tool/web/sw_update.js and
+// sw_build.cjs), and the fonts' preloads (tool/web/preload_fonts.mjs).
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
@@ -16,6 +16,7 @@ const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
 const { cacheNames, writeUpdateScript } = require('./sw_build.cjs');
+const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
 after(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
@@ -445,5 +446,112 @@ describe('the build', () => {
 
   it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {
     assert.match(read('workbox-config.cjs'), /'main\.dart\.js',\n(?:\s*\/\/.*\n)*\s*'main\.dart\.js_\*\.part\.js',/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tool/web/preload_fonts.mjs
+
+describe("the fonts' preloads", () => {
+  /// A FontManifest.json as flutter build web writes it, in a build without
+  /// the CDN, with a font listed twice and one whose name needs encoding.
+  const manifest = [
+    { family: 'MaterialIcons', fonts: [{ asset: 'fonts/MaterialIcons-Regular.otf' }] },
+    {
+      family: 'EBGaramond',
+      fonts: [
+        { weight: 500, asset: 'assets/fonts/EBGaramond-Medium.ttf' },
+        { weight: 500, style: 'italic', asset: 'assets/fonts/EBGaramond-MediumItalic.ttf' },
+      ],
+    },
+    { family: 'Display', fonts: [{ asset: 'assets/fonts/My Font&Co.ttf' }, { asset: 'assets/fonts/EBGaramond-Medium.ttf' }] },
+    { family: 'Roboto', fonts: [{ asset: 'fonts/fallback/Roboto-Regular.ttf' }] },
+  ];
+
+  /// A build/web with the source index.html and [fonts] as its manifest.
+  function build(fonts = manifest) {
+    const web = tempDir();
+    mkdirSync(join(web, 'assets'));
+    writeFileSync(join(web, 'assets', 'FontManifest.json'), JSON.stringify(fonts));
+    writeFileSync(join(web, 'index.html'), html);
+    return web;
+  }
+
+  const preloads = (page) => [...page.matchAll(/<link rel="preload" href="([^"]*)" as="fetch" crossorigin>/g)].map((m) => m[1]);
+
+  it("preloads the manifest and every font in it, once each, as the engine fetches them", () => {
+    const web = build();
+    assert.deepEqual(preloadFonts(web), [
+      'fonts/MaterialIcons-Regular.otf',
+      'assets/fonts/EBGaramond-Medium.ttf',
+      'assets/fonts/EBGaramond-MediumItalic.ttf',
+      'assets/fonts/My Font&Co.ttf',
+      'fonts/fallback/Roboto-Regular.ttf',
+    ]);
+    const page = readFileSync(join(web, 'index.html'), 'utf8');
+    assert.deepEqual(preloads(page), [
+      'assets/FontManifest.json',
+      'assets/fonts/MaterialIcons-Regular.otf',
+      'assets/assets/fonts/EBGaramond-Medium.ttf',
+      'assets/assets/fonts/EBGaramond-MediumItalic.ttf',
+      'assets/assets/fonts/My%20Font&amp;Co.ttf',
+      'assets/fonts/fallback/Roboto-Regular.ttf',
+    ]);
+    // In place of the source's two, in the head, before the engine's script.
+    assert.equal(page.match(/rel="preload"/g).length, 6);
+    assert.ok(page.indexOf('assets/FontManifest.json') < page.indexOf('</head>'));
+    assert.ok(page.indexOf('</head>') < page.indexOf('flutter_bootstrap.js'));
+    // Nothing else changes.
+    const outside = (text) => text.replace(/<!-- preload:[\s\S]*?<!-- \/preload -->/, '');
+    assert.equal(outside(page), outside(html));
+  });
+
+  it('gives the same page when it runs again', () => {
+    const web = build();
+    preloadFonts(web);
+    const once = readFileSync(join(web, 'index.html'), 'utf8');
+    preloadFonts(web);
+    assert.equal(readFileSync(join(web, 'index.html'), 'utf8'), once);
+  });
+
+  it('keeps the indentation of its markers', () => {
+    const page = withPreloads('<head>\n    <!-- preload: tool/web/preload_fonts.mjs -->\n    <!-- /preload -->\n</head>', [
+      'fonts/a.otf',
+    ]);
+    assert.equal(
+      page,
+      [
+        '<head>',
+        '    <!-- preload: tool/web/preload_fonts.mjs -->',
+        '    <link rel="preload" href="assets/FontManifest.json" as="fetch" crossorigin>',
+        '    <link rel="preload" href="assets/fonts/a.otf" as="fetch" crossorigin>',
+        '    <!-- /preload -->',
+        '</head>',
+      ].join('\n'),
+    );
+  });
+
+  it("preloads the display fonts in the source, for a build that doesn't run it", () => {
+    assert.deepEqual(preloads(html), [
+      'assets/assets/fonts/EBGaramond-Medium.ttf',
+      'assets/assets/fonts/FrankRuhlLibre-Medium.ttf',
+    ]);
+  });
+
+  it('refuses a page without its markers, or a manifest without fonts', () => {
+    assert.throws(() => withPreloads('<head></head>', ['fonts/a.otf']), /no <!-- preload/);
+    assert.throws(() => fontAssets([]), /lists no fonts/);
+    assert.throws(() => fontAssets({ fonts: [] }), /not a list/);
+    assert.throws(() => fontAssets([{ family: 'A', fonts: [{ weight: 700 }] }]), /without an asset in A/);
+    assert.throws(() => preloadFonts(tempDir()), /FontManifest\.json/);
+  });
+
+  it('runs in CI right after the build, before the service worker precaches the page', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const built = ci.indexOf('flutter build web');
+    const preloaded = ci.indexOf('node tool/web/preload_fonts.mjs build/web');
+    assert.ok(built >= 0 && preloaded > built, 'after flutter build web');
+    assert.ok(preloaded < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
+    assert.match(read('docs/RELEASE.md'), /node tool\/web\/preload_fonts\.mjs build\/web/);
   });
 });
