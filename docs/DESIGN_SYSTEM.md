@@ -1,6 +1,6 @@
 # Shnayim Mikrah: "Klaf & Techelet" design system v1 (final, for implementation)
 
-> Reference mockups: [mock_today.png](design/mock_today.png), [mock_reader.png](design/mock_reader.png). Render the current app with `CAPTURE=1 flutter test test/screens/capture_test.dart` (PNGs in build/screens/) to compare.
+> Reference mockups: [mock_today.png](design/mock_today.png), [mock_reader.png](design/mock_reader.png). They predate the spelling Mikrah and later changes, so the captures are the current record. Render the current app with `CAPTURE=1 flutter test test/screens/capture_test.dart` (PNGs in build/screens/) to compare.
 
 
 Owner goal: an app that feels like a well-made chumash brought onto a screen with care. It should be calm, dignified and legible for a 75-year-old, and still feel current to a 25-year-old learner. This document is the contract. Where it conflicts with an earlier proposal, this document wins.

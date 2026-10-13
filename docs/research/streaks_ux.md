@@ -52,7 +52,7 @@ Full detail is in `halacha.md`. This table covers what drives the streak rules.
 | Tisha B'Av | Torah study is restricted (OC 554) [K] | Quiet day: no reminders, no requirement |
 
 Two market signals are also relevant:
-- **Existing Shnayim Mikrah apps** track progress per aliyah or per verse, pin users to a parsha when they fall behind, and offer daily reminders. They don't have humane streak systems ([Shnayim](https://apps.apple.com/app/id1296709500); [Shnayim Mikrah Tracker](https://apps.apple.com/app/id6762082339)).
+- **Existing Shnayim Mikrah apps** track progress per aliyah or per verse, pin users to a parsha when they fall behind, and offer daily reminders. They don't have humane streak systems ([Shnayim](https://apps.apple.com/app/id1296709500); [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)).
 - **The OU's daily email series** sends one aliyah a day ([OU](https://ou.org/news/coming-inbox-near-ou-torah-launches-shanyim-mikra-daily-email-series)).
 
 A Shabbat-aware streak system is therefore room to stand out.
@@ -619,7 +619,7 @@ Worked example of a regular Diaspora week on plan T1:
 - 929: [929 About](https://www.929.org.il/pages/aboutEN.html), [929 Wikipedia](https://en.wikipedia.org/wiki/929:_Tanakh_B%27yachad), [Hebcal nine29](https://pkg.go.dev/github.com/hebcal/learning/nine29)
 - [Sefaria calendars](https://sefaria.org.il/calendars)
 - Hebcal: [hebcal-learning](https://github.com/hebcal/hebcal-learning), [Hebcal leyning API](https://www.hebcal.com/home/4277/leyning-torah-reading-api), [@hebcal/leyning](https://www.npmjs.com/package/@hebcal/leyning), [@hebcal/core README](https://cdn.jsdelivr.net/npm/@hebcal/core@6.5.3/README.md)
-- Shnayim Mikrah apps: [Shnayim app](https://apps.apple.com/app/id1296709500), [Shnayim Mikrah Tracker](https://apps.apple.com/app/id6762082339)
+- Shnayim Mikrah apps: [Shnayim app](https://apps.apple.com/app/id1296709500), [Shnayim Mikra Tracker](https://apps.apple.com/app/id6762082339)
 - [OU Shnayim Mikrah emails](https://ou.org/news/coming-inbox-near-ou-torah-launches-shanyim-mikra-daily-email-series)
 - Chabad: [Chabad Daily Study](https://apps.apple.com/us/app/chabad-org-daily-torah-study/id1408133263), [Rambam App](https://apps.apple.com/app/id1571859668)
 - All Daf: [All Daf](https://alldaf.org/about-us), [OU siyum](https://ou.org/news/orthodox-unions-torah-initiatives-and-upper-west-side-community-celebrate-siyum-on-maseches-sotah)

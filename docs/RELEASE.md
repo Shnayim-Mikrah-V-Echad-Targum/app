@@ -15,13 +15,15 @@
   - The app id, bundle id and MSIX identity name follow it: `org.shnayimmikrah.app`. They can't be changed after publishing.
   - The iOS widget extension is `org.shnayimmikrah.app.ParshaWidget`, and its App Group is `group.org.shnayimmikrah.app`.
   - The display name is "Shnayim Mikrah", spelled with an h everywhere.
-- [ ] **The web address.** Serve the web build at `https://shnayimmikrah.org/`:
-  - In the repository's *Settings → Pages*, set the custom domain to `shnayimmikrah.org` and tick *Enforce HTTPS* once the certificate is issued.
-  - At the domain's registrar, point the apex at GitHub Pages with four `A` records (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and four `AAAA` records (`2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`). Add a `CNAME` record for `www` to `shnayim-mikrah-v-echad-targum.github.io`.
-  - Verify the domain for the organization (*Organization settings → Pages → Verified domains*), so no one else can claim it on GitHub Pages.
+- [ ] **The web address.** Serve the web build at `https://shnayimmikrah.org/`, in this order:
+  - Verify the domain for the organization first, so no one else can claim it on GitHub Pages: *Organization settings → Pages → Add a domain*, then add the `TXT` record GitHub shows (`_github-pages-challenge-shnayim-mikrah-v-echad-targum.shnayimmikrah.org`) at the registrar and click *Verify*.
+  - In the repository's *Settings → Pages*, set *Source* to *GitHub Actions* (CI deploys with `actions/deploy-pages`), set the custom domain to `shnayimmikrah.org`, and tick *Enforce HTTPS* once the certificate is issued.
+  - At the registrar, point the apex at GitHub Pages with four `A` records (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and four `AAAA` records (`2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`), and add a `CNAME` record for `www` to `shnayim-mikrah-v-echad-targum.github.io`.
   - Set the repository variables `DEPLOY_WEB=true`, `WEB_BASE_HREF=/` and `WEB_URL=https://shnayimmikrah.org/`.
   - The store listings' privacy, support and account-deletion URLs are then `https://shnayimmikrah.org/legal/privacy.html`, `…/legal/support.html` and `…/legal/delete-account.html`.
   - With the site at the domain's root, Android App Links and iOS Universal Links for discussion URLs become possible (`/.well-known/assetlinks.json` and `/.well-known/apple-app-site-association`).
+- [ ] **Builds from before the rename are a different app.** Test builds made before the name took its h (`org.shnayimmikra.app`, "Shnayim Mikra") don't upgrade to the new one: it installs beside them, with its own data. Before switching, export a backup from the old build (*Settings → Your data*) or turn on cloud backup; then uninstall the old build, so its reminders and widget stop; then import the file in the new one (a backup from the old build still imports) or sign in again.
+- [ ] **Never change the Windows data folder's names.** On Windows, settings, progress and notes live in `%APPDATA%\<CompanyName>\<ProductName>`, from `windows/runner/Runner.rc` (now `Shnayim Mikrah\Shnayim Mikrah`). Changing either after publishing loses every reader's local data; `test/app/windows_package_test.dart` pins them.
 - [ ] **Support address.** Set up mail for the domain (for example `support@shnayimmikrah.org`) and set `SUPPORT_EMAIL` to it, as a repository variable for CI. Both stores and the accessibility statement need a working contact, and without one the account-deletion page offers no way to ask by email.
 - [ ] **Public pages.** Both stores need a public URL for each of these, and the web build has them as static pages that work without JavaScript, in English and in Hebrew (add `.he` before `.html`):
   - the privacy policy: `<web address>/legal/privacy.html`
@@ -226,7 +228,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 
 ## Web
 
-- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /<path>/`, then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
+- [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /` (the site is at the domain's root), then `node tool/legal/build_html.mjs build/web` for the static pages and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
 - [ ] Set the repository variable `WEB_URL` to the site's public address, `https://shnayimmikrah.org/`. CI then makes the link previews' URLs absolute, as most sites that show previews require.
 - [ ] Serve it over HTTPS. Let browsers keep `canvaskit/` and `assets/` only if they revalidate them (`Cache-Control: no-cache`, with an ETag or Last-Modified): their URLs stay the same from one release to the next, and the service worker keeps them for offline use anyway. Don't cache `index.html`, `flutter_bootstrap.js`, `sw.js`, `sw_update.js` or `flutter_service_worker.js` (the browsers of earlier visitors still check it, and Flutter's version now unregisters itself).
 - [ ] In Chrome DevTools (*Application → Manifest*), the app has no installability errors, and installing it shows the richer dialog, with screenshots. The screenshots are `web/screenshots/`, taken from the capture harness; after a redesign, take them again:

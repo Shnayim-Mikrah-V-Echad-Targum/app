@@ -91,6 +91,8 @@ Two views the forum lists read, both `security_invoker`, so that every policy ap
 
    The template must contain `{{ .Token }}`, because the app asks for the six-digit code and never opens a link. The default templates only contain a link, and with them nobody can sign in.
 
+   A hosted project keeps what was pasted here: whenever `supabase/templates/magic_link.html` or the app's name changes, paste it again and update both subjects.
+
 5. **Set up custom SMTP** under *Authentication → Emails → SMTP settings*. Supabase's built-in mail service is only for testing: it sends very few emails per hour, and only to your team's addresses. Use a provider such as Amazon SES, Postmark, Resend or Mailgun, and set up SPF, DKIM and DMARC for the sending domain.
 
 6. **Set rate limits** under *Authentication → Rate Limits*. Start with about 30 emails and 30 verifications per hour, and adjust to your traffic.
