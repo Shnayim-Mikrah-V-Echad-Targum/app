@@ -85,9 +85,10 @@ class _ForumScreenState extends ConsumerState<ForumScreen> with FetchAgainIfFail
       // again, and a way back to the forums.
       final missing = forums.hasValue;
       return PageScaffold(
-        // No title while the forums load, or can't.
+        // No title while the forums first load; Community where they
+        // can't, as a thread names its forum then.
         titleText: missing ? l.notFoundTitle : l.communityTitle,
-        showTitle: missing,
+        showTitle: missing || forums.hasError,
         body: missing
             ? CenteredMessage(
                 text: l.forumNotFound,

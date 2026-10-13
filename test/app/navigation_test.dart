@@ -260,6 +260,8 @@ void main() {
       }
       expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+      // Under Community, as a thread names its forum when the forums fail.
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Community')), findsOneWidget);
       // Try again first, as the page's one Tonal button, and the way back
       // to the forums beside it.
       expect(find.widgetWithText(FilledButton, 'Try again'), findsOneWidget);
