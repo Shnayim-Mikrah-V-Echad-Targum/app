@@ -89,6 +89,49 @@ void main() {
       expect(held(text, 210), same(text));
     });
 
+    testWidgets('a hyphen or a dash in the last word is bound, so that its end never stands alone', (tester) async {
+      // At 165, "aaaa bbbb cc dd-" fills the first line, and the line may
+      // end after the hyphen, leaving "ee" alone.
+      final hyphened = span('aaaa bbbb cc dd-ee');
+      // Where the last line starts, laid out 165 wide.
+      int lastLineStart(InlineSpan text) {
+        final painter = TextPainter(text: text, textDirection: TextDirection.rtl)..layout(maxWidth: 165);
+        final plainText = plain(text);
+        final start = painter.getLineBoundary(TextPosition(offset: plainText.length - 1)).start;
+        painter.dispose();
+        return start;
+      }
+
+      expect(lastLineStart(hyphened), 'aaaa bbbb cc dd-'.length);
+      expect(
+        lastLineStart(span('aaaa bbbb cc\u00A0dd-ee')),
+        'aaaa bbbb cc dd-'.length,
+        reason: 'the no-break space alone leaves the break after the hyphen',
+      );
+      final pair = held(hyphened, 165);
+      expect(plain(pair), 'aaaa bbbb cc\u00A0dd-\u2060ee');
+      expect(linesOf(pair, 165), [
+        ['aaaa', 'bbbb'],
+        ['cc', 'dd-\u2060ee'],
+      ]);
+      // An en dash, a maqaf, and an em dash, before which a line may end
+      // too; a hyphen at the word's end, or one bound already, takes none.
+      expect(plain(held(span('aaaa bbbb cc dd–ee'), 165)), 'aaaa bbbb cc\u00A0dd–\u2060ee');
+      expect(plain(held(span('aaaa bbbb cc dd־ee'), 165)), 'aaaa bbbb cc\u00A0dd־\u2060ee');
+      expect(plain(held(span('aaaa bbbb cc dd—ee'), 165)), 'aaaa bbbb cc\u00A0dd\u2060—\u2060ee');
+      expect(plain(held(span('aaaa bbbb cc dd-'), 165)), 'aaaa bbbb cc\u00A0dd-');
+      expect(plain(held(span(keepLinesSound('אאאא בבבב גג דד־הה')), 165)), 'אאאא בבבב גג\u00A0דד־\u2060הה');
+      // Where the two are too wide to hold, the word is left as it was.
+      expect(held(hyphened, 155), same(hyphened));
+    });
+
+    testWidgets('a joiner bound in the last word is nothing to a screen reader, or to a copy', (tester) async {
+      final pair = held(span('aa bb sin-offering'), 400);
+      expect(plain(pair), 'aa bb\u00A0sin-\u2060offering');
+      expect(pair.getSemanticsInformation().map((i) => i.semanticsLabel ?? i.text).join(), 'aa bb sin-offering');
+      expect(asCopied(plain(pair)), 'aa bb sin-offering');
+    });
+
     testWidgets('the words are measured where an em of their type for each letter might not fit', (tester) async {
       // "גג " is 30 wide and "דד", twice the size, 40: 70 together, though an
       // em of the larger type for each of their letters is 100.
@@ -276,6 +319,19 @@ void main() {
         ['cc', 'dd'],
       ]);
       expect(find.bySemanticsLabel('22 aa bb cc dd'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets("a translation ending on a hyphened word ends with two words, said as written", (tester) async {
+      final handle = tester.ensureSemantics();
+      // At 20, "22 aa bb cc dd-" is 300 wide: at 330, the line could end
+      // after the hyphen, and "ee" stand alone.
+      await pumpAt(tester, 330, const TranslationVerse(text: 'aa bb cc dd-ee', number: 22, settings: AppSettings()));
+      expect(linesIn(tester, find.byType(TranslationVerse)), [
+        ['22', 'aa', 'bb'],
+        ['cc', 'dd-\u2060ee'],
+      ]);
+      expect(find.bySemanticsLabel('22 aa bb cc dd-ee'), findsOneWidget);
       handle.dispose();
     });
 

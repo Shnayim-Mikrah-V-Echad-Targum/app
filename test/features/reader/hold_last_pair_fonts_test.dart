@@ -40,10 +40,15 @@ void main() {
       final lines = {for (final b in boxes(0, text.length)) b.top.round()};
       if (lines.length < 2) continue;
       checked++;
-      final lastLine = boxes(words.last.start, words.last.end);
       // A word too wide for the line on its own is another matter.
-      if ({for (final b in lastLine) b.top.round()}.length > 1) continue;
-      if (boxes(words[words.length - 2].start, words[words.length - 2].end).last.top.round() == lastLine.first.top.round()) {
+      if (width(words.last.start, words.last.end) > paragraph.constraints.maxWidth) continue;
+      final lastLine = boxes(words.last.start, words.last.end);
+      // A word broken over two lines, as after a hyphen ("sin- / offering."),
+      // leaves its end alone on the last.
+      final broken = {for (final b in lastLine) b.top.round()}.length > 1;
+      if (!broken &&
+          boxes(words[words.length - 2].start, words[words.length - 2].end).last.top.round() ==
+              lastLine.first.top.round()) {
         continue;
       }
       // Alone on its line: as holdLastPair counts words, between plain
@@ -101,6 +106,18 @@ void main() {
         expect(lone, isEmpty);
       });
     }
+  }
+
+  // Genesis 22, whose translation ends verses on "burnt-offering?’" and
+  // "Beer-sheba.", which a line could break after the hyphen of.
+  for (final (view, size, textScale) in views) {
+    testWidgets('the full text of Vayera\'s seventh aliyah, with the translation, on $view, ends no verse on '
+        'a word alone, nor on the end of a hyphened word', (tester) async {
+      await open(tester, '/read/5787:4/6?mode=full', settings: readings.values.first, size: size, textScale: textScale);
+      final (lone, checked) = loneLastWords(tester);
+      expect(checked, greaterThan(10), reason: 'paragraphs of more than one line');
+      expect(lone, isEmpty);
+    });
   }
 
   testWidgets('the haftarah, on a 412 dp phone, ends no verse on a word alone', (tester) async {

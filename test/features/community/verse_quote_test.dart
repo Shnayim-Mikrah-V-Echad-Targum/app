@@ -143,6 +143,15 @@ void main() {
       expect(copiedFromQuestion('$shown$question', verse: quoted, question: question), '$quoted\n\n$question');
       expect(copiedFromQuestion('מְאֹדWhy', verse: quoted, question: question), 'מְאֹד\n\nWhy');
     });
+
+    test("keeps the question's own no-break spaces, alone or after the verse's end", () {
+      // Typed with Option+Space, say, or pasted in.
+      const spaced = 'Why\u00a0here?';
+      expect(copiedFromQuestion(spaced, verse: quoted, question: spaced), spaced);
+      expect(copiedFromQuestion('here?', verse: quoted, question: spaced), 'here?');
+      expect(copiedFromQuestion('׀\u00a0מְאֹד$spaced', verse: quoted, question: spaced), '׀ מְאֹד\n\n$spaced');
+      expect(copiedFromQuestion('$shown$spaced', verse: quoted, question: spaced), '$quoted\n\n$spaced');
+    });
   });
 
   group('in the app', () {

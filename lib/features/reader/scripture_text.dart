@@ -470,9 +470,11 @@ double _widestLetter(
 /// [maxWidth] wide: where they take more, the line before would be left
 /// short, which is the greater fault. A word is what stands between two
 /// spaces (U+0020): words a maqaf joins ([keepLinesSound]) stand as one, as
-/// a verse's number does with its first word. As the two fit in half a
-/// line, they never break inside a word, and a paragraph of one line is
-/// laid out as it was.
+/// a verse's number does with its first word. The two fit in half a line,
+/// and a word joiner binds each hyphen or dash in the last word
+/// ("sin-offering."), after which a line could otherwise end: so they
+/// never break inside a word, and a paragraph of one line is laid out as it
+/// was.
 ///
 /// The no-break space is as wide as the space it stands for: the text engine
 /// widens only spaces where a line may break, so it carries the paragraph's
@@ -530,8 +532,23 @@ InlineSpan holdLastPair(
     painter.dispose();
     if (width > half) return text;
   }
-  return _held(text, {for (var i = gap; i < last; i++) i}, style ?? const TextStyle());
+  // Nor may the line break inside the last word, after a hyphen or a dash
+  // ("sin-offering."), or before an em dash, which would leave its end
+  // alone after all: a word joiner binds each.
+  final joins = <int>{
+    for (var i = last + 1; i < end; i++)
+      if ((_breaksAfter.contains(plain.codeUnitAt(i - 1)) || plain.codeUnitAt(i) == _emDash) &&
+          plain.codeUnitAt(i) != _joiner &&
+          plain.codeUnitAt(i - 1) != _joiner)
+        i,
+  };
+  return _held(text, {for (var i = gap; i < last; i++) i}, style ?? const TextStyle(), joins: joins);
 }
+
+/// The marks a line may break after within a word: a hyphen, an en or em
+/// dash, and a maqaf.
+const _breaksAfter = {0x2D, 0x2010, 0x2013, _emDash, _maqaf};
+const _emDash = 0x2014;
 
 /// What of [span] stands from [start] to [end] of its plain text (in which a
 /// widget is one character), in the styles it has there; and how many of
@@ -569,10 +586,12 @@ InlineSpan holdLastPair(
 
 /// [span] with each of the spaces at [offsets] of its plain text (in which a
 /// widget is one character) a no-break space as wide, within [style] (the
-/// ambient style its own styles merge with). A space whose span a
-/// [TextSpan.semanticsLabel] or [TextSpan.semanticsIdentifier] speaks for is
-/// left as it is.
-InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style) {
+/// ambient style its own styles merge with), and a word joiner before each
+/// character at [joins]. A screen reader hears the space as a space, and
+/// nothing of the joiner. A space whose span a [TextSpan.semanticsLabel] or
+/// [TextSpan.semanticsIdentifier] speaks for is left as it is; a widget
+/// takes no joiner before it.
+InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style, {Set<int> joins = const {}}) {
   var at = 0;
   InlineSpan hold(InlineSpan span, TextStyle inherited) {
     if (span is! TextSpan) {
@@ -580,16 +599,19 @@ InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style) {
       return span;
     }
     final s = inherited.merge(span.style);
-    final text = span.text;
     final from = at;
+    var text = span.text;
     at += text?.length ?? 0;
-    final spaces = [
-      if (text != null && span.semanticsLabel == null && span.semanticsIdentifier == null)
-        for (var i = 0; i < text.length; i++)
-          if (offsets.contains(from + i) && text.codeUnitAt(i) == _space) i,
-    ];
     final children = [for (final child in span.children ?? const <InlineSpan>[]) hold(child, s)];
-    if (spaces.isEmpty) {
+    final labelled = span.semanticsLabel != null || span.semanticsIdentifier != null;
+    bool spaceAt(int i) => !labelled && offsets.contains(from + i) && text!.codeUnitAt(i) == _space;
+    if (text != null && labelled) {
+      // What it says is its label's: the joiners go in its text.
+      text = String.fromCharCodes([
+        for (var i = 0; i < text.length; i++) ...[if (joins.contains(from + i)) _joiner, text.codeUnitAt(i)],
+      ]);
+    }
+    if (text == null || labelled || !Iterable.generate(text.length).any((i) => spaceAt(i) || joins.contains(from + i))) {
       return TextSpan(
         text: text,
         children: span.children == null ? null : children,
@@ -618,12 +640,19 @@ InlineSpan _held(InlineSpan span, Set<int> offsets, TextStyle style) {
     final space = TextStyle(letterSpacing: (s.letterSpacing ?? 0) + (s.wordSpacing ?? 0));
     final pieces = <InlineSpan>[];
     var rest = 0;
-    for (final i in spaces) {
-      if (i > rest) pieces.add(piece(text!.substring(rest, i)));
-      pieces.add(piece('\u00A0', style: space, semanticsLabel: ' '));
-      rest = i + 1;
+    for (var i = 0; i < text.length; i++) {
+      final join = joins.contains(from + i);
+      final held = spaceAt(i);
+      if (!join && !held) continue;
+      if (i > rest) pieces.add(piece(text.substring(rest, i)));
+      rest = i;
+      if (join) pieces.add(piece('\u2060', semanticsLabel: ''));
+      if (held) {
+        pieces.add(piece('\u00A0', style: space, semanticsLabel: ' '));
+        rest = i + 1;
+      }
     }
-    if (rest < text!.length) pieces.add(piece(text.substring(rest)));
+    if (rest < text.length) pieces.add(piece(text.substring(rest)));
     return TextSpan(
       children: [...pieces, ...children],
       style: span.style,
