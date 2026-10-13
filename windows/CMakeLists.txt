@@ -81,6 +81,15 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# The Visual C++ runtime that the executable and the plugins link to
+# (msvcp140.dll, vcruntime140.dll, vcruntime140_1.dll and the rest), beside
+# them, so that the folder runs as it is on a PC without the Visual C++
+# Redistributable: Microsoft's app-local deployment. The MSIX brings its own
+# copy too; the Universal CRT is part of Windows.
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "${INSTALL_BUNDLE_LIB_DIR}")
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT Runtime)
+include(InstallRequiredSystemLibraries)
+
 # The app icon on reminder toasts, registered by lib/services/notifications.dart.
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/branding/notification.png"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)

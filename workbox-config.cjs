@@ -58,7 +58,11 @@ module.exports = {
   // The notifications plugin's worker goes unused: the web build schedules no
   // notifications.
   globIgnores: ['**/*.symbols', '**/NOTICES', '**/notifications_service_worker.js'],
-  maximumFileSizeToCacheInBytes: 6e6,
+  // Above anything the app ships: which files are precached is for
+  // globPatterns to say, not their size. Workbox would pass over a larger
+  // file with a warning alone, main.dart.js among them, and the app would
+  // not open offline; CI checks the worker for it (tool/web/sw_build.cjs).
+  maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
   // Any page of the app, such as …/community/thread/1, opened or reloaded.
   // A file, such as a policy page (legal/privacy.html), is left to the
   // server and to the pages' cache below.

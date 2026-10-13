@@ -71,12 +71,18 @@ Future<void> _start() async {
 /// The stored preferences, once the opt-in fonts their settings choose have
 /// loaded, so that the first frame already shows text in them. A font slow to
 /// arrive (over the web) holds the app back only so long; its text is laid
-/// out again when it comes.
+/// out again when it comes. The fonts are a nicety: nothing about them keeps
+/// the app from starting.
 Future<SharedPreferences> _preferencesWithFonts() async {
   final prefs = await SharedPreferences.getInstance();
-  final settings = SettingsController.readStored(prefs);
-  await OptionalFonts.ensureAll(settings.optionalFonts)
-      .timeout(const Duration(seconds: 2), onTimeout: () {});
+  try {
+    final settings = SettingsController.readStored(prefs);
+    await OptionalFonts.ensureAll(settings.optionalFonts).timeout(const Duration(seconds: 2));
+  } on TimeoutException {
+    // Still loading: the first frame is drawn in the fallback fonts.
+  } catch (e, stack) {
+    FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack, library: 'optional fonts'));
+  }
   return prefs;
 }
 

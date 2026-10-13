@@ -16,7 +16,7 @@ import vm from 'node:vm';
 const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
-const { cacheNames, fileNavigation, writeUpdateScript } = require('./sw_build.cjs');
+const { cacheNames, fileNavigation, missingFromPrecache, writeUpdateScript } = require('./sw_build.cjs');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
@@ -761,6 +761,39 @@ describe('the build', () => {
     assert.match(config, /cacheName: runtimeCaches\.engine/);
     assert.match(config, /cacheName: runtimeCaches\.content/);
     assert.match(config, /skipWaiting: false/);
+  });
+
+  // Workbox passes over a file above maximumFileSizeToCacheInBytes with a
+  // warning alone; without main.dart.js the app opened offline on its
+  // loading screen and stayed there.
+  it('finds a file the app needs to open offline that the worker leaves out', () => {
+    const web = tempDir();
+    for (const name of ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js']) {
+      writeFileSync(join(web, name), '');
+    }
+    const entry = (url) => `{url:"${url}",revision:"0123"}`;
+    const worker = (urls) => `define(["./workbox-1"],(function(e){"use strict";e.precacheAndRoute([${urls.map(entry).join(',')}],{})}));`;
+    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', 'icons/Icon-192.png'];
+    writeFileSync(join(web, 'sw.js'), worker(all));
+    assert.deepEqual(missingFromPrecache(web), []);
+    writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => !url.startsWith('main.dart.js'))));
+    assert.deepEqual(missingFromPrecache(web), ['main.dart.js', 'main.dart.js_1.part.js']);
+    // Unminified, as Workbox's development mode writes it.
+    writeFileSync(join(web, 'sw.js'), `precacheAndRoute(${JSON.stringify(all.slice(1).map((url) => ({ url, revision: '1' })), null, 2)});`);
+    assert.deepEqual(missingFromPrecache(web), ['index.html']);
+    writeFileSync(join(web, 'sw.js'), 'self.addEventListener("fetch", () => {});');
+    assert.throws(() => missingFromPrecache(web), /precaches nothing/);
+  });
+
+  it('is checked in CI, once Workbox has written it, before the build is uploaded', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const written = ci.indexOf('npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs');
+    const checked = ci.indexOf('node tool/web/sw_build.cjs check build/web');
+    assert.ok(written >= 0 && checked > written, 'the check follows the worker');
+    assert.ok(checked < ci.indexOf('name: web\n'), 'and comes before the upload');
+    // No size of its own leaves a file out.
+    const limit = /maximumFileSizeToCacheInBytes: (.+),/.exec(read('workbox-config.cjs'));
+    assert.ok(limit && Function(`return ${limit[1]}`)() >= 32 * 1024 * 1024, 'room for any main.dart.js');
   });
 
   it("serves the app for any of its pages' addresses, offline too, and leaves files to the server", () => {

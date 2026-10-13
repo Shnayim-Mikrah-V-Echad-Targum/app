@@ -157,7 +157,11 @@ jobs:
         run: cp build/web/index.html build/web/404.html
       # Last, so it precaches the finished files (workbox-config.cjs).
       - name: Offline service worker
-        run: npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
+        run: |
+          npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
+          # Workbox only warns of a file it leaves out; without the app's
+          # own files, the app never opens offline.
+          node tool/web/sw_build.cjs check build/web
       - uses: actions/upload-artifact@v4
         with:
           name: web
@@ -252,6 +256,17 @@ jobs:
           cache: true
       - run: flutter build windows --release ${{ env.DART_DEFINES }}
         shell: bash
+      # The folder runs on a PC without the Visual C++ Redistributable only
+      # with the runtime beside the executable (windows/CMakeLists.txt).
+      - name: The Visual C++ runtime is in the folder
+        shell: bash
+        run: |
+          for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+            if [ ! -f "build/windows/x64/runner/Release/$dll" ]; then
+              echo "::error file=windows/CMakeLists.txt::$dll is missing from the Windows build, which then won't start on a PC without the Visual C++ Redistributable"
+              exit 1
+            fi
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: windows
