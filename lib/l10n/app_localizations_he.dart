@@ -737,7 +737,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dayPaused => 'בהשהיה';
 
   @override
-  String get dayOpen => 'עדיין לא';
+  String get dayOpen => 'עדיין לא נקרא';
 
   @override
   String get dayMissed => 'לא נקרא';

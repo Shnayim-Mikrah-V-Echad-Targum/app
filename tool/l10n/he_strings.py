@@ -155,7 +155,7 @@ HE = {
   "dayCaughtUp": "הושלם למחרת",
   "dayGrace": "מכוסה ביום חסד",
   "dayPaused": "בהשהיה",
-  "dayOpen": "עדיין לא",
+  "dayOpen": "עדיין לא נקרא",
   "dayMissed": "לא נקרא",
   "dayRest": "שבת או יום טוב",
   "dayUpcoming": "בהמשך",

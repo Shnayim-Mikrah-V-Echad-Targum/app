@@ -754,7 +754,10 @@
   "dayCaughtUp": "Caught up",
   "dayGrace": "Covered by a grace day",
   "dayPaused": "Paused",
-  "dayOpen": "Not yet",
+  "dayOpen": "Not read yet",
+  "@dayOpen": {
+    "description": "In the week strip, a planned day gone by whose reading is still to do and can still be caught up (drawn in the overdue colour), and today until its reading is done. Pairs with dayMissed ('Not read'), a day gone by that can no longer be caught up."
+  },
   "dayMissed": "Not read",
   "dayRest": "Shabbat or Yom Tov",
   "dayUpcoming": "Upcoming",
@@ -777,7 +780,7 @@
       },
       "status": {
         "type": "String",
-        "example": "Not yet"
+        "example": "Not read yet"
       }
     }
   },
@@ -3093,7 +3096,7 @@
       },
       "status": {
         "type": "String",
-        "example": "Not yet"
+        "example": "Not read yet"
       }
     }
   },

@@ -719,7 +719,9 @@ extension DayDisplayX on DayDisplay {
 
   /// The day's glyph in the week strip (docs/DESIGN_SYSTEM.md §6.13), [size]
   /// square: a filled disc for a day that counts, a ring and dot for today,
-  /// outlines for days still open or to come, the candles for a rest day.
+  /// a day gone by and still to read in the overdue colour (as the week page
+  /// marks its aliyot), an outline for a day to come, the candles for a rest
+  /// day.
   Widget icon(BuildContext context, {double size = 22}) {
     final scheme = Theme.of(context).colorScheme;
     final status = StatusColors.of(context);
@@ -729,7 +731,7 @@ extension DayDisplayX on DayDisplay {
       DayDisplay.caughtUp => _DayDisc(Icons.published_with_changes, size: size),
       DayDisplay.grace => Icon(Icons.shield_outlined, size: size, color: status.grace),
       DayDisplay.paused => Icon(Icons.pause_circle_outline, size: size, color: scheme.onSurfaceVariant),
-      DayDisplay.open => Icon(Icons.radio_button_unchecked, size: size, color: scheme.onSurfaceVariant),
+      DayDisplay.open => Icon(Icons.history, size: size, color: status.overdue),
       DayDisplay.today => TodayMark(size: size),
       DayDisplay.missed => Icon(Icons.remove_circle_outline, size: size, color: status.neutral),
       DayDisplay.rest => ShabbatCandlesIcon(size: size, color: status.rest),

@@ -730,7 +730,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dayPaused => 'Paused';
 
   @override
-  String get dayOpen => 'Not yet';
+  String get dayOpen => 'Not read yet';
 
   @override
   String get dayMissed => 'Not read';

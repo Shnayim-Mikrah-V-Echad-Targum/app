@@ -703,14 +703,14 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
   - Ahead / caught up: the same disc with the existing fast_forward / published_with_changes glyph.
   - Grace: `shield_outlined` in grace.
   - Missed: `remove_circle_outline` in neutral.
-  - Open (past, unread): `radio_button_unchecked` in onSurfaceVariant.
+  - Open (past, unread): `history` in overdue, as the week page's overdue line; labelled `dayOpen` ("Not read yet" / "עדיין לא נקרא"), the pair of Missed's `dayMissed` ("Not read").
   - Upcoming: `circle_outlined` in **outline** (was outlineVariant, D16).
   - No reading: `horizontal_rule` in outline.
 - Fills are `Ink`, so a press shows on them. A glyph that changes cross-fades over `Motion.medium` (§8).
 - `LayoutBuilder`: when a seventh of the width is under 48, or under the widest weekday label at the current text size, the strip takes two rows, Sunday to Wednesday and then Thursday to Shabbat, in a four-column grid.
 - A card around the strip alone uses `WeekStrip.cardPadding` (8), so the days stay in one row on a 412 dp phone (52 each).
 - `WeekStripLegendButton`: an `info_outline` IconButton (tooltip `statusLegend`) for the strip's card or section header. It opens a sheet that shows every glyph beside its label, today and rest days on their fills.
-- Each day is one node with the ink well's tap and focus, its label and tooltip `dayChipLabel` ("Tuesday: Not yet. Sheni"). Today's says so, so a screen reader can find it (WCAG 1.3.1): `dayChipLabelToday` ("Friday, today: Not yet. Shishi and Shevi’i" / "יום שישי, היום: …"), the weekday still first. It is not marked selected: today is not a choice the strip makes.
+- Each day is one node with the ink well's tap and focus, its label and tooltip `dayChipLabel` ("Tuesday: Not read yet. Sheni"). Today's says so, so a screen reader can find it (WCAG 1.3.1): `dayChipLabelToday` ("Friday, today: Not read yet. Shishi and Shevi’i" / "יום שישי, היום: …"), the weekday still first. It is not marked selected: today is not a choice the strip makes.
 
 ### 6.14 Torah map (progress_screen.dart tile())
 
