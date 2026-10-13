@@ -4,6 +4,7 @@
 #include <flutter_windows.h>
 
 #include <algorithm>
+#include <optional>
 
 #include "resource.h"
 
@@ -40,6 +41,16 @@ constexpr int kMinHeight = 560;
 
 // The most of its monitor's work area the window opens at.
 constexpr double kMaxWorkAreaShare = 0.9;
+
+// Where the window was when it was last closed, as a WINDOWPLACEMENT, to
+// open there again. The MSIX package's writes to HKCU stay its own, and go
+// with it when it is uninstalled.
+constexpr const wchar_t kWindowRegKey[] = L"Software\\ShnayimMikra\\Window";
+constexpr const wchar_t kPlacementRegValue[] = L"Placement";
+
+// How far below the window's top edge, in logical pixels, its title bar is
+// looked for: inside the bar, below the frame.
+constexpr int kTitleBarDepth = 16;
 
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
@@ -96,6 +107,77 @@ void CentreInWorkArea(HWND window, const Win32Window::Size& size) {
       static_cast<int>(work.top) + std::max(0, (work_height - height) / 2);
   SetWindowPos(window, nullptr, left, top, width, height,
                SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+// |rect|, given in the workspace coordinates of a WINDOWPLACEMENT, in screen
+// coordinates. The workspace's origin is the corner of the primary monitor's
+// work area, which a taskbar along its top or left moves.
+RECT ScreenFromWorkspace(const RECT& rect) {
+  RECT screen = rect;
+  MONITORINFO primary{};
+  primary.cbSize = sizeof(primary);
+  if (GetMonitorInfo(MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY),
+                     &primary)) {
+    OffsetRect(&screen, primary.rcWork.left - primary.rcMonitor.left,
+               primary.rcWork.top - primary.rcMonitor.top);
+  }
+  return screen;
+}
+
+// Where the window was when it was last closed, if it can open there again:
+// on a screen that is still connected, with its title bar on a screen to move
+// it by, and no smaller than the window can be at that screen's scale.
+std::optional<WINDOWPLACEMENT> LoadWindowPlacement() {
+  WINDOWPLACEMENT placement{};
+  DWORD size = sizeof(placement);
+  if (RegGetValue(HKEY_CURRENT_USER, kWindowRegKey, kPlacementRegValue,
+                  RRF_RT_REG_BINARY, nullptr, &placement,
+                  &size) != ERROR_SUCCESS ||
+      size != sizeof(placement) || placement.length != sizeof(placement)) {
+    return std::nullopt;
+  }
+  const RECT bounds = ScreenFromWorkspace(placement.rcNormalPosition);
+  HMONITOR monitor = MonitorFromRect(&bounds, MONITOR_DEFAULTTONULL);
+  if (monitor == nullptr) {
+    return std::nullopt;
+  }
+  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+  if (bounds.right - bounds.left < Scale(kMinWidth, scale_factor) ||
+      bounds.bottom - bounds.top < Scale(kMinHeight, scale_factor)) {
+    return std::nullopt;
+  }
+  const POINT title_bar{bounds.left + (bounds.right - bounds.left) / 2,
+                        bounds.top + Scale(kTitleBarDepth, scale_factor)};
+  if (MonitorFromPoint(title_bar, MONITOR_DEFAULTTONULL) == nullptr) {
+    return std::nullopt;
+  }
+  return placement;
+}
+
+// Remembers where |window| is, for LoadWindowPlacement.
+void SaveWindowPlacement(HWND window) {
+  WINDOWPLACEMENT placement{};
+  placement.length = sizeof(placement);
+  if (!GetWindowPlacement(window, &placement)) {
+    return;
+  }
+  HKEY key;
+  if (RegCreateKeyEx(HKEY_CURRENT_USER, kWindowRegKey, 0, nullptr,
+                     REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, nullptr, &key,
+                     nullptr) != ERROR_SUCCESS) {
+    return;
+  }
+  RegSetValueEx(key, kPlacementRegValue, 0, REG_BINARY,
+                reinterpret_cast<const BYTE*>(&placement), sizeof(placement));
+  RegCloseKey(key);
+}
+
+// Whether the window of |placement| was maximized, or minimized from
+// maximized.
+bool WasMaximized(const WINDOWPLACEMENT& placement) {
+  return placement.showCmd == SW_SHOWMAXIMIZED ||
+         (placement.showCmd == SW_SHOWMINIMIZED &&
+          (placement.flags & WPF_RESTORETOMAXIMIZED) != 0);
 }
 
 // Whether Windows repaints a title bar as soon as its theme changes, as
@@ -183,25 +265,50 @@ bool Win32Window::Create(const std::wstring& title, const Size& size) {
   const wchar_t* window_class =
       WindowClassRegistrar::GetInstance()->GetWindowClass();
 
-  // Windows picks the position, and with it the monitor; the window is then
-  // sized for that monitor and centred on it, before it is shown.
-  HWND window = CreateWindow(
-      window_class, title.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr,
-      GetModuleHandle(nullptr), this);
+  // The window reopens where it was last closed, created there so that it
+  // takes that monitor's DPI from the start. Otherwise Windows picks the
+  // position, and with it the monitor; the window is then sized for that
+  // monitor and centred on it. Either way, before it is shown.
+  const std::optional<WINDOWPLACEMENT> placement = LoadWindowPlacement();
+  int left = CW_USEDEFAULT;
+  int top = CW_USEDEFAULT;
+  int width = CW_USEDEFAULT;
+  int height = CW_USEDEFAULT;
+  if (placement) {
+    const RECT bounds = ScreenFromWorkspace(placement->rcNormalPosition);
+    left = static_cast<int>(bounds.left);
+    top = static_cast<int>(bounds.top);
+    width = static_cast<int>(bounds.right - bounds.left);
+    height = static_cast<int>(bounds.bottom - bounds.top);
+  }
+  HWND window = CreateWindow(window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
+                             left, top, width, height, nullptr, nullptr,
+                             GetModuleHandle(nullptr), this);
 
   if (!window) {
     return false;
   }
 
-  CentreInWorkArea(window, size);
+  if (placement) {
+    // Its exact place, kept hidden: Show maximizes it if it was, and never
+    // opens it minimized.
+    WINDOWPLACEMENT hidden = *placement;
+    hidden.flags = 0;
+    hidden.showCmd = SW_HIDE;
+    SetWindowPlacement(window, &hidden);
+    show_maximized_ = WasMaximized(*placement);
+  } else {
+    CentreInWorkArea(window, size);
+  }
   UpdateTheme(window);
 
   return OnCreate();
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  const int command = show_maximized_ ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+  show_maximized_ = false;
+  return ShowWindow(window_handle_, command);
 }
 
 // static
@@ -231,6 +338,8 @@ Win32Window::MessageHandler(HWND hwnd,
                             LPARAM const lparam) noexcept {
   switch (message) {
     case WM_DESTROY:
+      // To reopen there (see Create).
+      SaveWindowPlacement(hwnd);
       window_handle_ = nullptr;
       Destroy();
       if (quit_on_close_) {
