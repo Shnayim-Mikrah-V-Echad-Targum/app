@@ -6,7 +6,7 @@
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,6 +17,8 @@ const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
 const { cacheNames, fileNavigation, missingFromPrecache, writeUpdateScript } = require('./sw_build.cjs');
+// Glob matching as Workbox's globPatterns use it (Node 20.17 and later).
+const { matchesGlob } = require('node:path');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
@@ -720,6 +722,51 @@ describe("the service worker's update", () => {
   });
 });
 
+/// workbox-config.cjs as Workbox reads it, for a build whose caches are
+/// CURRENT.
+function workboxConfig() {
+  const module = { exports: {} };
+  const required = {
+    'node:path': require('node:path'),
+    './tool/web/sw_build.cjs': {
+      cacheNames: () => CURRENT,
+      fileNavigation,
+      writeUpdateScript: () => 'sw_update.0123456789ab.js',
+    },
+  };
+  vm.runInNewContext(read('workbox-config.cjs'), {
+    module,
+    exports: module.exports,
+    __dirname: '/repo',
+    require: (name) => required[name] ?? assert.fail(`workbox-config.cjs requires ${name}`),
+  });
+  return module.exports;
+}
+
+/// The files the app bundles, pubspec.yaml's assets and fonts, at their
+/// paths in the web build (assets/<asset>). A folder holds the files
+/// directly in it.
+function bundledAssets() {
+  const lines = read('pubspec.yaml').split('\n');
+  const declared = [];
+  for (const line of lines.slice(lines.indexOf('  assets:') + 1)) {
+    if (/^ {0,2}\S/.test(line)) break;
+    const entry = /^ {4}- (\S+)$/.exec(line);
+    if (entry) declared.push(entry[1]);
+  }
+  for (const line of lines) {
+    const font = /^\s+- asset: (\S+)$/.exec(line);
+    if (font) declared.push(font[1]);
+  }
+  return declared
+    .flatMap((asset) => {
+      if (!asset.endsWith('/')) return [asset];
+      const dir = new URL(asset, ROOT);
+      return readdirSync(dir).filter((name) => statSync(new URL(name, dir)).isFile()).map((name) => asset + name);
+    })
+    .map((asset) => `assets/${asset}`);
+}
+
 describe('the build', () => {
   /// A build/web with an engine revision and the given texts.
   function build(texts) {
@@ -773,11 +820,15 @@ describe('the build', () => {
     }
     const entry = (url) => `{url:"${url}",revision:"0123"}`;
     const worker = (urls) => `define(["./workbox-1"],(function(e){"use strict";e.precacheAndRoute([${urls.map(entry).join(',')}],{})}));`;
-    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', 'icons/Icon-192.png'];
+    const legal = 'assets/assets/legal/legal.json';
+    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', legal, 'icons/Icon-192.png'];
     writeFileSync(join(web, 'sw.js'), worker(all));
     assert.deepEqual(missingFromPrecache(web), []);
     writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => !url.startsWith('main.dart.js'))));
     assert.deepEqual(missingFromPrecache(web), ['main.dart.js', 'main.dart.js_1.part.js']);
+    // The policies' text, without which their pages show only an error.
+    writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => url !== legal)));
+    assert.deepEqual(missingFromPrecache(web), [legal]);
     // Unminified, as Workbox's development mode writes it.
     writeFileSync(join(web, 'sw.js'), `precacheAndRoute(${JSON.stringify(all.slice(1).map((url) => ({ url, revision: '1' })), null, 2)});`);
     assert.deepEqual(missingFromPrecache(web), ['index.html']);
@@ -843,6 +894,31 @@ describe('the build', () => {
     assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, 'nothing changes it after');
     assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
     assert.match(read('docs/RELEASE.md'), /`cp build\/web\/index\.html build\/web\/404\.html`/);
+  });
+
+  // The policies' text (assets/legal/legal.json) was neither precached nor
+  // cached on use: offline, /legal/privacy and About's policies showed only
+  // "Something went wrong".
+  it('keeps every file the app bundles for offline use, the policies precached', () => {
+    const config = workboxConfig();
+    const precached = (path) =>
+      config.globPatterns.some((glob) => matchesGlob(path, glob)) && !config.globIgnores.some((glob) => matchesGlob(path, glob));
+    const cachedOnUse = (path) =>
+      config.runtimeCaching.some(({ urlPattern }) => typeof urlPattern.test === 'function' && urlPattern.test(`https://example.org/app/${path}`));
+    const assets = bundledAssets();
+    assert.ok(assets.length > 20, 'the app bundles its files');
+    for (const path of assets) assert.ok(precached(path) || cachedOnUse(path), path);
+    // Precached, not cached on use, or a policy never opened online would
+    // not open offline.
+    for (const path of ['assets/assets/legal/legal.json', 'assets/assets/data/parshiyot.json']) {
+      assert.ok(assets.includes(path), path);
+      assert.ok(precached(path), path);
+    }
+    // The books, the fonts loaded on demand: cached as they are read, as the
+    // update script keeps them.
+    for (const path of assets.filter((p) => /^assets\/assets\/(text|fonts\/(optional|rashi))\//.test(p))) {
+      assert.ok(!precached(path) && cachedOnUse(path), path);
+    }
   });
 
   it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {

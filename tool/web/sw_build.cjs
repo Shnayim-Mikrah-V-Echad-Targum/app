@@ -2,7 +2,7 @@
 // workbox-config.cjs: the runtime caches' names, and the script that keeps
 // them across an update (tool/web/sw_update.js), written into build/web;
 // which pages the worker leaves to the network; and, once Workbox has
-// written the worker, whether it precaches what the app needs to start.
+// written the worker, whether it precaches what the app needs offline.
 const { createHash } = require('node:crypto');
 const { readFileSync, readdirSync, writeFileSync } = require('node:fs');
 const { join, relative } = require('node:path');
@@ -64,12 +64,14 @@ function writeUpdateScript(web, caches) {
 /// Tested against a URL's path and query, as Workbox's NavigationRoute does.
 const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
 
-/// The files of [web] without which the app can't start offline, and which
-/// the service worker Workbox wrote there (sw.js) leaves out of its
-/// precache: the page, the bootstrap, the app itself and its deferred parts.
-/// Workbox passes over a file larger than maximumFileSizeToCacheInBytes with
-/// no more than a warning, and the app then opens offline on its loading
-/// screen, for good; CI checks the worker with this.
+/// The files of [web] that the app needs offline, and which the service
+/// worker Workbox wrote there (sw.js) leaves out of its precache: the page,
+/// the bootstrap, the app itself and its deferred parts, without which it
+/// can't start, and the policies' text, without which their pages
+/// (lib/features/about/legal_texts.dart) show only an error. Workbox passes
+/// over a file larger than maximumFileSizeToCacheInBytes with no more than a
+/// warning, and the app then opens offline on its loading screen, for good;
+/// CI checks the worker with this.
 function missingFromPrecache(web) {
   const worker = readFileSync(join(web, 'sw.js'), 'utf8');
   // {url:"main.dart.js",revision:"…"}, minified or not.
@@ -81,6 +83,7 @@ function missingFromPrecache(web) {
     'flutter_bootstrap.js',
     'main.dart.js',
     ...readdirSync(web).filter((name) => /^main\.dart\.js_\d+\.part\.js$/.test(name)).sort(),
+    'assets/assets/legal/legal.json',
   ];
   return needed.filter((name) => !precached.has(name));
 }
@@ -96,7 +99,7 @@ if (require.main === module) {
   }
   const missing = missingFromPrecache(web);
   for (const name of missing) {
-    console.log(`::error file=workbox-config.cjs::The service worker doesn't precache ${name}, so the app won't open offline`);
+    console.log(`::error file=workbox-config.cjs::The service worker doesn't precache ${name}, which the app needs offline`);
   }
   process.exit(missing.length === 0 ? 0 : 1);
 }
