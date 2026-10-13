@@ -15,6 +15,7 @@ import 'package:shnayim_mikra/features/reader/pass_track.dart';
 import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart';
+import 'package:shnayim_mikra/features/reader/step_page.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/services/tts.dart';
@@ -1709,6 +1710,125 @@ void main() {
       expect(message, findsOneWidget);
       expect(tester.getRect(message).bottom, lessThanOrEqualTo(tester.getRect(find.byType(ReaderBottomBar)).top));
     });
+  });
+
+  group('on a large screen, read verse by verse', () {
+    Future<ProviderContainer> open(WidgetTester tester, {Size size = const Size(800, 1180), AppSettings? settings}) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(
+        tester,
+        settings: settings ?? const AppSettings(onboardingComplete: true, notificationPromptShown: true),
+        now: monday,
+      );
+      c.read(routerProvider).go('/read/5787:2/0');
+      await loadTexts(tester);
+      return c;
+    }
+
+    final step = find.byWidgetPredicate((w) => w is ScriptureVerse && !w.dimmed);
+    final neighbours = find.byWidgetPredicate((w) => w is ScriptureVerse && w.dimmed);
+    List<int> numbers(WidgetTester tester, Finder verses) =>
+        [for (final v in tester.widgetList<ScriptureVerse>(verses)) v.verse.ref.verse];
+
+    // Whether [verse] is on the page: laid out with the step, it may be left
+    // out, where it doesn't fit whole.
+    bool onPage(WidgetTester tester, Finder verse) {
+      final page = tester.renderObject<RenderFitsWhole>(find.byType(FitsWhole));
+      RenderObject? node = tester.renderObject(verse);
+      while (node != null && node.parent != page) {
+        node = node.parent;
+      }
+      return page.shown.contains(node);
+    }
+
+    ScrollPosition text(WidgetTester tester) => tester
+        .stateList<ScrollableState>(find.byType(Scrollable))
+        .firstWhere((s) => s.position.axis == Axis.vertical)
+        .position;
+
+    testWidgets("the step's verse stands among its neighbours, dimmed, unheard and untouchable, and Next goes on one verse",
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = await open(tester);
+      expect(find.text('Verse 1 of 14'), findsOneWidget);
+      // Genesis 6:9 in full ink, the first of the aliyah, with no verse before
+      // it, and the three after it dimmed, in the Torah.
+      expect(numbers(tester, step), [9]);
+      expect(numbers(tester, neighbours), [10, 11, 12]);
+      expect(tester.widgetList<ScriptureVerse>(neighbours).every((v) => v.kind == ScriptureKind.mikra && v.hangingNumber), isTrue);
+      expect(tester.getTopLeft(neighbours.first).dy, greaterThan(tester.getBottomLeft(step).dy));
+      // As many as fit whole on the page, which never scrolls for them.
+      expect(onPage(tester, neighbours.first), isTrue);
+      final barTop = tester.getTopLeft(find.byType(ReaderBottomBar)).dy;
+      for (final verse in [for (var i = 0; i < 3; i++) neighbours.at(i)]) {
+        if (onPage(tester, verse)) expect(tester.getBottomLeft(verse).dy, lessThanOrEqualTo(barTop));
+      }
+      expect(text(tester).maxScrollExtent, 0);
+      // Dimmed, in an ink that still reads at 4.5:1.
+      await expectLater(
+        tester,
+        meetsGuideline(CustomMinimumContrastGuideline(finder: neighbours.first, minimumRatio: 4.5)),
+      );
+
+      // Screen readers hear the step's verse alone.
+      expect(find.bySemanticsLabel(RegExp(r'^Verse 9\. ')), findsOneWidget);
+      for (final n in [10, 11, 12]) {
+        expect(find.bySemanticsLabel(RegExp('^Verse $n\\. ')), findsNothing);
+      }
+      // A long press on a neighbour opens nothing; on the step's verse, its
+      // options.
+      await tester.longPress(neighbours.first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.longPress(step);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tapAt(const Offset(400, 40));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+
+      // The Targum's neighbours are in the Targum.
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Read the Targum'), findsOneWidget);
+      expect(numbers(tester, step), [9]);
+      expect(tester.widgetList<ScriptureVerse>(neighbours).every((v) => v.kind == ScriptureKind.targum), isTrue);
+      expect(find.bySemanticsLabel(RegExp(r'^Targum, verse 9\. ')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Targum, verse 10\. ')), findsNothing);
+
+      // Next reads on one verse: 6:10, with 6:9, just read, above it.
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('Verse 2 of 14'), findsOneWidget);
+      expect(find.text('Read the Hebrew'), findsOneWidget);
+      expect(numbers(tester, step), [10]);
+      expect(numbers(tester, neighbours), [9, 11, 12, 13]);
+      expect(onPage(tester, neighbours.first), isTrue);
+      expect(tester.getBottomLeft(neighbours.first).dy, lessThan(tester.getTopLeft(step).dy));
+      expect(c.read(progressProvider).week('5787:2').positions[0], [1, 1, 1]);
+      handle.dispose();
+    });
+
+    for (final (what, size, settings, textScale) in [
+      ('on a phone', const Size(412, 915), null, 1.0),
+      ('in a window under 720 tall', const Size(1366, 700), null, 1.0),
+      ('at twice the text size', const Size(800, 1180), null, 2.0),
+      ('in high contrast', const Size(800, 1180), const AppSettings(onboardingComplete: true, theme: AppThemeMode.highContrastLight), 1.0),
+      ('read by section', const Size(800, 1180), const AppSettings(onboardingComplete: true, method: ReadingMethod.sectionBySection), 1.0),
+    ]) {
+      testWidgets("the step's verse stands alone $what", (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = textScale;
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        await open(tester, size: size, settings: settings);
+        expect(find.text('Read the Hebrew'), findsOneWidget);
+        expect(step, findsWidgets);
+        expect(neighbours, findsNothing);
+      });
+    }
   });
 
   testWidgets('a section mark between verses is a rubric, like one inside a verse', (tester) async {

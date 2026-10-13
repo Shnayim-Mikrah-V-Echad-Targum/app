@@ -317,6 +317,12 @@ const _screens = {
   // section: the verses up to a petuchah, and its mark.
   'reader_chapter': '/read/5787:1/2',
   'reader_section': '/read/5787:1/2',
+  // On a tablet or a desktop, the step's verse among its neighbours: the
+  // verse just read above it and those to come after it, dimmed. At
+  // Genesis 3:4, the Hebrew and the Targum; and at 3:15, before a setumah.
+  'reader_neighbours': '/read/5787:1/2',
+  'reader_neighbours_targum': '/read/5787:1/2',
+  'reader_neighbours_section': '/read/5787:1/2',
   // Rashi beside the full text, in square letters and in Rashi script, and
   // read in the Targum's place in the guided reader.
   'reader_rashi': '/read/5787:1/2?mode=full',
@@ -1012,6 +1018,17 @@ final _screenProgress = <String, ProgressState Function()>{
       }),
   'reader_chapter': () => ProgressState(weeks: {
         '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [6, 6, 6]),
+      }),
+  // Shlishi read through 3:3, so that the guided reader opens at 3:4, its
+  // tenth verse; through 3:4 but for its Targum; and through 3:14.
+  'reader_neighbours': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [9, 9, 9]),
+      }),
+  'reader_neighbours_targum': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [10, 10, 9]),
+      }),
+  'reader_neighbours_section': () => ProgressState(weeks: {
+        '5787:1': WeekProgress(weekId: '5787:1').withPosition(2, const [20, 20, 20]),
       }),
   // Both Hebrew readings of Genesis 2:20 done: Rashi is next.
   'reader_rashi_step': () => ProgressState(weeks: {
@@ -2301,8 +2318,13 @@ const _desktopScreens = {
   'reader_parsha_menu',
   'reader_display_side',
   'reader_focus',
+  'reader_chapter',
+  'reader_neighbours',
+  'reader_neighbours_targum',
+  'reader_neighbours_section',
   'reader_section',
   'reader_rashi',
+  'reader_rashi_step',
   'reader_keys',
   'reader_keys_web',
   'reader_gaps',

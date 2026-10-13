@@ -40,6 +40,7 @@ import 'pass_track.dart';
 import 'reader_bottom_bar.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
+import 'step_page.dart';
 import 'verse_actions_sheet.dart';
 import 'verse_anchor.dart';
 import 'whole_parsha.dart';
@@ -2005,11 +2006,27 @@ class _GuidedStep extends StatelessWidget {
   static const _fade = Duration(milliseconds: 180);
 
   /// The steps cross-fading in place from the top, where the default would
-  /// centre a short step halfway down a long one.
+  /// centre a short step halfway down a long one. Each is given the room
+  /// left on the page, which its verse's neighbours fill.
   static Widget _fromTop(Widget? current, List<Widget> previous) => Stack(
         alignment: AlignmentDirectional.topStart,
+        fit: StackFit.passthrough,
         children: [...previous, ?current],
       );
+
+  /// Between the step's verse and its neighbours.
+  static const double _neighbourGap = 28;
+
+  /// Between one neighbour after the step's verse and the next, as between
+  /// the verses of a step.
+  static const double _gapAfter = 20;
+
+  /// The most verses shown after the step's, as far as they fit.
+  static const _versesAfter = 3;
+
+  /// The window's height, at the default reading size, from which the
+  /// step's verse is shown among its neighbours.
+  static const _neighbourHeight = 720.0;
 
   @override
   Widget build(BuildContext context) {
@@ -2126,94 +2143,145 @@ class _GuidedStep extends StatelessWidget {
     // that read it, not the Targum's or Rashi's.
     final hebrewStep = kind != StepKind.targum && kind != StepKind.rashi;
 
-    return Scrollbar(
-      controller: scroll,
-      child: SingleChildScrollView(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: styles.maxLineWidth),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (notice case final notice?) ...[notice, const Gap(16)],
-                // It stays as the step changes, and its bars fill as it does.
-                // Its labels, and its check, grow to twice their size at
-                // most, as the step's title beneath and the rest of the
-                // chrome.
-                MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: ReaderScreen.chromeMaxTextScale,
-                  child: PassTrack(steps: steps, step: step),
-                ),
-                const Gap(8),
-                AnimatedSwitcher(
-                  duration: Motion.of(context).d(_fade),
-                  layoutBuilder: _fromTop,
-                  child: KeyedSubtree(
-                    key: ValueKey((aliyah, chunk, step)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Semantics(
-                          container: true,
-                          // Spoken by the reader's announcement where there
-                          // is one, and elsewhere as it appears.
-                          liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
-                          label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
-                          child: ExcludeSemantics(
-                            child: Text(
-                              stepTitle,
-                              style: theme.textTheme.bodyLarge,
-                              // At most twice its size, as the rest of the
-                              // chrome, so that the verse shows beneath it.
-                              textScaler: MediaQuery.textScalerOf(context)
-                                  .clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
-                            ),
-                          ),
-                        ),
-                        const Gap(12),
-                        for (final (i, r) in refs.indexed) ...[
-                          if (secondParsha case final second? when r == second.start) second.heading(settings),
-                          if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
-                          // The Targum again, after the Hebrew of a verse read
-                          // a third time among it.
-                          if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
-                            hanging(LayerLabel(l.targumLabel)),
-                          // The verse and what goes with it, highlighted
-                          // together while Listen reads it.
-                          SpeakingVerseMark(
-                            active: r == speakingVerse,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                layerFor(r),
-                                if (settings.showRashi &&
-                                    kind != StepKind.rashi &&
-                                    texts.rashi != null &&
-                                    texts.rashi!.on(r).isNotEmpty) ...[
-                                  const Gap(4),
-                                  hanging(LayerLabel(l.rashiLabel)),
-                                  rashi(texts.rashi!.on(r)),
-                                ],
-                              ],
-                            ),
-                          ),
-                          if (texts.mikra.breaks[r] case final brk? when hebrewStep)
-                            SectionGap(kind: brk, settings: settings)
-                          else if (i < refs.length - 1)
-                            const Gap(20),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final title = Semantics(
+      container: true,
+      // Spoken by the reader's announcement where there is one, and
+      // elsewhere as it appears.
+      liveRegion: !quiet && !MediaQuery.supportsAnnounceOf(context),
+      label: '$stepTitle\n${l.stepOf(step + 1, steps.length)}',
+      child: ExcludeSemantics(
+        child: Text(
+          stepTitle,
+          style: theme.textTheme.bodyLarge,
+          // At most twice its size, as the rest of the chrome, so that the
+          // verse shows beneath it.
+          textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: ReaderScreen.chromeMaxTextScale),
         ),
       ),
     );
+
+    final verses = [
+      for (final (i, r) in refs.indexed) ...[
+        if (secondParsha case final second? when r == second.start) second.heading(settings),
+        if (r.verse == 1) ChapterHeading(chapter: r.chapter, settings: settings),
+        // The Targum again, after the Hebrew of a verse read a third time
+        // among it.
+        if (kind == StepKind.targum && i > 0 && flow.thirdHebrewInTargum(chunk, refs[i - 1]))
+          hanging(LayerLabel(l.targumLabel)),
+        // The verse and what goes with it, highlighted together while Listen
+        // reads it.
+        SpeakingVerseMark(
+          active: r == speakingVerse,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              layerFor(r),
+              if (settings.showRashi && kind != StepKind.rashi && texts.rashi != null && texts.rashi!.on(r).isNotEmpty) ...[
+                const Gap(4),
+                hanging(LayerLabel(l.rashiLabel)),
+                rashi(texts.rashi!.on(r)),
+              ],
+            ],
+          ),
+        ),
+        if (texts.mikra.breaks[r] case final brk? when hebrewStep)
+          SectionGap(kind: brk, settings: settings)
+        else if (i < refs.length - 1)
+          const Gap(20),
+      ],
+    ];
+
+    // A neighbour of the step's verse, for context: in the step's own text,
+    // dimmed, and neither heard nor touched, so that the step's verse is the
+    // only one to read, and the one Next and Back go on from.
+    final targumStep = kind == StepKind.targum;
+    Widget neighbour(VerseRef r) => ExcludeSemantics(
+          child: IgnorePointer(
+            child: ScriptureVerse(
+              verse: (targumStep ? texts.onkelos! : texts.mikra).verse(r),
+              kind: targumStep ? ScriptureKind.targum : ScriptureKind.mikra,
+              settings: settings,
+              dimmed: true,
+              hangingNumber: true,
+            ),
+          ),
+        );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const padding = EdgeInsets.fromLTRB(20, 16, 20, 24);
+        final page = constraints.maxHeight - padding.vertical;
+        final amongNeighbours = _amongNeighbours(context, styles);
+        // Among its neighbours, the verse just read is above the step's
+        // verse where the step still fits whole beneath it, and those to
+        // come are after it, as far as they fit whole on the page. A
+        // section's mark after the step's verse keeps the room it takes.
+        final c = flow.chunks[chunk];
+        final body = FitsWhole(
+          lead: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [title, const Gap(12)],
+          ),
+          before: amongNeighbours && c.start > 0 ? neighbour(flow.verses[c.start - 1]) : null,
+          main: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: verses),
+          after: [
+            if (amongNeighbours)
+              for (var i = c.end; i < min(c.end + _versesAfter, flow.verses.length); i++) neighbour(flow.verses[i]),
+          ],
+          beforeGap: _neighbourGap,
+          firstGap: hebrewStep && texts.mikra.breaks[refs.last] != null ? 0 : _neighbourGap,
+          gap: _gapAfter,
+        );
+        final children = [
+          if (notice case final notice?) ...[notice, const Gap(16)],
+          // It stays as the step changes, and its bars fill as it does. Its
+          // labels, and its check, grow to twice their size at most, as the
+          // step's title beneath and the rest of the chrome.
+          MediaQuery.withClampedTextScaling(
+            maxScaleFactor: ReaderScreen.chromeMaxTextScale,
+            child: PassTrack(steps: steps, step: step),
+          ),
+          const Gap(8),
+          AnimatedSwitcher(
+            duration: Motion.of(context).d(_fade),
+            layoutBuilder: _fromTop,
+            child: KeyedSubtree(key: ValueKey((aliyah, chunk, step)), child: body),
+          ),
+        ];
+        return Scrollbar(
+          controller: scroll,
+          child: SingleChildScrollView(
+            controller: scroll,
+            padding: padding,
+            child: Center(
+              child: ConstrainedBox(
+                // Among its neighbours, the step fills the page, and they
+                // fill what it leaves.
+                constraints: BoxConstraints(
+                  maxWidth: styles.maxLineWidth,
+                  minHeight: amongNeighbours ? max(0.0, page) : 0,
+                ),
+                child: ColumnToPage(children: children),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Whether the step's verse is shown among its neighbours (§9): read verse
+  /// by verse, in a window at least 600 wide and [_neighbourHeight] tall, or
+  /// taller in proportion as the Torah's lines are larger than they are at
+  /// the default size. Not in high contrast, which dims nothing.
+  bool _amongNeighbours(BuildContext context, ScriptureStyles styles) {
+    if (flow.method != ReadingMethod.verseByVerse) return false;
+    if (SeferColors.of(context).isHighContrast) return false;
+    final window = MediaQuery.sizeOf(context);
+    if (window.width < Breakpoints.medium) return false;
+    final line = MediaQuery.textScalerOf(context).scale(styles.sizeFor(ScriptureKind.mikra)) * styles.lineHeight;
+    final defaultLine = ScriptureStyles.baseHebrewSize * const AppSettings().lineHeight;
+    return window.height >= _neighbourHeight * line / defaultLine;
   }
 }
 

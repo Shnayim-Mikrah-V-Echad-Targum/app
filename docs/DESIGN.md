@@ -41,7 +41,7 @@ A visitor usually hears the local reading but keeps their home custom for Yom To
 - section by section, between the parasha breaks of the Torah scroll (Shelah, Gra)
 - aliyah by aliyah
 
-Verse by verse is the default because it is the easiest to follow on a phone.
+Verse by verse is the default because it is the easiest to follow on a phone. On a tablet or a desktop, where one verse would leave most of the page empty, the verse stands among its neighbours as on a page of a Chumash: the verse just read above it and the next few after it, dimmed, never spoken and never the step. Only the verse being read is in full ink, and Next still goes on one verse.
 
 **The second reading can be:**
 - Targum Onkelos (the default)
