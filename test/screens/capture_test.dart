@@ -574,6 +574,8 @@ const _screens = {
   // dialog (ringed outside, its text being at its edge).
   'focus_sheet_tile': '/today',
   'focus_dialog_tile': '/settings/data',
+  // A day listed in the read-date sheet: ringed, not washed.
+  'focus_date': '/week/5787:1',
   'focus_nav': '/today',
   // Today's tab, the selected one: at the very top of the rail, which
   // scrolls in a short window.
@@ -586,7 +588,13 @@ const _screens = {
   'menu': '/week/5787:1',
   'dialog': '/week/5787:1',
   'snackbar': '/week/5787:1',
+  // Asked when the whole parsha was read: the days of the week listed one
+  // by one on the Friday, and on the Monday after its Shabbat, the most
+  // there are; on the Tuesday, too many to list, behind Choose a date, whose
+  // picker marks the reading day as today at 1 a.m. on the Wednesday.
   'sheet_date': '/week/5787:1',
+  'sheet_date_monday': '/week/5787:1',
+  'sheet_date_picker': '/week/5787:1',
   'dialog_date': '/week/5787:1',
   'sheet_display': '/read/5787:1/2',
   // Drawn up to its full height.
@@ -838,6 +846,10 @@ final _screenNow = <String, DateTime>{
   'today_checkin': DateTime(2026, 10, 12, 11),
   'today_checkin_sheet': DateTime(2026, 10, 12, 11),
   'focus_sheet_tile': DateTime(2026, 10, 12, 11),
+  'sheet_date_monday': DateTime(2026, 10, 12, 11),
+  // Wednesday at 1 a.m.: still Tuesday's reading day.
+  'sheet_date_picker': DateTime(2026, 10, 14, 1),
+  'dialog_date': DateTime(2026, 10, 14, 1),
   'today_motzaei_shabbat': DateTime(2026, 10, 10, 20),
   'today_checkin_vezot': DateTime(2026, 10, 5, 11),
   'today_checkin_vezot_date': DateTime(2026, 10, 5, 11),
@@ -1631,10 +1643,16 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await _openWeekMenu(tester, item: 3);
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
   },
-  'sheet_date': (tester) => _openWeekMenu(tester, item: 2),
+  for (final screen in ['sheet_date', 'sheet_date_monday', 'sheet_date_picker'])
+    screen: (tester) => _openWeekMenu(tester, item: 2),
   'dialog_date': (tester) async {
     await _openWeekMenu(tester, item: 2);
-    await tester.tap(find.byIcon(Icons.edit_calendar));
+    await tester.tap(find.byIcon(Icons.edit_calendar_outlined));
+  },
+  'focus_date': (tester) async {
+    await _openWeekMenu(tester, item: 2);
+    // Tuesday, between two other days.
+    await _keyboardFocus(tester, find.descendant(of: find.byType(BottomSheet), matching: find.byType(PaperRow)).at(3));
   },
   'sheet_display': (tester) => tester.tap(find.byIcon(Icons.text_format)),
   'sheet_display_full': (tester) async {
@@ -1922,6 +1940,8 @@ const _bigPhoneScreens = {
   'account_delete',
   // The days of Yom Tov offered, more than a phone holds at this size.
   'today_checkin_vezot_date',
+  // The days of the week listed, more than a phone holds at this size.
+  'sheet_date_monday',
   // The day of rest's title page, taller than the space under the header.
   'today_shabbat',
   // A week's note on another division, wrapped as the plan above it.
@@ -1933,6 +1953,8 @@ const _hugeModes = {'huge', 'hugehe'};
 const _hugeScreens = {
   'today',
   'today_shabbat',
+  // The read-date sheet's rows stacked, their dates whole.
+  'sheet_date',
   // The Haftarah row with a detail line of two clauses.
   'today_chabad',
   'reader',
@@ -1994,6 +2016,8 @@ const _desktopScreens = {
   'today_checkin_yomtov',
   'today_divergence',
   'today_haftarah_left',
+  // The read-date sheet, at most 640 wide, over the week's two columns.
+  'sheet_date',
   'today_yomtov_oneday',
   'today_chabad',
   // Today's columns with a notice over the title page, with the strip's
@@ -2177,6 +2201,10 @@ const _bigTextScreens = {
   'focus_sheet_tile',
   'focus_dialog_tile',
   's_display',
+  'focus_date',
+  'sheet_date',
+  'sheet_date_monday',
+  'sheet_date_picker',
   's_a11y',
   'sheet_display_full',
   'parsha',

@@ -422,7 +422,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(mark);
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ListTile, 'Today'));
+    await tester.tap(find.widgetWithText(PaperRow, 'Today'));
     await tester.pumpAndSettle();
     expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
     expect(mark, findsNothing);
