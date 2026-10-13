@@ -575,7 +575,6 @@ class LabeledSlider extends StatelessWidget {
     final l = context.l10n;
     final divisions = ((max - min) / step).round();
     double snap(double v) => (min + ((v - min) / step).round() * step).clamp(min, max);
-    final textTheme = Theme.of(context).textTheme;
     // In line with the list tiles around it: 16 on a settings page, and a
     // sheet's own inset in a sheet (showAppSheet).
     final inset = ListTileTheme.of(context).contentPadding?.resolve(Directionality.of(context)) ??
@@ -587,16 +586,7 @@ class LabeledSlider extends StatelessWidget {
         children: [
           // The slider says all of this itself.
           ExcludeSemantics(
-            child: Row(
-              children: [
-                Expanded(child: Text(title, style: textTheme.bodyLarge)),
-                // Tabular figures, so the value doesn't jiggle as it changes.
-                Text(
-                  format(value),
-                  style: textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-                ),
-              ],
-            ),
+            child: _SliderHead(title: title, value: format(value), widest: [format(min), format(max)]),
           ),
           Row(
             children: [
@@ -632,6 +622,61 @@ class LabeledSlider extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// A [LabeledSlider]'s title with its value at the end of the line, or,
+/// where a word of the title would have to be set smaller to fit beside the
+/// value (large text on a phone), the value under the title: the title is
+/// never squeezed, as a stacked [PaperRow]'s isn't.
+class _SliderHead extends StatelessWidget {
+  const _SliderHead({required this.title, required this.value, required this.widest});
+
+  final String title;
+  final String value;
+
+  /// The values that may be widest, the least and the greatest, so that the
+  /// head keeps its layout as the value changes.
+  final List<String> widest;
+
+  /// What the value is allowed at least, as wide as a percentage: so that
+  /// the sliders of a group, whose values are as wide or narrower, decide
+  /// alike whether to set it under the title.
+  static const _allowance = '100%';
+
+  static const _gap = Space.md;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final titleStyle = textTheme.bodyLarge;
+    // Tabular figures, so the value doesn't jiggle as it changes.
+    final valueStyle = textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      // Measured as drawn: bold where the platform asks for bold text.
+      final drawn = MediaQuery.boldTextOf(context) ? valueStyle?.copyWith(fontWeight: FontWeight.bold) : valueStyle;
+      var valueWidth = 0.0;
+      for (final text in {value, ...widest, _allowance}) {
+        final painter = TextPainter(
+          text: TextSpan(text: text, style: drawn),
+          textDirection: direction,
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        valueWidth = math.max(valueWidth, painter.width);
+        painter.dispose();
+      }
+      final room = constraints.maxWidth - valueWidth - _gap;
+      final beside = room > 0 && WholeWords.scaleIn(context, title, width: room, style: titleStyle) >= 1;
+      final titleText = WholeWords(title, style: titleStyle, textAlign: TextAlign.start);
+      final valueText = Text(value, style: valueStyle);
+      if (beside) {
+        return Row(children: [Expanded(child: titleText), const Gap(_gap), valueText]);
+      }
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [titleText, valueText]);
+    });
   }
 }
 

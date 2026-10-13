@@ -632,7 +632,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 **Slider**
 - Active track primary, inactive outline (a boundary, at 3:1 or 4.5:1 in high contrast, so the whole range shows), the inactive part 2 high and the active part 6 (`SliderTrack`, app_theme.dart), so it reads apart from the inactive part by its weight, not only its colour: in high contrast primary and outline are barely apart (about 1.5:1); round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
-- Value at the end in labelLarge with tabular figures; −/+ IconButtons 48.
+- Value at the end in labelLarge with tabular figures, 12 clear of the title; −/+ IconButtons 48. Where a word of the title wouldn't fit beside the value at its size (large text on a phone, the value allowed at least a percentage's width), the value goes under the title rather than either being squeezed, and the title's words stay whole.
 
 **Scrollbar**
 - The thumb is outline, a boundary as the slider's track is, and onSurfaceVariant under the pointer or while dragged, on every platform (`scrollbarTheme`). It is named because Material's own thumb on Android is the theme's highlight colour made opaque, which here would be the press wash's ink (§6.5) in full.

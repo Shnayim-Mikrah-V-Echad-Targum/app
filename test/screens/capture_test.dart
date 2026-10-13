@@ -1994,6 +1994,8 @@ const _hugeTallScreens = {
   'browse',
   // The offer to move the daily reminder, its button under its text.
   's_reminders_far',
+  // The theme swatches' names, high contrast's on two lines, kept whole.
+  's_display',
   // Verses found, where words a maqaf joins part only if they must.
   'search_many',
   'search_spelling',
