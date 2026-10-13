@@ -828,6 +828,7 @@ class ScriptureVerse extends StatelessWidget {
     required this.settings,
     this.dimmed = false,
     this.secondary = false,
+    this.fullInk = false,
     this.showNumber = true,
     this.hangingNumber = false,
     this.ruled = false,
@@ -849,6 +850,11 @@ class ScriptureVerse extends StatelessWidget {
   /// Supporting text (the Torah beside Rashi, the Targum beneath the verse):
   /// a quieter ink that still meets text contrast requirements.
   final bool secondary;
+
+  /// In the Torah's full ink whatever its [kind]: the Targum read at its step
+  /// among its dimmed neighbours (§9), from which its own quieter ink would
+  /// stand barely apart (about 1.45:1).
+  final bool fullInk;
   final bool showNumber;
 
   /// The number hangs in a gutter at the verse's start, as in the guided
@@ -896,7 +902,7 @@ class ScriptureVerse extends StatelessWidget {
     final styles = ScriptureStyles(context, settings);
     final base = styles.style(
       kind,
-      color: dimmed ? dimInk : (secondary ? scheme.onSurfaceVariant : null),
+      color: dimmed ? dimInk : (secondary ? scheme.onSurfaceVariant : (fullInk ? scheme.onSurface : null)),
     );
     final muted = base.copyWith(
       color: dimmed ? dimInk : scheme.onSurfaceVariant,

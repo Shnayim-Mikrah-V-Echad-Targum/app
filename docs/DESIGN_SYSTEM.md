@@ -433,7 +433,7 @@ Rules:
 - Colour `onSurface`.
 
 **Targum**
-- 0.90× (was 0.92×), `onSurfaceVariant`, height `max(1.6, lineHeight - 0.1)`.
+- 0.90× (was 0.92×), `onSurfaceVariant` (`onSurface` at its own step in the guided reader where its verse stands among dimmed neighbours, §9), height `max(1.6, lineHeight - 0.1)`.
 - In full-text mode, add a 2 px `goldLeaf` rule at the scripture's start, the right in either language of the app, with 12 px padding. In high contrast it is a 2 px `outline` rule, undimmed in focus mode, since it marks structure (§3.1). Parallel columns set the Targum without it. The guided reader's block for a verse read a third time among the Targum is ruled at the right too (3 px `outline`), where the Hebrew begins.
 
 **Line breaks**
@@ -1314,6 +1314,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
   - After it, the verses to come, as many as fit whole on the page (up to eight are laid out, `_versesAfter`), so that short ones, as the Targum's, fill the page rather than leave it half blank: none is cut off at the bottom bar, nor makes the step scroll.
   - In `dimInk`, number and all, with the hanging number: 28 from the step's verse (where a section's mark follows the step's verse, it keeps its own room instead) and 20 from each other. No chapter heading, section mark, translation, Rashi or reader's marks of their own.
   - Not focusable, not spoken (outside the semantics tree) and not tappable: the step's verse is the only one in full ink, the only one heard, the one Listen highlights, and the one Next and Back go on from. They fade with the step (§8).
+  - At the Targum's step, so, its verse is set in `onSurface`, the Torah's full ink, rather than the Targum's `onSurfaceVariant` (`ScriptureVerse.fullInk`): beside neighbours in `dimInk`, the Targum's own ink would stand barely apart from them (1.45:1 in the light theme, 1.5 in sepia, 1.6 in dark, as Rashi's step's verse would), where full ink stands out as at the Hebrew's steps (3.2, 2.6 and 2.4:1). A phone, with no neighbours, keeps the Targum's ink.
   - A phone shows the step's verse alone.
 - Large text: the chrome around the text stops growing before the text does. The app bar's title grows to 1.34× (as Flutter's), and the ribbon, the pass track, the step's title, the bottom bar and Listen's player to 2×, the 200% that WCAG 1.4.4 asks for (`ReaderScreen.chromeMaxTextScale`); past that, only the scripture grows. At 300% on a 320 × 640 phone, the reader opens with the first line of a verse in view above the bottom bar, in either language.
 - A week not yet open, previewed from the Parsha screen or the Torah map: a NoticeBanner with `visibility_outlined`, `previewNotOpen(date)`, at the top of the text, above the pass track or the full text's first verse, and scrolling with it, so that it can never squeeze the text off the screen; it too grows to 200% at most. At 300% on a 320 × 640 phone its verse comes beneath it, a scroll away.

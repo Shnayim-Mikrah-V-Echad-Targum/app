@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,7 @@ import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
 import 'package:shnayim_mikra/services/tts.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/theme/motion.dart';
+import 'package:shnayim_mikra/ui/theme/sefer_colors.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
@@ -1799,6 +1802,24 @@ void main() {
       expect(numbers(tester, step), [9]);
       expect(neighbours, findsWidgets);
       expect(tester.widgetList<ScriptureVerse>(neighbours).every((v) => v.kind == ScriptureKind.targum), isTrue);
+      // The step's verse in full ink, as at the Hebrew's steps: the Targum's
+      // own quieter ink would stand barely apart from its dimmed neighbours.
+      final scheme = Theme.of(tester.element(step)).colorScheme;
+      final dimInk = SeferColors.of(tester.element(step)).dimInk;
+      // The inks a verse's paragraphs (and its hanging number) are set in.
+      Set<Color?> inksOf(Finder verse) => {
+            for (final t in tester.widgetList<RichText>(find.descendant(of: verse, matching: find.byType(RichText))))
+              (t.text as TextSpan).children?.whereType<TextSpan>().firstOrNull?.style?.color,
+          };
+      double ratio(Color a, Color b) {
+        final (la, lb) = (a.computeLuminance(), b.computeLuminance());
+        return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
+      }
+
+      expect(inksOf(step), allOf(contains(scheme.onSurface), isNot(contains(scheme.onSurfaceVariant))));
+      expect(inksOf(neighbours.first), contains(dimInk));
+      expect(ratio(scheme.onSurface, dimInk), greaterThan(3));
+      expect(ratio(scheme.onSurfaceVariant, dimInk), lessThan(1.6));
       expect(find.bySemanticsLabel(RegExp(r'^Targum, verse 9\. ')), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp(r'^Targum, verse 10\. ')), findsNothing);
 
@@ -1917,6 +1938,16 @@ void main() {
         expect(find.text('Read the Hebrew'), findsOneWidget);
         expect(step, findsWidgets);
         expect(neighbours, findsNothing);
+        // Alone, the Targum keeps its own quieter ink at its step.
+        for (var i = 0; i < 2; i++) {
+          await tester.tap(find.text('Next'));
+          await tester.pumpAndSettle();
+        }
+        expect(find.text('Read the Targum'), findsOneWidget);
+        expect(neighbours, findsNothing);
+        final targum = tester.widgetList<ScriptureVerse>(step).where((v) => v.kind == ScriptureKind.targum);
+        expect(targum, isNotEmpty);
+        expect(targum.any((v) => v.fullInk), isFalse);
       });
     }
   });

@@ -2082,16 +2082,18 @@ class _GuidedStep extends StatelessWidget {
     final refs = flow.stepVerses(chunk, kind);
     final styles = ScriptureStyles(context, settings);
     final englishRashi = settings.secondReading == SecondReading.rashiEnglish;
+    final amongNeighbours = _amongNeighbours(context, styles, kind);
 
     // Every verse of the guided reader hangs its number in the gutter at its
     // start (§4.7).
-    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false}) {
+    ScriptureVerse verse(BookText text, VerseRef r, ScriptureKind kind, {bool secondary = false, bool fullInk = false}) {
       final marks = marksOf(r);
       return ScriptureVerse(
         verse: text.verse(r),
         kind: kind,
         settings: settings,
         secondary: secondary,
+        fullInk: fullInk,
         hangingNumber: true,
         onLongPress: () => onVerseOptions(r),
         bookmarked: marks?.bookmarked ?? false,
@@ -2128,7 +2130,10 @@ class _GuidedStep extends StatelessWidget {
             ],
           );
         case StepKind.targum:
-          final targum = verse(texts.onkelos!, r, ScriptureKind.targum);
+          // Among its dimmed neighbours, from which the Targum's quieter ink
+          // would barely stand apart, the step's verse is in full ink, as at
+          // the Hebrew's steps (§9).
+          final targum = verse(texts.onkelos!, r, ScriptureKind.targum, fullInk: amongNeighbours);
           if (!flow.thirdHebrewInTargum(chunk, r)) return targum;
           // Read with others, the verse has no step of its own for its third
           // reading: the Hebrew follows its Onkelos here instead, set apart
@@ -2256,7 +2261,6 @@ class _GuidedStep extends StatelessWidget {
       builder: (context, constraints) {
         const padding = EdgeInsets.fromLTRB(20, 16, 20, 24);
         final page = constraints.maxHeight - padding.vertical;
-        final amongNeighbours = _amongNeighbours(context, styles, kind);
         // Among its neighbours, the verse just read is above the step's
         // verse where the step still fits whole beneath it, and those to
         // come are after it, as far as they fit whole on the page. A
