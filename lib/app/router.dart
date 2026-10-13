@@ -49,6 +49,26 @@ GoRoute _route(String path, Widget Function(GoRouterState s) build, {List<RouteB
 GoRoute _week(String path) => _route(path, (s) => WeekOverviewScreen(weekId: s.pathParameters['id']!));
 GoRoute _haftarah(String path) => _route(path, (s) => HaftarahScreen(weekId: s.pathParameters['id']!));
 
+/// The guide, the sources and a policy: within the tabs that open them, so
+/// that the navigation bar or rail stays, and on their own, over the tabs,
+/// for onboarding, links and the pages shown over the tabs. A policy that
+/// doesn't exist is no page.
+GoRoute _guide(String path) => _route(path, (_) => const GuideScreen());
+GoRoute _sources(String path) => _route(path, (_) => const SourcesScreen());
+GoRoute _legal(String path) => _route(path, (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
+      final doc? => LegalScreen(doc: doc),
+      null => const NotFoundPage(),
+    });
+
+/// A tab's copy of the guide, the sources or a policy
+/// ('/settings/about/legal/privacy'), as the page of its own over the tabs
+/// ('/legal/privacy'); null for any other page.
+String? _pageOverTabs(String path) => switch (path) {
+      '/today/guide' || '/settings/guide' => '/guide',
+      '/settings/about/sources' => '/sources',
+      _ => RegExp(r'^/(community|settings/about|settings/accessibility)(/legal/[^/]+)$').firstMatch(path)?.group(2),
+    };
+
 /// A week and its haftarah within each of the [weekTabs], so the navigation
 /// bar stays.
 List<RouteBase> _weekPages() => [_week('week/:id'), _haftarah('haftarah/:id')];
@@ -76,13 +96,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atWelcome = path == '/welcome' || path.startsWith('/welcome/');
       // The guide, sources and policies are open before onboarding too: the
       // stores require the privacy policy to be reachable on a first visit.
-      // So are the addresses they had in About, which lead to them.
-      final isPublic = path == '/guide' ||
-          path == '/sources' ||
-          path.startsWith('/legal/') ||
-          path == '/settings/about/sources' ||
-          path.startsWith('/settings/about/legal/');
-      if (!onboarded.value && !atWelcome && !isPublic) return '/welcome';
+      // Their copies within the tabs (the addresses they had in About among
+      // them) lead to the pages of their own, as the tabs wait for it.
+      final isPublic = path == '/guide' || path == '/sources' || path.startsWith('/legal/');
+      if (!onboarded.value && !atWelcome && !isPublic) return _pageOverTabs(path) ?? '/welcome';
       if (onboarded.value && atWelcome) return '/today';
       return null;
     },
@@ -98,7 +115,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         navigatorContainerBuilder: _tabStack,
         pageBuilder: (context, state, shell) => _page(state, AppShell(shell: shell)),
         branches: [
-          StatefulShellBranch(routes: [_route('/today', (_) => const TodayScreen(), routes: _weekPages())]),
+          StatefulShellBranch(routes: [
+            _route('/today', (_) => const TodayScreen(), routes: [..._weekPages(), _guide('guide')]),
+          ]),
           StatefulShellBranch(routes: [
             _route('/parsha', (_) => const ParshaTab(), routes: [
               _route('browse', (_) => const BrowseScreen()),
@@ -117,6 +136,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   )),
               _route('account', _account),
               _route('moderation', (_) => const ModerationScreen()),
+              // The privacy policy from the account, the guidelines from a
+              // new discussion.
+              _legal('legal/:doc'),
             ]),
           ]),
           StatefulShellBranch(routes: [
@@ -125,27 +147,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('display', (_) => const DisplaySettingsScreen()),
-              _route('accessibility', (_) => const AccessibilitySettingsScreen()),
+              _route('accessibility', (_) => const AccessibilitySettingsScreen(), routes: [
+                // The accessibility statement.
+                _legal('legal/:doc'),
+              ]),
               _route('reminders', (_) => const ReminderSettingsScreen(), routes: [
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('data', (_) => const DataSettingsScreen()),
               _route('account', _account),
-              _route('about', (_) => const AboutScreen(), routes: [
-                // Where these pages used to be, for old links.
-                GoRoute(path: 'sources', redirect: (_, _) => '/sources'),
-                GoRoute(path: 'legal/:doc', redirect: (_, s) => '/legal/${s.pathParameters['doc']}'),
-              ]),
+              _route('about', (_) => const AboutScreen(), routes: [_sources('sources'), _legal('legal/:doc')]),
+              _guide('guide'),
             ]),
           ]),
         ],
       ),
-      _route('/guide', (_) => const GuideScreen()),
-      _route('/sources', (_) => const SourcesScreen()),
-      _route('/legal/:doc', (s) => switch (LegalDoc.fromSlug(s.pathParameters['doc']!)) {
-            final doc? => LegalScreen(doc: doc),
-            null => const NotFoundPage(),
-          }),
+      // On their own, before onboarding too (see the redirect).
+      _guide('/guide'),
+      _sources('/sources'),
+      _legal('/legal/:doc'),
       // A week and its haftarah on their own, for links and notifications.
       _week('/week/:id'),
       _haftarah('/haftarah/:id'),

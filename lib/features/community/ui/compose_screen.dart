@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/routes.dart';
 import '../../../data/models/scripture.dart';
 import '../../../data/models/verse_ref.dart';
 import '../../../services/feedback.dart';
@@ -526,7 +527,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       LinkedText(
                         text: l.guidelinesPrompt,
                         link: l.readGuidelines,
-                        onTap: () => context.push('/legal/guidelines'),
+                        onTap: () => context.push(policyPath(context, 'guidelines')),
                       ),
                     ],
                     // Post is the app bar's alone, where it stays above the

@@ -290,7 +290,7 @@ class _TodayHeader extends StatelessWidget {
         IconButton(
           tooltip: l.guideTitle,
           icon: const AppIcon(Icons.help_outline),
-          onPressed: () => context.push('/guide'),
+          onPressed: () => context.push('/today/guide'),
         ),
       ],
     );

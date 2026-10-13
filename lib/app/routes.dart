@@ -17,6 +17,19 @@ String haftarahPath(BuildContext context, String weekId) {
   return _inTab(shell?.route.branches[shell.currentIndex].defaultRoute?.path, 'haftarah/$weekId');
 }
 
+/// The policy [doc] ('privacy', 'guidelines'…) from [context], a page that
+/// can be shown within a tab or over them (the account, a new discussion):
+/// within the tab [context] is shown in, so that its navigation bar or rail
+/// stays, under About in Settings and under Community elsewhere; on its own
+/// from a page shown over the tabs (signing in from the welcome, a question
+/// asked over the reader), which can't have a tab's page above it.
+String policyPath(BuildContext context, String doc) {
+  final shell = StatefulNavigationShell.maybeOf(context);
+  if (shell == null) return '/legal/$doc';
+  final tab = shell.route.branches[shell.currentIndex].defaultRoute?.path;
+  return tab == '/settings' ? '/settings/about/legal/$doc' : '/community/legal/$doc';
+}
+
 /// Opens [location], a page within a tab, from [context]: pushed within the
 /// tab [context] is shown in, so it goes back there. A page shown over the
 /// tabs (a week opened from a notification, say) can't have a tab's page

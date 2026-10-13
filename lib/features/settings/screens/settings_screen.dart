@@ -106,7 +106,7 @@ class SettingsScreen extends ConsumerWidget {
         GroupHeader(l.aboutTitle),
         PaperGroup(
           children: [
-            page(Icons.school_outlined, l.guideTitle, null, '/guide'),
+            page(Icons.school_outlined, l.guideTitle, null, '/settings/guide'),
             page(Icons.info_outline, l.settingsAbout, l.settingsAboutDesc, '/settings/about'),
           ],
         ),

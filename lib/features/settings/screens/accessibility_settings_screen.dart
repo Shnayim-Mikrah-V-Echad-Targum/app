@@ -177,7 +177,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             PaperRow(
               icon: Icons.accessibility_new_outlined,
               title: l.accessibilityStatement,
-              onTap: () => context.push('/legal/accessibility'),
+              onTap: () => context.push('/settings/accessibility/legal/accessibility'),
             ),
             PaperRow(
               icon: Icons.feedback_outlined,

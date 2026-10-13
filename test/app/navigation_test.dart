@@ -272,7 +272,7 @@ void main() {
     });
   });
 
-  testWidgets('the guide opens over Settings and goes back to it', (tester) async {
+  testWidgets('the guide opens within Settings and goes back to it', (tester) async {
     final router = await _pump(tester);
     router.go('/settings');
     await tester.pumpAndSettle();
@@ -281,23 +281,45 @@ void main() {
     await tester.tap(find.text('How it works'));
     await tester.pumpAndSettle();
     expect(find.byType(GuideScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/settings/guide');
+    expect(selectedTab(tester), 4);
 
     await goBack(tester);
     expect(find.byType(SettingsScreen), findsOneWidget);
     expect(selectedTab(tester), 4);
   });
 
+  testWidgets("Today's help opens the guide within Today and goes back to it", (tester) async {
+    final router = await _pump(tester);
+    await tester.tap(find.byTooltip('How it works'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GuideScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/today/guide');
+    expect(selectedTab(tester), 0);
+
+    await goBack(tester);
+    expect(find.byType(TodayScreen), findsOneWidget);
+  });
+
   group('the policies and sources', () {
-    testWidgets('open from About and go back to it', (tester) async {
+    testWidgets('open from About within Settings and go back to it', (tester) async {
       final router = await _pump(tester);
       router.go('/settings/about');
       await tester.pumpAndSettle();
-      for (final (link, page) in [('Texts & sources', SourcesScreen), ('Privacy', LegalScreen)]) {
+      for (final (link, page, location) in [
+        ('Texts & sources', SourcesScreen, '/settings/about/sources'),
+        ('Privacy', LegalScreen, '/settings/about/legal/privacy'),
+        ('Terms of use', LegalScreen, '/settings/about/legal/terms'),
+        ('Community guidelines', LegalScreen, '/settings/about/legal/guidelines'),
+        ('Accessibility statement', LegalScreen, '/settings/about/legal/accessibility'),
+      ]) {
         await tester.ensureVisible(find.text(link));
         await tester.pumpAndSettle();
         await tester.tap(find.text(link));
-        await tester.pumpAndSettle();
+        await _loadTexts(tester);
         expect(find.byType(page), findsOneWidget);
+        expect(router.state.matchedLocation, location);
+        expect(selectedTab(tester), 4);
         await goBack(tester);
         expect(find.byType(AboutScreen), findsOneWidget);
       }
@@ -314,13 +336,72 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
+      expect(router.state.matchedLocation, '/community/legal/privacy');
+      expect(selectedTab(tester), 3);
 
       await goBack(tester);
       expect(find.byType(AccountScreen), findsOneWidget);
       expect(selectedTab(tester), 3);
     });
 
-    testWidgets('keep their old addresses before onboarding too', (tester) async {
+    testWidgets('open from the account in Settings without leaving the Settings tab', (tester) async {
+      final router = await _pump(tester);
+      router.go('/settings/account');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await tester.pumpAndSettle();
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(router.state.matchedLocation, '/settings/about/legal/privacy');
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+      expect(selectedTab(tester), 4);
+    });
+
+    testWidgets('open on their own from the account shown over the tabs', (tester) async {
+      final router = await _pump(tester);
+      router.push('/account?then=back');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await tester.pumpAndSettle();
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(router.state.matchedLocation, '/legal/privacy');
+      expect(tester.takeException(), isNull);
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+    });
+
+    testWidgets('open on their own from signing in on the welcome, before onboarding', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: const AppSettings(), now: _now);
+      await tester.pumpAndSettle();
+      final router = c.read(routerProvider);
+      router.push('/welcome/account');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await _loadTexts(tester);
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(_pageHeading('Privacy'), findsOneWidget);
+      expect(router.state.matchedLocation, '/legal/privacy');
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+    });
+
+    testWidgets('keep their addresses in About before onboarding too, on their own', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -331,6 +412,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
       expect(_pageHeading('Privacy'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing, reason: 'the tabs wait for onboarding');
 
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
@@ -341,10 +423,11 @@ void main() {
       expect(find.byType(SettingsScreen), findsNothing, reason: 'the rest waits for onboarding');
     });
 
-    testWidgets('keep their old addresses', (tester) async {
+    testWidgets('keep their addresses in About, now within Settings', (tester) async {
       final router = await _pump(tester);
       router.go('/community');
       await tester.pumpAndSettle();
+      // Pushed, as a page of the tab on show.
       router.push('/settings/about/legal/guidelines');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
@@ -352,10 +435,14 @@ void main() {
       await goBack(tester);
       expect(selectedTab(tester), 3);
 
+      // Gone to, as a link or a reload does, under About.
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
       expect(find.byType(SourcesScreen), findsOneWidget);
-      expect(_home, findsOneWidget);
+      expect(selectedTab(tester), 4);
+      expect(_home, findsNothing);
+      await goBack(tester);
+      expect(find.byType(AboutScreen), findsOneWidget);
     });
   });
 
@@ -842,13 +929,18 @@ void main() {
       expect(find.byType(AboutScreen), findsOneWidget);
     });
 
-    for (final (row, page) in [('Display', DisplaySettingsScreen), ('Accessibility statement', LegalScreen)]) {
-      testWidgets('Accessibility opens $row over itself, which goes back to it', (tester) async {
+    for (final (row, page, location) in [
+      ('Display', DisplaySettingsScreen, '/settings/display'),
+      ('Accessibility statement', LegalScreen, '/settings/accessibility/legal/accessibility'),
+    ]) {
+      testWidgets('Accessibility opens $row over itself, within Settings, which goes back to it', (tester) async {
         final router = await _pump(tester);
         router.go('/settings/accessibility');
         await tester.pumpAndSettle();
         await tapRow(tester, row);
         expect(find.byType(page), findsOneWidget);
+        expect(router.state.matchedLocation, location);
+        expect(selectedTab(tester), 4);
 
         await goBack(tester);
         expect(find.byType(AccessibilitySettingsScreen), findsOneWidget);
@@ -871,9 +963,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LegalScreen), findsOneWidget);
     expect(_pageHeading('Community guidelines'), findsOneWidget);
+    expect(router.state.matchedLocation, '/community/legal/guidelines');
+    expect(selectedTab(tester), 3);
 
     await goBack(tester);
     expect(find.text('A question on Rashi'), findsOneWidget);
     expect(selectedTab(tester), 3);
+  });
+
+  testWidgets('a question asked over the reader opens the guidelines over itself too', (tester) async {
+    final router = await _pump(tester);
+    router.push('/ask?verse=Genesis%203:22');
+    await tester.pumpAndSettle();
+    final guidelines = find.text('Read the guidelines');
+    await tester.ensureVisible(guidelines);
+    await tester.pumpAndSettle();
+    await tester.tap(guidelines);
+    await tester.pumpAndSettle();
+    expect(find.byType(LegalScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/legal/guidelines');
+    expect(tester.takeException(), isNull);
+
+    await goBack(tester);
+    expect(find.text('Read the guidelines'), findsOneWidget);
   });
 }

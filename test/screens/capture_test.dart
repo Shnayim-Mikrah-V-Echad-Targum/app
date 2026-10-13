@@ -473,18 +473,23 @@ const _screens = {
   // Choosing to replace the progress here with a backup: the confirm
   // dialog, with backup on.
   's_data_replace': '/settings/data',
+  // The sources, the guide and the policies within Settings, as About,
+  // Settings and Accessibility open them, beside the navigation bar or rail.
   'about': '/settings/about',
-  'sources': '/sources',
-  'guide': '/guide',
+  'sources': '/settings/about/sources',
+  'guide': '/settings/guide',
+  // From Today's help button, within Today.
+  'guide_today': '/today/guide',
   // The special cases, Shabbat and the sources, at its end; and with Bold
   // text, where each case's lead-in stands on a line of its own.
-  'guide_end': '/guide',
-  'guide_end_bold': '/guide',
-  // The privacy policy, open to every visitor; and at its end, the way to
-  // reach us.
-  'legal': '/legal/privacy',
-  'legal_end': '/legal/privacy',
-  'legal_a11y': '/legal/accessibility',
+  'guide_end': '/settings/guide',
+  'guide_end_bold': '/settings/guide',
+  // The privacy policy; and at its end, the way to reach us.
+  'legal': '/settings/about/legal/privacy',
+  'legal_end': '/settings/about/legal/privacy',
+  'legal_a11y': '/settings/accessibility/legal/accessibility',
+  // On its own, open to every visitor before onboarding too.
+  'legal_public': '/legal/privacy',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
@@ -542,8 +547,8 @@ const _screens = {
   'focus_day': '/today',
   'focus_card': '/today',
   // A source's card, and the link to reach us in the privacy policy.
-  'focus_source': '/sources',
-  'focus_contact': '/legal/privacy',
+  'focus_source': '/settings/about/sources',
+  'focus_contact': '/settings/about/legal/privacy',
   'focus_tile': '/progress',
   'focus_slider': '/settings/display',
   'focus_switch': '/settings/display',
@@ -616,6 +621,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   'guide_end_bold': (s) => s.copyWith(boldText: true),
+  'legal_public': (s) => s.copyWith(onboardingComplete: false),
   's_reminders_on': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -2106,6 +2112,7 @@ const _desktopScreens = {
   'browse',
   'browse_summer',
   'guide',
+  'guide_today',
   'about',
   'sources',
   'welcome',

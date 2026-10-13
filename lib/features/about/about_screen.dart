@@ -90,7 +90,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
               PaperRow(
                 icon: Icons.library_books_outlined,
                 title: l.sourcesTitle,
-                onTap: () => context.push('/sources'),
+                onTap: () => context.push('/settings/about/sources'),
               ),
             ],
           ),
@@ -100,18 +100,22 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
               PaperRow(
                 icon: Icons.privacy_tip_outlined,
                 title: l.privacyTitle,
-                onTap: () => context.push('/legal/privacy'),
+                onTap: () => context.push('/settings/about/legal/privacy'),
               ),
-              PaperRow(icon: Icons.gavel_outlined, title: l.termsTitle, onTap: () => context.push('/legal/terms')),
+              PaperRow(
+                icon: Icons.gavel_outlined,
+                title: l.termsTitle,
+                onTap: () => context.push('/settings/about/legal/terms'),
+              ),
               PaperRow(
                 icon: Icons.groups_outlined,
                 title: l.guidelinesTitle,
-                onTap: () => context.push('/legal/guidelines'),
+                onTap: () => context.push('/settings/about/legal/guidelines'),
               ),
               PaperRow(
                 icon: Icons.accessibility_new_outlined,
                 title: l.accessibilityStatement,
-                onTap: () => context.push('/legal/accessibility'),
+                onTap: () => context.push('/settings/about/legal/accessibility'),
               ),
               PaperRow(
                 icon: Icons.description_outlined,
