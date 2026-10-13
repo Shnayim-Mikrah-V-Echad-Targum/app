@@ -259,7 +259,7 @@ Notes:
 ### 3.6 Platform colours
 
 - `web/manifest.json`: theme_color #1D3F75, background_color #FAF7F0.
-- `web/index.html`: `<meta name="theme-color" content="#1D3F75" class="boot-theme">` until the first frame, when it is removed and the app's surface takes over (`MaterialApp.color`, and the status bar's colour on the web). The loading screen before it has the saved theme's surface as its background (#FAF7F0 by default), with the mark and a 3 px bar in primary on ringTrack.
+- `web/index.html`: `<meta name="theme-color" content="#1D3F75" class="boot-theme">` until the first frame, when it is removed and the app's surface takes over (`MaterialApp.color`, and the status bar's colour on the web). The loading screen before it has the saved theme's surface as its background (#FAF7F0 by default), with the mark and a 3 px bar in primary on ringTrack, and fades away over the first frame (§8).
 - `pubspec.yaml` flutter_launcher_icons:
   - `adaptive_icon_background: "#1D3F75"`;
   - web `background_color: "#FAF7F0"`, `theme_color: "#1D3F75"`;
@@ -1091,6 +1091,17 @@ At most two ornaments per screen. All are CustomPainters in `lib/ui/widgets/orna
 - Every fade is `FadeTransition(alwaysIncludeSemantics: true)`, with nothing ignoring the pointer, so the page is tappable, focusable and heard from its first frame.
 - With Reduce Motion the controller starts at 1: the page is whole from its first frame.
 
+**Welcome entrance** (§9 Onboarding): once a run, as the app opens on the welcome. A static flag in the welcome's State keeps it from playing again when the page is built anew (back from step 1, or in the other language). One 900 ms controller (`Motion.frame`), each part arriving on decelerate:
+- the frame, with its lozenge and the Hebrew title: opacity 0→1 at 0–250 ms, rising 8 px into place (`Transform.translate`);
+- the SeferDivider's hairlines draw outward from its lozenge (`progress`) at 150–550 ms;
+- the English name and the body fade in at 400–650 ms;
+- the Filled button, the restore link and the disclaimer at 550–800 ms.
+- The language, the page's own control, is there from the first frame.
+- Every fade is `FadeTransition(alwaysIncludeSemantics: true)`, with nothing ignoring the pointer, so the page is tappable, focusable and heard from its first frame.
+- With Reduce Motion the controller starts at 1: the page is whole from its first frame.
+
+**Web loading screen** (`web/index.html`): at Flutter's first frame (`flutter-first-frame`), the boot theme-color goes at once (§3.6), and the loading screen, kept above the app's view (`z-index: 1`), fades out over 250 ms on decelerate (`cubic-bezier(0.05, 0.7, 0.1, 1)`). The app beneath takes taps at once (`pointer-events: none`), and screen readers leave the loader (`aria-hidden`); it is removed as the fade ends (`transitionend`, or after 400 ms at the latest). With Reduce Motion, the app's (`data-reduce-motion`) or the system's (`prefers-reduced-motion`), it is removed at once.
+
 **Floating button:** it fades in as it appears (Material's entrance for an extended button, 200 ms), never scaling and turning in as a round one does; the forum's appears so once its discussions come.
 
 **Reduce Motion everywhere:** dialogs, sheets, snackbars, a page's floating button (`floatingActionButtonAnimator: FloatingActionButtonAnimator.noAnimation`, in `PageScaffold`) and every `PopupMenuButton` (`popUpAnimationStyle: Motion.of(context).style`) appear at once, and ink doesn't spread: `ThemeData.splashFactory` is `PressWash(reduced: true)` (below), whose wash holds 100 ms after a press and goes at once.
@@ -1440,6 +1451,7 @@ In order:
 - Outside the frame: 24 gap, a Filled "Start this week’s parsha" 52 high (max width 400).
 - An 8 gap, then a TextButton "I already use Shnayim Mikra" (the same max width), which opens the restore sheet (§6.19): one PaperGroup of sign in (`cloud_download_outlined`, with a chevron, as it leads to the account page; only with a real community backend), a backup file (`restore_page_outlined`) or pasted text (`content_paste_outlined`), each with what it restores from under it, never cut short. While the account's backup comes in, a row 48 high takes its place, as a live region: a centred 18 px spinner (stroke 2), a 12 gap and "Restoring your progress…" in bodyMedium onSurfaceVariant.
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
+- As the app opens on it, it enters once (§8, Welcome entrance): the frame and the title rise into place, the divider draws outward, then come the English name and the body, and last the way on and the disclaimer, all within 900 ms. It is whole from its first frame with Reduce Motion, and tappable and heard from its first frame either way.
 - As the app opens on it, it enters once (§8, Welcome entrance): the frame and the title rise into place, the divider draws outward, then come the English name and the body, and last the way on and the disclaimer, all within 900 ms. It is whole from its first frame with Reduce Motion, and tappable and heard from its first frame either way.
 
 **Steps 2–4**

@@ -230,6 +230,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 - [ ] Offline: install the app, open a book, then in DevTools (*Network → Offline*) reload. The app opens, and so does that book.
 - [ ] Offline after an update: with that version installed, deploy one built with a newer Flutter or changed texts. Open the app online, and close it once *Application → Service workers* shows the new worker waiting; then open it offline. The new version opens, and so does the book. (While it installs, an update downloads again the engine and every book read so far, into caches named after its engine and texts, and it finishes installing only with them: tool/web/sw_update.js.)
 - [ ] With the app's theme set to Dark, the installed app's title bar (and the browser's toolbar on Android) turns dark once the app has drawn its first frame. The loading screen before it already shows the app's theme and language.
+- [ ] The loading screen fades into the app over about a quarter of a second, and the welcome or Today can be tapped as it does; with Reduce Motion on (in the app, or in the system), it gives way at once.
 - [ ] Sharing the address in a messaging app shows the preview card (`web/og.png`).
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit

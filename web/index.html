@@ -85,8 +85,9 @@
     :root[data-theme=highContrastLight] { color-scheme: light; --surface: #FFFFFF; --primary: #0A2A5E; --muted: #1F1F1F; --track: #E0E0E0; }
     :root[data-theme=highContrastDark] { color-scheme: dark; --surface: #000000; --primary: #B5CEFF; --muted: #EBEBEB; --track: #333333; }
     html, body { margin: 0; background: var(--surface); }
+    /* Above the app's view, which the engine adds after it, while it fades. */
     #loading {
-      position: fixed; inset: 0; display: flex; flex-direction: column;
+      position: fixed; inset: 0; z-index: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 24px;
       font: 16px/24px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: var(--muted);
     }
@@ -139,13 +140,34 @@
       var slow = setTimeout(function () {
         text.textContent = hebrew ? 'עדיין טוען…' : 'Still loading…';
       }, 8000);
-      // Once Flutter has drawn its first frame: the loading screen goes, and
-      // the theme-color Flutter set (the app's surface) takes over.
+      // Once Flutter has drawn its first frame: the theme-color Flutter set
+      // (the app's surface) takes over, and the loading screen fades away
+      // over the app (docs/DESIGN_SYSTEM.md §8), which takes taps and focus
+      // at once. With Reduce Motion, the app's or the system's, it goes at
+      // once.
       window.addEventListener('flutter-first-frame', function () {
         clearTimeout(slow);
-        loading.remove();
         var boot = document.querySelectorAll('meta.boot-theme');
         for (var i = 0; i < boot.length; i++) boot[i].remove();
+        var reduced = document.documentElement.hasAttribute('data-reduce-motion') ||
+          (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        if (reduced) {
+          loading.remove();
+          return;
+        }
+        var gone = false;
+        var remove = function () {
+          if (gone) return;
+          gone = true;
+          loading.remove();
+        };
+        loading.setAttribute('aria-hidden', 'true');
+        loading.style.pointerEvents = 'none';
+        loading.style.transition = 'opacity 250ms cubic-bezier(0.05, 0.7, 0.1, 1)';
+        loading.style.opacity = '0';
+        loading.addEventListener('transitionend', remove);
+        // In case the fade never ends: a hidden tab, say.
+        setTimeout(remove, 400);
       }, { once: true });
     })();
   </script>
