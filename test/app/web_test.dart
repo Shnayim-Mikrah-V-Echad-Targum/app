@@ -121,9 +121,10 @@ void main() {
       expect(manifest['description'], isNotEmpty);
     });
 
+    // At the pages' own addresses (lib/main.dart's path URLs).
     test('has shortcuts to Today and Progress, with icons', () {
       final shortcuts = (manifest['shortcuts'] as List).cast<Map<String, dynamic>>();
-      expect([for (final s in shortcuts) s['url']], ['./#/today', './#/progress']);
+      expect([for (final s in shortcuts) s['url']], ['./today', './progress']);
       for (final shortcut in shortcuts) {
         for (final icon in (shortcut['icons'] as List).cast<Map<String, dynamic>>()) {
           final (w, h) = _pngSize('web/${icon['src']}');
@@ -161,6 +162,17 @@ void main() {
         reason: 'test/goldens/screens_golden_test.dart writes web/screenshots/',
       );
     });
+  });
+
+  // Each page has an address of its own (…/community/thread/1), as the
+  // manifest's shortcuts and a discussion's Copy link name it.
+  // tool/web/web.test.mjs runs the move of an older link's #/ there, and the
+  // service worker's answer to any page's address.
+  test("the app's pages have path URLs from before the app starts", () {
+    final main = File('lib/main.dart').readAsStringSync();
+    final body = main.substring(main.indexOf('Future<void> main() async {'));
+    expect(body.indexOf('usePathUrlStrategy();'), allOf(isNonNegative, lessThan(body.indexOf('runApp('))));
+    expect(html.indexOf("location.hash.indexOf('#/') === 0"), lessThan(html.indexOf('flutter_bootstrap.js')));
   });
 
   group('offline', () {

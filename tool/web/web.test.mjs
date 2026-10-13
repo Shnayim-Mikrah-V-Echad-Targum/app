@@ -1,7 +1,8 @@
 // Tests for the web build's JavaScript, run against fixtures in Node's vm:
-// the loading screen's script in web/index.html, web/flutter_bootstrap.js,
-// the service worker's update script (tool/web/sw_update.js and
-// sw_build.cjs), and the fonts' preloads (tool/web/preload_fonts.mjs).
+// the scripts in web/index.html (an older link's redirect and the loading
+// screen), web/flutter_bootstrap.js, the service worker's update script and
+// configuration (tool/web/sw_update.js, sw_build.cjs and
+// workbox-config.cjs), and the fonts' preloads (tool/web/preload_fonts.mjs).
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
@@ -15,7 +16,7 @@ import vm from 'node:vm';
 const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
-const { cacheNames, writeUpdateScript } = require('./sw_build.cjs');
+const { cacheNames, fileNavigation, writeUpdateScript } = require('./sw_build.cjs');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
@@ -33,14 +34,25 @@ const html = read('web/index.html');
 /// The inline scripts of index.html, in order.
 const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 
-/// Runs the head's script, which reads the saved settings before the first
-/// paint, with [stored] as localStorage's flutter.settings.v1 (an object is
-/// stored as shared_preferences stores it, JSON inside a JSON string) and
-/// [languages] as the browser's. Returns the attributes it set on <html>.
-function loader({ stored, languages = ['en-US'], language = languages[0], throws = false } = {}) {
+/// Runs the head's script on the page at [href], whose <base href> makes
+/// [base] its base URI. It moves an older link's #/ page to its own address,
+/// and reads the saved settings before the first paint, with [stored] as
+/// localStorage's flutter.settings.v1 (an object is stored as
+/// shared_preferences stores it, JSON inside a JSON string) and [languages]
+/// as the browser's. Returns the attributes it set on <html>, and the
+/// address it gave the page in place of its own, if it did.
+function headScript({
+  href = 'https://example.org/app/',
+  base = 'https://example.org/app/',
+  stored,
+  languages = ['en-US'],
+  language = languages[0],
+  throws = false,
+} = {}) {
   const attributes = {};
   const root = { lang: 'en', setAttribute: (name, value) => (attributes[name] = value) };
   const value = stored === undefined ? null : typeof stored === 'string' ? stored : JSON.stringify(JSON.stringify(stored));
+  const replaced = [];
   vm.runInNewContext(inlineScripts[0], {
     localStorage: {
       getItem(key) {
@@ -49,10 +61,60 @@ function loader({ stored, languages = ['en-US'], language = languages[0], throws
       },
     },
     navigator: { languages, language },
-    document: { documentElement: root },
+    location: new URL(href),
+    history: { replaceState: (state, title, url) => replaced.push({ state, title, url }) },
+    document: { documentElement: root, baseURI: base },
   });
-  return { ...attributes, lang: root.lang };
+  assert.ok(replaced.length <= 1);
+  return { attributes: { ...attributes, lang: root.lang }, replaced: replaced[0] };
 }
+
+/// The attributes the head's script set on <html> (see [headScript]).
+const loader = (fixture) => headScript(fixture).attributes;
+
+describe('a link from before path URLs', () => {
+  /// The address the page at [href] is given, or undefined where it keeps
+  /// its own.
+  const redirect = (href, base = 'https://example.org/app/') => {
+    const { replaced } = headScript({ href, base });
+    if (replaced) assert.deepEqual([replaced.state, replaced.title], [null, '']);
+    return replaced?.url;
+  };
+
+  it('goes to the address of the page it names, in place of its own', () => {
+    assert.equal(redirect('https://example.org/app/#/community/thread/1'), 'https://example.org/app/community/thread/1');
+    assert.equal(redirect('https://example.org/app/#/progress'), 'https://example.org/app/progress');
+    // Its query is the page's.
+    assert.equal(redirect('https://example.org/app/#/search?q=light'), 'https://example.org/app/search?q=light');
+    assert.equal(redirect('https://example.org/app/#/'), 'https://example.org/app/');
+  });
+
+  it("goes there under the site's base, wherever the site is served from", () => {
+    assert.equal(redirect('https://example.org/#/legal/privacy', 'https://example.org/'), 'https://example.org/legal/privacy');
+    assert.equal(
+      redirect('https://example.org/app/index.html#/today', 'https://example.org/app/'),
+      'https://example.org/app/today',
+    );
+  });
+
+  it('leaves an address that names no page after # as it is', () => {
+    for (const href of [
+      'https://example.org/app/',
+      'https://example.org/app/progress',
+      'https://example.org/app/search?q=light',
+      'https://example.org/app/#',
+      'https://example.org/app/#top',
+    ]) {
+      assert.equal(redirect(href), undefined, href);
+    }
+  });
+
+  it('goes there before the loading screen reads the settings, which may fail', () => {
+    const { attributes, replaced } = headScript({ href: 'https://example.org/app/#/progress', throws: true });
+    assert.equal(replaced.url, 'https://example.org/app/progress');
+    assert.deepEqual(attributes, { lang: 'en' });
+  });
+});
 
 describe('the loading screen', () => {
   it('takes the saved theme, and only a theme the app has', () => {
@@ -218,15 +280,17 @@ function fakeWorker(state) {
   };
 }
 
-/// Runs flutter_bootstrap.js (without Flutter's own loader) on a page whose
-/// service worker [controller] is set on a later visit, after the page has
-/// loaded [loaded]. The registration has [waiting] and [installing] workers,
-/// if given; the clock reads [now] until the test moves it.
+/// Runs flutter_bootstrap.js (without Flutter's own loader) on a page at
+/// [href], under the site's [base], whose service worker [controller] is set
+/// on a later visit, after the page has loaded [loaded]. The registration
+/// has [waiting] and [installing] workers, if given; the clock reads [now]
+/// until the test moves it.
 async function bootstrap({
   controller = null,
   loaded = [],
   launchQueue = false,
-  hash = '',
+  href = 'https://example.org/app/today',
+  base = 'https://example.org/app/',
   waiting = null,
   installing = null,
 } = {}) {
@@ -255,9 +319,21 @@ async function bootstrap({
     addEventListener: (type, listener, options) => serviceWorker.listeners.push({ type, listener, options }),
   };
   const document = {
+    baseURI: base,
     visibilityState: 'visible',
     listeners: {},
     addEventListener: (type, listener) => (document.listeners[type] = listener),
+  };
+  const { origin, pathname, search, hash } = new URL(href);
+  // The window's history, which records each address pushed on it, and
+  // moves the page's address there.
+  const history = {
+    pushed: [],
+    pushState(state, title, url) {
+      history.pushed.push({ state, title, url });
+      const next = new URL(url, page.location.origin + page.location.pathname);
+      Object.assign(page.location, { pathname: next.pathname, search: next.search, hash: next.hash });
+    },
   };
   const page = {
     _flutter: { loader: { load: () => (page.loaderStarted = true) } },
@@ -267,12 +343,19 @@ async function bootstrap({
       setResourceTimingBufferSize: (size) => (page.bufferSize = size),
       getEntriesByType: (type) => (type === 'resource' ? loaded.map((name) => ({ name })) : []),
     },
-    location: { origin: 'https://example.org', hash, reloads: 0, reload: () => page.location.reloads++ },
+    location: { origin, pathname, search, hash, reloads: 0, reload: () => page.location.reloads++ },
+    history,
     addEventListener: (type, listener) => (listeners[type] = listener),
-    dispatchEvent: (event) => dispatched.push(event.type),
+    dispatchEvent: (event) => dispatched.push(event.type === 'popstate' ? { type: event.type, state: event.state } : event.type),
     Event: class {
       constructor(type) {
         this.type = type;
+      }
+    },
+    PopStateEvent: class {
+      constructor(type, init) {
+        this.type = type;
+        this.state = init?.state;
       }
     },
     Date: { now: () => clock.now },
@@ -287,7 +370,7 @@ async function bootstrap({
     listeners['flutter-first-frame']();
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  return { page, messages: active.messages, registered, registration, serviceWorker, document, dispatched, clock };
+  return { page, messages: active.messages, registered, registration, serviceWorker, document, history, dispatched, clock };
 }
 
 describe('the bootstrap', () => {
@@ -422,14 +505,49 @@ describe('the bootstrap', () => {
     assert.deepEqual(serviceWorker.listeners, []);
   });
 
-  it("shows a shortcut's page in the window it opens in", async () => {
-    const { page } = await bootstrap({ launchQueue: true, hash: '#/today' });
-    page.consumer({ targetURL: 'https://example.org/app/#/progress' });
-    assert.equal(page.location.hash, '#/progress');
-    page.consumer({ targetURL: 'https://example.org/app/' });
-    assert.equal(page.location.hash, '#/progress', 'a plain launch keeps the page');
-    page.consumer({});
-    assert.equal(page.location.hash, '#/progress');
+  describe("shows a shortcut's page in the window it opens in", () => {
+    /// The addresses pushed on the window's history, each told to the app
+    /// as the browser's Back and Forward are, with no state of the app's.
+    const shown = ({ history, dispatched }) => {
+      const popped = dispatched.filter((event) => event.type === 'popstate');
+      assert.equal(popped.length, history.pushed.length);
+      assert.ok(popped.every((event) => event.state === null));
+      assert.ok(history.pushed.every(({ state, title }) => state === null && title === ''));
+      return history.pushed.map(({ url }) => url);
+    };
+
+    it('at its own address, as the app goes there from Back and Forward', async () => {
+      const fixture = await bootstrap({ launchQueue: true });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/progress' });
+      assert.deepEqual(shown(fixture), ['/app/progress']);
+      assert.equal(fixture.page.location.pathname, '/app/progress');
+      fixture.page.consumer({ targetURL: 'https://example.org/app/today' });
+      assert.deepEqual(shown(fixture), ['/app/progress', '/app/today']);
+    });
+
+    it('keeping the page on show for a plain launch, or the page it is on', async () => {
+      const fixture = await bootstrap({ launchQueue: true, href: 'https://example.org/app/community/thread/1' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/?source=pwa' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/community/thread/1' });
+      fixture.page.consumer({});
+      assert.deepEqual(shown(fixture), []);
+    });
+
+    it("from an older version's shortcut, which names its page after #/", async () => {
+      const fixture = await bootstrap({ launchQueue: true });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/progress' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/progress' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/search?q=light' });
+      assert.deepEqual(shown(fixture), ['/app/progress', '/app/search?q=light']);
+    });
+
+    it("under the site's base, wherever the site is served from", async () => {
+      const fixture = await bootstrap({ launchQueue: true, href: 'https://example.org/today', base: 'https://example.org/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/#/progress' });
+      assert.deepEqual(shown(fixture), ['/progress']);
+    });
   });
 });
 
@@ -589,6 +707,55 @@ describe('the build', () => {
     assert.match(config, /cacheName: runtimeCaches\.engine/);
     assert.match(config, /cacheName: runtimeCaches\.content/);
     assert.match(config, /skipWaiting: false/);
+  });
+
+  it("serves the app for any of its pages' addresses, offline too, and leaves files to the server", () => {
+    const config = read('workbox-config.cjs');
+    assert.match(config, /navigateFallback: 'index\.html',/);
+    assert.match(config, /navigateFallbackDenylist: \[fileNavigation\],/);
+    assert.match(config, /'index\.html',/, 'which the worker precaches');
+    // As Workbox tests a navigation: its address's path and query.
+    for (const page of [
+      '/app/',
+      '/app/community',
+      '/app/community/thread/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+      '/app/community/legal/guidelines',
+      '/app/legal/privacy',
+      '/app/read/5787:1/0?verse=28:12',
+      '/app/celebrate/sefer:5787:0',
+      '/app/search?q=1.5',
+      '/app/search?q=a/b.c',
+      '/today',
+    ]) {
+      assert.equal(fileNavigation.test(page), false, page);
+    }
+    for (const file of [
+      '/app/legal/privacy.html',
+      '/app/legal/delete-account.he.html?utm_source=play',
+      '/app/og.png',
+      '/app/manifest.json',
+      '/legal/support.html',
+    ]) {
+      assert.equal(fileNavigation.test(file), true, file);
+    }
+  });
+
+  it("gives every page's address the app on GitHub Pages, as the finished index.html", () => {
+    const ci = read('.github/workflows/ci.yml');
+    const copied = ci.indexOf('cp build/web/index.html build/web/404.html');
+    assert.ok(copied >= 0, 'CI copies index.html to 404.html');
+    // After every step that changes index.html, before the worker precaches.
+    for (const step of [
+      'node tool/web/preload_fonts.mjs build/web',
+      'node tool/legal/build_html.mjs build/web',
+      'name: Absolute link-preview URLs',
+    ]) {
+      const at = ci.indexOf(step);
+      assert.ok(at >= 0 && at < copied, step);
+    }
+    assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, 'nothing changes it after');
+    assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
+    assert.match(read('docs/RELEASE.md'), /`cp build\/web\/index\.html build\/web\/404\.html`/);
   });
 
   it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {

@@ -140,6 +140,12 @@ jobs:
             -e "s|<meta property=\"og:image\" content=\"og.png\">|<meta property=\"og:image\" content=\"${url}og.png\">|" \
             build/web/index.html
           grep -q "content=\"${url}og.png\"" build/web/index.html
+      # Each of the app's pages has an address of its own (…/community/
+      # thread/1). GitHub Pages serves 404.html for an address it has no file
+      # for, so a link to a page, or a reload, opens the app there; once the
+      # service worker is in, it serves index.html for them itself.
+      - name: The app at every page's address
+        run: cp build/web/index.html build/web/404.html
       # Last, so it precaches the finished files (workbox-config.cjs).
       - name: Offline service worker
         run: npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs

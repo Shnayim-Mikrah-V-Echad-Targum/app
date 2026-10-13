@@ -50,6 +50,13 @@
   <link rel="preload" href="assets/assets/fonts/FrankRuhlLibre-Medium.ttf" as="fetch" crossorigin>
   <!-- /preload -->
   <script>
+    // A link from before the app's pages had addresses of their own
+    // (…/#/progress) goes to the page's own (…/progress) before Flutter
+    // reads it.
+    if (location.hash.indexOf('#/') === 0) {
+      history.replaceState(null, '', document.baseURI.replace(/\/$/, '') + location.hash.slice(1));
+    }
+
     // Before the first paint, the loading screen takes the app's saved theme,
     // Reduce Motion and language. shared_preferences keeps the settings in
     // localStorage as JSON inside a JSON string.

@@ -1,6 +1,7 @@
 // The parts of the service worker that depend on the build, for
 // workbox-config.cjs: the runtime caches' names, and the script that keeps
-// them across an update (tool/web/sw_update.js), written into build/web.
+// them across an update (tool/web/sw_update.js), written into build/web;
+// and which pages the worker leaves to the network.
 const { createHash } = require('node:crypto');
 const { readFileSync, readdirSync, writeFileSync } = require('node:fs');
 const { join, relative } = require('node:path');
@@ -55,4 +56,11 @@ function writeUpdateScript(web, caches) {
   return UPDATE_SCRIPT;
 }
 
-module.exports = { cacheNames, engineRevision, textsHash, writeUpdateScript };
+/// A navigation to a file rather than to one of the app's pages, which have
+/// no extension (lib/app/router.dart): one whose address ends in a name with
+/// a dot, before any query. The policy pages (legal/privacy.html) are such
+/// files, and so are the icons, og.png and the rest, should a link open one.
+/// Tested against a URL's path and query, as Workbox's NavigationRoute does.
+const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
+
+module.exports = { cacheNames, engineRevision, fileNavigation, textsHash, writeUpdateScript };

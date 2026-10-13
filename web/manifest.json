@@ -24,7 +24,7 @@
         {
             "name": "Today · היום",
             "description": "This week’s parsha and today’s reading",
-            "url": "./#/today",
+            "url": "./today",
             "icons": [
                 {
                     "src": "icons/shortcut-today.png",
@@ -36,7 +36,7 @@
         {
             "name": "Progress · התקדמות",
             "description": "Your streaks and the year’s portions",
-            "url": "./#/progress",
+            "url": "./progress",
             "icons": [
                 {
                     "src": "icons/shortcut-progress.png",

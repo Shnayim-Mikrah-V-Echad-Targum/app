@@ -92,10 +92,21 @@ function offerUpdates(registration) {
 }
 
 // The installed app opens in its existing window (manifest.json's
-// launch_handler); a shortcut's page, such as #/progress, is shown there.
+// launch_handler); a shortcut's page, such as …/progress, is shown there.
+// Its address goes on the window's history, and the app hears of it as of
+// the browser's Back and Forward, which takes it there. A plain launch, at
+// the app's start, keeps the page on show.
 if ('launchQueue' in window) {
   window.launchQueue.setConsumer(function (params) {
-    var hash = params.targetURL ? new URL(params.targetURL).hash : '';
-    if (hash && hash !== location.hash) location.hash = hash;
+    if (!params.targetURL) return;
+    var base = document.baseURI.replace(/\/$/, '');
+    var target = new URL(params.targetURL);
+    // An older version's shortcut, which the browser may keep for a while,
+    // names its page after #/ (web/index.html moves such a link too).
+    if (target.hash.indexOf('#/') === 0) target = new URL(base + target.hash.slice(1));
+    var page = target.pathname + target.search;
+    if (target.pathname === new URL(base + '/').pathname || page === location.pathname + location.search) return;
+    history.pushState(null, '', page);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
   });
 }

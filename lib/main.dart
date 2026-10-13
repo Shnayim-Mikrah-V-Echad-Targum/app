@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
@@ -20,6 +21,9 @@ import 'services/recent_errors.dart';
 import 'ui/widgets/fallbacks.dart';
 
 Future<void> main() async {
+  // On the web, pages have addresses of their own (…/community/thread/1),
+  // which can be shared; web/index.html moves an older link's #/ there.
+  usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
   // What goes wrong is kept, for About to copy for support; and a widget
   // that fails shows a calm panel rather than a grey box.
