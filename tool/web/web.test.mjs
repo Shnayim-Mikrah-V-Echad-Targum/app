@@ -796,10 +796,31 @@ describe('the build', () => {
   it('writes the update script with the caches filled in', () => {
     const web = build({ 'a.json': '1' });
     const names = cacheNames(web);
-    assert.equal(writeUpdateScript(web, names), 'sw_update.js');
-    const script = readFileSync(join(web, 'sw_update.js'), 'utf8');
+    const name = writeUpdateScript(web, names);
+    const script = readFileSync(join(web, name), 'utf8');
     assert.ok(script.includes(`\nconst CACHES = ${JSON.stringify(names)};\n`));
     assert.doesNotMatch(script, /CACHES = null/);
+  });
+
+  // The browser takes the scripts a new worker imports from its own cache
+  // while that copy is fresh, for ten minutes on GitHub Pages. Under the
+  // same name in every build, a new version's worker could run the older
+  // version's script, with its caches: it left its own engine's and books'
+  // caches empty, and the app didn't open offline after the update.
+  it('names the update script after its content, so that no version imports an older one', () => {
+    const web = build({ 'a.json': '1' });
+    const names = cacheNames(web);
+    const name = writeUpdateScript(web, names);
+    assert.match(name, /^sw_update\.[0-9a-f]{12}\.js$/);
+    assert.equal(writeUpdateScript(web, names), name, 'the same caches, the same name: a build again changes nothing');
+    const other = writeUpdateScript(web, { ...names, content: 'content-0123456789ab' });
+    assert.notEqual(other, name, 'other caches, another name');
+    // Only this build's script is left, not an earlier build's, nor one
+    // from before the scripts were named so.
+    writeFileSync(join(web, 'sw_update.js'), '');
+    writeFileSync(join(web, 'sw_update.js.map'), '');
+    assert.equal(writeUpdateScript(web, names), name);
+    assert.deepEqual(readdirSync(web).filter((file) => file.startsWith('sw_update')).sort(), [name, 'sw_update.js.map']);
   });
 
   it('is what the Workbox config uses', () => {
