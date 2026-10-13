@@ -17,7 +17,10 @@ constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikrah.app";
 constexpr DWORD kInstanceWaitMs = 5000;
 
 // Brings the window of the instance already running to the front. Returns
-// false if it has no window.
+// false if it has no window. A window still hidden, as it waits for its
+// first frame, is found too: it shows itself once the frame is drawn, or
+// after a while without one (FlutterWindow::ShowOnce), so an instance stuck
+// before its first frame can't keep every later launch from showing.
 bool ActivateRunningInstance() {
   HWND window = ::FindWindowW(kWindowClassName, nullptr);
   if (window == nullptr) {

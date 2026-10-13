@@ -27,6 +27,15 @@ class FlutterWindow : public Win32Window {
   // app's language ("shnayim/window" in lib/app/window_title_bar.dart).
   void RegisterWindowChannel();
 
+  // Shows the window, the first time it is called: when Flutter has drawn
+  // its first frame, or when kFirstFrameTimeoutMs have passed without one.
+  // Win32Window::Show restores the window's maximized state only once, so
+  // a second call would restore a maximized window to its normal size.
+  void ShowOnce();
+
+  // Whether ShowOnce has shown the window.
+  bool shown_ = false;
+
   // The project to run.
   flutter::DartProject project_;
 

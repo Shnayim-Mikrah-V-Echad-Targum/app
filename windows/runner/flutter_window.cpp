@@ -11,6 +11,25 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "utils.h"
 
+namespace {
+
+// The timer that shows the window if Flutter draws no first frame in time.
+// Its id is the runner's own, set on the top-level window, apart from any
+// timer of Flutter's or a plugin's.
+constexpr UINT_PTR kFirstFrameTimerId = 0x534D;  // "SM"
+
+// How long the window waits, hidden, for Flutter's first frame. Should the
+// app fail or hang before it draws one, the window would otherwise stay
+// hidden for good, with no taskbar button, while the process lives on and
+// holds the single-instance mutex (main.cpp): every later launch would find
+// that invisible window, bring it "forward" and quietly exit. Shown blank
+// instead, it can at least be seen and closed. The app draws even its
+// start-up error page as a frame (lib/app/start_failure.dart), so this is
+// only a safety net.
+constexpr UINT kFirstFrameTimeoutMs = 10000;
+
+}  // namespace
+
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
@@ -35,9 +54,12 @@ bool FlutterWindow::OnCreate() {
   RegisterWindowChannel();
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
+  // The callback, like the timer's message, comes on this thread, the
+  // platform thread.
+  flutter_controller_->engine()->SetNextFrameCallback([this]() {
+    ShowOnce();
   });
+  ::SetTimer(GetHandle(), kFirstFrameTimerId, kFirstFrameTimeoutMs, nullptr);
 
   // Flutter can complete the first frame before the "show window" callback is
   // registered. The following call ensures a frame is pending to ensure the
@@ -45,6 +67,17 @@ bool FlutterWindow::OnCreate() {
   flutter_controller_->ForceRedraw();
 
   return true;
+}
+
+void FlutterWindow::ShowOnce() {
+  if (HWND window = GetHandle()) {
+    ::KillTimer(window, kFirstFrameTimerId);
+  }
+  if (shown_) {
+    return;
+  }
+  shown_ = true;
+  Show();
 }
 
 void FlutterWindow::RegisterWindowChannel() {
@@ -98,6 +131,13 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // No first frame in time: show the window without it (see
+  // kFirstFrameTimeoutMs). The runner's own timer, so before Flutter's.
+  if (message == WM_TIMER && wparam == kFirstFrameTimerId) {
+    ShowOnce();
+    return 0;
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
