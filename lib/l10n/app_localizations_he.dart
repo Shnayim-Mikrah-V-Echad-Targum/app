@@ -2192,6 +2192,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String get supportDetailsCopied => 'הפרטים הועתקו';
 
   @override
+  String get webUpdateReady => 'גרסה חדשה מוכנה.';
+
+  @override
+  String get webUpdateRestart => 'הפעלה מחדש';
+
+  @override
   String get errorPanelMessage => 'חלק מהדף לא נטען.';
 
   @override

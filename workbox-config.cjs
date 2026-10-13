@@ -56,7 +56,9 @@ module.exports = {
   maximumFileSizeToCacheInBytes: 6e6,
   ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^cachebuster$/],
   // A new version waits until every window of the old one has closed, so a
-  // window never mixes the two.
+  // window never mixes the two. The app offers to restart into it instead
+  // (web/flutter_bootstrap.js), with the SKIP_WAITING message that the worker
+  // Workbox writes without skipWaiting answers.
   skipWaiting: false,
   clientsClaim: true,
   cleanupOutdatedCaches: true,

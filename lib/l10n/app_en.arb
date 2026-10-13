@@ -1863,6 +1863,14 @@
   "@supportDetailsCopied": {
     "description": "A status message once copySupportDetails has copied the details to the clipboard."
   },
+  "webUpdateReady": "A new version is ready.",
+  "@webUpdateReady": {
+    "description": "In the web app, at the top of Today and in About, once a new version of the app has downloaded and is waiting to replace the one open."
+  },
+  "webUpdateRestart": "Restart",
+  "@webUpdateRestart": {
+    "description": "The button beside webUpdateReady, which reloads the app in the new version, keeping the reader's progress and settings."
+  },
   "errorPanelMessage": "Something on this page didn’t load.",
   "@errorPanelMessage": {
     "description": "Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built."

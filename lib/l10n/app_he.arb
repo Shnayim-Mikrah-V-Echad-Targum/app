@@ -584,6 +584,8 @@
   "copySupportDetails": "העתקת פרטים לתמיכה",
   "copySupportDetailsDesc": "מה שהשתבש מאז שהאפליקציה נפתחה, להדבקה בהודעה אלינו",
   "supportDetailsCopied": "הפרטים הועתקו",
+  "webUpdateReady": "גרסה חדשה מוכנה.",
+  "webUpdateRestart": "הפעלה מחדש",
   "errorPanelMessage": "חלק מהדף לא נטען.",
   "linkOpenFailed": "לא ניתן היה לפתוח את הקישור כאן.",
   "emailOpenFailed": "לא נפתחה תוכנת דואר. אפשר לכתוב אל {address}.",

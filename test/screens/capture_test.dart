@@ -67,6 +67,7 @@ import 'package:shnayim_mikra/features/settings/backup.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
 import 'package:shnayim_mikra/services/recent_errors.dart';
 import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikra/services/web_update.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -143,6 +144,9 @@ const _screens = {
   // A backup file chosen: what it holds, with nothing here to merge with.
   'welcome_import': '/welcome',
   'today': '/today',
+  // On the web, a new version ready: Today offers it, and so does About.
+  'today_update': '/today',
+  'about_update': '/settings/about',
   // With a city for Shabbat times: on Erev Shabbat, candle-lighting there,
   // by the reader's luach (30 minutes before sunset, not Jerusalem's 40).
   'today_candles': '/today',
@@ -797,7 +801,14 @@ final _screenOverrides = <String, List<Override>>{
   'search_preparing': [verseIndexProvider.overrideWith(_PreparingIndex.new)],
   for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
   'city_error': [cityDirectoryProvider.overrideWith((ref) async => throw Exception('offline'))],
+  for (final screen in ['today_update', 'about_update']) screen: [webUpdatesProvider.overrideWithValue(_UpdateWaiting())],
 };
+
+/// A new version of the web app, installed and waiting.
+class _UpdateWaiting extends WebUpdates {
+  @override
+  bool get waiting => true;
+}
 
 /// Screens shown while Listen reads.
 const _listening = {
@@ -2149,6 +2160,7 @@ const _hugeModes = {'huge', 'hugehe'};
 // 200% so that a verse shows beneath it. Browse, whose names stay whole.
 const _hugeScreens = {
   'today',
+  'today_update',
   'today_shabbat',
   'reader',
   'reader_listen',
@@ -2161,6 +2173,7 @@ const _hugeScreens = {
 const _hugeTallModes = {'hugetall', 'hugetallhe'};
 const _hugeTallScreens = {
   'today',
+  'today_update',
   'today_shabbat',
   'parsha',
   'week',
@@ -2204,6 +2217,9 @@ const _narrowDesktopScreens = {
 };
 
 const _desktopScreens = {
+  // Today's offer of a new version, at the top of its reading column.
+  'today_update',
+  'about_update',
   // A widget that failed, and the row that copies the details for support.
   'kit_error',
   'about_support',
@@ -2366,6 +2382,8 @@ const _tallScreens = {
 };
 const _bigTextModes = {'big', 'bighe'};
 const _narrowScreens = {
+  // Restart under the sentence, which beside it would wrap.
+  'today_update',
   'welcome',
   'welcome_plan',
   'settings',
@@ -2394,6 +2412,8 @@ const _narrowScreens = {
   'guide',
 };
 const _bigTextScreens = {
+  'today_update',
+  'about_update',
   // A widget that failed, and the row that copies the details for support.
   'kit_error',
   'about_support',

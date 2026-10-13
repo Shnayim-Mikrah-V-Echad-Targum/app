@@ -28,6 +28,8 @@ dependencies:
   timezone: ^0.11.1
   url_launcher: ^6.3.3
   wakelock_plus: ^1.8.0
+  # The web build's offer of a new version (lib/services/web_update_web.dart).
+  web: ^1.1.1
   file_selector: ^1.1.0
   app_settings: ^9.0.0
   home_widget: ^0.10.0

@@ -3603,6 +3603,18 @@ abstract class AppLocalizations {
   /// **'Details copied'**
   String get supportDetailsCopied;
 
+  /// In the web app, at the top of Today and in About, once a new version of the app has downloaded and is waiting to replace the one open.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is ready.'**
+  String get webUpdateReady;
+
+  /// The button beside webUpdateReady, which reloads the app in the new version, keeping the reader's progress and settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get webUpdateRestart;
+
   /// Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built.
   ///
   /// In en, this message translates to:

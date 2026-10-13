@@ -718,6 +718,11 @@ class NoticeBanner extends StatelessWidget {
     final action = _legible(context);
     final below = actionBelow ? action : null;
     final dismiss = onDismiss;
+    // A title, or text over a button, starts beside the icon, as does
+    // marginalia, which runs to several lines; so does text beside a close
+    // button alone. Text beside a trailing button is centred with it, and
+    // with a close button after it.
+    final centred = below == null && title == null && !marginalia && (dismiss == null || action != null);
     // Marginalia's first line is taller than the icon, which is centred on it.
     final markTop = marginalia && title == null
         ? math.max(0.0, (MediaQuery.textScalerOf(context).scale(style!.fontSize!) * style.height! - 20) / 2)
@@ -740,11 +745,7 @@ class NoticeBanner extends StatelessWidget {
           below == null ? 12 : 4,
         ),
         child: Row(
-          // A title, or text over a button, starts beside the icon, as does
-          // marginalia, which runs to several lines.
-          crossAxisAlignment: below == null && title == null && dismiss == null && !marginalia
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
+          crossAxisAlignment: centred ? CrossAxisAlignment.center : CrossAxisAlignment.start,
           children: [
             if (markTop > 0)
               Padding(padding: EdgeInsets.only(top: markTop), child: leading ?? Icon(icon, size: 20, color: ink))
@@ -764,9 +765,10 @@ class NoticeBanner extends StatelessWidget {
             ),
             if (below == null) ?action,
             if (dismiss != null)
-              // Raised to the first line, its 48 dp target reaching the edge.
+              // Raised to the first line, its 48 dp target reaching the edge,
+              // unless centred with a button beside it.
               Transform.translate(
-                offset: const Offset(0, -12),
+                offset: Offset(0, centred ? 0 : -12),
                 child: IconButton(
                   tooltip: dismissLabel,
                   icon: Icon(Icons.close, size: 20, color: ink),

@@ -2193,6 +2193,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportDetailsCopied => 'Details copied';
 
   @override
+  String get webUpdateReady => 'A new version is ready.';
+
+  @override
+  String get webUpdateRestart => 'Restart';
+
+  @override
   String get errorPanelMessage => 'Something on this page didn’t load.';
 
   @override

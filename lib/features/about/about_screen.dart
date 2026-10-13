@@ -9,6 +9,7 @@ import '../../app/config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/feedback.dart';
 import '../../services/recent_errors.dart';
+import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/app_mark.dart';
@@ -17,6 +18,7 @@ import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
+import '../../ui/widgets/web_update_banner.dart';
 import '../community/data/backend.dart';
 
 /// The app's version and build, "1.0.0 (12)", or empty where the platform
@@ -87,6 +89,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
       body: watchHeading(PageBody(
         children: [
           _AboutHeader(nameKey: headingKey),
+          // On the web, a new version of the app, under the version open:
+          // offered here while it waits, though put away on Today.
+          if (ref.watch(webUpdateReadyProvider)) ...[
+            const Gap(Space.lg),
+            const WebUpdateBanner(),
+          ],
           GroupHeader(l.aboutGroupLearn),
           PaperGroup(
             children: [

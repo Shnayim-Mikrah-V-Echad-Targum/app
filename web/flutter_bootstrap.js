@@ -14,7 +14,10 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('flutter-first-frame', function () {
     var firstVisit = !navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js')
-      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (registration) {
+        offerUpdates(registration);
+        return navigator.serviceWorker.ready;
+      })
       .then(function (registration) {
         if (!firstVisit || !registration.active) return;
         // The engine, the fonts and any book opened so far loaded before the
@@ -29,6 +32,63 @@ if ('serviceWorker' in navigator) {
       })
       .catch(function (error) { console.warn('Offline support is unavailable:', error); });
   }, { once: true });
+}
+
+// A new version installs in the background and then waits, as long as any
+// window of this one is open (skipWaiting: false in workbox-config.cjs), so
+// that a window never mixes the two. An installed app or a pinned tab may
+// stay open for weeks: the app offers to restart into the new version
+// instead (lib/services/web_update.dart), once it is ready.
+function offerUpdates(registration) {
+  // Tells the app that [worker], a new version, is ready: as it happens,
+  // and in smUpdateReady for an app that asks later.
+  function ready(worker) {
+    window.smUpdateReady = worker;
+    window.dispatchEvent(new Event('sm-update-ready'));
+  }
+  // Only an update, never the first version, which installs while nothing
+  // controls the page yet and takes over at once.
+  function watch(worker) {
+    worker.addEventListener('statechange', function () {
+      if (worker.state === 'installed' && navigator.serviceWorker.controller) ready(worker);
+    });
+  }
+  if (registration.waiting && navigator.serviceWorker.controller) ready(registration.waiting);
+  // One the browser began installing as the page loaded, or one found later.
+  if (registration.installing) watch(registration.installing);
+  registration.addEventListener('updatefound', function () {
+    if (registration.installing) watch(registration.installing);
+  });
+
+  // The browser looks for a new version as the page loads; a window that
+  // stays open looks again whenever it comes back to the front, at most
+  // once an hour.
+  var checked = Date.now();
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible' || Date.now() - checked < 60 * 60 * 1000) return;
+    checked = Date.now();
+    registration.update().catch(function () {});
+  });
+
+  // Restarts into the new version, once the app has saved what it holds
+  // back: the waiting worker takes over (Workbox's SKIP_WAITING message),
+  // and the page reloads under it. Where it has taken over already, at a
+  // restart in another window, the page simply reloads.
+  var restarting = false;
+  window.smRestart = function () {
+    var worker = window.smUpdateReady;
+    if (!worker || worker.state !== 'installed') {
+      location.reload();
+      return;
+    }
+    if (!restarting) {
+      restarting = true;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        location.reload();
+      }, { once: true });
+    }
+    worker.postMessage({ type: 'SKIP_WAITING' });
+  };
 }
 
 // The installed app opens in its existing window (manifest.json's

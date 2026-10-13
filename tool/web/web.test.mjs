@@ -199,30 +199,83 @@ describe('the loading screen', () => {
 // ---------------------------------------------------------------------------
 // web/flutter_bootstrap.js
 
+/// A service worker of the fake page, in [state]: it records the messages
+/// posted to it, and [become] moves it on, as the browser does.
+function fakeWorker(state) {
+  const listeners = {};
+  return {
+    state,
+    messages: [],
+    addEventListener: (type, listener) => (listeners[type] = listener),
+    // Copied out of the page's realm, so that deepEqual compares plain values.
+    postMessage(message) {
+      this.messages.push(JSON.parse(JSON.stringify(message)));
+    },
+    become(next) {
+      this.state = next;
+      listeners.statechange?.();
+    },
+  };
+}
+
 /// Runs flutter_bootstrap.js (without Flutter's own loader) on a page whose
 /// service worker [controller] is set on a later visit, after the page has
-/// loaded [loaded].
-async function bootstrap({ controller = null, loaded = [], launchQueue = false, hash = '' } = {}) {
-  const messages = [];
+/// loaded [loaded]. The registration has [waiting] and [installing] workers,
+/// if given; the clock reads [now] until the test moves it.
+async function bootstrap({
+  controller = null,
+  loaded = [],
+  launchQueue = false,
+  hash = '',
+  waiting = null,
+  installing = null,
+} = {}) {
   const listeners = {};
   const registered = [];
-  // Copied out of the page's realm, so that deepEqual compares plain values.
-  const registration = { active: { postMessage: (message) => messages.push(JSON.parse(JSON.stringify(message))) } };
+  const dispatched = [];
+  const clock = { now: 1e12 };
+  const active = fakeWorker('activated');
+  const registration = {
+    active,
+    waiting,
+    installing,
+    listeners: {},
+    updates: 0,
+    addEventListener: (type, listener) => (registration.listeners[type] = listener),
+    update: async () => registration.updates++,
+  };
+  const serviceWorker = {
+    controller,
+    listeners: [],
+    register: async (url) => {
+      registered.push(url);
+      return registration;
+    },
+    ready: Promise.resolve(registration),
+    addEventListener: (type, listener, options) => serviceWorker.listeners.push({ type, listener, options }),
+  };
+  const document = {
+    visibilityState: 'visible',
+    listeners: {},
+    addEventListener: (type, listener) => (document.listeners[type] = listener),
+  };
   const page = {
     _flutter: { loader: { load: () => (page.loaderStarted = true) } },
-    navigator: {
-      serviceWorker: {
-        controller,
-        register: async (url) => registered.push(url),
-        ready: Promise.resolve(registration),
-      },
-    },
+    navigator: { serviceWorker },
+    document,
     performance: {
       setResourceTimingBufferSize: (size) => (page.bufferSize = size),
       getEntriesByType: (type) => (type === 'resource' ? loaded.map((name) => ({ name })) : []),
     },
-    location: { origin: 'https://example.org', hash },
+    location: { origin: 'https://example.org', hash, reloads: 0, reload: () => page.location.reloads++ },
     addEventListener: (type, listener) => (listeners[type] = listener),
+    dispatchEvent: (event) => dispatched.push(event.type),
+    Event: class {
+      constructor(type) {
+        this.type = type;
+      }
+    },
+    Date: { now: () => clock.now },
     URL,
     console,
   };
@@ -234,7 +287,7 @@ async function bootstrap({ controller = null, loaded = [], launchQueue = false, 
     listeners['flutter-first-frame']();
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  return { page, messages, registered };
+  return { page, messages: active.messages, registered, registration, serviceWorker, document, dispatched, clock };
 }
 
 describe('the bootstrap', () => {
@@ -273,6 +326,100 @@ describe('the bootstrap', () => {
   it('on a later visit, leaves the worker to cache what it serves', async () => {
     const { messages } = await bootstrap({ loaded, controller: {} });
     assert.deepEqual(messages, []);
+  });
+
+  it('offers a new version that is waiting as the app starts', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, dispatched } = await bootstrap({ controller: {}, waiting });
+    assert.equal(page.smUpdateReady, waiting);
+    assert.deepEqual(dispatched, ['sm-update-ready']);
+  });
+
+  it('offers a new version once it has installed, whenever it was found', async () => {
+    // One the browser began installing as the page loaded.
+    const early = fakeWorker('installing');
+    const first = await bootstrap({ controller: {}, installing: early });
+    assert.deepEqual(first.dispatched, []);
+    early.become('installed');
+    assert.equal(first.page.smUpdateReady, early);
+    assert.deepEqual(first.dispatched, ['sm-update-ready']);
+
+    // One found later, while the app is open.
+    const { page, registration, dispatched } = await bootstrap({ controller: {} });
+    const later = fakeWorker('installing');
+    registration.installing = later;
+    registration.listeners.updatefound();
+    assert.deepEqual(dispatched, []);
+    later.become('installed');
+    assert.equal(page.smUpdateReady, later);
+    assert.deepEqual(dispatched, ['sm-update-ready']);
+    // A newer one still, which replaces it, is the one offered.
+    const newer = fakeWorker('installing');
+    registration.installing = newer;
+    registration.listeners.updatefound();
+    newer.become('installed');
+    later.become('redundant');
+    assert.equal(page.smUpdateReady, newer);
+  });
+
+  it('never offers the first version, which takes over at once', async () => {
+    const installing = fakeWorker('installing');
+    const { page, dispatched } = await bootstrap({ installing });
+    installing.become('installed');
+    installing.become('activated');
+    assert.equal(page.smUpdateReady, undefined);
+    assert.deepEqual(dispatched, []);
+  });
+
+  it('looks for a new version when the window comes back to the front, at most once an hour', async () => {
+    const { registration, document, clock } = await bootstrap({ controller: {} });
+    const hour = 60 * 60 * 1000;
+    const shown = (state) => {
+      document.visibilityState = state;
+      document.listeners.visibilitychange();
+    };
+    // The browser looked as the page loaded.
+    clock.now += hour - 1;
+    shown('visible');
+    assert.equal(registration.updates, 0);
+    clock.now += 1;
+    shown('hidden');
+    assert.equal(registration.updates, 0, 'not as it goes behind');
+    shown('visible');
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    shown('visible');
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    shown('visible');
+    assert.equal(registration.updates, 2);
+  });
+
+  it('restarts into the new version: it takes over, and the page reloads under it', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker } = await bootstrap({ controller: {}, waiting });
+    page.smRestart();
+    assert.deepEqual(waiting.messages, [{ type: 'SKIP_WAITING' }]);
+    assert.equal(page.location.reloads, 0, 'not before it has taken over');
+    // Pressed again before it has: told again, with one reload to come.
+    page.smRestart();
+    assert.equal(waiting.messages.length, 2);
+    assert.equal(serviceWorker.listeners.length, 1);
+    const [{ type, listener, options }] = serviceWorker.listeners;
+    assert.equal(type, 'controllerchange');
+    assert.equal(options.once, true);
+    listener();
+    assert.equal(page.location.reloads, 1);
+  });
+
+  it('reloads at once where the new version took over in another window', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker } = await bootstrap({ controller: {}, waiting });
+    waiting.become('activating');
+    page.smRestart();
+    assert.equal(page.location.reloads, 1);
+    assert.deepEqual(waiting.messages, []);
+    assert.deepEqual(serviceWorker.listeners, []);
   });
 
   it("shows a shortcut's page in the window it opens in", async () => {
