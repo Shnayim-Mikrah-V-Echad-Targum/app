@@ -4,6 +4,7 @@ import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
 import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/tz_database.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -12,6 +13,7 @@ import 'package:shnayim_mikra/services/reminder_planner.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  setUpAll(ensureTimeZones);
   const planner = ReadingPlanner(schedule: ParshaSchedule(israel: false));
   const all = ReminderPrefs(daily: true, dailyMinutes: 20 * 60, erevShabbat: true, erevShabbatMinutes: 10 * 60, checkIn: true);
   WeekProgress empty(String id) => WeekProgress(weekId: id);

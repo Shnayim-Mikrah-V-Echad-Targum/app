@@ -5,9 +5,9 @@
 //
 // which writes build/web/sw.js; web/flutter_bootstrap.js registers it.
 //
-// Precached: the app shell, its start-up fonts and data. Cached on first use:
-// the engine (only the variant the browser loads), the books, the fonts
-// loaded on demand, and the policy pages.
+// Precached: the app shell and its deferred parts, its start-up fonts and
+// data. Cached on first use: the engine (only the variant the browser
+// loads), the books, the fonts loaded on demand, and the policy pages.
 //
 // The engine's and the books' caches are named after the engine and the
 // texts this version was built with, so a new version never reads, or
@@ -28,6 +28,9 @@ module.exports = {
   globPatterns: [
     'index.html',
     'main.dart.js',
+    // Its deferred parts, such as the time-zone database
+    // (lib/core/calendar/tz_database.dart), loaded once the app is up.
+    'main.dart.js_*.part.js',
     'flutter.js',
     'flutter_bootstrap.js',
     'manifest.json',

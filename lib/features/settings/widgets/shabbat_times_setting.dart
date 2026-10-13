@@ -30,6 +30,8 @@ class ShabbatTimesSetting extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final place = ref.watch(settingsProvider.select((s) => s.shabbatCity));
+    // Null too until the time-zone database is in, a moment after launch:
+    // the row shows the city alone meanwhile.
     final times = ref.watch(shabbatTimesProvider);
     // Loads the list, off the UI's isolate, and keeps it while the page is
     // open, so that the list of cities opens at once.

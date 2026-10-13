@@ -8,6 +8,7 @@ import 'package:shnayim_mikra/app/city_providers.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/tz_database.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_clock.dart';
@@ -36,6 +37,7 @@ Duration _jerusalemClock(LocalDate d) =>
     tz.TZDateTime(Zmanim.timeZone(_jerusalem.timeZone)!, d.year, d.month, d.day, 12).timeZoneOffset;
 
 void main() {
+  setUpAll(ensureTimeZones);
   /// Today at [now], on a device in Jerusalem with the city chosen for
   /// Shabbat times, in [language].
   Future<void> openToday(WidgetTester tester, DateTime now, {AppLanguage language = AppLanguage.english}) async {

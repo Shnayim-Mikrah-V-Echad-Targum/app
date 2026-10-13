@@ -442,4 +442,8 @@ describe('the build', () => {
     assert.match(config, /cacheName: runtimeCaches\.content/);
     assert.match(config, /skipWaiting: false/);
   });
+
+  it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {
+    assert.match(read('workbox-config.cjs'), /'main\.dart\.js',\n(?:\s*\/\/.*\n)*\s*'main\.dart\.js_\*\.part\.js',/);
+  });
 });

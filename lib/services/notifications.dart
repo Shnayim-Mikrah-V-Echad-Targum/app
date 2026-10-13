@@ -9,11 +9,11 @@ import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart' hide Priority;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../app/city_providers.dart';
 import '../app/providers.dart';
+import '../core/calendar/tz_database.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
 import '../features/progress/domain/reading_plan.dart' show kSecondsPerVerse;
@@ -90,17 +90,14 @@ class NotificationService {
     }
   }
 
-  /// Loads the time-zone database and finds the device's zone, which only
-  /// scheduling a reminder needs. Decoding the database blocks the UI for a
-  /// while, so it waits for the first frame and then for a moment when
-  /// nothing is animating.
+  /// Loads the time-zone database ([ensureTimeZones]) and finds the device's
+  /// zone, which only scheduling a reminder needs. Decoding the database
+  /// blocks the UI for a while, so it waits for the first frame and then for
+  /// a moment when nothing is animating.
   static Future<void> _loadTimeZoneDatabase() async {
     await WidgetsBinding.instance.waitUntilFirstFrameRasterized;
     try {
-      // Zmanim may have loaded it already.
-      if (!tz.timeZoneDatabase.isInitialized) {
-        await SchedulerBinding.instance.scheduleTask(tzdata.initializeTimeZones, Priority.idle);
-      }
+      await ensureTimeZones(schedule: (decode) => SchedulerBinding.instance.scheduleTask(decode, Priority.idle));
       final info = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(info.identifier));
     } catch (_) {

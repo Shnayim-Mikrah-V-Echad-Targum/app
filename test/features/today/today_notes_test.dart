@@ -6,6 +6,7 @@ import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
+import 'package:shnayim_mikra/core/calendar/tz_database.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
@@ -42,6 +43,7 @@ WeekProgress _onTheirDays(String id, LocalDate first, {int upTo = 7}) {
 WeekProgress _bereshit() => _onTheirDays('5787:1', _d(10, 5));
 
 void main() {
+  setUpAll(ensureTimeZones);
   Future<ProviderContainer> openToday(
     WidgetTester tester, {
     AppSettings? settings,

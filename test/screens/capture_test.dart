@@ -35,6 +35,7 @@ import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/core/calendar/city.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikra/core/calendar/tz_database.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
 import 'package:shnayim_mikra/data/models/verse_ref.dart';
@@ -2504,6 +2505,9 @@ Future<void> _write(WidgetTester tester, String name) async {
 
 void main() {
   setUpAll(() async {
+    // As the app loads it once the first frame is up, which tests never
+    // report.
+    await ensureTimeZones();
     if (_capture) await loadBundledFonts();
     if (_capture) {
       final verse = await TextRepository().hebrewVerse(const BookVerse('Genesis', VerseRef(3, 22)));
