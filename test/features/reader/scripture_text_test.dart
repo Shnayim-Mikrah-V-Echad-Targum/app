@@ -224,22 +224,77 @@ void main() {
     }
 
     testWidgets('at a very large size, the number leads the first line rather than take a quarter of it', (tester) async {
-      await pumpThemed(
-        tester,
-        Center(
-          child: SizedBox(
-            width: 400,
-            child: ScriptureVerse(
-              verse: serpent,
-              kind: ScriptureKind.mikra,
-              settings: const AppSettings(readingScale: 4),
-              hangingNumber: true,
+      const settings = AppSettings(readingScale: 4);
+      Future<void> pumpIn(double width) => pumpThemed(
+            tester,
+            Center(
+              child: SizedBox(
+                width: width,
+                child: ScriptureVerse(verse: serpent, kind: ScriptureKind.mikra, settings: settings, hangingNumber: true),
+              ),
             ),
-          ),
-        ),
-      );
+          );
+      // The column is sized by the gutter as the font in use measures it,
+      // so that the gutter surely takes more than a quarter of it, or less.
+      await pumpIn(400);
+      final gutter = ScriptureStyles(tester.element(find.byType(ScriptureVerse)), settings).gutterWidth;
+
+      await pumpIn((gutter * 3.5).roundToDouble());
       expect(find.byType(Row), findsNothing);
       expect(numberSpan(tester), isNotNull);
+
+      await pumpIn((gutter * 4.5).roundToDouble());
+      expect(find.byType(Row), findsOneWidget, reason: 'the number hangs where the gutter takes less than a quarter');
+      expect(numberSpan(tester), isNull);
+    });
+
+    // Genesis 41:49: מט, among the widest of the numbers.
+    final grain = Verse.fromJson(const VerseRef(41, 49), ['וַיִּצְבֹּר יוֹסֵף בָּר כְּחוֹל הַיָּם הַרְבֵּה מְאֹד']);
+
+    /// Checks that the hanging number [numeral] is set on one line within
+    /// its gutter, and returns the gutter's width.
+    double numberWithinGutter(WidgetTester tester, String numeral, String reason) {
+      final number = find.text(numeral);
+      expect(number, findsOneWidget, reason: reason);
+      final gutter = tester.getRect(find.ancestor(of: number, matching: find.byType(SizedBox)).first);
+      final paragraph = tester.renderObject<RenderParagraph>(find.descendant(of: number, matching: find.byType(RichText)));
+      final glyphs = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: numeral.length));
+      expect({for (final b in glyphs) b.top.round()}, hasLength(1), reason: '$reason: on one line');
+      final origin = tester.getTopLeft(number).dx;
+      expect(origin + glyphs.map((b) => b.right).reduce(math.max), lessThanOrEqualTo(gutter.right + 0.01), reason: reason);
+      expect(origin + glyphs.map((b) => b.left).reduce(math.min), greaterThanOrEqualTo(gutter.left - 0.01), reason: reason);
+      return gutter.width;
+    }
+
+    testWidgets('the widest number keeps to one line in its gutter, at 100% and 200% text and in bold', (tester) async {
+      for (final (textScale, bold) in [(1.0, false), (2.0, false), (1.0, true), (2.0, true)]) {
+        await pumpThemed(
+          tester,
+          ScriptureVerse(verse: grain, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+          textScale: textScale,
+          boldText: bold,
+        );
+        numberWithinGutter(tester, 'מט', '${(textScale * 100).round()}%${bold ? ', bold' : ''}');
+      }
+    });
+
+    testWidgets('the gutter grows with text a system scales unevenly, as Android 14 scales it', (tester) async {
+      for (final (verse, numeral) in [(grain, 'מט'), (serpent, 'כב')]) {
+        await pumpThemed(
+          tester,
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+        );
+        final plain = numberWithinGutter(tester, numeral, 'at 100%');
+        // As though the reader had then set the system's text larger, in
+        // the same run: the numbers are measured at their new size.
+        await pumpThemed(
+          tester,
+          ScriptureVerse(verse: verse, kind: ScriptureKind.mikra, settings: const AppSettings(), hangingNumber: true),
+          textScaler: const _UnevenTextScaler(),
+        );
+        final larger = numberWithinGutter(tester, numeral, 'scaled unevenly');
+        expect(larger, greaterThan(plain * 1.5));
+      }
     });
 
     for (final theme in [AppThemeMode.light, AppThemeMode.highContrastDark, AppThemeMode.highContrastLight]) {
@@ -721,4 +776,17 @@ void main() {
       expect(container.duration, Motion.short);
     });
   });
+}
+
+/// A system text scale that grows small text faster than large, as
+/// Android 14's nonlinear font scaling does: small sizes nearly doubled, and
+/// 100 left as it is, so that a scale of 100 tells nothing of the rest.
+class _UnevenTextScaler extends TextScaler {
+  const _UnevenTextScaler();
+
+  @override
+  double scale(double fontSize) => fontSize >= 100 ? fontSize : fontSize * (2 - fontSize / 100);
+
+  @override
+  double get textScaleFactor => 2;
 }

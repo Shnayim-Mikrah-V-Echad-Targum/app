@@ -240,7 +240,9 @@ Future<ProviderContainer> openRoute(
 }
 
 /// Pumps [child] on a page in the app's [theme], in English or Hebrew, as the
-/// app would show it, for widget tests that don't need the whole app.
+/// app would show it, for widget tests that don't need the whole app: at
+/// [textScale], or with [textScaler] where the system's isn't linear, and
+/// with the system's bold text where [boldText].
 Future<void> pumpThemed(
   WidgetTester tester,
   Widget child, {
@@ -248,6 +250,8 @@ Future<void> pumpThemed(
   bool hebrew = false,
   UiFont uiFont = UiFont.standard,
   double textScale = 1,
+  TextScaler? textScaler,
+  bool boldText = false,
 }) =>
     tester.pumpWidget(MaterialApp(
       theme: AppTheme.build(mode: theme, uiFont: uiFont, hebrewUi: hebrew, reduceMotion: false),
@@ -262,7 +266,7 @@ Future<void> pumpThemed(
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, page) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler ?? TextScaler.linear(textScale), boldText: boldText),
         child: page!,
       ),
       home: Scaffold(body: child),

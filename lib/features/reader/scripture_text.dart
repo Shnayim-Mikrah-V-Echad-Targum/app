@@ -196,13 +196,17 @@ class ScriptureStyles {
       _watchingFonts = true;
       PaintingBinding.instance.systemFonts.addListener(_widestNumbers.clear);
     }
-    final widest = _widestNumbers[(style.fontSize!, style.fontWeight, scaler.scale(100))] ??= _widestNumber(style, scaler);
+    // Keyed by the size the numbers are set at, which is all their widths
+    // depend on: a text scale's factor wouldn't do, as the system's may grow
+    // small text faster than large (Android 14's).
+    final size = scaler.scale(style.fontSize!);
+    final widest = _widestNumbers[(size, style.fontWeight)] ??= _widestNumber(style.copyWith(fontSize: size));
     return widest + numberGapWidth;
   }
 
-  /// The widest verse number from 1 to [_mostVerses] in [style] at [scaler],
-  /// to the next whole pixel, so that no number wraps for a rounding.
-  static double _widestNumber(TextStyle style, TextScaler scaler) {
+  /// The widest verse number from 1 to [_mostVerses] in [style], to the
+  /// next whole pixel, so that no number wraps for a rounding.
+  static double _widestNumber(TextStyle style) {
     // One number to a line: the paragraph is as wide as the widest.
     final painter = TextPainter(
       text: TextSpan(
@@ -210,16 +214,15 @@ class ScriptureStyles {
         style: style,
       ),
       textDirection: TextDirection.rtl,
-      textScaler: scaler,
     )..layout();
     final width = painter.width.ceilToDouble();
     painter.dispose();
     return width;
   }
 
-  /// [_widestNumber]'s widths, by the number's size and weight and the text
-  /// scale.
-  static final _widestNumbers = <(double, FontWeight?, double), double>{};
+  /// [_widestNumber]'s widths, by the size the numbers are set at, at the
+  /// system text scale, and their weight.
+  static final _widestNumbers = <(double, FontWeight?), double>{};
   static var _watchingFonts = false;
 
   /// The gutter the guided reader hangs a verse's number in, in a column
