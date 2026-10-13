@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
@@ -8,6 +9,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/theme/motion.dart';
+import 'package:shnayim_mikra/ui/widgets/lines.dart' show BalancedText;
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
 
@@ -118,6 +120,10 @@ Future<void> _finish(
 
 bool _focused(WidgetTester tester, String label) => Focus.of(tester.element(find.text(label))).hasFocus;
 
+/// A marginalia line of the panel that says [text]: one text, or where it
+/// is too long for one line, a text for each of its sentences.
+Finder _line(String text) => find.byWidgetPredicate((w) => w is BalancedText && w.text == text);
+
 /// The lines of the standing line, beside its [status]'s icon.
 List<String> _standingLines(WidgetTester tester, WeekStatus status) {
   final line = find.ancestor(of: find.byIcon(WeekStatusBadge.icon(status)), matching: find.byType(Row)).first;
@@ -128,6 +134,35 @@ List<String> _standingLines(WidgetTester tester, WeekStatus status) {
 /// The standing line as it reads, its lines rejoined: a line breaks only
 /// between two parts, where their dot is.
 String _standing(WidgetTester tester, WeekStatus status) => _standingLines(tester, status).join(' · ');
+
+/// Checks that the standing line, what is drawn of its icon and its words
+/// together, is centred under the panel's [title], with its icon at the
+/// start: the left, or in [hebrew], the right.
+void _expectStandingCentred(WidgetTester tester, WeekStatus status, String title, {bool hebrew = false}) {
+  final icon = find.byIcon(WeekStatusBadge.icon(status));
+  final glyph = tester.getRect(icon);
+  // Where its words are drawn, line by line.
+  final row = find.ancestor(of: icon, matching: find.byType(Row)).first;
+  var words = Rect.zero;
+  final text = find.descendant(of: row, matching: find.byType(Flexible));
+  for (final element in find.descendant(of: text, matching: find.byType(RichText)).evaluate()) {
+    final paragraph = element.renderObject! as RenderParagraph;
+    // Word by word: a space that ends a line hangs past it.
+    for (final word in RegExp(r'[^\s\u00A0]+').allMatches(paragraph.text.toPlainText())) {
+      for (final box in paragraph.getBoxesForSelection(TextSelection(baseOffset: word.start, extentOffset: word.end))) {
+        final rect = MatrixUtils.transformRect(paragraph.getTransformTo(null), box.toRect());
+        words = words == Rect.zero ? rect : words.expandToInclude(rect);
+      }
+    }
+  }
+  final drawn = glyph.expandToInclude(words);
+  expect(drawn.center.dx, closeTo(tester.getRect(find.text(title)).center.dx, 1), reason: 'centred under the title');
+  if (hebrew) {
+    expect(glyph.left, greaterThan(words.right), reason: 'the icon at the start, the right');
+  } else {
+    expect(glyph.right, lessThan(words.left), reason: 'the icon at the start, the left');
+  }
+}
 
 void main() {
   testWidgets('finishing Shlishi with the day still ahead names Revi\'i, and how long it is', (tester) async {
@@ -152,7 +187,7 @@ void main() {
     );
 
     expect(find.text('Shlishi is complete'), findsOneWidget);
-    expect(find.text('That’s today’s reading. See you tomorrow.'), findsOneWidget);
+    expect(_line('That’s today’s reading. See you tomorrow.'), findsOneWidget);
     expect(find.text('Revi’i is 21 verses.'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Keep going: Revi’i'), findsOneWidget);
@@ -170,7 +205,7 @@ void main() {
     );
 
     expect(find.text('Shishi is complete'), findsOneWidget);
-    expect(find.text('The rest is for Shabbat morning. Shabbat shalom!'), findsOneWidget);
+    expect(_line('The rest is for Shabbat morning. Shabbat shalom!'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Keep going: Shevi’i'), findsOneWidget);
   });
 
@@ -186,7 +221,7 @@ void main() {
     );
 
     expect(find.text('Chamishi is complete'), findsOneWidget);
-    expect(find.text('That’s today’s reading. See\u00A0you\u00A0on\u00A0Friday.'), findsOneWidget);
+    expect(_line('That’s today’s reading. See\u00A0you\u00A0on\u00A0Friday.'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Keep going: Shishi'), findsOneWidget);
   });
 
@@ -226,7 +261,7 @@ void main() {
     );
 
     expect(find.text('Shishi is complete'), findsOneWidget);
-    expect(find.text('The rest is for Shabbat morning. Shanah\u00A0tovah!'), findsOneWidget);
+    expect(_line('The rest is for Shabbat morning. Shanah\u00A0tovah!'), findsOneWidget);
   });
 
   group('the parsha finished', () {
@@ -371,6 +406,8 @@ void main() {
       );
 
       expect(_standing(tester, WeekStatus.onTime), 'On time');
+      // As wide as its words, under the centred title.
+      _expectStandingCentred(tester, WeekStatus.onTime, 'Parshat Bereshit is complete');
       expect(find.textContaining('streak', findRichText: true), findsNothing);
       expect(find.text('Read the haftarah'), findsNothing);
       expect(find.widgetWithText(FilledButton, 'Done'), findsOneWidget, reason: 'with nothing else to do, Done leads');
@@ -432,6 +469,21 @@ void main() {
       expect(find.text('Parshat Bereshit is complete'), findsOneWidget);
       expect(_standing(tester, WeekStatus.late), 'After Shabbat\u00A0— and it still counts. Your streak continues.');
       expect(find.textContaining('shalom'), findsNothing);
+      _expectStandingCentred(tester, WeekStatus.late, 'Parshat Bereshit is complete');
+    });
+
+    testWidgets('after Shabbat, in Hebrew, its sentence is centred under the title, its icon at the right', (tester) async {
+      await _finish(
+        tester,
+        aliyah: 6,
+        day: DateTime(2026, 10, 11, 10),
+        progress: _readThrough(5, partly: 6, on: _monday),
+        settings: const AppSettings(language: AppLanguage.hebrew),
+        next: 'הבא',
+        finish: 'סיום',
+      );
+
+      _expectStandingCentred(tester, WeekStatus.late, 'הפרשה הושלמה', hebrew: true);
     });
 
     testWidgets('at twice the text size, keeps each part of the standing line whole, and gives the buttons room',
@@ -469,6 +521,46 @@ void main() {
         expect(outer.bottom - text.bottom, greaterThanOrEqualTo(8), reason: label);
       }
       expect(tester.getSize(find.byIcon(Icons.auto_stories_outlined)), const Size.square(32));
+      // Its lines, beside the icon, centred under the title.
+      _expectStandingCentred(tester, WeekStatus.onTime, 'Parshat Bereshit is complete');
+    });
+  });
+
+  group('at twice the text size, the buttons have room', () {
+    void expectRoomy(WidgetTester tester, Finder button, String label) {
+      final outer = tester.getRect(button);
+      final text = tester.getRect(find.text(label));
+      expect(text.top - outer.top, greaterThanOrEqualTo(8), reason: label);
+      expect(outer.bottom - text.bottom, greaterThanOrEqualTo(8), reason: label);
+      expect(outer.height, greaterThanOrEqualTo(52), reason: label);
+    }
+
+    testWidgets("Next aliyah, its chevron grown with its label, and a quiet Done", (tester) async {
+      await _finish(
+        tester,
+        aliyah: 2,
+        day: DateTime(2026, 10, 9, 10),
+        progress: _readThrough(1, partly: 2, on: _monday),
+        textScale: 2,
+      );
+
+      expectRoomy(tester, find.widgetWithText(FilledButton, 'Next aliyah · Revi’i'), 'Next aliyah · Revi’i');
+      expectRoomy(tester, find.widgetWithText(TextButton, 'Done'), 'Done');
+      // 1.6 times the theme's 20.
+      expect(tester.getSize(find.byIcon(Icons.chevron_right)), const Size.square(32));
+    });
+
+    testWidgets('Done leading, and a quiet Keep going', (tester) async {
+      await _finish(
+        tester,
+        aliyah: 2,
+        day: DateTime(2026, 10, 7, 10),
+        progress: _readThrough(1, partly: 2, on: LocalDate(2026, 10, 7)),
+        textScale: 2,
+      );
+
+      expectRoomy(tester, find.widgetWithText(FilledButton, 'Done'), 'Done');
+      expectRoomy(tester, find.widgetWithText(TextButton, 'Keep going: Revi’i'), 'Keep going: Revi’i');
     });
   });
 

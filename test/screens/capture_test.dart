@@ -296,6 +296,9 @@ const _screens = {
   'reader_finished_week': '/read/5787:1/6',
   // Shevi'i just finished on the Sunday after: the parsha, after Shabbat.
   'reader_finished_late': '/read/5787:1/6',
+  // Shevi'i just finished on Friday with streaks hidden: "On time" alone,
+  // centred under the title.
+  'reader_finished_quiet': '/read/5787:1/6',
   // Shevi'i of Naso 5787 just finished on Erev Shavuot: Chag sameach.
   'reader_finished_chag': '/read/5787:35/6',
   'reader_full': '/read/5787:1/2?mode=full',
@@ -756,6 +759,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_finished_erev': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah, plan: ReadingPlanType.sheviiOnShabbat),
   'reader_finished_week': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_finished_late': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
+  'reader_finished_quiet': (s) =>
+      s.copyWith(method: ReadingMethod.aliyahByAliyah, showStreaks: false).withRepeatLastVerse(false),
   'reader_finished_chag': (s) => s.copyWith(method: ReadingMethod.aliyahByAliyah).withRepeatLastVerse(false),
   'reader_verse_focus': (s) => s.copyWith(focusMode: true, showTranslation: true),
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
@@ -1092,6 +1097,7 @@ final _screenProgress = <String, ProgressState Function()>{
   'reader_finished_erev': () => _readThrough(4, partly: 5),
   'reader_finished_week': () => _readThrough(5, partly: 6),
   'reader_finished_late': () => _readThrough(5, partly: 6),
+  'reader_finished_quiet': () => _readThrough(5, partly: 6),
   'reader_finished_chag': () {
     final day = LocalDate(2027, 6, 10);
     var w = WeekProgress(weekId: '5787:35');
@@ -1465,6 +1471,7 @@ final _taps = {
     'reader_finished_erev',
     'reader_finished_week',
     'reader_finished_late',
+    'reader_finished_quiet',
     'reader_finished_chag',
   ])
     screen: () => find.byWidgetPredicate((w) => w is FilledButton).last,
@@ -2300,6 +2307,11 @@ const _hugeTallScreens = {
   // The colophon's frame at its narrowest padding, its lines balanced.
   'celebrate',
   'celebrate_siyum',
+  // The finished panel: its title and standing line kept whole, and its
+  // buttons, for an aliyah and for the parsha.
+  'reader_finished_day',
+  'reader_finished_week',
+  'reader_finished_late',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 

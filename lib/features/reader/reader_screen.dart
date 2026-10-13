@@ -23,7 +23,7 @@ import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
-import '../../ui/widgets/lines.dart' show BalancedText, DotLine, WholeWords, dashHeldToWord;
+import '../../ui/widgets/lines.dart' show BalancedText, DotLine, WholeWords;
 import '../../ui/widgets/ornaments.dart' show Eyebrow, SeferDivider;
 import '../../ui/widgets/progress_widgets.dart' show ParshaRings, WeekStatusBadge;
 import '../notes/domain/annotations.dart';
@@ -2481,8 +2481,8 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
     // are earned, not as a parsha read already is stepped through again.
     final streaks = settings.showStreaks && widget.justCompleted;
     final status = evaluation.status;
-    // A sentence is one part, its dash held to the word before it, so that
-    // no line starts with one.
+    // A sentence is one part, as it is written: the line holds its dash to
+    // the word before it.
     final parts = switch (status) {
       WeekStatus.onTime when streaks => [
           l.weekOnTime,
@@ -2490,8 +2490,8 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
           if (evaluation.earnedGrace) l.graceDayEarned,
         ],
       WeekStatus.onTime => [l.weekOnTime],
-      WeekStatus.late => [dashHeldToWord(streaks ? l.parshaDoneLateStreak : l.parshaDoneLate)],
-      WeekStatus.restored => [dashHeldToWord(streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored)],
+      WeekStatus.late => [streaks ? l.parshaDoneLateStreak : l.parshaDoneLate],
+      WeekStatus.restored => [streaks ? l.parshaDoneRestoredStreak : l.parshaDoneRestored],
       _ => null,
     };
     return parts == null ? null : (status, parts);
@@ -2655,17 +2655,17 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                             ?.copyWith(color: scheme.onSurface),
                       ),
                     ),
+                    // The marginalia lines balanced, and their words kept
+                    // whole however large the text, as the title's are; a
+                    // line of two sentences too long for one line sets each
+                    // on its own.
                     if (next != null) ...[
                       gap(8),
                       if (doneForToday != null) ...[
-                        Text(doneForToday, textAlign: TextAlign.center, style: marginalia),
+                        BalancedText(doneForToday, style: marginalia, bySentence: true),
                         gap(4),
                       ],
-                      Text(
-                        l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]),
-                        textAlign: TextAlign.center,
-                        style: marginalia,
-                      ),
+                      BalancedText(l.nextAliyahLength(names.aliyah(next), ctx.aliyahVerses[next]), style: marginalia),
                     ],
                     if (standing case (final status, final parts)) ...[
                       gap(8),
@@ -2673,7 +2673,7 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
                     ],
                     if (greeting != null) ...[
                       gap(8),
-                      Text(greeting, textAlign: TextAlign.center, style: marginalia),
+                      BalancedText(greeting, style: marginalia),
                     ],
                     gap(24),
                     for (final (i, button) in buttons.indexed) ...[
@@ -2694,8 +2694,9 @@ class _FinishedPanelState extends ConsumerState<_FinishedPanel> with SingleTicke
 /// How a finished parsha stands: its status's icon, in its colour, and its
 /// parts between middle dots (§6.23), which a line breaks between rather
 /// than inside one, or a sentence, its lines balanced so that none is left
-/// with a word alone. Lines after the first start under it, beside the
-/// icon, the whole centred in the panel.
+/// with a word alone, and its dash held to the word before it where the two
+/// fit on a line. Lines after the first start under it, beside the icon,
+/// the whole as wide as its text and centred in the panel.
 class _StandingLine extends StatelessWidget {
   const _StandingLine({required this.status, required this.parts});
 
@@ -2710,7 +2711,9 @@ class _StandingLine extends StatelessWidget {
     // Growing with the text, as the buttons' icons do, but never
     // outweighing it, and centred on the first line.
     final iconSize = scaler.clamp(maxScaleFactor: 1.6).scale(18);
-    final line = scaler.scale(style.fontSize! * (style.height ?? 1));
+    // As the text lays its line out: the system's scale may grow small text
+    // faster than large, so it scales the size, not the line.
+    final line = scaler.scale(style.fontSize!) * (style.height ?? 1);
     // One stop for a screen reader, however many lines it takes.
     return MergeSemantics(
       child: Row(
@@ -2724,7 +2727,7 @@ class _StandingLine extends StatelessWidget {
           const SizedBox(width: 6),
           Flexible(
             child: parts.length == 1
-                ? BalancedText(parts.single, style: style, textAlign: TextAlign.start)
+                ? BalancedText(parts.single, style: style, textAlign: TextAlign.start, holdDashes: true, shrinkWrap: true)
                 : DotLine(parts, style: style),
           ),
         ],
