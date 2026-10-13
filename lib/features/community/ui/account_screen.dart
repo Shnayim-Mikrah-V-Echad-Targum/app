@@ -7,14 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../app/retry.dart';
 import '../../../app/routes.dart';
 import '../../../services/feedback.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/app_mark.dart';
 import '../../../ui/widgets/common.dart';
+import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
+import '../../../ui/widgets/sefer_tag.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
 import '../data/models.dart';
@@ -257,7 +260,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         text: l.signInPrivacy,
         link: l.privacyTitle,
         textAlign: TextAlign.center,
-        onTap: () => context.push('/legal/privacy'),
+        onTap: () => context.push(policyPath(context, 'privacy', fromAccount: true)),
       ),
     ];
   }
@@ -961,7 +964,7 @@ class _NameDialogState extends State<_NameDialog> {
 }
 
 /// The member signed in, on a card: their initial on a 56 px disc, their
-/// name, the email they sign in with, a moderator's chip, and a button that
+/// name, the email they sign in with, a moderator's tag, and a button that
 /// edits the name.
 class _ProfileCard extends StatelessWidget {
   const _ProfileCard({required this.name, required this.email, required this.moderator, required this.onEdit});
@@ -1014,11 +1017,7 @@ class _ProfileCard extends StatelessWidget {
                   const Gap(Space.sm),
                   Align(
                     alignment: AlignmentDirectional.centerStart,
-                    child: Chip(
-                      avatar: Icon(Icons.shield_outlined, size: 18, color: scheme.onSurfaceVariant),
-                      label: Text(l.moderatorBadge),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                    child: SeferTag(l.moderatorBadge, icon: Icons.shield_outlined),
                   ),
                 ],
               ],
@@ -1043,7 +1042,7 @@ class _BlockedMembersSheet extends ConsumerStatefulWidget {
   ConsumerState<_BlockedMembersSheet> createState() => _BlockedMembersSheetState();
 }
 
-class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
+class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> with FetchAgainIfFailed {
   /// The members whose Unblock is being sent.
   final _busy = <String>{};
 
@@ -1064,10 +1063,22 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
         // Their words come back to the forums' excerpts.
         ..invalidate(threadsProvider);
     } catch (e) {
-      if (mounted) setState(() => _errors[id] = communityError(l, e));
+      if (!mounted) return;
+      final message = communityError(l, e);
+      setState(() => _errors[id] = message);
+      announceFieldError(context, message);
     } finally {
       if (mounted) setState(() => _busy.remove(id));
     }
+  }
+
+  /// [name] as its row shows it: in its own direction, at the row's start,
+  /// isolated where it runs the other way; and a member who has none, as
+  /// their posts name them.
+  String _shown(String name) {
+    if (name.isEmpty) return context.l10n.anonymousMember;
+    final direction = Directionality.of(context);
+    return autoDirection(name, fallback: direction) == direction ? name : isolate(name);
   }
 
   @override
@@ -1076,7 +1087,15 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final padding = sheetPadding(context);
-    final members = ref.watch(blockedMembersProvider);
+    final members = watchFresh(
+      blockedMembersProvider,
+      // The members are fetched with the list of them, which may be what
+      // failed.
+      fetch: () {
+        if (ref.read(blockedUsersProvider).hasError) ref.invalidate(blockedUsersProvider, asReload: true);
+        ref.invalidate(blockedMembersProvider, asReload: true);
+      },
+    );
     Widget note(String text) => Padding(
           padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, Space.sm),
           child: Text(text, style: theme.textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant)),
@@ -1091,46 +1110,48 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
           children: [
             SheetTitle(l.blockedUsersTitle),
             members.when(
+              // Tried again, a failure stays, its button spinning, until the
+              // outcome.
+              skipLoadingOnReload: members.hasError,
               loading: () => Padding(
                 padding: const EdgeInsets.all(Space.xxl),
                 child: Center(child: CircularProgressIndicator(semanticsLabel: l.loading)),
               ),
-              error: (e, _) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  note(communityError(l, e)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padding - Space.sm),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton(
-                        onPressed: () => ref.invalidate(blockedUsersProvider),
-                        child: Text(l.actionRetry),
-                      ),
-                    ),
-                  ),
-                ],
+              error: (e, _) => Padding(
+                padding: EdgeInsets.fromLTRB(padding, Space.sm, padding, 0),
+                child: ErrorMessage(
+                  message: communityError(l, e),
+                  // The members are fetched again with the list of them.
+                  onRetry: () => ref.invalidate(blockedUsersProvider),
+                  retrying: members.isLoading,
+                ),
               ),
               data: (list) => list.isEmpty
                   ? note(l.noBlockedMembers)
-                  : Column(
-                      children: [
-                        for (final (id, name) in list)
-                          ListTile(
-                            title: Text(name, textDirection: autoDirection(name, fallback: Directionality.of(context))),
-                            subtitle: switch (_errors[id]) {
-                              final error? => Semantics(
-                                  liveRegion: !MediaQuery.supportsAnnounceOf(context),
-                                  child: Text(error, style: theme.textTheme.bodySmall?.copyWith(color: scheme.error)),
-                                ),
-                              null => null,
-                            },
-                            trailing: TextButton(
-                              onPressed: _busy.contains(id) ? null : () => _unblock(id),
-                              child: Text(l.unblock),
+                  // Each member by their initial, as their posts show them,
+                  // on rows of one paper group within the sheet's padding.
+                  : Padding(
+                      padding: EdgeInsets.symmetric(horizontal: padding),
+                      child: PaperGroup(
+                        children: [
+                          for (final (id, name) in list)
+                            PaperRow(
+                              leading: InitialDisc(name),
+                              title: _shown(name),
+                              subtitle: _errors[id],
+                              // Why, in full, however narrow the phone.
+                              subtitleMaxLines: null,
+                              subtitleStyle: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
+                              // Said as it appears where the platform takes
+                              // no announcements (see _unblock).
+                              liveRegion: _errors.containsKey(id) && !MediaQuery.supportsAnnounceOf(context),
+                              trailing: TextButton(
+                                onPressed: _busy.contains(id) ? null : () => _unblock(id),
+                                child: Text(l.unblock),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ],

@@ -2607,6 +2607,12 @@ abstract class AppLocalizations {
   /// **'Sepia'**
   String get themeSepia;
 
+  /// The first line of a high-contrast theme's swatch label, over themeLight or themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'High contrast'**
+  String get themeHc;
+
   /// No description provided for @themeHcLight.
   ///
   /// In en, this message translates to:
@@ -3507,12 +3513,6 @@ abstract class AppLocalizations {
   /// **'Backup & restore'**
   String get dataGroupBackup;
 
-  /// Under resetProgress in Your data.
-  ///
-  /// In en, this message translates to:
-  /// **'This can’t be undone.'**
-  String get resetProgressDesc;
-
   /// No description provided for @aboutTitle.
   ///
   /// In en, this message translates to:
@@ -4167,6 +4167,12 @@ abstract class AppLocalizations {
   /// **'Delete this post?'**
   String get deletePostConfirm;
 
+  /// Said of what can't be undone: the message of a dialog that confirms it, such as deleting a post, under its question, and the line under Reset all progress in Your data.
+  ///
+  /// In en, this message translates to:
+  /// **'This can’t be undone.'**
+  String get cantBeUndone;
+
   /// No description provided for @postDeleted.
   ///
   /// In en, this message translates to:
@@ -4520,6 +4526,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your unsent draft is kept. Discard it to ask about {reference} instead.'**
   String askDraftKept(String reference);
+
+  /// Tooltip of the button beside the verse quoted above a question's message, in a new discussion or while a posted question is edited, which takes the verse out of the question.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the verse'**
+  String get removeVerseQuote;
+
+  /// Status message once the verse quoted above a new question's message is taken out of it, with Undo, which puts it back.
+  ///
+  /// In en, this message translates to:
+  /// **'Verse removed'**
+  String get verseQuoteRemoved;
 
   /// No description provided for @charactersLeft.
   ///

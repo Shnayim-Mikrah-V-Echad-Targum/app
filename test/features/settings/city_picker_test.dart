@@ -16,6 +16,7 @@ import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/city_directory.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/city_picker_screen.dart';
+import 'package:shnayim_mikra/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
@@ -475,6 +476,31 @@ void main() {
       await tester.tap(find.byTooltip('Clear search'));
       await tester.pumpAndSettle();
       expect(find.textContaining('No city matches'), findsNothing);
+    });
+
+    testWidgets("says when the list can't load, and loads it when tried again", (tester) async {
+      var attempts = 0;
+      final c = await pumpApp(
+        tester,
+        settings: AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 9, 1)),
+        now: _now,
+        overrides: <Override>[
+          cityDirectoryProvider.overrideWith((ref) async {
+            if (attempts++ == 0) throw Exception('unreadable');
+            return directory;
+          }),
+          deviceTimeZoneProvider.overrideWith((ref) => 'Asia/Jerusalem'),
+        ],
+      );
+      c.read(routerProvider).go('/settings/reading/city');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, 'Something went wrong. Please try again.'), findsOneWidget);
+      expect(attempts, 1, reason: 'tried again only when asked');
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Try again'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorMessage), findsNothing);
+      expect(find.text('Jerusalem'), findsOneWidget);
     });
 
     testWidgets('loads the list from the app\'s assets', (tester) async {

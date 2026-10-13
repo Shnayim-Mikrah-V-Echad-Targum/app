@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../theme/focus.dart';
 import '../theme/layout.dart';
@@ -269,8 +272,8 @@ class _RowRule extends CustomPainter {
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
 /// so that the row and its state read as one item, in the control's role. A
-/// trailing button with a
-/// label (a [TextButton], say) ends the title's line as a value does, and
+/// trailing button with a label (a [TextButton], say) ends the title's line as
+/// a value does, the icon lining up with that line too over a subtitle, and
 /// moves under the title when the two don't fit side by side, rather than
 /// squeeze the title until its words break (large text).
 ///
@@ -482,7 +485,7 @@ class PaperRow extends StatelessWidget {
     // and the lines under it. Where the title is set smaller, at [fit], to
     // keep a long word whole, they are set no larger than it, so that the
     // title is never the smaller.
-    ({Widget heading, List<Widget> under}) texts(double fit) {
+    ({Widget heading, Widget title, List<Widget> under}) texts(double fit) {
       // As drawn, scaled: a scaler that isn't linear (Android's) grows a
       // small size more than a large one.
       final limit = fit * scaler.scale(titleSize);
@@ -528,6 +531,7 @@ class PaperRow extends StatelessWidget {
             ),
           );
       return (
+        title: titleText,
         heading: value != null
             ? titleWith(
                 valueLocale == null
@@ -583,20 +587,66 @@ class PaperRow extends StatelessWidget {
               style: titleStyle,
               breakAtHyphens: breakTitleAtHyphens,
             );
-      final (:heading, :under) = texts(fit);
-      // A value ends the title's line. With a subtitle or a detail line under
-      // them, the icon and the end of the row line up with that line too,
-      // rather than with the middle of the row, so the value and chevron stay
-      // side by side.
-      final onTitleLine = value != null && (subtitle != null || detail != null);
+      final (:heading, title: titleText, :under) = texts(fit);
+      // A value ends the title's line, and so does a labelled button. With a
+      // subtitle or a detail line under them, the icon and the end of the row
+      // line up with that line too, rather than with the middle of the row,
+      // so the value and chevron stay side by side, and a member's initial
+      // stands by their name.
+      final onTitleLine = (value != null || besideTitle != null) && (subtitle != null || detail != null);
+      // The title's line is as high as its text, or beside a button as high
+      // as the button, a tap target 48 high at least, whose label is set
+      // smaller than the title.
+      final titleLine = scaler.scale(titleSize) * (titleStyle.height ?? 1.5);
+      final firstLine = besideTitle == null ? titleLine : math.max(titleLine, kMinInteractiveDimension);
       Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
           ? ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
+              constraints: BoxConstraints(minHeight: firstLine),
               child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
             )
           : child;
       final end = <Widget>[?control, if (chevron) chevronIcon];
+      final endColumns = [
+        for (final (i, widget) in end.indexed)
+          Padding(
+            // A chevron straight after a value stays close to it.
+            padding: EdgeInsetsDirectional.only(start: i == 0 && (value == null || trailing != null) ? 12 : 4),
+            child: place(widget, Alignment.center),
+          ),
+      ];
+      // A leading icon or widget beside a title and its labelled button:
+      // level with the title's first line, beside the button where the two
+      // share it, and where the button goes under the title (a long name),
+      // by the title's line alone, as a blocked member's initial stays by
+      // their name, with or without a line under them.
+      if (_hasLead && besideTitle != null) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _TitleAndButton(
+                    lead: leading ?? AppIcon(icon!, size: 22, color: iconColor ?? scheme.onSurfaceVariant),
+                    title: titleText,
+                    button: besideTitle,
+                    slot: _iconSlot,
+                    titleLine: titleLine * fit,
+                  ),
+                  for (final line in under)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: _iconSlot),
+                      child: Align(alignment: AlignmentDirectional.centerStart, child: line),
+                    ),
+                ],
+              ),
+            ),
+            ...endColumns,
+          ],
+        );
+      }
       return Row(
         crossAxisAlignment: onTitleLine ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
@@ -619,12 +669,7 @@ class PaperRow extends StatelessWidget {
               children: [heading, ...under],
             ),
           ),
-          for (final (i, widget) in end.indexed)
-            Padding(
-              // A chevron straight after a value stays close to it.
-              padding: EdgeInsetsDirectional.only(start: i == 0 && (value == null || trailing != null) ? 12 : 4),
-              child: place(widget, Alignment.center),
-            ),
+          ...endColumns,
         ],
       );
     }
@@ -654,7 +699,7 @@ class PaperRow extends StatelessWidget {
         style: titleStyle,
         breakAtHyphens: breakTitleAtHyphens,
       );
-      final (:heading, :under) = texts(fit);
+      final (:heading, title: _, :under) = texts(fit);
       final column = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,6 +779,137 @@ class PaperRow extends StatelessWidget {
     );
     return merged ? MergeSemantics(child: row) : row;
   }
+}
+
+/// A row's [lead] (its icon or leading widget, in a [slot] at the start),
+/// its [title], and the labelled [button] that goes with the title: at the
+/// end of the title's line where the two fit side by side, and otherwise
+/// under it, at the start, as a [Wrap] sets them. The lead is centred on
+/// the title's first line: on the line the button shares, as high as the
+/// two, or where the button goes under the title, on the title's first line
+/// alone, [titleLine] high as it is drawn.
+class _TitleAndButton extends MultiChildRenderObjectWidget {
+  _TitleAndButton({
+    required Widget lead,
+    required Widget title,
+    required Widget button,
+    required this.slot,
+    required this.titleLine,
+  }) : super(children: [lead, title, button]);
+
+  final double slot;
+  final double titleLine;
+
+  /// Between the title and the button on one line, as the row's Wrap keeps.
+  static const double spacing = 12;
+
+  @override
+  _RenderTitleAndButton createRenderObject(BuildContext context) =>
+      _RenderTitleAndButton(slot, titleLine, Directionality.of(context));
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTitleAndButton renderObject) => renderObject
+    ..slot = slot
+    ..titleLine = titleLine
+    ..direction = Directionality.of(context);
+}
+
+class _TitleAndButtonParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderTitleAndButton extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _TitleAndButtonParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _TitleAndButtonParentData> {
+  _RenderTitleAndButton(this._slot, this._titleLine, this._direction);
+
+  double get slot => _slot;
+  double _slot;
+  set slot(double value) {
+    if (value == _slot) return;
+    _slot = value;
+    markNeedsLayout();
+  }
+
+  double get titleLine => _titleLine;
+  double _titleLine;
+  set titleLine(double value) {
+    if (value == _titleLine) return;
+    _titleLine = value;
+    markNeedsLayout();
+  }
+
+  TextDirection get direction => _direction;
+  TextDirection _direction;
+  set direction(TextDirection value) {
+    if (value == _direction) return;
+    _direction = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _TitleAndButtonParentData) child.parentData = _TitleAndButtonParentData();
+  }
+
+  @override
+  void performLayout() {
+    final lead = firstChild!;
+    final title = childAfter(lead)!;
+    final button = childAfter(title)!;
+    final width = constraints.maxWidth;
+    final textWidth = math.max(0.0, width - slot);
+    final leadSize = (lead..layout(BoxConstraints.loose(Size(slot, double.infinity)), parentUsesSize: true)).size;
+    final titleSize = (title..layout(BoxConstraints(maxWidth: textWidth), parentUsesSize: true)).size;
+    final buttonSize = (button..layout(BoxConstraints(maxWidth: textWidth), parentUsesSize: true)).size;
+    final oneLine = titleSize.width + _TitleAndButton.spacing + buttonSize.width <= textWidth + 0.01;
+    // Where each stands from the start of the text, and the middle of the
+    // first line.
+    double titleTop, buttonTop, firstMiddle, height;
+    if (oneLine) {
+      final line = math.max(titleSize.height, buttonSize.height);
+      titleTop = (line - titleSize.height) / 2;
+      buttonTop = (line - buttonSize.height) / 2;
+      firstMiddle = line / 2;
+      height = line;
+    } else {
+      titleTop = 0;
+      buttonTop = titleSize.height;
+      firstMiddle = math.min(titleLine, titleSize.height) / 2;
+      height = titleSize.height + buttonSize.height;
+    }
+    // A lead taller than the line it is centred on takes room above it.
+    var leadTop = firstMiddle - leadSize.height / 2;
+    final shift = math.max(0.0, -leadTop);
+    leadTop += shift;
+    height = math.max(height + shift, leadTop + leadSize.height);
+    size = constraints.constrain(Size(width, height));
+
+    final rtl = direction == TextDirection.rtl;
+    // The start of a child [childWidth] wide, [inset] from the start edge;
+    // or at the end edge.
+    double fromStart(double inset, double childWidth) => rtl ? width - inset - childWidth : inset;
+    double atEnd(double childWidth) => rtl ? 0 : width - childWidth;
+    (lead.parentData! as _TitleAndButtonParentData).offset = Offset(fromStart(0, leadSize.width), leadTop);
+    (title.parentData! as _TitleAndButtonParentData).offset = Offset(fromStart(slot, titleSize.width), titleTop + shift);
+    (button.parentData! as _TitleAndButtonParentData).offset = Offset(
+      oneLine ? atEnd(buttonSize.width) : fromStart(slot, buttonSize.width),
+      buttonTop + shift,
+    );
+  }
+
+  @override
+  double? computeDistanceToActualBaseline(TextBaseline baseline) {
+    final title = childAfter(firstChild!)!;
+    final distance = title.getDistanceToActualBaseline(baseline);
+    return distance == null ? null : distance + (title.parentData! as _TitleAndButtonParentData).offset.dy;
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) => defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// The heading over a [PaperGroup]: an eyebrow 28 below the content above,

@@ -25,6 +25,17 @@ void main() {
       expect(listener, contains('loading.remove()'));
     });
 
+    // tool/web/web.test.mjs runs the fade itself.
+    test('fades the loading screen away over the app, at once with Reduce Motion', () {
+      final loading = html.substring(html.indexOf('#loading {'), html.indexOf('}', html.indexOf('#loading {')));
+      expect(loading, contains('z-index: 1;'));
+      final listener = html.substring(html.indexOf("addEventListener('flutter-first-frame'"));
+      expect(listener, contains("loading.style.transition = 'opacity 250ms cubic-bezier(0.05, 0.7, 0.1, 1)'"));
+      expect(listener, contains("loading.style.pointerEvents = 'none'"));
+      expect(listener, contains("hasAttribute('data-reduce-motion')"));
+      expect(listener, contains("matchMedia('(prefers-reduced-motion: reduce)')"));
+    });
+
     // CI's web job finds the canonical and og:image tags exactly as written
     // here, to make their URLs absolute.
     test('describes the app for link previews', () {

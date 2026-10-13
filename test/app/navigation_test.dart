@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shnayim_mikra/app/config.dart';
 import 'package:shnayim_mikra/app/providers.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/app/routes.dart';
@@ -15,6 +16,7 @@ import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
 import 'package:shnayim_mikra/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikra/features/community/ui/compose_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/moderation_screen.dart';
 import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
@@ -24,11 +26,13 @@ import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/progress/progress_screen.dart';
 import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ScriptureVerse;
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/display_settings_screen.dart';
 import 'package:shnayim_mikra/features/settings/screens/settings_screen.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikra/l10n/app_localizations.dart';
 import 'package:shnayim_mikra/services/notifications.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
@@ -249,14 +253,19 @@ void main() {
       final forums = _Offline();
       final router = await _pump(tester, forums: forums);
       router.go('/community/forum/parsha');
-      // Not after every retry: as soon as the first attempt fails.
+      // As soon as the attempt fails: the forums are tried again only when
+      // the reader asks.
       for (var i = 0; i < 3; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
       expect(find.text('Couldn’t reach the server. Check your connection and try again.'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Try again'), findsOneWidget);
-      expect(find.text('All forums'), findsOneWidget);
+      // Under Community, as a thread names its forum when the forums fail.
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Community')), findsOneWidget);
+      // Try again first, as the page's one Tonal button, and the way back
+      // to the forums beside it.
+      expect(find.widgetWithText(FilledButton, 'Try again'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'All forums'), findsOneWidget);
 
       forums.online = true;
       await tester.tap(find.text('Try again'));
@@ -267,7 +276,7 @@ void main() {
     });
   });
 
-  testWidgets('the guide opens over Settings and goes back to it', (tester) async {
+  testWidgets('the guide opens within Settings and goes back to it', (tester) async {
     final router = await _pump(tester);
     router.go('/settings');
     await tester.pumpAndSettle();
@@ -276,23 +285,45 @@ void main() {
     await tester.tap(find.text('How it works'));
     await tester.pumpAndSettle();
     expect(find.byType(GuideScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/settings/guide');
+    expect(selectedTab(tester), 4);
 
     await goBack(tester);
     expect(find.byType(SettingsScreen), findsOneWidget);
     expect(selectedTab(tester), 4);
   });
 
+  testWidgets("Today's help opens the guide within Today and goes back to it", (tester) async {
+    final router = await _pump(tester);
+    await tester.tap(find.byTooltip('How it works'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GuideScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/today/guide');
+    expect(selectedTab(tester), 0);
+
+    await goBack(tester);
+    expect(find.byType(TodayScreen), findsOneWidget);
+  });
+
   group('the policies and sources', () {
-    testWidgets('open from About and go back to it', (tester) async {
+    testWidgets('open from About within Settings and go back to it', (tester) async {
       final router = await _pump(tester);
       router.go('/settings/about');
       await tester.pumpAndSettle();
-      for (final (link, page) in [('Texts & sources', SourcesScreen), ('Privacy', LegalScreen)]) {
+      for (final (link, page, location) in [
+        ('Texts & sources', SourcesScreen, '/settings/about/sources'),
+        ('Privacy', LegalScreen, '/settings/about/legal/privacy'),
+        ('Terms of use', LegalScreen, '/settings/about/legal/terms'),
+        ('Community guidelines', LegalScreen, '/settings/about/legal/guidelines'),
+        ('Accessibility statement', LegalScreen, '/settings/about/legal/accessibility'),
+      ]) {
         await tester.ensureVisible(find.text(link));
         await tester.pumpAndSettle();
         await tester.tap(find.text(link));
-        await tester.pumpAndSettle();
+        await _loadTexts(tester);
         expect(find.byType(page), findsOneWidget);
+        expect(router.state.matchedLocation, location);
+        expect(selectedTab(tester), 4);
         await goBack(tester);
         expect(find.byType(AboutScreen), findsOneWidget);
       }
@@ -309,13 +340,74 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
+      // Under the account, as the page beneath it is.
+      expect(router.state.matchedLocation, '/community/account/legal/privacy');
+      expect(selectedTab(tester), 3);
 
       await goBack(tester);
       expect(find.byType(AccountScreen), findsOneWidget);
       expect(selectedTab(tester), 3);
     });
 
-    testWidgets('keep their old addresses before onboarding too', (tester) async {
+    testWidgets('open from the account in Settings without leaving the Settings tab', (tester) async {
+      final router = await _pump(tester);
+      router.go('/settings/account');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await tester.pumpAndSettle();
+      expect(find.byType(LegalScreen), findsOneWidget);
+      // Under the account, not About: a reload puts back the account beneath.
+      expect(router.state.matchedLocation, '/settings/account/legal/privacy');
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+      expect(selectedTab(tester), 4);
+    });
+
+    testWidgets('open on their own from the account shown over the tabs', (tester) async {
+      final router = await _pump(tester);
+      router.push('/account?then=back');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await tester.pumpAndSettle();
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(router.state.matchedLocation, '/legal/privacy');
+      expect(tester.takeException(), isNull);
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+    });
+
+    testWidgets('open on their own from signing in on the welcome, before onboarding', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: const AppSettings(), now: _now);
+      await tester.pumpAndSettle();
+      final router = c.read(routerProvider);
+      router.push('/welcome/account');
+      await tester.pumpAndSettle();
+      final privacy = find.text('Privacy');
+      await tester.ensureVisible(privacy);
+      await tester.pumpAndSettle();
+      await tester.tap(privacy);
+      await _loadTexts(tester);
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(_pageHeading('Privacy'), findsOneWidget);
+      expect(router.state.matchedLocation, '/legal/privacy');
+
+      await goBack(tester);
+      expect(find.byType(AccountScreen), findsOneWidget);
+    });
+
+    testWidgets('keep their addresses in About before onboarding too, on their own', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -326,6 +418,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
       expect(_pageHeading('Privacy'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing, reason: 'the tabs wait for onboarding');
 
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
@@ -336,10 +429,11 @@ void main() {
       expect(find.byType(SettingsScreen), findsNothing, reason: 'the rest waits for onboarding');
     });
 
-    testWidgets('keep their old addresses', (tester) async {
+    testWidgets('keep their addresses in About, now within Settings', (tester) async {
       final router = await _pump(tester);
       router.go('/community');
       await tester.pumpAndSettle();
+      // Pushed, as a page of the tab on show.
       router.push('/settings/about/legal/guidelines');
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
@@ -347,10 +441,14 @@ void main() {
       await goBack(tester);
       expect(selectedTab(tester), 3);
 
+      // Gone to, as a link or a reload does, under About.
       router.go('/settings/about/sources');
       await tester.pumpAndSettle();
       expect(find.byType(SourcesScreen), findsOneWidget);
-      expect(_home, findsOneWidget);
+      expect(selectedTab(tester), 4);
+      expect(_home, findsNothing);
+      await goBack(tester);
+      expect(find.byType(AboutScreen), findsOneWidget);
     });
   });
 
@@ -728,7 +826,7 @@ void main() {
       expect(find.byType(AccountScreen), findsOneWidget);
     });
 
-    Future<void> tapInAccessibility(WidgetTester tester, String row) async {
+    Future<void> tapRow(WidgetTester tester, String row) async {
       final link = find.text(row);
       await tester.ensureVisible(link);
       await tester.pumpAndSettle();
@@ -740,7 +838,7 @@ void main() {
       final router = await _pump(tester, forums: _Server());
       router.go('/settings/accessibility');
       await tester.pumpAndSettle();
-      await tapInAccessibility(tester, 'Send feedback');
+      await tapRow(tester, 'Send feedback');
       expect(find.byType(ForumScreen), findsOneWidget);
       expect(find.text('App feedback'), findsOneWidget);
       expect(selectedTab(tester), 4);
@@ -760,19 +858,95 @@ void main() {
       final router = await _pump(tester);
       router.go('/settings/accessibility');
       await tester.pumpAndSettle();
-      await tapInAccessibility(tester, 'Send feedback');
+      await tapRow(tester, 'Send feedback');
       expect(launched, [issueTrackerUri.toString()]);
       expect(find.byType(ForumScreen), findsNothing, reason: 'the demo forum reaches no one');
       expect(find.byType(AccessibilitySettingsScreen), findsOneWidget);
     });
 
-    for (final (row, page) in [('Display', DisplaySettingsScreen), ('Accessibility statement', LegalScreen)]) {
-      testWidgets('Accessibility opens $row over itself, which goes back to it', (tester) async {
+    /// Records the links opened, each opening as [opens] says.
+    List<String> recordLaunches(WidgetTester tester, {bool opens = true}) {
+      final launched = <String>[];
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'launch') launched.add((call.arguments as Map)['url'] as String);
+        return opens;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      return launched;
+    }
+
+    void withSupportEmail() {
+      AppConfig.debugSupportEmail = 'help@example.org';
+      addTearDown(() => AppConfig.debugSupportEmail = null);
+    }
+
+    testWidgets('feedback, with an address to email, is emailed from Accessibility', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, [supportEmailUri(lookupAppLocalizations(const Locale('en')))!.toString()]);
+      expect(find.byType(ForumScreen), findsNothing);
+    });
+
+    testWidgets('feedback, with an address but no mail app to send it, goes to the feedback forum', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester, opens: false);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/accessibility');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, hasLength(1));
+      expect(launched.single, startsWith('mailto:'));
+      expect(find.byType(ForumScreen), findsOneWidget);
+    });
+
+    // About's Contact row emails already, so its Send feedback goes as
+    // Accessibility's does without an address.
+    testWidgets('feedback from About goes to the feedback forum on a server, not the issue tracker, and back',
+        (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester, forums: _Server());
+      router.go('/settings/about');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, isEmpty, reason: 'neither email, which Contact us sends, nor the issue tracker');
+      expect(find.byType(ForumScreen), findsOneWidget);
+      expect(find.text('App feedback'), findsOneWidget);
+      expect(selectedTab(tester), 4);
+
+      await goBack(tester);
+      expect(find.byType(AboutScreen), findsOneWidget);
+    });
+
+    testWidgets('feedback from About, with no server for the forum to reach, goes to the issue tracker', (tester) async {
+      withSupportEmail();
+      final launched = recordLaunches(tester);
+      final router = await _pump(tester);
+      router.go('/settings/about');
+      await tester.pumpAndSettle();
+      await tapRow(tester, 'Send feedback');
+      expect(launched, [issueTrackerUri.toString()]);
+      expect(find.byType(ForumScreen), findsNothing);
+      expect(find.byType(AboutScreen), findsOneWidget);
+    });
+
+    for (final (row, page, location) in [
+      ('Display', DisplaySettingsScreen, '/settings/display'),
+      ('Accessibility statement', LegalScreen, '/settings/accessibility/legal/accessibility'),
+    ]) {
+      testWidgets('Accessibility opens $row over itself, within Settings, which goes back to it', (tester) async {
         final router = await _pump(tester);
         router.go('/settings/accessibility');
         await tester.pumpAndSettle();
-        await tapInAccessibility(tester, row);
+        await tapRow(tester, row);
         expect(find.byType(page), findsOneWidget);
+        expect(router.state.matchedLocation, location);
+        expect(selectedTab(tester), 4);
 
         await goBack(tester);
         expect(find.byType(AccessibilitySettingsScreen), findsOneWidget);
@@ -795,9 +969,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(LegalScreen), findsOneWidget);
     expect(_pageHeading('Community guidelines'), findsOneWidget);
+    expect(router.state.matchedLocation, '/community/legal/guidelines');
+    expect(selectedTab(tester), 3);
 
     await goBack(tester);
     expect(find.text('A question on Rashi'), findsOneWidget);
     expect(selectedTab(tester), 3);
+  });
+
+  testWidgets("a question asked from Today's haftarah opens the guidelines within Today, back to the question",
+      (tester) async {
+    final router = await _pump(tester);
+    router.go('/today/haftarah/5787:1');
+    await _loadTexts(tester);
+    await tester.longPress(find.byType(ScriptureVerse).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ask about this verse'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ComposeScreen), findsOneWidget);
+    expect(selectedTab(tester), 0, reason: 'within Today, as the haftarah was');
+
+    final guidelines = find.text('Read the guidelines');
+    await tester.ensureVisible(guidelines);
+    await tester.pumpAndSettle();
+    await tester.tap(guidelines);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(LegalScreen), findsOneWidget);
+    expect(_pageHeading('Community guidelines'), findsOneWidget);
+    expect(selectedTab(tester), 0, reason: 'still within Today');
+
+    await goBack(tester);
+    expect(find.byType(ComposeScreen), findsOneWidget);
+    expect(selectedTab(tester), 0);
+  });
+
+  testWidgets('a question asked over the reader opens the guidelines over itself too', (tester) async {
+    final router = await _pump(tester);
+    router.push('/ask?verse=Genesis%203:22');
+    await tester.pumpAndSettle();
+    final guidelines = find.text('Read the guidelines');
+    await tester.ensureVisible(guidelines);
+    await tester.pumpAndSettle();
+    await tester.tap(guidelines);
+    await tester.pumpAndSettle();
+    expect(find.byType(LegalScreen), findsOneWidget);
+    expect(router.state.matchedLocation, '/legal/guidelines');
+    expect(tester.takeException(), isNull);
+
+    await goBack(tester);
+    expect(find.text('Read the guidelines'), findsOneWidget);
   });
 }

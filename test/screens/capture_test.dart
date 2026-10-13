@@ -33,6 +33,8 @@ import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/calendar/zmanim.dart';
 import 'package:shnayim_mikra/data/models/parsha.dart';
+import 'package:shnayim_mikra/data/models/verse_ref.dart';
+import 'package:shnayim_mikra/data/text_repository.dart';
 import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
 import 'package:shnayim_mikra/features/community/data/models.dart';
@@ -46,6 +48,7 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
 import 'package:shnayim_mikra/features/reader/scripture_text.dart' show ChapterHeading, ScriptureVerse;
+import 'package:shnayim_mikra/features/reader/verse_actions_sheet.dart' show verseText;
 import 'package:shnayim_mikra/features/reader/whole_parsha.dart';
 import 'package:shnayim_mikra/features/search/search_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
@@ -126,6 +129,8 @@ const _screens = {
   // "I already use Shnayim Mikra": the ways to restore, with an account's
   // backup to sign in to.
   'welcome_restore': '/welcome',
+  // Its second way in focused from the keyboard.
+  'focus_restore': '/welcome',
   // Signed in, while the account's backup comes in.
   'welcome_restoring': '/welcome',
   // A backup file chosen: what it holds, with nothing here to merge with.
@@ -361,6 +366,12 @@ const _screens = {
   'forum_error': '/community/forum/questions',
   'thread_error': '/community/thread/1',
   'moderation_error': '/community/moderation',
+  // Offline before the forums came: the Community page, a forum opened from
+  // a link, and the blocked members of an account.
+  'community_error': '/community',
+  'forum_unreachable': '/community/forum/questions',
+  'compose_unreachable': '/community/new',
+  'account_blocked_error': '/community/account',
   // What the Demo tag explains.
   'demo_about': '/community/forum/questions',
   // Reporting a post, before a reason is chosen.
@@ -374,6 +385,10 @@ const _screens = {
   'thread_replying': '/community/thread/1',
   // Signed in, under your own post: its thanks counted, with no button.
   'thread_mine': '/community/thread/1',
+  // Editing that post: its field, with no counter until near the limit.
+  'thread_edit': '/community/thread/1',
+  // Asked to confirm deleting that post, in error's ink.
+  'thread_delete': '/community/thread/1',
   // Locked: no reply box, and no Reply under the posts.
   'thread_locked': '/community/thread/51',
   // A thread of 250 posts, open on its latest hundred, and at its end.
@@ -407,6 +422,8 @@ const _screens = {
   'account_member': '/community/account',
   'account_edit': '/community/account',
   'account_blocked': '/community/account',
+  // Three members blocked, one named in Hebrew, whose Unblock failed.
+  'account_unblock_error': '/community/account',
   // Delete my account: what goes with it, and a backup file first.
   'account_delete': '/community/account',
   // Keyboard focus on the privacy link in its sentence.
@@ -416,12 +433,14 @@ const _screens = {
   // Backup on, with notes too long for the server: why nothing is sent.
   'account_sync_large': '/community/account',
   'settings': '/settings',
-  // The language, chosen in a sheet.
+  // The language, chosen in a sheet; and its chosen row focused from the
+  // keyboard.
   'settings_language': '/settings',
   // Paused, as on Today: the pause row's dialog, which extends the pause or
   // ends it; and a pause of 30 days, which it can only end.
   'settings_paused': '/settings',
   'settings_paused_full': '/settings',
+  'focus_language': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
   // Its end: the haftarah, special days and parsha names.
@@ -487,18 +506,23 @@ const _screens = {
   // Choosing to replace the progress here with a backup: the confirm
   // dialog, with backup on.
   's_data_replace': '/settings/data',
+  // The sources, the guide and the policies within Settings, as About,
+  // Settings and Accessibility open them, beside the navigation bar or rail.
   'about': '/settings/about',
-  'sources': '/sources',
-  'guide': '/guide',
+  'sources': '/settings/about/sources',
+  'guide': '/settings/guide',
+  // From Today's help button, within Today.
+  'guide_today': '/today/guide',
   // The special cases, Shabbat and the sources, at its end; and with Bold
   // text, where each case's lead-in stands on a line of its own.
-  'guide_end': '/guide',
-  'guide_end_bold': '/guide',
-  // The privacy policy, open to every visitor; and at its end, the way to
-  // reach us.
-  'legal': '/legal/privacy',
-  'legal_end': '/legal/privacy',
-  'legal_a11y': '/legal/accessibility',
+  'guide_end': '/settings/guide',
+  'guide_end_bold': '/settings/guide',
+  // The privacy policy; and at its end, the way to reach us.
+  'legal': '/settings/about/legal/privacy',
+  'legal_end': '/settings/about/legal/privacy',
+  'legal_a11y': '/settings/accessibility/legal/accessibility',
+  // On its own, open to every visitor before onboarding too.
+  'legal_public': '/legal/privacy',
   // Links that lead nowhere: a mistyped address, and a forum that is gone.
   'not_found': '/nope',
   'forum_missing': '/community/forum/xyz',
@@ -546,13 +570,18 @@ const _screens = {
   'compose_verse': '/read/5787:1/3',
   'compose_verse_draft': '/read/5787:1/3',
   'compose_verse_posted': '/read/5787:1/3',
+  // A question on Genesis 3:22, asked so, with a reply that quotes it; its
+  // forum, which lists it by its question; and editing it, as its asker.
+  'thread_verse': '/community/thread/7300',
+  'forum_verse': '/community/forum/questions',
+  'thread_verse_edit': '/community/thread/7300',
   // Keyboard focus on a control, to check the focus ring (§6.1).
   'focus_button': '/today',
   'focus_day': '/today',
   'focus_card': '/today',
   // A source's card, and the link to reach us in the privacy policy.
-  'focus_source': '/sources',
-  'focus_contact': '/legal/privacy',
+  'focus_source': '/settings/about/sources',
+  'focus_contact': '/settings/about/legal/privacy',
   'focus_tile': '/progress',
   'focus_slider': '/settings/display',
   'focus_switch': '/settings/display',
@@ -628,6 +657,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   's_a11y_speech': (s) => s.copyWith(speechRate: 0.65),
   'reader_dots': (s) => s.copyWith(showTeamim: false),
   'guide_end_bold': (s) => s.copyWith(boldText: true),
+  'legal_public': (s) => s.copyWith(onboardingComplete: false),
   's_reminders_on': (s) => s.copyWith(
         dailyReminder: true,
         dailyReminderMinutes: 7 * 60 + 30,
@@ -652,6 +682,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_listen_focus': (s) => s.copyWith(focusMode: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
+  'focus_restore': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
   'today_divergence': (s) => s.copyWith(readingSchedule: ReadingSchedule.israel, joinDate: LocalDate(2029, 4, 22)),
@@ -1076,11 +1107,20 @@ final _communities = <String, Future<ForumRepository> Function()>{
     screen: _member,
   'forum_empty': () async => DemoForumRepository(samples: false),
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
+  for (final screen in ['community_error', 'forum_unreachable', 'compose_unreachable']) screen: () async => _NoForums(),
+  'account_blocked_error': _memberNoBlocked,
+  'account_unblock_error': _memberUnblockFails,
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
+  'thread_edit': _withOwnPost,
+  'thread_delete': _withOwnPost,
+  'thread_verse': _withVerseQuestion,
+  'forum_verse': _withVerseQuestion,
+  'thread_verse_edit': () => _withVerseQuestion(mine: true),
   'week_discuss': () async => _OpeningForever(),
   'welcome_restore': () async => _Cloud(),
+  'focus_restore': () async => _Cloud(),
   'welcome_restoring': () async {
     final repo = _CloudForever();
     await repo.verifyCode('reader@example.org', '123456');
@@ -1104,6 +1144,59 @@ Future<ForumRepository> _withOwnPost() async {
         todah: 3,
       ),
     ]);
+}
+
+/// Genesis 3:22 as a question quotes it, with the Names written ה׳ and
+/// אלקים: read before the captures, where the text can be read.
+var _genesis3_22 = '';
+
+/// A question on Genesis 3:22 in Questions & answers, thread 7300, as "Ask
+/// about this verse" asks one, and a reply that quotes it. With [mine], the
+/// reader's own, signed in as Leah.
+Future<ForumRepository> _withVerseQuestion({bool mine = false}) async {
+  final repo = DemoForumRepository();
+  if (mine) {
+    await repo.verifyCode('leah@example.org', '123456');
+    await repo.updateDisplayName('Leah');
+  }
+  final asker = mine ? 'Leah' : 'Avraham';
+  final askerId = mine ? 'me' : 'demo-avraham';
+  final question = withVerseQuote(
+    _genesis3_22,
+    'Why does the verse say “like one of us”? Who is “us”, when it speaks of God?',
+    leftToRight: true,
+  );
+  final asked = DateTime.now().subtract(const Duration(hours: 3));
+  final answered = DateTime.now().subtract(const Duration(minutes: 25));
+  return repo
+    ..seed(
+      threads: [
+        ThreadSummary(
+          id: '7300',
+          forumId: 2,
+          title: 'Question on Genesis 3:22',
+          kind: ThreadKind.discussion,
+          authorId: askerId,
+          authorName: asker,
+          postCount: 2,
+          lastPostAt: answered,
+          createdAt: asked,
+        ),
+      ],
+      posts: [
+        Post(id: '7301', threadId: '7300', authorId: askerId, authorName: asker, body: question, createdAt: asked),
+        Post(
+          id: '7302',
+          threadId: '7300',
+          authorId: 'demo-rivka',
+          authorName: 'Rivka',
+          body: 'Rashi reads it of the angels: as they know good and evil, so now does man.',
+          createdAt: answered,
+          replyToId: '7301',
+          todah: 2,
+        ),
+      ],
+    );
 }
 
 /// The demo with a thread of 250 posts in Divrei Torah, thread 5000.
@@ -1184,6 +1277,46 @@ class _Offline extends DemoForumRepository {
 
   @override
   Future<List<Report>> openReports() async => throw Exception('offline');
+}
+
+/// A community whose forums can't be fetched.
+class _NoForums extends DemoForumRepository {
+  @override
+  Future<List<Forum>> forums() async => throw Exception('offline');
+}
+
+/// A community whose members blocked can't be fetched.
+class _NoBlocked extends DemoForumRepository {
+  @override
+  Future<Set<String>> blockedUsers() async => throw Exception('offline');
+}
+
+/// Signed in as Rivka, whose blocked members can't be fetched.
+Future<ForumRepository> _memberNoBlocked() async {
+  final repo = _NoBlocked();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  return repo;
+}
+
+/// A community in which no Unblock gets through.
+class _UnblockFails extends DemoForumRepository {
+  @override
+  Future<void> unblock(String userId) async => throw Exception('offline');
+}
+
+/// Signed in as Rivka, who has blocked three members, one named in Hebrew,
+/// and can't unblock them.
+Future<ForumRepository> _memberUnblockFails() async {
+  final repo = _UnblockFails();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  for (final id in ['demo-author', 'demo-shira', 'demo-yosef']) {
+    await repo.block(id);
+  }
+  return repo;
 }
 
 /// A community whose weekly threads never finish opening.
@@ -1463,6 +1596,24 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.tap(reply);
   },
   'thread_mine': _scrollToEnd,
+  // Your own post's menu, then Edit.
+  'thread_edit': (tester) async {
+    await _scrollToEnd(tester);
+    await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
+  },
+  'thread_delete': (tester) async {
+    await _scrollToEnd(tester);
+    await tester.tap(find.descendant(of: find.byType(PostCard).last, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'delete'));
+  },
+  'thread_verse_edit': (tester) async {
+    await tester.tap(find.descendant(of: find.byType(PostCard).first, matching: find.byType(PopupMenuButton<String>)));
+    await _settle(tester);
+    await tester.tap(find.byWidgetPredicate((w) => w is PopupMenuItem<String> && w.value == 'edit'));
+  },
   'week_discuss': _scrollToEnd,
   // The interface font choices, at the end of the Display page.
   's_fonts': (tester) => tester.ensureVisible(find.byType(RadioListTile<UiFont>).last),
@@ -1531,6 +1682,11 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
   'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_blocked_error': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_unblock_error': _tapInTurn([
+    () => find.byIcon(Icons.block),
+    () => find.descendant(of: find.byType(BottomSheet), matching: find.byType(TextButton)).at(1),
+  ]),
   'account_delete': (tester) async {
     await tester.ensureVisible(find.byIcon(Icons.delete_forever_outlined));
     await _settle(tester);
@@ -1675,7 +1831,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_gaps_spaced': _scrollToEnd,
   // The restore sheet: the welcome's last text button.
   'welcome_restore': (tester) => tester.tap(find.byType(TextButton).last),
-  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
+  'focus_restore': (tester) async {
+    await tester.tap(find.byType(TextButton).last);
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(PaperRow).at(1));
+  },
+  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(PaperRow).first]),
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.resetProgress)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
@@ -1752,6 +1913,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   },
   for (final screen in ['settings_paused', 'settings_paused_full'])
     screen: (tester) => tester.tap(find.byIcon(Icons.pause_circle_outline)),
+  'focus_language': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.translate_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.translate_outlined));
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(RadioListTile<int>).first);
+  },
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste_outlined),
     () => find.byType(FilledButton),
@@ -1880,6 +2048,8 @@ final _modes = [
 const _sidewaysScreens = {'focus_nav', 'focus_nav_today'};
 
 const _bigPhoneScreens = {
+  // The button that begins a discussion: its icon alone at 200% (§5).
+  'forum_questions',
   'welcome',
   'welcome_location',
   'welcome_plan',
@@ -1914,16 +2084,28 @@ const _hugeTallScreens = {
   'progress',
   'settings',
   'community',
-  // A forum's discussions, the longest lines of facts among them.
+  // A forum's discussions, the longest lines of facts among them, and its
+  // floating button, its icon alone.
   'forum_questions',
+  // What can't load, with Try again: under a thread's title, and beside All
+  // forums.
+  'thread_error',
+  'forum_unreachable',
   'thread',
   'haftarah',
   'browse',
   // The offer to move the daily reminder, its button under its text.
   's_reminders_far',
+  // The theme swatches' names, high contrast's on two lines, kept whole.
+  's_display',
   // Verses found, where words a maqaf joins part only if they must.
   'search_many',
   'search_spelling',
+  // A verse quoted above a question's message, and in the question posted.
+  'compose_verse',
+  'thread_verse',
+  // A moderator's card: the tag beside the initial, its words whole.
+  'account_member',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 
@@ -2022,6 +2204,8 @@ const _desktopScreens = {
   'thread_error',
   'moderation_error',
   'city_error',
+  'community_error',
+  'forum_unreachable',
   'account',
   'account_code',
   'account_member',
@@ -2030,6 +2214,7 @@ const _desktopScreens = {
   'browse',
   'browse_summer',
   'guide',
+  'guide_today',
   'about',
   'sources',
   'welcome',
@@ -2058,6 +2243,7 @@ const _desktopScreens = {
   'reader_verse',
   'reader_verse_actions',
   'compose_verse',
+  'thread_verse',
   'reader_listen',
   'reader_listen_full',
   'haftarah_listen',
@@ -2177,7 +2363,10 @@ const _bigTextScreens = {
   'goto_missing',
   'reader_verse',
   'reader_verse_actions',
+  'compose_verse',
   'compose_verse_draft',
+  'thread_verse',
+  'thread_verse_edit',
   'search_many',
   'search_none',
   'search_spelling',
@@ -2196,6 +2385,10 @@ const _bigTextScreens = {
   'welcome_restore',
   'welcome_location',
   'welcome_plan',
+  // The sheets' rows at twice the text size: languages, and members with
+  // an Unblock that failed.
+  'settings_language',
+  'account_unblock_error',
   's_data',
   's_data_import',
   'progress',
@@ -2251,6 +2444,10 @@ Future<void> _write(WidgetTester tester, String name) async {
 void main() {
   setUpAll(() async {
     if (_capture) await loadBundledFonts();
+    if (_capture) {
+      final verse = await TextRepository().hebrewVerse(const BookVerse('Genesis', VerseRef(3, 22)));
+      _genesis3_22 = verseText(verse!, const AppSettings());
+    }
     // The version About shows, as a release names it.
     PackageInfo.setMockInitialValues(
       appName: 'Shnayim Mikra',

@@ -101,11 +101,11 @@ class AppShell extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
 
     if (width < Breakpoints.medium) {
-      return Scaffold(
+      return _BarFrame(
         body: shell,
         // Where Android's navigation bar can't be see-through, it takes the
         // colour of this bar rather than the page's.
-        bottomNavigationBar: SystemBars(
+        bar: SystemBars(
           navigationBarColor: NavigationBarTheme.of(context).backgroundColor,
           child: DecoratedBox(
             decoration: BoxDecoration(border: Border(top: hairline)),
@@ -211,6 +211,61 @@ class _RailFrame extends StatelessWidget {
           child: MediaQuery.removeViewInsets(context: context, removeBottom: true, child: body),
         ),
       );
+}
+
+/// What holds the pane and the navigation bar beneath it on a phone, laid out
+/// as a Scaffold would lay them out: the bar at the foot, where the keyboard
+/// covers it, and the pane above the bar, or above the keyboard where that
+/// stands higher. Like [_RailFrame], it is no Scaffold itself, which would
+/// show status messages above the bar but over the page's own reply box or
+/// floating button: each page in the pane is the Scaffold that shows them,
+/// above its own (§6.19).
+class _BarFrame extends StatelessWidget {
+  const _BarFrame({required this.body, required this.bar});
+
+  final Widget body;
+  final Widget bar;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: CustomMultiChildLayout(
+        delegate: _BarFrameLayout(keyboard: mq.viewInsets.bottom),
+        children: [
+          // The bar takes the safe area at the foot, and the pane is resized
+          // for the keyboard, as a Scaffold's body is.
+          LayoutId(
+            id: _BarFrameSlot.body,
+            child: MediaQuery(data: mq.removeViewInsets(removeBottom: true).removePadding(removeBottom: true), child: body),
+          ),
+          LayoutId(id: _BarFrameSlot.bar, child: MediaQuery(data: mq.removePadding(removeTop: true), child: bar)),
+        ],
+      ),
+    );
+  }
+}
+
+enum _BarFrameSlot { body, bar }
+
+class _BarFrameLayout extends MultiChildLayoutDelegate {
+  _BarFrameLayout({required this.keyboard});
+
+  /// How much of the window the keyboard covers, from its foot.
+  final double keyboard;
+
+  @override
+  void performLayout(Size size) {
+    final bar = layoutChild(_BarFrameSlot.bar, BoxConstraints.tightFor(width: size.width).copyWith(maxHeight: size.height));
+    positionChild(_BarFrameSlot.bar, Offset(0, size.height - bar.height));
+    final height = math.max(0.0, size.height - math.max(bar.height, keyboard));
+    layoutChild(_BarFrameSlot.body, BoxConstraints.tight(Size(size.width, height)));
+    positionChild(_BarFrameSlot.body, Offset.zero);
+  }
+
+  @override
+  bool shouldRelayout(_BarFrameLayout old) => keyboard != old.keyboard;
 }
 
 /// The phone's navigation bar (§6.9): 72 high, and taller only as far as its

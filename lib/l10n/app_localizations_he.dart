@@ -1644,6 +1644,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get themeSepia => 'ספיה';
 
   @override
+  String get themeHc => 'ניגודיות גבוהה';
+
+  @override
   String get themeHcLight => 'ניגודיות גבוהה — בהירה';
 
   @override
@@ -2141,9 +2144,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dataGroupBackup => 'גיבוי ושחזור';
 
   @override
-  String get resetProgressDesc => 'אי אפשר לבטל פעולה זו.';
-
-  @override
   String get aboutTitle => 'אודות';
 
   @override
@@ -2524,6 +2524,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get deletePostConfirm => 'למחוק את ההודעה?';
 
   @override
+  String get cantBeUndone => 'אי אפשר לבטל פעולה זו.';
+
+  @override
   String get postDeleted => 'ההודעה נמחקה.';
 
   @override
@@ -2764,6 +2767,12 @@ class AppLocalizationsHe extends AppLocalizations {
   String askDraftKept(String reference) {
     return 'הטיוטה שלא נשלחה נשמרה. אפשר למחוק אותה כדי לשאול על $reference במקומה.';
   }
+
+  @override
+  String get removeVerseQuote => 'הסרת הפסוק';
+
+  @override
+  String get verseQuoteRemoved => 'הפסוק הוסר';
 
   @override
   String charactersLeft(int count) {

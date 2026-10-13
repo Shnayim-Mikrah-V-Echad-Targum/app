@@ -316,6 +316,34 @@ void main() {
       expect(material.color, scheme.primaryContainer);
       expect(material.shape, const RoundedRectangleBorder(borderRadius: _r10).copyWith(side: tonal.side?.resolve({})));
     });
+
+    testWidgets('${mode.name}: a destructive text button is in error, its washes too', (tester) async {
+      final theme = _theme(mode);
+      final scheme = theme.colorScheme;
+      late ButtonStyle style;
+      await _pump(
+        tester,
+        theme,
+        Builder(builder: (context) {
+          style = AppButtons.destructiveText(context);
+          return TextButton(style: style, onPressed: () {}, child: const Text('Delete'));
+        }),
+      );
+      expect(style.foregroundColor!.resolve({}), scheme.error);
+      expect(style.foregroundColor!.resolve({WidgetState.disabled}), isNull);
+      expect(style.overlayColor!.resolve({WidgetState.pressed}), scheme.error.withValues(alpha: 0.10));
+      expect(style.overlayColor!.resolve({WidgetState.hovered}), scheme.error.withValues(alpha: 0.06));
+      expect(style.overlayColor!.resolve(_focused), scheme.error.withValues(alpha: 0.10));
+      expect(style.overlayColor!.resolve({}), isNull);
+
+      // The theme's own still applies: 48 high, and underlined in high
+      // contrast.
+      final label = tester.renderObject<RenderParagraph>(find.text('Delete')).text.style!;
+      expect(label.color, scheme.error);
+      final hc = mode == AppThemeMode.highContrastLight;
+      expect(label.decoration, hc ? TextDecoration.underline : isNot(TextDecoration.underline));
+      expect(tester.getSize(find.byType(TextButton)).height, 48);
+    });
   }
 
   for (final hebrewUi in [false, true]) {

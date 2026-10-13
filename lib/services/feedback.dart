@@ -40,7 +40,7 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action, b
     // has it held, as before, rather than gone at once.
     final page = ModalRoute.of(context);
     final content = Text(message);
-    messenger.showSnackBar(
+    final shown = messenger.showSnackBar(
       SnackBar(
         content: persist && !outlivesPage && page is PageRoute
             ? _LeavesWithPage(page: page, shown: TickerMode.getValuesNotifier(context), child: content)
@@ -54,6 +54,8 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action, b
       // long as the setting doesn't change.
       snackBarAnimationStyle: reduced ? AnimationStyle.noAnimation : _snackBarMotion,
     );
+    _shown[messenger] = (_shown[messenger] ?? 0) + 1;
+    shown.closed.whenComplete(() => _shown[messenger] = (_shown[messenger] ?? 1) - 1);
   }
   // The SnackBar is a live region, which Android, iOS and the web read out
   // by themselves (Flutter's iOS engine announces a node that becomes a
@@ -62,6 +64,17 @@ void showStatus(BuildContext context, String message, {SnackBarAction? action, b
   if (!kIsWeb && defaultTargetPlatform != TargetPlatform.iOS && MediaQuery.supportsAnnounceOf(context)) {
     SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context));
   }
+}
+
+/// How many status messages each messenger has on show: one, but for the
+/// moment one leaves as the next comes.
+final _shown = Expando<int>('status messages shown');
+
+/// Whether a status message is on show to [context]'s page, from its first
+/// frame until it has gone.
+bool statusMessageShown(BuildContext context) {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  return messenger != null && (_shown[messenger] ?? 0) > 0;
 }
 
 /// A held message's content, which takes the message away once [page] is

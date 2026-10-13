@@ -96,6 +96,22 @@ abstract final class AppButtons {
       overlayColor: _overlay(scheme.onError),
     );
   }
+
+  /// A TextButton in error's ink, for an action that deletes where a
+  /// confirmation would be too much, as it can be undone (a note's Delete,
+  /// whose status message offers Undo). Its washes are error's too, focus
+  /// among them, so none is tinted primary.
+  static ButtonStyle destructiveText(BuildContext context) {
+    final error = Theme.of(context).colorScheme.error;
+    final washes = _overlay(error);
+    return ButtonStyle(
+      foregroundColor: _enabled(error),
+      iconColor: _enabled(error),
+      overlayColor: WidgetStateProperty.resolveWith(
+        (states) => washes.resolve(states) ?? (states.contains(WidgetState.focused) ? error.withValues(alpha: 0.10) : null),
+      ),
+    );
+  }
 }
 
 /// The slider's track (§6.8): the part filled [activeHeight] high, primary,

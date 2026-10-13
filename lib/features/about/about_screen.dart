@@ -14,6 +14,7 @@ import '../../ui/widgets/heading_reveal.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
+import '../community/data/backend.dart';
 
 /// The app's version and build, "1.0.0 (12)", or empty where the platform
 /// doesn't say.
@@ -40,6 +41,24 @@ Uri? supportEmailUri(AppLocalizations l, {String? subject}) => AppConfig.support
 /// build.
 final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 
+/// Feedback, by the one way every Send feedback row takes: by email where
+/// the build names an address for it and [email] allows (About, whose
+/// Contact row emails already, doesn't). Otherwise (or with no mail app to
+/// send it) in the feedback forum, where there is a community server for it
+/// to reach, and else on the issue tracker: the on-device demo forum reaches
+/// no one.
+Future<void> sendFeedback(BuildContext context, WidgetRef ref, {bool email = true}) async {
+  final address = email ? supportEmailUri(context.l10n) : null;
+  final forum = !ref.read(forumRepositoryProvider).isDemo;
+  if (address != null && await launchUrl(address).catchError((_) => false)) return;
+  if (!context.mounted) return;
+  if (forum) {
+    await context.push('/community/forum/feedback');
+  } else {
+    await launchUrl(issueTrackerUri).catchError((_) => false);
+  }
+}
+
 /// About (docs/DESIGN_SYSTEM.md §9): the app's title page, with its mark, its
 /// name and the version, then the texts, the policies and the ways to reach
 /// us, each on a sheet of paper. The guide is reached from Today and from
@@ -47,14 +66,14 @@ final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 ///
 /// The app's name is the page's one heading of level 1; the app bar names the
 /// page once the name has scrolled under it, for the eye alone.
-class AboutScreen extends StatefulWidget {
+class AboutScreen extends ConsumerStatefulWidget {
   const AboutScreen({super.key});
 
   @override
-  State<AboutScreen> createState() => _AboutScreenState();
+  ConsumerState<AboutScreen> createState() => _AboutScreenState();
 }
 
-class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScreen> {
+class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
@@ -71,7 +90,7 @@ class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScree
               PaperRow(
                 icon: Icons.library_books_outlined,
                 title: l.sourcesTitle,
-                onTap: () => context.push('/sources'),
+                onTap: () => context.push('/settings/about/sources'),
               ),
             ],
           ),
@@ -81,18 +100,22 @@ class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScree
               PaperRow(
                 icon: Icons.privacy_tip_outlined,
                 title: l.privacyTitle,
-                onTap: () => context.push('/legal/privacy'),
+                onTap: () => context.push('/settings/about/legal/privacy'),
               ),
-              PaperRow(icon: Icons.gavel_outlined, title: l.termsTitle, onTap: () => context.push('/legal/terms')),
+              PaperRow(
+                icon: Icons.gavel_outlined,
+                title: l.termsTitle,
+                onTap: () => context.push('/settings/about/legal/terms'),
+              ),
               PaperRow(
                 icon: Icons.groups_outlined,
                 title: l.guidelinesTitle,
-                onTap: () => context.push('/legal/guidelines'),
+                onTap: () => context.push('/settings/about/legal/guidelines'),
               ),
               PaperRow(
                 icon: Icons.accessibility_new_outlined,
                 title: l.accessibilityStatement,
-                onTap: () => context.push('/legal/accessibility'),
+                onTap: () => context.push('/settings/about/legal/accessibility'),
               ),
               PaperRow(
                 icon: Icons.description_outlined,
@@ -106,7 +129,12 @@ class _AboutScreenState extends State<AboutScreen> with HeadingReveal<AboutScree
             children: [
               if (email != null)
                 PaperRow(icon: Icons.mail_outline, title: l.contactTitle, onTap: () => launchUrl(email)),
-              PaperRow(icon: Icons.feedback_outlined, title: l.sendFeedback, onTap: () => launchUrl(issueTrackerUri)),
+              PaperRow(
+                icon: Icons.feedback_outlined,
+                title: l.sendFeedback,
+                // The row above emails already.
+                onTap: () => sendFeedback(context, ref, email: false),
+              ),
             ],
           ),
         ],

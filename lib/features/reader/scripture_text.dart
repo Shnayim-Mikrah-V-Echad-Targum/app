@@ -276,6 +276,11 @@ String displayHebrew(String text, AppSettings s) =>
 String keepLinesSound(String hebrew) =>
     hebrew.replaceAll(' ׀', ' ׀').replaceAll('־', '־⁠');
 
+/// [shown], scripture as [keepLinesSound] sets it (and [joinWhereFits]
+/// after it), as it is copied: without the no-break spaces and word joiners
+/// set for the screen.
+String asCopied(String shown) => shown.replaceAll('\u00a0׀', ' ׀').replaceAll('\u2060', '');
+
 /// [text], a paragraph of scripture whose words [keepLinesSound] has joined,
 /// with the word joiner after a maqaf left out wherever the words it joins
 /// would be too wide together for a line [maxWidth] wide, as at a very large
@@ -465,6 +470,11 @@ class JoinsThatFit extends StatelessWidget {
 /// Targum Onkelos.
 String spokenVerse(Verse verse, AppSettings s, {required ScriptureKind kind}) =>
     _spoken(verse.readText, s, targum: kind == ScriptureKind.targum);
+
+/// The same for a verse of the Torah or the Prophets quoted as text, as a
+/// question about it quotes it, whose Name may be written ה׳, as Rashi
+/// writes it.
+String spokenQuotedVerse(String text, AppSettings s) => _spoken(text, s, rashi: true);
 
 /// The text a screen reader should speak for one of Rashi's comments in
 /// Hebrew: the words it explains, then the comment.

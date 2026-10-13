@@ -26,8 +26,10 @@ import 'package:shnayim_mikra/ui/l10n.dart';
 import 'package:shnayim_mikra/ui/theme/focus.dart';
 import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
 import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikra/ui/widgets/lang.dart';
 import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikra/ui/widgets/sefer_tag.dart';
 
 import '../helpers.dart';
 
@@ -113,6 +115,59 @@ class _Gated extends DemoForumRepository {
   }
 }
 
+/// A community whose forums' threads are asked for ([asked] times), wait
+/// for [gate], and then fail while [offline].
+class _HeldThreads extends DemoForumRepository {
+  Completer<void>? gate;
+  bool offline = false;
+  int asked = 0;
+
+  @override
+  Future<List<ThreadSummary>> threads({
+    int? forumId,
+    int? parshaNumber,
+    (DateTime, String)? after,
+    int limit = ForumRepository.threadsPageSize,
+  }) async {
+    asked++;
+    await gate?.future;
+    if (offline) throw Exception('offline');
+    return super.threads(forumId: forumId, parshaNumber: parshaNumber, after: after, limit: limit);
+  }
+}
+
+/// A community whose forums, and whose reports, fail to load while
+/// [offline].
+class _OfflineCommunity extends DemoForumRepository {
+  bool offline = true;
+
+  @override
+  Future<List<Forum>> forums() async => offline ? throw Exception('offline') : super.forums();
+
+  @override
+  Future<List<Report>> openReports() async => offline ? throw Exception('offline') : super.openReports();
+}
+
+/// A community whose forums, and their activity, fail to load while
+/// [offline].
+class _OfflineForumsAndStats extends _OfflineCommunity {
+  @override
+  Future<Map<int, ForumStats>> forumStats() async => offline ? throw Exception('offline') : super.forumStats();
+}
+
+/// A community whose threads, and their posts, fail to load while
+/// [offline], each thread fetched counted ([threadsAsked]).
+class _FlakyThread extends _Flaky {
+  int threadsAsked = 0;
+
+  @override
+  Future<ThreadSummary> thread(String id) async {
+    threadsAsked++;
+    if (offline) throw Exception('offline');
+    return super.thread(id);
+  }
+}
+
 /// A community whose threads' earlier posts fail to load while [offline].
 class _NoEarlier extends DemoForumRepository {
   bool offline = false;
@@ -186,10 +241,13 @@ class _CountingThreads extends _Member {
   }
 }
 
-/// A member whose blocked members can't be fetched (offline).
+/// A member whose blocked members can't be fetched while [offline], and
+/// who has blocked none.
 class _NoBlockedList extends DemoForumRepository {
+  bool offline = true;
+
   @override
-  Future<Set<String>> blockedUsers() async => throw Exception('offline');
+  Future<Set<String>> blockedUsers() async => offline ? throw Exception('offline') : super.blockedUsers();
 }
 
 /// A member whose Unblock waits for [gate], is counted, and fails.
@@ -381,6 +439,16 @@ String? _focusedField(WidgetTester tester) {
   return null;
 }
 
+/// The edge [finder]'s text is set from, by where its first letter stands:
+/// left or right, as a paragraph that starts on that edge sets it.
+TextAlign _setFrom(WidgetTester tester, Finder finder) {
+  final paragraph = tester.renderObject<RenderParagraph>(finder);
+  final first = paragraph.getBoxesForSelection(const TextSelection(baseOffset: 0, extentOffset: 1)).first;
+  if (first.left.abs() < 0.5) return TextAlign.left;
+  if ((first.right - paragraph.size.width).abs() < 0.5) return TextAlign.right;
+  return TextAlign.center;
+}
+
 /// The week page's Discuss row, in either language.
 final _discuss = find.descendant(of: find.byType(WeeklyThreadOpener), matching: find.byType(PaperRow));
 
@@ -493,7 +561,6 @@ void main() {
     final title = find.widgetWithText(TextField, 'Title');
     final message = find.widgetWithText(TextField, 'Your message');
     final postInAppBar = find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post'));
-    final postBelow = find.descendant(of: find.byType(PageBody), matching: find.widgetWithText(FilledButton, 'Post'));
 
     testWidgets('picks its forum from chips with their icons, the one asked for chosen', (tester) async {
       await compose(tester);
@@ -536,8 +603,10 @@ void main() {
       final semantics = tester.ensureSemantics();
       await compose(tester);
       // Ready whenever a forum is chosen; until pressed, each field shows
-      // only what it needs.
+      // only what it needs. It is the page's one Post, in the app bar, where
+      // the keyboard never covers it.
       expect(tester.widget<FilledButton>(postInAppBar).onPressed, isNotNull);
+      expect(find.widgetWithText(FilledButton, 'Post'), findsOneWidget);
       expect(find.text('At least 5 characters'), findsOneWidget);
       expect(find.text('At least 2 characters'), findsOneWidget);
 
@@ -561,11 +630,68 @@ void main() {
       await tester.pump();
       expect(find.text('The title needs at least 5 characters.'), findsNothing);
       expect(find.text('The message needs at least 2 characters.'), findsOneWidget);
-      await tester.ensureVisible(postBelow);
-      await tester.tap(postBelow);
+      await tester.tap(postInAppBar);
       await tester.pump();
       expect(_focusedField(tester), 'Your message');
       semantics.dispose();
+    });
+
+    testWidgets('wraps a long title, which takes no line break, and goes on to the message', (tester) async {
+      await compose(tester);
+      final field = find.descendant(of: title, matching: find.byType(EditableText));
+      final oneLine = tester.getSize(field).height;
+      await tester.enterText(title, 'On the order of the second reading');
+      await tester.pump();
+      // Wrapped, all of it in view, rather than scrolled sideways.
+      expect(tester.getSize(field).height, greaterThan(oneLine * 1.5));
+      expect(tester.state<EditableTextState>(field).renderEditable.maxScrollExtent, 0);
+      // However long, up to its 150 characters.
+      await tester.enterText(title, List.filled(16, 'Question').join(' '));
+      await tester.pump();
+      expect(tester.getSize(field).height, greaterThan(oneLine * 5));
+      expect(tester.state<EditableTextState>(field).renderEditable.maxScrollExtent, 0);
+      // A line break pasted in is a space, so the title stays one line of
+      // text, as the forum lists it.
+      await tester.enterText(title, 'A question\non Rashi\r\nand Onkelos');
+      await tester.pump();
+      expect(tester.widget<TextField>(title).controller!.text, 'A question on Rashi and Onkelos');
+      // So is any other break a line of text takes: a line separator, and
+      // Word's manual line break (a vertical tab), say.
+      await tester.enterText(title, 'A question\u2028on Rashi\vand Onkelos\u2029\f\u0085in full');
+      await tester.pump();
+      expect(tester.widget<TextField>(title).controller!.text, 'A question on Rashi and Onkelos in full');
+      // The keyboard's action goes on to the message.
+      expect(tester.widget<TextField>(title).textInputAction, TextInputAction.next);
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+      expect(_focusedField(tester), 'Your message');
+    });
+
+    testWidgets('offers to discard a draft, 16 under the guidelines, once anything is written', (tester) async {
+      await compose(tester);
+      final discard = find.widgetWithText(TextButton, 'Discard draft');
+      expect(discard, findsNothing);
+      await tester.enterText(message, 'A thought');
+      await tester.pump();
+      await tester.ensureVisible(discard);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(discard).top - tester.getRect(find.byType(LinkedText)).bottom, moreOrLessEquals(16, epsilon: 0.5));
+      expect(tester.getCenter(discard).dx, moreOrLessEquals(tester.getCenter(find.byType(InfoCard)).dx, epsilon: 0.5));
+      await tester.tap(discard);
+      await tester.pump();
+      expect(tester.widget<TextField>(message).controller!.text, isEmpty);
+      expect(discard, findsNothing);
+    });
+
+    testWidgets('offers to discard a draft 16 under the paper, where the guidelines are accepted already', (tester) async {
+      await compose(tester, forums: await _Member().signIn());
+      expect(find.byType(LinkedText), findsNothing);
+      final discard = find.widgetWithText(TextButton, 'Discard draft');
+      await tester.enterText(message, 'A thought');
+      await tester.pump();
+      await tester.ensureVisible(discard);
+      await tester.pumpAndSettle();
+      expect(tester.getRect(discard).top - tester.getRect(find.byType(InfoCard)).bottom, moreOrLessEquals(16, epsilon: 0.5));
     });
 
     testWidgets('signed in with a name, is signed with it, and posts with Ctrl+Enter', (tester) async {
@@ -963,10 +1089,11 @@ void main() {
       c.read(routerProvider).go('/community/thread/1');
       await tester.pumpAndSettle();
       expect(appBarTitle().data, 'שאלות ותשובות');
-      // English, from the page's start edge, as the forum lists it.
+      // English, from its own start edge, as the forum lists it.
       final heading = tester.widget<Text>(find.text('Why read the Targum rather than a translation?'));
       expect(heading.textDirection, TextDirection.ltr);
-      expect(heading.textAlign, TextAlign.right);
+      expect(heading.textAlign, TextAlign.start);
+      expect(_setFrom(tester, find.text('Why read the Targum rather than a translation?')), TextAlign.left);
     });
   });
 
@@ -1429,6 +1556,24 @@ void main() {
       expect(tester.getRect(ruleIn(post)).top, disc.top, reason: 'the rule starts at the top of the initial');
     });
 
+    testWidgets('in high contrast, keeps its name on the line its initial and menu are centred on, by its outlined tag',
+        (tester) async {
+      final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, theme: AppThemeMode.highContrastDark));
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final post = find.byType(PostCard).first;
+      final name = tester.getRect(find.descendant(of: post, matching: find.text('Avraham')));
+      // The tag, with its outline outside its padding, stands taller than the
+      // name's line.
+      final tag = tester.getRect(find.descendant(of: post, matching: find.byType(SeferTag)));
+      expect(tag.height, greaterThan(name.height));
+      expect(tag.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+      final disc = tester.getRect(find.descendant(of: post, matching: find.byType(InitialDisc)));
+      expect(disc.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+      final menu = tester.getRect(find.descendant(of: post, matching: find.byTooltip('More options for Avraham')));
+      expect(menu.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+    });
+
     testWidgets('is edited in a labelled field that takes the focus', (tester) async {
       final forums = await _Member().signIn();
       forums.seed(posts: [
@@ -1452,7 +1597,18 @@ void main() {
       final field = tester.widget<TextField>(find.descendant(of: dialog, matching: find.byType(TextField)));
       expect(field.decoration?.labelText, 'Your message');
       expect(field.maxLength, 10000);
+      // Its counter quiet until the message nears the limit, as Compose's.
+      expect(find.descendant(of: dialog, matching: find.textContaining('/10')), findsNothing);
       expect(tester.widget<EditableText>(find.descendant(of: dialog, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
+      final editing = find.descendant(of: dialog, matching: find.byType(TextField));
+      await tester.enterText(editing, 'x' * 7999);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.textContaining('/10')), findsNothing);
+      await tester.enterText(editing, 'x' * 8000);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.text('8,000/10,000')), findsOneWidget);
+      await tester.enterText(editing, 'A first thought');
+      await tester.pump();
       // Save waits for a change, of 2 characters at least, as a reply does.
       FilledButton save() => tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'));
       expect(save().onPressed, isNull, reason: 'nothing changed');
@@ -1810,7 +1966,10 @@ void main() {
       await _openPostMenu(tester, 1);
       await tester.tap(find.text('Block Rivka'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Block Rivka'));
+      // A block can be undone: confirmed with the plain Filled button.
+      final block = find.widgetWithText(FilledButton, 'Block Rivka');
+      expect(tester.widget<FilledButton>(block).style, isNull);
+      await tester.tap(block);
       await tester.pumpAndSettle();
       expect(find.byType(PostCard), findsOneWidget);
       expect(find.text('1 post'), findsOneWidget);
@@ -1839,7 +1998,16 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      // A deletion can't be undone: the dialog says so, and confirms it in
+      // error's ink.
+      final dialog = find.byType(AlertDialog);
+      expect(find.descendant(of: dialog, matching: find.text('Delete this post?')), findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.text('This can’t be undone.')), findsOneWidget);
+      final confirm = find.descendant(of: dialog, matching: find.widgetWithText(FilledButton, 'Delete'));
+      final scheme = Theme.of(tester.element(confirm)).colorScheme;
+      expect(tester.widget<FilledButton>(confirm).style?.backgroundColor?.resolve({}), scheme.error);
+      expect(tester.widget<FilledButton>(confirm).style?.foregroundColor?.resolve({}), scheme.onError);
+      await tester.tap(confirm);
       await tester.pumpAndSettle();
       await _scrollThreadTo(tester, find.text('2 posts'), up: true);
       expect(find.text('2 posts'), findsOneWidget);
@@ -1963,7 +2131,7 @@ void main() {
     expect(prefs.getString('draft.newThread'), isNotNull);
 
     forums.gate = Completer<void>();
-    await tester.tap(find.widgetWithText(FilledButton, 'Post').first);
+    await tester.tap(find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post')));
     await tester.pump();
     await tester.tap(find.byType(CloseButton));
     await tester.pumpAndSettle();
@@ -2077,6 +2245,37 @@ void main() {
       expect(find.text('Block Rivka'), findsOneWidget);
     });
 
+    testWidgets('asks for details in three lines, labelled at their top, counted only near the limit', (tester) async {
+      final forums = await _Member().signIn();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+
+      await _openPostMenu(tester, 1);
+      await tester.tap(find.text('Report'));
+      await tester.pumpAndSettle();
+      final dialog = find.byType(AlertDialog);
+      final details = find.descendant(of: dialog, matching: find.byType(TextField));
+      final field = tester.widget<TextField>(details);
+      expect(field.minLines, 3);
+      expect(field.maxLength, 1000);
+      // The label sits in the first line, where what is typed begins, rather
+      // than in the middle of the box.
+      final editable = tester.getRect(find.descendant(of: details, matching: find.byType(EditableText)));
+      final label = tester.getRect(find.descendant(of: details, matching: find.text('Details (optional)')));
+      expect(editable.height, greaterThan(label.height * 2.5));
+      expect(label.center.dy, lessThan(editable.top + editable.height / 3));
+      // No "0/1000" from the start: a counter only near the limit, in the
+      // number format of the language.
+      expect(find.descendant(of: dialog, matching: find.textContaining('/1')), findsNothing);
+      await tester.enterText(details, 'x' * 799);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.textContaining('/1')), findsNothing);
+      await tester.enterText(details, 'x' * 800);
+      await tester.pump();
+      expect(find.descendant(of: dialog, matching: find.text('800/1,000')), findsOneWidget);
+    });
+
     testWidgets('made before, in another session, says so', (tester) async {
       final forums = await _Member().signIn();
       await forums.report(postId: '2', reason: ReportReason.spam);
@@ -2166,10 +2365,18 @@ void main() {
       expect(find.byTooltip('Sign in'), findsNWidgets(1));
 
       await forums.verifyCode('reader@example.org', '123456');
+      c.invalidate(myProfileProvider);
+      await tester.pumpAndSettle();
+      // Until a name is chosen, the machine's ("user_1a2b3c4d") gives no
+      // initial: a person on the disc, not a "U".
+      final disc = find.descendant(of: appBar, matching: find.byType(InitialDisc));
+      expect(disc, findsOneWidget);
+      expect(find.descendant(of: disc, matching: find.byIcon(Icons.person_outline)), findsOneWidget);
+      expect(find.descendant(of: disc, matching: find.byType(Text)), findsNothing);
+
       await forums.updateDisplayName('rivka');
       c.invalidate(myProfileProvider);
       await tester.pumpAndSettle();
-      final disc = find.descendant(of: appBar, matching: find.byType(InitialDisc));
       expect(disc, findsOneWidget);
       expect(find.descendant(of: disc, matching: find.text('R')), findsOneWidget);
       expect(tester.getSize(disc), const Size(32, 32));
@@ -2269,15 +2476,20 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('in Hebrew, sets an English title from the right, and keeps an English name in its place', (tester) async {
+    testWidgets('in Hebrew, sets an English title from the left, and keeps an English name in its place', (tester) async {
       final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
       c.read(routerProvider).go('/community/forum/feedback');
       await tester.pumpAndSettle();
       const title = 'A warmer theme for reading at night?';
       final english = tester.widget<Text>(find.text(title));
       expect(english.textDirection, TextDirection.ltr, reason: 'so its question mark ends it');
-      expect(english.textAlign, TextAlign.right, reason: "from the Hebrew page's edge");
-      expect(tester.getRect(find.text(title)).right, closeTo(tester.getRect(find.widgetWithText(ThreadTile, title)).right - 16, 1));
+      expect(english.textAlign, TextAlign.start, reason: 'from its own start edge');
+      expect(_setFrom(tester, find.text(title)), TextAlign.left);
+      // Its last line ends well short of the row's right edge, as it would
+      // not set from the page's edge.
+      final lines = tester.renderObject<RenderParagraph>(find.text(title));
+      final last = lines.getBoxesForSelection(const TextSelection(baseOffset: title.length - 1, extentOffset: title.length)).last;
+      expect(last.right, lessThan(lines.size.width - 40));
       // The meta line runs right to left: the name, isolated, first, at the
       // right, then the time and the replies.
       final meta = find.descendant(of: find.widgetWithText(ThreadTile, title), matching: find.textContaining('\u2068Avraham\u2069\u00a0· '));
@@ -2385,18 +2597,399 @@ void main() {
       expect(find.descendant(of: weekly, matching: find.text('Just now\u00a0· No replies yet')), findsOneWidget);
     });
 
-    testWidgets("runs each title its own way from the page's edge, and keeps a Hebrew name in its place", (tester) async {
+    testWidgets('runs each title its own way from its own start edge, and keeps a Hebrew name in its place', (tester) async {
       final c = await _pump(tester);
       c.read(routerProvider).go('/community/forum/questions');
       await tester.pumpAndSettle();
       const question = 'עד מתי אפשר להשלים את הקריאה?';
       final hebrew = tester.widget<Text>(find.text(question));
       expect(hebrew.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
-      expect(hebrew.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(hebrew.textAlign, TextAlign.start, reason: 'from its own start edge, so that its lines all start there');
+      expect(_setFrom(tester, find.text(question)), TextAlign.right);
       expect(tester.widget<Lang>(find.ancestor(of: find.text(question), matching: find.byType(Lang))).locale, const Locale('he'));
       expect(tester.widget<Text>(find.text('Why read Numbers 32:3 a third time?')).textDirection, TextDirection.ltr);
       // Isolated, so that the rest of the line stays after the name.
       expect(find.textContaining('\u2068שירה\u2069\u00a0· '), findsOneWidget);
+    });
+  });
+
+  group('what cannot load', () {
+    const offline = 'Couldn’t reach the server. Check your connection and try again.';
+    final retry = find.widgetWithText(FilledButton, 'Try again');
+
+    testWidgets("a forum's discussions say why, under no floating button, and come when tried again", (tester) async {
+      final forums = _FlakyForum()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing, reason: 'nothing to begin a discussion over');
+      // It can be pulled to try again too.
+      final scrollable = tester.widget<Scrollable>(find.descendant(of: find.byType(ErrorState), matching: find.byType(Scrollable)));
+      expect(scrollable.physics, isA<AlwaysScrollableScrollPhysics>());
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(find.byType(ErrorState), findsNothing);
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('tried again, say so on the button, which keeps the focus, until the outcome', (tester) async {
+      final forums = _HeldThreads()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      // Never tried again behind the reader's back.
+      await tester.pump(const Duration(minutes: 1));
+      expect(forums.asked, 1);
+      Focus.of(tester.element(find.text('Try again'))).requestFocus();
+      await tester.pump();
+      forums.gate = Completer<void>();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      // While it is tried again the message stays, and the button, still
+      // enabled and with the focus, spins.
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.descendant(of: retry, matching: find.byType(CircularProgressIndicator)), findsOneWidget);
+      expect(tester.widget<FilledButton>(retry).onPressed, isNotNull);
+      expect(Focus.of(tester.element(find.text('Try again'))).hasPrimaryFocus, isTrue);
+
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(forums.asked, 2);
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget, reason: 'failed again');
+      expect(find.descendant(of: retry, matching: find.byType(CircularProgressIndicator)), findsNothing);
+      expect(Focus.of(tester.element(find.text('Try again'))).hasPrimaryFocus, isTrue);
+    });
+
+    testWidgets('a thread keeps its title, says why, and docks no reply box until its posts come', (tester) async {
+      final forums = _Flaky()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final heading = find.bySemanticsLabel('Why read the Targum rather than a translation?');
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(heading, findsWidgets);
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsNothing);
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(PostCard), findsNWidgets(2));
+      expect(find.byType(ErrorMessage), findsNothing);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsOneWidget);
+    });
+
+    testWidgets('the forums on the Community page say why, and come when tried again', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.byType(ThisWeekCard), findsOneWidget, reason: 'the rest of the page stays');
+
+      forums.offline = false;
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Questions & answers'), findsOneWidget);
+      expect(find.byType(ErrorMessage), findsNothing);
+    });
+
+    testWidgets('a question on a verse says why its forums can\'t be had, and fetches them again as it opens again',
+        (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      // Asked from the reader, before Community was ever opened.
+      final ask = Uri(path: '/ask', queryParameters: {'verse': 'Genesis 3:22'}).toString();
+      c.read(routerProvider).push(ask);
+      await tester.pumpAndSettle();
+      final post = find.descendant(of: find.byType(AppBar), matching: find.widgetWithText(FilledButton, 'Post'));
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget, reason: 'in place of the forums');
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(tester.widget<FilledButton>(post).onPressed, isNull);
+
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      forums.offline = false;
+      c.read(routerProvider).push(ask);
+      await tester.pump();
+      expect(find.byType(ErrorMessage), findsNothing, reason: 'fetched afresh, not the failure from before');
+      await tester.pumpAndSettle();
+      expect(_chosenForum(tester), 'Questions & answers');
+      expect(tester.widget<FilledButton>(post).onPressed, isNotNull);
+    });
+
+    testWidgets("a new discussion lists its forums when they're tried again", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).push('/community/new?forum=questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorMessage), findsNothing);
+      expect(_chosenForum(tester), 'Questions & answers');
+    });
+
+    testWidgets("a forum whose discussions couldn't load fetches them again as it opens again", (tester) async {
+      final forums = _FlakyForum()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+
+      forums.offline = false;
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pump();
+      expect(find.byType(ErrorState), findsNothing, reason: 'loading afresh, not the failure from before');
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+    });
+
+    testWidgets("a forum whose forums can't be had can be pulled to try again", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+      expect(find.ancestor(of: find.byType(ErrorState), matching: find.byType(RefreshIndicator)), findsOneWidget);
+
+      forums.offline = false;
+      await tester.fling(find.byType(ErrorState), const Offset(0, 300), 1000);
+      await tester.pumpAndSettle();
+      expect(find.text('Why read the Targum rather than a translation?'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets("a thread names its forum, though the forums had failed before it opened", (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+
+      forums.offline = false;
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Questions & answers')), findsOneWidget);
+    });
+
+    testWidgets('a thread refreshed names its forum, should the forums have failed as it opened', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      final appBar = find.byType(AppBar);
+      expect(find.descendant(of: appBar, matching: find.text('Community')), findsOneWidget);
+
+      forums.offline = false;
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: appBar, matching: find.text('Questions & answers')), findsOneWidget);
+    });
+
+    testWidgets('a thread that can\'t be had is never tried again behind the reader\'s back, its posts nor itself',
+        (tester) async {
+      final forums = _FlakyThread()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      final title = find.text('Why read the Targum rather than a translation?');
+      expect(title, findsNothing);
+      final at = tester.getTopLeft(retry);
+
+      // Back online, nothing moves until the reader asks: no title comes
+      // over Try again.
+      forums.offline = false;
+      await tester.pump(const Duration(minutes: 1));
+      await tester.pumpAndSettle();
+      expect(forums.threadsAsked, 1);
+      expect(title, findsNothing);
+      expect(tester.getTopLeft(retry), at);
+
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(title, findsOneWidget);
+      expect(find.byType(PostCard), findsNWidgets(2));
+    });
+
+    testWidgets('a reply restored says so once its reply box is there, never while the posts can\'t load',
+        (tester) async {
+      final forums = _Flaky()..offline = true;
+      final c = await _pump(tester, forums: forums);
+      // Wide, where the page's own Scaffold shows the message, above the box.
+      tester.view.physicalSize = const Size(1366, 860);
+      await c.read(sharedPreferencesProvider).setString('draft.thread.1', 'Kept for later');
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      expect(find.text('Your draft was restored.'), findsNothing, reason: 'no reply box for it to be in');
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text('Kept for later'), findsOneWidget);
+      expect(find.text('Your draft was restored.'), findsOneWidget);
+      // Above the box it is in, which was docked before it came.
+      final box = tester.getRect(find.ancestor(of: find.byType(TextField), matching: find.byType(Material)).first);
+      final shown = tester.getRect(find.descendant(of: find.byType(SnackBar), matching: find.byType(Material)).first);
+      expect(shown.bottom, box.top - 16);
+    });
+
+    testWidgets("the forums on the Community page, tried again, come with their activity, which had failed too",
+        (tester) async {
+      final forums = _OfflineForumsAndStats();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorMessage, offline), findsOneWidget);
+      // The activity, tried again by itself, gives up.
+      for (var i = 0; i < 40 && c.read(forumStatsProvider).isLoading; i++) {
+        await tester.pump(const Duration(seconds: 7));
+      }
+      expect(c.read(forumStatsProvider), isA<AsyncError<Object?>>());
+
+      forums.offline = false;
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.widgetWithText(PaperRow, 'Questions & answers'),
+          matching: find.textContaining(RegExp('^\\d+\u00a0discussions?')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the reports to review say why, and come when tried again', (tester) async {
+      final forums = _OfflineCommunity();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/moderation');
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ErrorState, offline), findsOneWidget);
+
+      forums.offline = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.byType(ErrorState), findsNothing);
+    });
+  });
+
+  group("a forum's floating button", () {
+    testWidgets('is not offered over an empty forum, whose own button is the one invitation', (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/divrei-torah');
+      await tester.pumpAndSettle();
+      expect(find.text('New discussion'), findsOneWidget);
+      expect(find.descendant(of: find.byType(EmptyState), matching: find.text('New discussion')), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('floats over no spinner while the discussions load again for another account', (tester) async {
+      final forums = _HeldThreads();
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+
+      forums.gate = Completer<void>();
+      await forums.verifyCode('reader@example.org', '123456');
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(find.byType(CircularProgressIndicator), findsOneWidget, reason: 'loading again, for the account');
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      forums.gate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets("is offered over the week's forum, never empty", (tester) async {
+      final c = await _pump(tester, forums: DemoForumRepository(samples: false));
+      c.read(routerProvider).go('/community/forum/parsha');
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    for (final reduced in [false, true]) {
+      testWidgets(reduced ? 'appears at once under Reduce Motion' : 'fades in as the discussions come, without turning',
+          (tester) async {
+        final forums = _HeldThreads()..gate = Completer<void>();
+        final c = await _pump(tester, forums: forums, settings: AppSettings(onboardingComplete: true, reduceMotion: reduced));
+        c.read(routerProvider).go('/community/forum/questions');
+        // The page arrives, and spins while the discussions load.
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(find.byType(FloatingActionButton), findsNothing, reason: 'none while they load');
+
+        forums.gate!.complete();
+        await tester.pump();
+        await tester.pump();
+        final fab = find.byType(FloatingActionButton);
+        expect(fab, findsOneWidget);
+        double opacity() =>
+            tester.widget<FadeTransition>(find.ancestor(of: fab, matching: find.byType(FadeTransition)).first).opacity.value;
+        if (reduced) {
+          expect(opacity(), 1);
+        } else {
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(opacity(), inExclusiveRange(0, 1), reason: 'fading in');
+          await tester.pumpAndSettle();
+          expect(opacity(), 1);
+        }
+        // An extended button, which the Scaffold never turns as it comes.
+        expect(tester.widget<FloatingActionButton>(fab).isExtended, isTrue);
+      });
+    }
+
+    testWidgets('shows its label, and at large text its icon alone, named by its tooltip', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final c = await _pump(tester);
+      // A tablet, where the label fits; the test's font sets every letter a
+      // square, wider than the app's.
+      tester.view.physicalSize = const Size(800, 1180);
+      c.read(routerProvider).go('/community/forum/questions');
+      await tester.pumpAndSettle();
+      final fab = find.byType(FloatingActionButton);
+      expect(find.descendant(of: fab, matching: find.text('New discussion')), findsOneWidget);
+      expect(find.byTooltip('New discussion'), findsNothing);
+      expect(tester.getSize(fab).width, greaterThan(56));
+
+      void iconAlone() {
+        expect(find.descendant(of: fab, matching: find.text('New discussion')), findsNothing);
+        expect(tester.getSize(fab), const Size(56, 56));
+        expect(find.byTooltip('New discussion'), findsOneWidget);
+        expect(
+          tester.getSemantics(find.byTooltip('New discussion')),
+          isSemantics(tooltip: 'New discussion', isButton: true, hasTapAction: true),
+        );
+      }
+
+      // At 300%, the label would be taller than the button.
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpAndSettle();
+      iconAlone();
+      // On a phone at 200%, wider than two thirds of the screen.
+      tester.view.physicalSize = const Size(412, 915);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      await tester.pumpAndSettle();
+      iconAlone();
+      await tester.tap(fab);
+      await tester.pumpAndSettle();
+      expect(find.byType(ComposeScreen), findsOneWidget);
+      semantics.dispose();
     });
   });
 
@@ -2415,7 +3008,8 @@ void main() {
       final excerpt = find.text(hebrewOpening);
       final text = tester.widget<Text>(excerpt);
       expect(text.textDirection, TextDirection.rtl, reason: 'so its question mark ends it');
-      expect(text.textAlign, TextAlign.left, reason: "from the English page's edge");
+      expect(text.textAlign, TextAlign.start, reason: 'from its own start edge, so that its lines all start there');
+      expect(_setFrom(tester, excerpt), TextAlign.right);
       expect(text.maxLines, 2);
       expect(text.style?.fontSize, Theme.of(tester.element(excerpt)).textTheme.bodySmall?.fontSize);
       expect(tester.widget<Lang>(find.ancestor(of: excerpt, matching: find.byType(Lang))).locale, const Locale('he'));
@@ -2946,7 +3540,13 @@ void main() {
       expect(find.descendant(of: card, matching: find.text('Rivka')), findsOneWidget);
       expect(find.descendant(of: card, matching: find.text('reader@example.org')), findsOneWidget);
       expect(tester.getSize(find.descendant(of: card, matching: find.byType(InitialDisc))), const Size(56, 56));
-      expect(find.descendant(of: card, matching: find.widgetWithText(Chip, 'Moderator')), findsOneWidget);
+      // A moderator's tag, with its shield: a label, not a chip, so nothing
+      // about it reads as a control.
+      final tag = find.descendant(of: card, matching: find.byType(SeferTag));
+      expect(find.descendant(of: tag, matching: find.text('Moderator')), findsOneWidget);
+      expect(find.descendant(of: tag, matching: find.byIcon(Icons.shield_outlined)), findsOneWidget);
+      expect(find.descendant(of: card, matching: find.byType(Chip)), findsNothing);
+      expect(find.descendant(of: tag, matching: find.byType(InkWell)), findsNothing);
       // The name once, on the card: no heading over a field of the same name.
       expect(find.text('Display name'), findsNothing);
 
@@ -3163,7 +3763,13 @@ void main() {
       await tester.tap(find.text('Blocked members'));
       await tester.pumpAndSettle();
       final sheet = find.byType(BottomSheet);
-      expect(find.descendant(of: sheet, matching: find.widgetWithText(TextButton, 'Try again')), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.byType(ErrorMessage)), findsOneWidget);
+      // Tried again, the list comes, in the sheet still open.
+      forums.offline = false;
+      await tester.tap(find.descendant(of: sheet, matching: find.widgetWithText(FilledButton, 'Try again')));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: sheet, matching: find.text('You haven’t blocked anyone.')), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
     });
 
     testWidgets('says in the sheet why an Unblock failed, and sends one at a time', (tester) async {
@@ -3187,7 +3793,93 @@ void main() {
       expect(forums.calls, 1);
       expect(find.descendant(of: sheet, matching: find.textContaining('connection')), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
+      // In full, however many lines it takes: here, in the test font's wide
+      // letters, more than the two a row's subtitle is otherwise cut at.
+      final why = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.descendant(of: sheet, matching: find.textContaining('connection')), matching: find.byType(RichText)).first,
+      );
+      final lines = why.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: why.text.toPlainText().length));
+      expect({for (final box in lines) box.top.round()}.length, greaterThan(2));
+      expect(why.didExceedMaxLines, isFalse);
     });
+
+    for (final announces in [true, false]) {
+      testWidgets(
+          'says why an Unblock failed under the member, '
+          '${announces ? 'and announces it' : 'a live region where nothing is announced'}', (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final semantics = tester.ensureSemantics();
+        final forums = _FailingUnblock();
+        await forums.verifyCode('reader@example.org', '123456');
+        await forums.updateDisplayName('Rivka');
+        await forums.block('demo-author');
+        await account(tester, forums: forums);
+        await tester.tap(find.text('Blocked members (1)'));
+        await tester.pumpAndSettle();
+        tester.takeAnnouncements();
+        await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.widgetWithText(TextButton, 'Unblock')));
+        await tester.pumpAndSettle();
+        const why = 'Couldn’t reach the server. Check your connection and try again.';
+        final row = find.widgetWithText(PaperRow, 'Avraham');
+        expect(tester.widget<PaperRow>(row).subtitle, why);
+        expect([for (final a in tester.takeAnnouncements()) a.message], announces ? [why] : isEmpty);
+        // The member and why, one item; Unblock an item of its own beside it.
+        expect(tester.getSemantics(row), isSemantics(label: 'Avraham\n$why', isLiveRegion: !announces));
+        semantics.dispose();
+      });
+    }
+
+    for (final hebrew in [false, true]) {
+      testWidgets(
+          '${hebrew ? 'he' : 'en'}: lists each member by their initial, on paper lined up with the sheet\'s title',
+          (tester) async {
+        final forums = DemoForumRepository();
+        await forums.verifyCode('reader@example.org', '123456');
+        await forums.updateDisplayName('Rivka');
+        for (final id in ['demo-author', 'demo-shira']) {
+          await forums.block(id);
+        }
+        await account(
+          tester,
+          forums: forums,
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+        );
+        // Wide enough for Unblock beside each name in the test font, whose
+        // every letter is as wide as it is high.
+        tester.view.physicalSize = const Size(600, 915);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.block));
+        await tester.pumpAndSettle();
+        final sheet = find.byType(BottomSheet);
+        expect(find.descendant(of: sheet, matching: find.byType(ListTile)), findsNothing);
+        final rows = find.descendant(of: sheet, matching: find.byType(PaperRow));
+        expect(find.descendant(of: sheet, matching: find.byType(PaperGroup)), findsOneWidget);
+        // A name in the interface's direction as it is, and one that runs
+        // the other way isolated, so that each keeps its own at the row's
+        // start.
+        final (latin, hebrewName) = ('Avraham', 'שירה');
+        expect([for (final r in tester.widgetList<PaperRow>(rows)) r.title],
+            hebrew ? ['\u2068$latin\u2069', hebrewName] : [latin, '\u2068$hebrewName\u2069']);
+        final box = tester.getRect(sheet);
+        final paper = tester.getRect(find.descendant(of: sheet, matching: find.byType(PaperGroup)));
+        double fromStart(Rect r) => hebrew ? box.right - r.right : r.left - box.left;
+        expect(fromStart(paper), 24);
+        for (var i = 0; i < 2; i++) {
+          final row = rows.at(i);
+          final disc = find.descendant(of: row, matching: find.byType(InitialDisc));
+          expect(tester.widget<InitialDisc>(disc).name, [latin, hebrewName][i]);
+          // The disc in the icon's slot, the name where a paper row's text
+          // starts, and Unblock at the end of the name's line.
+          expect(fromStart(tester.getRect(disc)), 24 + 16);
+          final name = tester.getRect(find.descendant(of: row, matching: find.text(tester.widget<PaperRow>(row).title)));
+          expect(fromStart(name), 24 + PaperGroup.iconInset);
+          expect(tester.getCenter(disc).dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+          final unblock = tester.getRect(find.descendant(of: row, matching: find.byType(TextButton)));
+          expect(unblock.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+        }
+      });
+    }
 
     testWidgets('lists the members blocked in a sheet, until none are left', (tester) async {
       final forums = DemoForumRepository();
