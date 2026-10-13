@@ -547,15 +547,11 @@ class RingKey extends LeafRenderObjectWidget {
   static const double size = 16;
 
   @override
-  RenderObject createRenderObject(BuildContext context) => _RenderRingKey(
-        ring: ring,
-        color: color,
-        ink: ink,
-        pixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
+  RenderObject createRenderObject(BuildContext context) =>
+      RenderRingKey(ring, color, ink, MediaQuery.devicePixelRatioOf(context));
 
   @override
-  void updateRenderObject(BuildContext context, _RenderRingKey renderObject) {
+  void updateRenderObject(BuildContext context, RenderRingKey renderObject) {
     renderObject
       ..ring = ring
       ..color = color
@@ -564,12 +560,9 @@ class RingKey extends LeafRenderObjectWidget {
   }
 }
 
-class _RenderRingKey extends RenderBox {
-  _RenderRingKey({required int ring, required Color color, required Color ink, required double pixelRatio})
-      : _ring = ring,
-        _color = color,
-        _ink = ink,
-        _pixelRatio = pixelRatio;
+/// Draws a [RingKey].
+class RenderRingKey extends RenderBox {
+  RenderRingKey(this._ring, this._color, this._ink, this._pixelRatio);
 
   // Radii from the centre, outermost first: a 1 px ring spans 7–8, 4–5 and
   // 2–3, and the row's own, 2 px, 6–8, 4–6 and 1–3, keeping the first
