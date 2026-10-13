@@ -130,8 +130,8 @@ void main() {
         ['Mikra', 'Targum Onkelos'],
       );
 
-      // The text keeps to its wider measure, centred, and the title and the
-      // ribbon to it.
+      // The text keeps to its wider measure, centred, and the ribbon to it;
+      // the title starts where the verses do, within their blocks.
       final column = tester.getRect(find.byType(VerseGroup).first);
       expect(column.width, ScriptureStyles.parallelWidth);
       expect(column.center.dx, closeTo(wide.width / 2, 0.5));
@@ -139,7 +139,7 @@ void main() {
       expect(tester.getRect(tab('Rishon')).left, greaterThanOrEqualTo(column.left));
       expect(tester.getRect(tab('Shevi’i')).right, lessThanOrEqualTo(column.right + 0.01));
       expect(ribbon.width, wide.width, reason: 'its rule runs the width of the window');
-      expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left, 0.5));
+      expect(tester.getTopLeft(titled('Rishon')).dx, closeTo(column.left + VerseGroup.padding.left, 0.5));
     });
 
     for (final translation in [false, true]) {

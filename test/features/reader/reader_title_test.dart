@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/router.dart';
 import 'package:shnayim_mikra/features/reader/reader_screen.dart';
+import 'package:shnayim_mikra/features/reader/scripture_text.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
@@ -15,7 +19,7 @@ void main() {
 
   final monday = DateTime(2026, 10, 12, 10); // week of Noach, 5787
 
-  Future<void> open(WidgetTester tester, String path, {Size size = const Size(412, 915), AppSettings? settings}) async {
+  Future<ProviderContainer> open(WidgetTester tester, String path, {Size size = const Size(412, 915), AppSettings? settings}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -32,6 +36,7 @@ void main() {
       await tester.pump();
     }
     await tester.pumpAndSettle();
+    return c;
   }
 
   final bar = find.byType(AppBar);
@@ -153,6 +158,79 @@ void main() {
         // The button keeps its whole target.
         expect(home.width, greaterThanOrEqualTo(48));
         expect(home.height, greaterThanOrEqualTo(48));
+      });
+    }
+
+    for (final hebrew in [false, true]) {
+      testWidgets('on an 800 dp tablet, opened over another page, starts after the whole back button'
+          '${hebrew ? ', in Hebrew' : ''}', (tester) async {
+        // Opened from Today or the week's page, as most often: the app bar
+        // has a back button rather than the home button.
+        final c = await open(
+          tester,
+          '/today',
+          size: const Size(800, 1180),
+          settings: AppSettings(
+            onboardingComplete: true,
+            notificationPromptShown: true,
+            language: hebrew ? AppLanguage.hebrew : AppLanguage.english,
+          ),
+        );
+        unawaited(c.read(routerProvider).push('/read/5787:2/4'));
+        await tester.pump();
+        await tester.pump();
+        for (var i = 0; i < 20 && find.byType(CircularProgressIndicator).evaluate().isNotEmpty; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+          await tester.pump();
+        }
+        await tester.pumpAndSettle();
+        final back = find.descendant(of: bar, matching: find.byType(BackButton));
+        expect(back, findsOneWidget);
+        final button = tester.getRect(find.descendant(of: back, matching: find.byType(IconButton)));
+        expect(button.width, greaterThanOrEqualTo(48));
+        expect(button.height, greaterThanOrEqualTo(48));
+        final aliyah = find.descendant(of: bar, matching: find.text(hebrew ? 'חמישי' : 'Chamishi · חמישי'));
+        if (hebrew) {
+          expect(tester.getTopRight(aliyah).dx, 740);
+          expect(button.left, greaterThanOrEqualTo(740), reason: 'the button clear of the title');
+        } else {
+          expect(tester.getTopLeft(aliyah).dx, 60);
+          expect(button.right, lessThanOrEqualTo(60), reason: 'the button clear of the title');
+          expectTitleWhole(tester);
+        }
+      });
+
+      testWidgets('on an 800 dp tablet, in the full text, starts where its verses do${hebrew ? ', in Hebrew' : ''}',
+          (tester) async {
+        await open(
+          tester,
+          '/read/5787:2/4?mode=full',
+          size: const Size(800, 1180),
+          settings: AppSettings(
+            onboardingComplete: true,
+            notificationPromptShown: true,
+            language: hebrew ? AppLanguage.hebrew : AppLanguage.english,
+          ),
+        );
+        // The verses stand within their blocks, 12 inside the column.
+        final verse = find.byType(ScriptureVerse).first;
+        final aliyah = find.descendant(of: bar, matching: find.text(hebrew ? 'חמישי' : 'Chamishi · חמישי'));
+        final home = tester.getRect(find.descendant(of: bar, matching: find.byTooltip(hebrew ? 'היום' : 'Today')));
+        if (hebrew) {
+          // The text starts at the right in either language: its block's
+          // inset is the same at the left.
+          final edge = tester.getTopLeft(verse).dx;
+          expect(edge, 72);
+          expect(tester.getTopRight(aliyah).dx, 800 - edge);
+          expect(home.left, greaterThanOrEqualTo(800 - edge));
+        } else {
+          final edge = tester.getTopLeft(verse).dx;
+          expect(edge, 72);
+          expect(tester.getTopLeft(aliyah).dx, edge);
+          expect(home.right, lessThanOrEqualTo(edge));
+          expectTitleWhole(tester);
+        }
+        expect(home.width, greaterThanOrEqualTo(48));
       });
     }
   });

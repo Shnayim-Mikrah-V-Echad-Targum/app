@@ -1300,7 +1300,7 @@ Remove the AppBar. Everything sits in a SafeArea PageBody (on a day of rest, a s
   - Eyebrow: the parsha name;
   - titleLarge: "Revi’i · רביעי" in the English UI, "רביעי" in the Hebrew UI.
   - Actions unchanged (Listen, Aa, more).
-  - On a wide screen the title starts, and the actions end, where the text does. So does the title on a tablet, whose text starts just past the home or back button (60 at 800 dp): there the button's slot narrows from 56, never under its 48 target, and the title stands 8 to 16 after it (`ReaderScreen.titleInset`). On a phone the text starts under the button, and the title keeps 16 after it. Screen readers hear the title as the page names itself ("Bereshit · Revi’i").
+  - On a wide screen the title starts, and the actions end, where the text does: in the full text, where its verses stand 12 within their blocks (`VerseGroup.padding`), that much inside the column, as far as the column's centring leaves room. So does the title on a tablet, whose text starts just past the home or back button (60 at 800 dp in the guided reader, 72 in the full text): there the button's slot narrows from 56, never under its 48 target, and the title stands 8 to 16 after it (`ReaderScreen.titleInset`). On a phone the text starts under the button, and the title keeps 16 after it. Screen readers hear the title as the page names itself ("Bereshit · Revi’i").
 - Then the AliyahRibbon (§6.16), then a 16 gap, then the PassTrack (§6.17), then the verse.
 - Text column: max per LineWidth; side padding 20; top 16.
 - Typesetting per §4.7: gold hanging verse number, centred chapter head, section-break marks.

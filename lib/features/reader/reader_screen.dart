@@ -750,8 +750,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _revealVerse(verse, animate: true);
   }
 
-  /// The first verse of the full text whose top is in view: in the whole
-  /// parsha, below the heading held at the top ([topInView]).
+  /// The first verse of the full text whose top is in view: below any
+  /// heading held at the top (in the whole parsha, in focus mode;
+  /// [topInView]).
   int _firstVerseInView(int count) {
     if (!_scroll.hasClients) return 0;
     for (var i = 0; i < count && i < _verseKeys.length; i++) {
@@ -1259,9 +1260,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     double line(TextStyle style) => scaler.scale(style.fontSize!) * (style.height ?? 1.2);
     final height = max(64.0, line(eyebrow) + line(titleStyle) + 12);
     // Where the text starts: at the column's padding, or with the column
-    // centred.
+    // centred. The full text's verses are inset within their blocks
+    // (VerseGroup), and the title and actions keep to the text, as far as
+    // the column's centring leaves room: on a phone they stay put.
     final width = MediaQuery.sizeOf(context).width;
-    final start = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
+    final column = max(_columnPadding, (width - (columnWidth ?? ScriptureStyles(context, s).maxLineWidth)) / 2);
+    final start = column + (_fullText ? min(VerseGroup.padding.left, column - _columnPadding) : 0.0);
     final leading = homeLeading(context);
     final hasLeading = leading != null || (ModalRoute.canPopOf(context) ?? false);
     final (leadingWidth, titleStart) = ReaderScreen.titleInset(start, hasLeading: hasLeading);
