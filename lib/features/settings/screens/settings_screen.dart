@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
-import '../../../ui/widgets/common.dart';
-import '../../../ui/widgets/lang.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../community/data/community_providers.dart';
 import '../../progress/progress_screen.dart' show showPauseDialog;
@@ -116,47 +114,28 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// The language, chosen in a sheet: the device's, English or Hebrew. The
-  /// sheet closes as one is chosen, which the whole app then speaks.
-  static Future<void> _chooseLanguage(BuildContext context, WidgetRef ref) => showAppSheet<void>(
-        context: context,
-        // Over the navigation bar too.
-        useRootNavigator: true,
-        builder: (context) {
-          final l = context.l10n;
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SheetTitle(l.settingsLanguage),
-                RadioGroup<AppLanguage>(
-                  groupValue: ref.read(settingsProvider).language,
-                  onChanged: (v) {
-                    if (v == null) return;
-                    Navigator.pop(context);
-                    ref.read(settingsProvider.notifier).update((s) => s.copyWith(language: v));
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<AppLanguage>(value: AppLanguage.system, title: Text(l.languageSystem)),
-                      // Each language's name in itself, read in its own voice.
-                      RadioListTile<AppLanguage>(
-                        value: AppLanguage.english,
-                        title: Lang(const Locale('en'), child: Text(l.languageEnglish)),
-                      ),
-                      RadioListTile<AppLanguage>(
-                        value: AppLanguage.hebrew,
-                        title: Lang(const Locale('he'), child: Text(l.languageHebrew)),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(8),
-              ],
-            ),
-          );
-        },
-      );
+  /// The language, chosen in a sheet of radio rows as any other choice is
+  /// (showChoiceSheet): the device's, English or Hebrew, each language's
+  /// name in itself. The whole app speaks the one chosen as the sheet
+  /// closes, rather than turn under it at each arrow key, its strings and
+  /// its direction with it.
+  static Future<void> _chooseLanguage(BuildContext context, WidgetRef ref) async {
+    final l = context.l10n;
+    // Kept, for the sheet's end, whatever becomes of this page meanwhile.
+    final settings = ref.read(settingsProvider.notifier);
+    final before = ref.read(settingsProvider).language;
+    var language = before;
+    await showChoiceSheet<AppLanguage>(
+      context: context,
+      title: l.settingsLanguage,
+      value: before,
+      choices: [
+        Choice(AppLanguage.system, l.languageSystem),
+        Choice(AppLanguage.english, l.languageEnglish, locale: const Locale('en')),
+        Choice(AppLanguage.hebrew, l.languageHebrew, locale: const Locale('he')),
+      ],
+      onChanged: (v) => language = v,
+    );
+    if (language != before) settings.update((s) => s.copyWith(language: language));
+  }
 }

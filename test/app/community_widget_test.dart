@@ -3537,6 +3537,84 @@ void main() {
       expect(find.byType(SnackBar), findsNothing);
     });
 
+    for (final announces in [true, false]) {
+      testWidgets(
+          'says why an Unblock failed under the member, '
+          '${announces ? 'and announces it' : 'a live region where nothing is announced'}', (tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(supportsAnnounce: announces);
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final semantics = tester.ensureSemantics();
+        final forums = _FailingUnblock();
+        await forums.verifyCode('reader@example.org', '123456');
+        await forums.updateDisplayName('Rivka');
+        await forums.block('demo-author');
+        await account(tester, forums: forums);
+        await tester.tap(find.text('Blocked members (1)'));
+        await tester.pumpAndSettle();
+        tester.takeAnnouncements();
+        await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.widgetWithText(TextButton, 'Unblock')));
+        await tester.pumpAndSettle();
+        const why = 'Couldn’t reach the server. Check your connection and try again.';
+        final row = find.widgetWithText(PaperRow, 'Avraham');
+        expect(tester.widget<PaperRow>(row).subtitle, why);
+        expect([for (final a in tester.takeAnnouncements()) a.message], announces ? [why] : isEmpty);
+        // The member and why, one item; Unblock an item of its own beside it.
+        expect(tester.getSemantics(row), isSemantics(label: 'Avraham\n$why', isLiveRegion: !announces));
+        semantics.dispose();
+      });
+    }
+
+    for (final hebrew in [false, true]) {
+      testWidgets(
+          '${hebrew ? 'he' : 'en'}: lists each member by their initial, on paper lined up with the sheet\'s title',
+          (tester) async {
+        final forums = DemoForumRepository();
+        await forums.verifyCode('reader@example.org', '123456');
+        await forums.updateDisplayName('Rivka');
+        for (final id in ['demo-author', 'demo-shira']) {
+          await forums.block(id);
+        }
+        await account(
+          tester,
+          forums: forums,
+          settings: AppSettings(onboardingComplete: true, language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+        );
+        // Wide enough for Unblock beside each name in the test font, whose
+        // every letter is as wide as it is high.
+        tester.view.physicalSize = const Size(600, 915);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.block));
+        await tester.pumpAndSettle();
+        final sheet = find.byType(BottomSheet);
+        expect(find.descendant(of: sheet, matching: find.byType(ListTile)), findsNothing);
+        final rows = find.descendant(of: sheet, matching: find.byType(PaperRow));
+        expect(find.descendant(of: sheet, matching: find.byType(PaperGroup)), findsOneWidget);
+        // A name in the interface's direction as it is, and one that runs
+        // the other way isolated, so that each keeps its own at the row's
+        // start.
+        final (latin, hebrewName) = ('Avraham', 'שירה');
+        expect([for (final r in tester.widgetList<PaperRow>(rows)) r.title],
+            hebrew ? ['\u2068$latin\u2069', hebrewName] : [latin, '\u2068$hebrewName\u2069']);
+        final box = tester.getRect(sheet);
+        final paper = tester.getRect(find.descendant(of: sheet, matching: find.byType(PaperGroup)));
+        double fromStart(Rect r) => hebrew ? box.right - r.right : r.left - box.left;
+        expect(fromStart(paper), 24);
+        for (var i = 0; i < 2; i++) {
+          final row = rows.at(i);
+          final disc = find.descendant(of: row, matching: find.byType(InitialDisc));
+          expect(tester.widget<InitialDisc>(disc).name, [latin, hebrewName][i]);
+          // The disc in the icon's slot, the name where a paper row's text
+          // starts, and Unblock at the end of the name's line.
+          expect(fromStart(tester.getRect(disc)), 24 + 16);
+          final name = tester.getRect(find.descendant(of: row, matching: find.text(tester.widget<PaperRow>(row).title)));
+          expect(fromStart(name), 24 + PaperGroup.iconInset);
+          expect(tester.getCenter(disc).dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+          final unblock = tester.getRect(find.descendant(of: row, matching: find.byType(TextButton)));
+          expect(unblock.center.dy, moreOrLessEquals(name.center.dy, epsilon: 0.5));
+        }
+      });
+    }
+
     testWidgets('lists the members blocked in a sheet, until none are left', (tester) async {
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikra/app/providers.dart';
@@ -97,11 +98,12 @@ void main() {
       await tester.tap(find.text('Language'));
       await tester.pumpAndSettle();
       expect(find.byType(SheetTitle), findsOneWidget);
-      expect(find.byType(RadioListTile<AppLanguage>), findsNWidgets(3));
-      expect(
-        tester.widget<RadioGroup<AppLanguage>>(find.byType(RadioGroup<AppLanguage>)).groupValue,
-        AppLanguage.system,
-      );
+      // The paper radio rows of every choice sheet (§6.19): radios of the
+      // choices' places, the device's chosen.
+      final sheet = find.byType(BottomSheet);
+      expect(find.descendant(of: sheet, matching: find.byType(PaperGroup)), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.byType(RadioListTile<int>)), findsNWidgets(3));
+      expect(tester.widget<RadioGroup<int>>(find.byType(RadioGroup<int>)).groupValue, 0);
 
       await tester.tap(find.text('עברית').last);
       await tester.pumpAndSettle();
@@ -110,6 +112,49 @@ void main() {
       // The row now says it, in the language chosen.
       expect(find.widgetWithText(PaperRow, 'שפה'), findsOneWidget);
       expect(find.descendant(of: find.widgetWithText(PaperRow, 'שפה'), matching: find.text('עברית')), findsOneWidget);
+    });
+
+    testWidgets('the language sheet lines its rows up with its title, as the verse actions do', (tester) async {
+      await open(tester, '/settings');
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      final sheet = tester.getRect(find.byType(BottomSheet));
+      final title = tester.getRect(find.text('Language').last);
+      final paper = tester.getRect(find.descendant(of: find.byType(BottomSheet), matching: find.byType(PaperGroup)));
+      // A sheet's padding, 24 at 412 dp; the text where a paper row's starts.
+      expect(title.left - sheet.left, 24);
+      expect(paper.left - sheet.left, 24);
+      expect(sheet.right - paper.right, 24);
+      expect(tester.getRect(find.text('Device language')).left - paper.left, PaperGroup.iconInset);
+    });
+
+    testWidgets('the language chosen again closes the sheet, and arrows change it only as the sheet closes',
+        (tester) async {
+      final c = await open(tester, '/settings');
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      // Tapped again, the language already chosen closes the sheet, as any
+      // choice sheet's does.
+      await tester.tap(find.text('Device language'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SheetTitle), findsNothing);
+      expect(c.read(settingsProvider).language, AppLanguage.system);
+
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      Focus.of(tester.element(find.text('Device language'))).requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      // English chosen, the sheet still open, and the app still as it was.
+      expect(find.byType(SheetTitle), findsOneWidget);
+      expect(tester.widget<RadioGroup<int>>(find.byType(RadioGroup<int>)).groupValue, 1);
+      expect(c.read(settingsProvider).language, AppLanguage.system);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.byType(SheetTitle), findsNothing);
+      expect(c.read(settingsProvider).language, AppLanguage.hebrew);
     });
 
     testWidgets('streak numbers are a switch the whole row toggles', (tester) async {
@@ -261,6 +306,25 @@ void main() {
       }
       await open(tester, '/settings');
       expect(find.byWidgetPredicate((w) => w is Lang), findsNothing, reason: "the device's language is no name");
+      // So in the sheet: each language's name in its own voice, and the
+      // device's in the interface's.
+      await tester.tap(find.text('Language'));
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      for (final (name, code) in [('English', 'en'), ('עברית', 'he')]) {
+        expect(
+          find.ancestor(
+            of: find.descendant(of: sheet, matching: find.text(name)),
+            matching: find.byWidgetPredicate((w) => w is Lang && w.locale == Locale(code)),
+          ),
+          findsOneWidget,
+          reason: name,
+        );
+      }
+      expect(
+        find.ancestor(of: find.text('Device language'), matching: find.byWidgetPredicate((w) => w is Lang)),
+        findsNothing,
+      );
     });
 
     testWidgets("the account's row asks to sign in, or names who is signed in", (tester) async {

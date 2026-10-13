@@ -129,6 +129,8 @@ const _screens = {
   // "I already use Shnayim Mikra": the ways to restore, with an account's
   // backup to sign in to.
   'welcome_restore': '/welcome',
+  // Its second way in focused from the keyboard.
+  'focus_restore': '/welcome',
   // Signed in, while the account's backup comes in.
   'welcome_restoring': '/welcome',
   // A backup file chosen: what it holds, with nothing here to merge with.
@@ -391,6 +393,8 @@ const _screens = {
   'account_member': '/community/account',
   'account_edit': '/community/account',
   'account_blocked': '/community/account',
+  // Three members blocked, one named in Hebrew, whose Unblock failed.
+  'account_unblock_error': '/community/account',
   // Delete my account: what goes with it, and a backup file first.
   'account_delete': '/community/account',
   // Keyboard focus on the privacy link in its sentence.
@@ -400,8 +404,10 @@ const _screens = {
   // Backup on, with notes too long for the server: why nothing is sent.
   'account_sync_large': '/community/account',
   'settings': '/settings',
-  // The language, chosen in a sheet.
+  // The language, chosen in a sheet; and its chosen row focused from the
+  // keyboard.
   'settings_language': '/settings',
+  'focus_language': '/settings',
   's_reading': '/settings/reading',
   's_reading_changed': '/settings/reading',
   // Its end: the haftarah, special days and parsha names.
@@ -634,6 +640,7 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   'reader_listen': (s) => s.copyWith(method: ReadingMethod.sectionBySection),
   'reader_listen_focus': (s) => s.copyWith(focusMode: true),
   'focus_segment': (s) => s.copyWith(onboardingComplete: false),
+  'focus_restore': (s) => s.copyWith(onboardingComplete: false),
   // A visitor to Israel who keeps two days of Yom Tov, after Pesach 5789:
   // Israel is a parsha ahead, and both pairs of portions are read together.
   'today_divergence': (s) => s.copyWith(readingSchedule: ReadingSchedule.israel, joinDate: LocalDate(2029, 4, 22)),
@@ -1029,6 +1036,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   for (final screen in ['forum_error', 'thread_error', 'moderation_error']) screen: () async => _Offline(),
   for (final screen in ['community_error', 'forum_unreachable']) screen: () async => _NoForums(),
   'account_blocked_error': _memberNoBlocked,
+  'account_unblock_error': _memberUnblockFails,
   'thread_long': _withLongThread,
   'thread_long_end': _withLongThread,
   'thread_mine': _withOwnPost,
@@ -1039,6 +1047,7 @@ final _communities = <String, Future<ForumRepository> Function()>{
   'thread_verse_edit': () => _withVerseQuestion(mine: true),
   'week_discuss': () async => _OpeningForever(),
   'welcome_restore': () async => _Cloud(),
+  'focus_restore': () async => _Cloud(),
   'welcome_restoring': () async {
     final repo = _CloudForever();
     await repo.verifyCode('reader@example.org', '123456');
@@ -1215,6 +1224,25 @@ Future<ForumRepository> _memberNoBlocked() async {
   await repo.verifyCode('rivka@example.org', '123456');
   await repo.updateDisplayName('Rivka Levi');
   await repo.acceptGuidelines();
+  return repo;
+}
+
+/// A community in which no Unblock gets through.
+class _UnblockFails extends DemoForumRepository {
+  @override
+  Future<void> unblock(String userId) async => throw Exception('offline');
+}
+
+/// Signed in as Rivka, who has blocked three members, one named in Hebrew,
+/// and can't unblock them.
+Future<ForumRepository> _memberUnblockFails() async {
+  final repo = _UnblockFails();
+  await repo.verifyCode('rivka@example.org', '123456');
+  await repo.updateDisplayName('Rivka Levi');
+  await repo.acceptGuidelines();
+  for (final id in ['demo-author', 'demo-shira', 'demo-yosef']) {
+    await repo.block(id);
+  }
   return repo;
 }
 
@@ -1566,6 +1594,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'account_edit': (tester) => tester.tap(find.byIcon(Icons.edit_outlined)),
   'account_blocked': (tester) => tester.tap(find.byIcon(Icons.block)),
   'account_blocked_error': (tester) => tester.tap(find.byIcon(Icons.block)),
+  'account_unblock_error': _tapInTurn([
+    () => find.byIcon(Icons.block),
+    () => find.descendant(of: find.byType(BottomSheet), matching: find.byType(TextButton)).at(1),
+  ]),
   'account_delete': (tester) async {
     await tester.ensureVisible(find.byIcon(Icons.delete_forever_outlined));
     await _settle(tester);
@@ -1705,7 +1737,12 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'reader_gaps_spaced': _scrollToEnd,
   // The restore sheet: the welcome's last text button.
   'welcome_restore': (tester) => tester.tap(find.byType(TextButton).last),
-  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(ListTile).first]),
+  'focus_restore': (tester) async {
+    await tester.tap(find.byType(TextButton).last);
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(PaperRow).at(1));
+  },
+  'welcome_restoring': _tapInTurn([() => find.byType(TextButton).last, () => find.byType(PaperRow).first]),
   // The reset dialog.
   's_data_reset': (tester) => tester.tap(find.text(tester.element(find.byType(Scaffold).last).l10n.resetProgress)),
   's_reading_city': (tester) => Scrollable.ensureVisible(tester.element(find.byType(ShabbatTimesSetting))),
@@ -1779,6 +1816,13 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.ensureVisible(find.byIcon(Icons.translate_outlined));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.translate_outlined));
+  },
+  'focus_language': (tester) async {
+    await tester.ensureVisible(find.byIcon(Icons.translate_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.translate_outlined));
+    await _settle(tester);
+    await _keyboardFocus(tester, find.byType(RadioListTile<int>).first);
   },
   's_data_paste': _tapInTurn([
     () => find.byIcon(Icons.content_paste_outlined),
@@ -2222,6 +2266,10 @@ const _bigTextScreens = {
   'welcome_restore',
   'welcome_location',
   'welcome_plan',
+  // The sheets' rows at twice the text size: languages, and members with
+  // an Unblock that failed.
+  'settings_language',
+  'account_unblock_error',
   's_data',
   's_data_import',
   'progress',

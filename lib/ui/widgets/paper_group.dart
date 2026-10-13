@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme/focus.dart';
@@ -269,8 +271,8 @@ class _RowRule extends CustomPainter {
 /// merged into the row, its action would replace the row's. Set
 /// [mergeTrailing] for a switch or checkbox that the row's tap also toggles,
 /// so that the row and its state read as one item, in the control's role. A
-/// trailing button with a
-/// label (a [TextButton], say) ends the title's line as a value does, and
+/// trailing button with a label (a [TextButton], say) ends the title's line as
+/// a value does, the icon lining up with that line too over a subtitle, and
 /// moves under the title when the two don't fit side by side, rather than
 /// squeeze the title until its words break (large text).
 ///
@@ -584,15 +586,20 @@ class PaperRow extends StatelessWidget {
               breakAtHyphens: breakTitleAtHyphens,
             );
       final (:heading, :under) = texts(fit);
-      // A value ends the title's line. With a subtitle or a detail line under
-      // them, the icon and the end of the row line up with that line too,
-      // rather than with the middle of the row, so the value and chevron stay
-      // side by side.
-      final onTitleLine = value != null && (subtitle != null || detail != null);
+      // A value ends the title's line, and so does a labelled button. With a
+      // subtitle or a detail line under them, the icon and the end of the row
+      // line up with that line too, rather than with the middle of the row,
+      // so the value and chevron stay side by side, and a member's initial
+      // stands by their name.
+      final onTitleLine = (value != null || besideTitle != null) && (subtitle != null || detail != null);
+      // The title's line is as high as its text, or beside a button as high
+      // as the button, a tap target 48 high at least, whose label is set
+      // smaller than the title.
+      final titleLine = scaler.scale(titleSize) * (titleStyle.height ?? 1.5);
+      final firstLine = besideTitle == null ? titleLine : math.max(titleLine, kMinInteractiveDimension);
       Widget place(Widget child, AlignmentGeometry alignment) => onTitleLine
           ? ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: scaler.scale(titleStyle.fontSize ?? 16) * (titleStyle.height ?? 1.5)),
+              constraints: BoxConstraints(minHeight: firstLine),
               child: Align(alignment: alignment, widthFactor: 1, heightFactor: 1, child: child),
             )
           : child;

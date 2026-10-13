@@ -571,6 +571,37 @@ void main() {
     });
   }
 
+  for (final textScale in [1.0, 3.0]) {
+    testWidgets('over a subtitle, a leading widget lines up with a labelled button on the title\'s line, at '
+        '${textScale}x', (tester) async {
+      // A member blocked, whose Unblock failed: the disc by the name, not by
+      // the middle of the row.
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: textScale == 1 ? 400 : 700,
+            child: PaperRow(
+              leading: const SizedBox.square(key: Key('disc'), dimension: 32),
+              title: 'Rivka',
+              subtitle: 'Couldn’t reach the server. Check your connection and try again.',
+              trailing: TextButton(onPressed: () {}, child: const Text('Unblock')),
+            ),
+          ),
+        ),
+        textScale: textScale,
+      );
+      final title = tester.getCenter(find.text('Rivka')).dy;
+      expect(tester.getCenter(find.byType(TextButton)).dy, moreOrLessEquals(title, epsilon: 0.5));
+      expect(tester.getCenter(find.byKey(const Key('disc'))).dy, moreOrLessEquals(title, epsilon: 0.5));
+      expect(
+        tester.getRect(find.textContaining('Couldn’t reach')).top,
+        greaterThanOrEqualTo(tester.getRect(find.byType(TextButton)).bottom - 0.5),
+      );
+    });
+  }
+
   testWidgets('the help icon keeps its question mark the right way round in Hebrew', (tester) async {
     await pumpThemed(tester, const PaperRow(icon: Icons.help_outline, title: 'שאלות ותשובות'), hebrew: true);
     final icon = find.byIcon(Icons.help_outline);

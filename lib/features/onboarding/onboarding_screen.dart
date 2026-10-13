@@ -14,6 +14,7 @@ import '../../ui/widgets/common.dart';
 import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
+import '../../ui/widgets/paper_group.dart';
 import '../community/data/backend.dart';
 import '../community/data/community_providers.dart';
 import '../parsha/week_context.dart';
@@ -194,7 +195,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-/// The ways back in for a reader who already uses the app.
+/// The ways back in for a reader who already uses the app, as rows of one
+/// paper group within the sheet's padding (§6.19). Signing in leads to a
+/// page, and so has a chevron; a file is chosen, or text pasted, over the
+/// welcome.
 class _RestoreSheet extends StatelessWidget {
   const _RestoreSheet({required this.cloud});
 
@@ -204,32 +208,34 @@ class _RestoreSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    // What each restores from, never cut short.
+    PaperRow way(IconData icon, String title, String subtitle, _RestoreFrom from, {bool page = false}) => PaperRow(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          subtitleMaxLines: null,
+          chevron: page,
+          onTap: () => Navigator.pop(context, from),
+        );
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: Space.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SheetTitle(l.onbRestoreTitle),
-            if (cloud)
-              ListTile(
-                leading: const Icon(Icons.cloud_download_outlined),
-                title: Text(l.onbRestoreSignIn),
-                subtitle: Text(l.onbRestoreSignInDesc),
-                onTap: () => Navigator.pop(context, _RestoreFrom.account),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: sheetPadding(context)),
+              child: PaperGroup(
+                children: [
+                  if (cloud)
+                    way(Icons.cloud_download_outlined, l.onbRestoreSignIn, l.onbRestoreSignInDesc, _RestoreFrom.account,
+                        page: true),
+                  way(Icons.restore_page_outlined, l.onbRestoreFile, l.onbRestoreFileDesc, _RestoreFrom.file),
+                  way(Icons.content_paste_outlined, l.importPaste, l.importPasteDesc, _RestoreFrom.pasted),
+                ],
               ),
-            ListTile(
-              leading: const Icon(Icons.restore_page_outlined),
-              title: Text(l.onbRestoreFile),
-              subtitle: Text(l.onbRestoreFileDesc),
-              onTap: () => Navigator.pop(context, _RestoreFrom.file),
-            ),
-            ListTile(
-              leading: const Icon(Icons.content_paste),
-              title: Text(l.importPaste),
-              subtitle: Text(l.importPasteDesc),
-              onTap: () => Navigator.pop(context, _RestoreFrom.pasted),
             ),
           ],
         ),

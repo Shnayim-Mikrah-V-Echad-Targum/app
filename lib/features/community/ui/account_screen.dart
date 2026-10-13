@@ -1062,10 +1062,22 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
         // Their words come back to the forums' excerpts.
         ..invalidate(threadsProvider);
     } catch (e) {
-      if (mounted) setState(() => _errors[id] = communityError(l, e));
+      if (!mounted) return;
+      final message = communityError(l, e);
+      setState(() => _errors[id] = message);
+      announceFieldError(context, message);
     } finally {
       if (mounted) setState(() => _busy.remove(id));
     }
+  }
+
+  /// [name] as its row shows it: in its own direction, at the row's start,
+  /// isolated where it runs the other way; and a member who has none, as
+  /// their posts name them.
+  String _shown(String name) {
+    if (name.isEmpty) return context.l10n.anonymousMember;
+    final direction = Directionality.of(context);
+    return autoDirection(name, fallback: direction) == direction ? name : isolate(name);
   }
 
   @override
@@ -1107,24 +1119,28 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> {
               ),
               data: (list) => list.isEmpty
                   ? note(l.noBlockedMembers)
-                  : Column(
-                      children: [
-                        for (final (id, name) in list)
-                          ListTile(
-                            title: Text(name, textDirection: autoDirection(name, fallback: Directionality.of(context))),
-                            subtitle: switch (_errors[id]) {
-                              final error? => Semantics(
-                                  liveRegion: !MediaQuery.supportsAnnounceOf(context),
-                                  child: Text(error, style: theme.textTheme.bodySmall?.copyWith(color: scheme.error)),
-                                ),
-                              null => null,
-                            },
-                            trailing: TextButton(
-                              onPressed: _busy.contains(id) ? null : () => _unblock(id),
-                              child: Text(l.unblock),
+                  // Each member by their initial, as their posts show them,
+                  // on rows of one paper group within the sheet's padding.
+                  : Padding(
+                      padding: EdgeInsets.symmetric(horizontal: padding),
+                      child: PaperGroup(
+                        children: [
+                          for (final (id, name) in list)
+                            PaperRow(
+                              leading: InitialDisc(name),
+                              title: _shown(name),
+                              subtitle: _errors[id],
+                              subtitleStyle: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
+                              // Said as it appears where the platform takes
+                              // no announcements (see _unblock).
+                              liveRegion: _errors.containsKey(id) && !MediaQuery.supportsAnnounceOf(context),
+                              trailing: TextButton(
+                                onPressed: _busy.contains(id) ? null : () => _unblock(id),
+                                child: Text(l.unblock),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ],

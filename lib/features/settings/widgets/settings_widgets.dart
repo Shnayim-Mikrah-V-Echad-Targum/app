@@ -7,12 +7,13 @@ import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
 import '../../../ui/widgets/common.dart';
 import '../../../ui/widgets/fonts_change_scope.dart';
+import '../../../ui/widgets/lang.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 
 /// One option in a [ChoiceGroup].
 class Choice<T> {
-  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle});
+  const Choice(this.value, this.title, {this.subtitle, this.semanticsLabel, this.sampleStyle, this.locale});
   final T value;
   final String title;
   final String? subtitle;
@@ -20,6 +21,11 @@ class Choice<T> {
   /// What screen readers say for [title], where it would be read badly as
   /// written.
   final String? semanticsLabel;
+
+  /// The language [title] is written in, where it is not the interface's
+  /// (a language's own name), so that a screen reader reads it in its own
+  /// voice.
+  final Locale? locale;
 
   /// Sets [title] in a style of its own, as a sample of what the option
   /// looks like (a font's letters), which [subtitle] names. Screen readers
@@ -263,6 +269,7 @@ Future<void> showChoiceSheet<T>({
                             subtitle: c.subtitle,
                             semanticsLabel: c.semanticsLabel,
                             sampleStyle: c.sampleStyle,
+                            locale: c.locale,
                           ),
                           toggleable: true,
                           balanced: true,
@@ -476,6 +483,14 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
     final corners = card ? _RadioRow._cardCorners : PaperGroup.rowCorners(context);
     final choice = widget.choice;
     final ring = _focused && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+    Widget title = switch (choice.sampleStyle) {
+      // In the list tile's own title style, which it measures in.
+      null when widget.balanced && choice.semanticsLabel == null =>
+        BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
+      null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
+      final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
+    };
+    if (choice.locale case final locale?) title = Lang(locale, child: title);
     Widget tile = Theme(
       // The ring marks focus; the tile's wash as well would read as a
       // second selection.
@@ -483,13 +498,7 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
       child: RadioListTile<T>(
         value: choice.value,
         toggleable: widget.toggleable,
-        title: switch (choice.sampleStyle) {
-          // In the list tile's own title style, which it measures in.
-          null when widget.balanced && choice.semanticsLabel == null =>
-            BalancedText(choice.title, style: theme.textTheme.bodyLarge, textAlign: TextAlign.start),
-          null => Text(choice.title, semanticsLabel: choice.semanticsLabel),
-          final sample => ExcludeSemantics(child: Text(choice.title, style: sample)),
-        },
+        title: title,
         subtitle: choice.subtitle == null ? null : Text(choice.subtitle!),
         // The ink keeps to the paper's corners.
         shape: RoundedRectangleBorder(borderRadius: corners),

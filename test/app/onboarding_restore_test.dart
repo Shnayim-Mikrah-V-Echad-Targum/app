@@ -15,6 +15,8 @@ import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
 import 'package:shnayim_mikra/features/today/today_screen.dart';
 import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikra/ui/widgets/common.dart';
+import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
 
 import '../fake_backup_files.dart';
 import '../helpers.dart';
@@ -72,6 +74,50 @@ void main() {
     await tester.enterText(find.byType(TextField), '123456');
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
+  }
+
+  for (final hebrew in [false, true]) {
+    testWidgets('${hebrew ? 'he' : 'en'}: the ways back in are rows of one paper group, lined up with the title',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpApp(
+        tester,
+        settings: AppSettings(language: hebrew ? AppLanguage.hebrew : AppLanguage.english),
+        now: now,
+        forums: _Cloud(),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextButton).last);
+      await tester.pumpAndSettle();
+      final sheet = find.byType(BottomSheet);
+      final rows = tester.widgetList<PaperRow>(find.descendant(of: sheet, matching: find.byType(PaperRow))).toList();
+      expect(find.descendant(of: sheet, matching: find.byType(PaperGroup)), findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.byType(ListTile)), findsNothing);
+      // The same icons, outlined; only signing in, which leads to a page,
+      // has a chevron.
+      expect([for (final r in rows) r.icon], [
+        Icons.cloud_download_outlined,
+        Icons.restore_page_outlined,
+        Icons.content_paste_outlined,
+      ]);
+      expect([for (final r in rows) r.chevron], [true, false, false]);
+      // The paper on the sheet's padding, where its title starts, and each
+      // row's text where a paper row's starts, as in the verse's actions.
+      final box = tester.getRect(sheet);
+      final paper = tester.getRect(find.descendant(of: sheet, matching: find.byType(PaperGroup)));
+      final title = tester.getRect(
+        find.descendant(of: find.descendant(of: sheet, matching: find.byType(SheetTitle)), matching: find.byType(RichText)),
+      );
+      double fromStart(Rect r) => hebrew ? box.right - r.right : r.left - box.left;
+      expect(fromStart(paper), 24);
+      expect(fromStart(title), 24);
+      for (final r in rows) {
+        final text = tester.getRect(find.descendant(of: sheet, matching: find.text(r.title)));
+        expect(fromStart(text), 24 + PaperGroup.iconInset, reason: r.title);
+      }
+    });
   }
 
   group('signing in', () {
