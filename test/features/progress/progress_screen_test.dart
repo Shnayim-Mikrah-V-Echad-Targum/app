@@ -106,6 +106,41 @@ void main() {
     expect(find.byType(SeferChoiceChip), findsNothing);
   });
 
+  // Joined on Bereshit 5787 and read nothing: in the week of Vayera, the
+  // make-up list offers Bereshit and Noach, so the year did not begin with
+  // Vayera.
+  testWidgets('a lapsed reader sees the count, not where the year begins', (tester) async {
+    final settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 5));
+    final vayera = DateTime(2026, 10, 28, 10);
+    await openProgress(tester, settings: settings, progress: const ProgressState(), now: vayera);
+    expect(find.text('0 of 54 parshiyot'), findsOneWidget);
+    expect(find.textContaining('Begins with'), findsNothing);
+    await openProgress(
+      tester,
+      settings: settings.copyWith(language: AppLanguage.hebrew),
+      progress: const ProgressState(),
+      now: vayera,
+    );
+    expect(find.textContaining('מתחילה בפרשת'), findsNothing);
+
+    // So too in the week after Bereshit, while it can still be finished late.
+    await openProgress(tester, settings: settings, progress: const ProgressState(), now: DateTime(2026, 10, 12, 10));
+    expect(find.text('0 of 54 parshiyot'), findsOneWidget);
+    expect(find.textContaining('Begins with'), findsNothing);
+  });
+
+  // Joined in the week of Noach: the weeks before are not the reader's, so
+  // the year, for them, begins with Noach.
+  testWidgets('a reader who joined partway through the year sees where it begins for them', (tester) async {
+    await openProgress(
+      tester,
+      settings: AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 12)),
+      progress: const ProgressState(),
+      now: DateTime(2026, 10, 14, 10),
+    );
+    expect(find.text('Begins with Noach'), findsOneWidget);
+  });
+
   testWidgets('before any of the year is finished, it says which parsha it begins with', (tester) async {
     // Joined today, the Wednesday of Bereshit 5787, with nothing read yet.
     final settings = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 7));

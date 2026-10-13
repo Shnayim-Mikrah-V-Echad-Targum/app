@@ -71,6 +71,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     final missedThisCycle = summary.weeks
         .where((e) => e.status == WeekStatus.missed && cycleYearOf(e.plan.portion, e.plan.week.occasion) == live)
         .toList();
+    // Whether a week of this year before this one has come due since the
+    // reader joined: missed, still to finish with the next, or in its late
+    // window. The year then no longer begins with this week's parsha.
+    final yearUnderway = summary.weeks.any((e) =>
+        e.plan.weekId != current.id &&
+        e.status != WeekStatus.transparent &&
+        cycleYearOf(e.plan.portion, e.plan.week.occasion) == live);
 
     // A week before the reader joined, with nothing read in it, is no part of
     // their history (the Vezot HaBerakhah of a reader who joined on Simchat
@@ -167,6 +174,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   current: cycle == live ? current.week.portion : null,
                 ),
                 currentName: name(current.week.portion),
+                underway: yearUnderway,
                 verses: _versesRead(repo, progress.weeks, cycle),
                 secondReading: names.secondReading(settings.secondReading),
               ),
@@ -324,8 +332,9 @@ Future<void> _showAboutStreaks(BuildContext context, LateWindow window) => showA
       },
     );
 
-/// "This year": how many of the year's parshiyot are finished (or, before
-/// the first, the parsha it begins with), the verses read, and the year bar.
+/// "This year": how many of the year's parshiyot are finished (or, while no
+/// week of it has come due, the parsha it begins with), the verses read, and
+/// the year bar.
 /// With more than one year in the log, chips choose which year it shows, and
 /// the Torah map below follows.
 class _ThisYear extends StatelessWidget {
@@ -337,6 +346,7 @@ class _ThisYear extends StatelessWidget {
     required this.done,
     required this.segments,
     required this.currentName,
+    required this.underway,
     required this.verses,
     required this.secondReading,
   });
@@ -348,6 +358,10 @@ class _ThisYear extends StatelessWidget {
   final Set<int> done;
   final List<YearSegment> segments;
   final String currentName;
+
+  /// Whether a week of the year being read, before this one, has come due
+  /// since the reader joined (see [ProgressScreen]).
+  final bool underway;
   final int verses;
 
   /// What the reader reads after the two readings: "Targum", "Rashi" or
@@ -384,9 +398,10 @@ class _ThisYear extends StatelessWidget {
           ],
           const Gap(Space.sm),
           WholeWords(
-            // Before anything is finished, where the year begins rather
-            // than a stark "0 of 54".
-            isLive && done.isEmpty && segments.contains(YearSegment.current)
+            // Where the year begins rather than a stark "0 of 54", while
+            // that is so: nothing finished, and no earlier week come due,
+            // which the make-up list would offer under it.
+            isLive && done.isEmpty && !underway && segments.contains(YearSegment.current)
                 ? l.yearBeginsWith(currentName)
                 : l.parshiyotOfYear(done.length, kParshaCount),
             style: theme.textTheme.headlineSmall,
