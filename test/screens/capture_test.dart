@@ -106,13 +106,13 @@ ProgressState _yearRead() {
   return ProgressState(weeks: read);
 }
 
-/// The cycle of [cycle] read through to parsha [upTo], every week whole on
+/// The cycle of [cycle] read from parsha [from] through to [upTo], every week whole on
 /// the last weekday before it is read: Vayechi 5787 on Friday 25 December
 /// 2026, and Vezot HaBerakhah 5786 on Hoshana Rabbah, Friday 2 October 2026.
-ProgressState _cycleRead(int cycle, {int upTo = 54}) {
+ProgressState _cycleRead(int cycle, {int from = 1, int upTo = 54}) {
   final weeks = cycleWeeks(const ParshaSchedule(israel: false), cycle);
   final read = <String, WeekProgress>{};
-  for (var n = 1; n <= upTo; n++) {
+  for (var n = from; n <= upTo; n++) {
     final week = weeks[n]!;
     var day = week.occasion.addDays(-1);
     while (JewishHolidays.isRestDay(day, israel: false)) {
@@ -398,6 +398,8 @@ const _screens = {
   'celebrate': '/celebrate/sefer:5787:0',
   // Deuteronomy finished with every parsha of 5786 read: the Siyum HaTorah.
   'celebrate_siyum': '/celebrate/sefer:5786:4',
+  // The same, for a reader who began with Vayera: the siyum from it.
+  'celebrate_siyum_from': '/celebrate/sefer:5786:4',
   'progress': '/progress',
   'community': '/community',
   'forum': '/community/forum/parsha',
@@ -976,6 +978,7 @@ final _screenNow = <String, DateTime>{
 final _screenProgress = <String, ProgressState Function()>{
   'celebrate': () => _cycleRead(5787, upTo: 12),
   'celebrate_siyum': () => _cycleRead(5786),
+  'celebrate_siyum_from': () => _cycleRead(5786, from: 4),
   'progress_map': historyProgress,
   'progress_history': historyProgress,
   'progress_map_rescue': rescueProgress,

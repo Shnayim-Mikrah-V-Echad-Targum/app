@@ -9,10 +9,12 @@ import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikra/core/calendar/local_date.dart';
 import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikra/core/text/hebrew_text.dart';
+import 'package:shnayim_mikra/data/models/parsha.dart' show kTorahBooks;
 import 'package:shnayim_mikra/features/parsha/week_context.dart';
 import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikra/features/reader/sefer_complete_screen.dart';
 import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikra/ui/theme/motion.dart';
 import 'package:shnayim_mikra/ui/widgets/lines.dart';
 import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
 
@@ -41,9 +43,9 @@ ProgressState _genesis({int lastAliyot = 0}) {
 }
 
 /// Every week of 5786 from parsha [from] on read whole, each on the last
-/// weekday before it is read: Vezot HaBerakhah on Hoshana Rabbah, Friday 2
+/// weekday before it is read, or on the day [late] gives its parsha: Vezot HaBerakhah on Hoshana Rabbah, Friday 2
 /// October 2026 (21 Tishrei 5787).
-ProgressState _year5786({int from = 1}) {
+ProgressState _year5786({int from = 1, Map<int, LocalDate> late = const {}}) {
   final weeks = cycleWeeks(const ParshaSchedule(israel: false), 5786);
   final read = <String, WeekProgress>{};
   for (var n = from; n <= 54; n++) {
@@ -53,7 +55,7 @@ ProgressState _year5786({int from = 1}) {
       day = day.addDays(-1);
     }
     final id = weekIdFor(week.portion, week.occasion);
-    read[id] = WeekProgress(weekId: id).withAll(day);
+    read[id] = WeekProgress(weekId: id).withAll(late[n] ?? day);
   }
   return ProgressState(weeks: read);
 }
@@ -78,8 +80,9 @@ Future<ProviderContainer> _open(
   String key, {
   required ProgressState progress,
   AppSettings settings = const AppSettings(),
+  Size size = const Size(412, 915),
 }) async {
-  tester.view.physicalSize = const Size(412, 915);
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final c = await pumpApp(
@@ -193,6 +196,43 @@ void main() {
     expect(sent, [_celebrate]);
   });
 
+  testWidgets('in high contrast, no rule draws, and the haptic comes when the moment ends', (tester) async {
+    final sent = _recordHaptics(tester);
+    await _open(
+      tester,
+      'sefer:5787:0',
+      progress: _genesis(),
+      settings: const AppSettings(theme: AppThemeMode.highContrastLight),
+    );
+    // Its 2 px outline, and no gold-leaf rule to draw, whatever the moment's
+    // progress.
+    final frame = _onPage(find.byType(TitlePageFrame));
+    final paint = tester.widget<CustomPaint>(find.descendant(of: frame, matching: find.byType(CustomPaint)).first);
+    expect(paint.painter, isNull);
+    final shape = tester.widget<Material>(find.descendant(of: frame, matching: find.byType(Material)).first).shape!
+        as RoundedRectangleBorder;
+    expect(shape.side.width, 2);
+    await tester.pump(Motion.long + Motion.frame - const Duration(milliseconds: 20));
+    expect(sent, isEmpty);
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(sent, [_celebrate]);
+  });
+
+  for (final (what, size, heading, maxWidth, padding) in [
+    ('from 600 dp, its heading larger and its column wider', const Size(1000, 900), 48.0, 560.0, const EdgeInsets.fromLTRB(24, 40, 24, 32)),
+    ('under 360 dp, its frame padded closer', const Size(340, 800), 40.0, 480.0, const EdgeInsets.fromLTRB(16, 28, 16, 24)),
+  ]) {
+    testWidgets(what, (tester) async {
+      await _open(tester, 'sefer:5787:0', progress: _genesis(), size: size);
+      await tester.pumpAndSettle();
+      final chazak = tester.widget<Text>(find.text(SeferCompleteScreen.chazak));
+      expect(chazak.style?.fontSize, heading);
+      final frame = _onPage(find.byType(TitlePageFrame));
+      expect(tester.getSize(frame).width, lessThanOrEqualTo(maxWidth));
+      expect(tester.widget<TitlePageFrame>(frame).padding, padding);
+    });
+  }
+
   testWidgets('the Siyum HaTorah: five lozenges, and the whole Torah read in the year', (tester) async {
     await _open(tester, 'sefer:5786:4', progress: _year5786());
     await tester.pumpAndSettle();
@@ -202,7 +242,8 @@ void main() {
     expect(find.byType(SeferDivider), findsNothing, reason: 'the lozenges in its place');
     expect(find.text('Siyum HaTorah'), findsOneWidget);
     expect(find.text('Deuteronomy is complete'), findsNothing);
-    expect(_balanced('The whole Torah — 5,846 verses, twice, with Targum, in 5786.'), findsOneWidget);
+    // Named as a cycle, as the day beneath it falls in the next year.
+    expect(_balanced('The whole Torah — 5,846 verses, twice, with Targum, in the cycle of 5786.'), findsOneWidget);
     expect(_dated('Finished on Friday, 21 Tishrei 5787'), findsOneWidget);
     // 8 apart, and centred.
     final left = [for (var i = 0; i < 5; i++) tester.getTopLeft(lozenges.at(i)).dx];
@@ -210,13 +251,41 @@ void main() {
     expect((tester.getCenter(lozenges.at(2)).dx - tester.getCenter(frame).dx).abs(), lessThan(0.5));
   });
 
-  testWidgets('a reader who joined partway makes a siyum from their first parsha, and is told of the book',
+  testWidgets('a reader who joined partway makes a siyum from their first parsha, and is told what they read',
       (tester) async {
     await _open(tester, 'sefer:5786:4', progress: _year5786(from: 4));
     await tester.pumpAndSettle();
     expect(find.text('Siyum from Parshat Vayera'), findsOneWidget);
-    expect(find.text('956 verses, twice, with Targum.'), findsOneWidget);
+    // Vayera to the end of the Torah: all of it but Bereshit's 146 verses,
+    // Noach's 153 and Lech Lecha's 126.
+    expect(_balanced('5,421 verses, twice, with Targum, in the cycle of 5786.'), findsOneWidget);
+    expect(find.textContaining('956'), findsNothing, reason: "Deuteronomy's count is not the siyum's");
     expect(find.descendant(of: find.byType(TitlePageFrame), matching: find.byType(Lozenge)), findsNWidgets(5));
+  });
+
+  test("the parshiyot's verses add up to the books'", () async {
+    final repo = await loadRepo();
+    final parshiyot = repo.all.fold(0, (sum, p) => sum + repo.verseCount(p));
+    final books = kTorahBooks.fold(0, (sum, b) => sum + repo.chapterLengths(b).fold(0, (a, c) => a + c));
+    expect(parshiyot, books);
+  });
+
+  testWidgets('a siyum made by a parsha of Genesis logged late is marked on Genesis’s page, not Deuteronomy’s',
+      (tester) async {
+    // All of 5786 read, Noach but logged only after Simchat Torah, the last
+    // of the year's reading to be done.
+    final late = LocalDate(2026, 10, 6);
+    await _open(tester, 'sefer:5786:0', progress: _year5786(late: {2: late}));
+    await tester.pumpAndSettle();
+    expect(find.text('Siyum HaTorah'), findsOneWidget);
+    expect(find.text('Genesis is complete'), findsNothing);
+    expect(find.descendant(of: find.byType(TitlePageFrame), matching: find.byType(Lozenge)), findsNWidgets(5));
+    expect(_dated('Finished on Tuesday, 25 Tishrei 5787'), findsOneWidget);
+
+    await _open(tester, 'sefer:5786:4', progress: _year5786(late: {2: late}));
+    await tester.pumpAndSettle();
+    expect(find.text('Deuteronomy is complete'), findsOneWidget);
+    expect(find.text('Siyum HaTorah'), findsNothing);
   });
 
   testWidgets('Deuteronomy finished without the year’s reading before it is a book like the rest', (tester) async {

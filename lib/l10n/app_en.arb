@@ -2881,9 +2881,9 @@
       }
     }
   },
-  "siyumBody": "The whole Torah — {count} verses, twice, with {second}, in {year}.",
+  "siyumBody": "The whole Torah — {count} verses, twice, with {second}, in the cycle of {year}.",
   "@siyumBody": {
-    "description": "On the page shown once the whole Torah is read in a year, as Deuteronomy is finished (under \"Siyum HaTorah\"): e.g. \"The whole Torah — 5,846 verses, twice, with Targum, in 5787.\"",
+    "description": "On the page shown once the whole Torah is read in a year's cycle (under \"Siyum HaTorah\"): e.g. \"The whole Torah — 5,846 verses, twice, with Targum, in the cycle of 5786.\" Named as a cycle, as the date beneath it falls in the next year: Vezot HaBerakhah is read in Tishrei.",
     "placeholders": {
       "count": {
         "type": "int",
@@ -2895,8 +2895,27 @@
       },
       "year": {
         "type": "String",
-        "description": "The Hebrew year the reading began in, as Progress names it.",
-        "example": "5787"
+        "description": "The Hebrew year the cycle began in, as Progress names it.",
+        "example": "5786"
+      }
+    }
+  },
+  "siyumFromBody": "{count} verses, twice, with {second}, in the cycle of {year}.",
+  "@siyumFromBody": {
+    "description": "On the page for the siyum of a reader who joined partway through a year's cycle, under \"Siyum from Parshat Vayera\": what they read, from that parsha to the end of the Torah, e.g. \"5,327 verses, twice, with Targum, in the cycle of 5786.\"",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "second": {
+        "type": "String",
+        "description": "What the reader reads after the two readings, as their setting says: passTargum, passRashi or secondBoth."
+      },
+      "year": {
+        "type": "String",
+        "description": "The Hebrew year the cycle began in, as Progress names it.",
+        "example": "5786"
       }
     }
   },

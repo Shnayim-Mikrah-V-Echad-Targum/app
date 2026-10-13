@@ -109,9 +109,19 @@ class _SeferCompleteScreenState extends ConsumerState<SeferCompleteScreen> with 
     int versesOf(String book) => repo.chapterLengths(book).fold(0, (a, b) => a + b);
     final english = kTorahBooks[sefer.book];
     final second = names.secondReading(settings.secondReading);
-    // Deuteronomy, finished with the year's reading: the Siyum HaTorah.
-    final siyum = sefer.book == 4 ? cycleSiyum(progress, sefer.cycleYear) : null;
-    final finishedOn = seferCompletions(progress, sefer.cycleYear)[sefer.book];
+    final completions = seferCompletions(progress, sefer.cycleYear);
+    final finishedOn = completions[sefer.book];
+    // The Siyum HaTorah, on the page of the book whose finish made it: the
+    // last of the year's reading needed, which is Deuteronomy as a rule,
+    // but may be another book finished late (a parsha of Genesis logged
+    // after Simchat Torah). Of books finished on its day, the last.
+    final cycle = cycleSiyum(progress, sefer.cycleYear);
+    final siyum = cycle != null &&
+            finishedOn != null &&
+            cycle.achievedOn == finishedOn &&
+            !completions.entries.any((e) => e.key > sefer.book && e.value == finishedOn)
+        ? cycle
+        : null;
 
     final title = switch (siyum) {
       null => l.seferDoneTitle(names.book(english)),
@@ -119,11 +129,19 @@ class _SeferCompleteScreenState extends ConsumerState<SeferCompleteScreen> with 
         l.milestoneSiyumFrom(names.portion(repo.portion(PortionId(from)), ashkenazi: settings.ashkenaziNames)),
       _ => l.milestoneSiyum,
     };
-    // The whole Torah, for a reader who read it all this year; a reader who
-    // joined partway is told of the book they finished.
-    final facts = siyum != null && siyum.fromParsha == null
-        ? l.siyumBody(kTorahBooks.map(versesOf).fold(0, (a, b) => a + b), second, names.hebrewYear(sefer.cycleYear))
-        : l.seferDoneFacts(versesOf(english), second);
+    // What was read: the whole Torah, for a reader who read it all in the
+    // year's cycle; every parsha from the first they read, for one who
+    // joined partway; otherwise the book.
+    final year = names.hebrewYear(sefer.cycleYear);
+    final facts = switch (siyum) {
+      null => l.seferDoneFacts(versesOf(english), second),
+      Milestone(fromParsha: final from?) => l.siyumFromBody(
+          [for (var n = from; n <= repo.all.length; n++) repo.verseCount(repo.byNumber(n))].fold(0, (a, b) => a + b),
+          second,
+          year,
+        ),
+      _ => l.siyumBody(kTorahBooks.map(versesOf).fold(0, (a, b) => a + b), second, year),
+    };
 
     final width = MediaQuery.sizeOf(context).width;
     final wide = width >= Breakpoints.medium;

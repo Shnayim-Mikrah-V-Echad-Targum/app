@@ -5271,11 +5271,17 @@ abstract class AppLocalizations {
   /// **'Finished on {weekday}, {date}'**
   String seferDoneOn(String weekday, String date);
 
-  /// On the page shown once the whole Torah is read in a year, as Deuteronomy is finished (under "Siyum HaTorah"): e.g. "The whole Torah — 5,846 verses, twice, with Targum, in 5787."
+  /// On the page shown once the whole Torah is read in a year's cycle (under "Siyum HaTorah"): e.g. "The whole Torah — 5,846 verses, twice, with Targum, in the cycle of 5786." Named as a cycle, as the date beneath it falls in the next year: Vezot HaBerakhah is read in Tishrei.
   ///
   /// In en, this message translates to:
-  /// **'The whole Torah — {count} verses, twice, with {second}, in {year}.'**
+  /// **'The whole Torah — {count} verses, twice, with {second}, in the cycle of {year}.'**
   String siyumBody(int count, String second, String year);
+
+  /// On the page for the siyum of a reader who joined partway through a year's cycle, under "Siyum from Parshat Vayera": what they read, from that parsha to the end of the Torah, e.g. "5,327 verses, twice, with Targum, in the cycle of 5786."
+  ///
+  /// In en, this message translates to:
+  /// **'{count} verses, twice, with {second}, in the cycle of {year}.'**
+  String siyumFromBody(int count, String second, String year);
 
   /// Spoken for an aliyah's tab in the reader's ribbon, before its state, e.g. "Revi'i, aliyah 4 of 7, not started".
   ///

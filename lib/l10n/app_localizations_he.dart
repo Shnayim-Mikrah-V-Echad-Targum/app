@@ -3377,7 +3377,16 @@ class AppLocalizationsHe extends AppLocalizations {
         intl.NumberFormat.decimalPattern(localeName);
     final String countString = countNumberFormat.format(count);
 
-    return 'כל התורה כולה — $countString פסוקים, שניים מקרא ו$second, בשנת $year.';
+    return 'כל התורה כולה — $countString פסוקים, שניים מקרא ו$second, במחזור $year.';
+  }
+
+  @override
+  String siyumFromBody(int count, String second, String year) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString פסוקים, שניים מקרא ו$second, במחזור $year.';
   }
 
   @override
