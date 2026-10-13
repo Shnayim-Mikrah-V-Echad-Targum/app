@@ -2061,8 +2061,10 @@ class _GuidedStep extends StatelessWidget {
   /// the verses of a step.
   static const double _gapAfter = 20;
 
-  /// The most verses shown after the step's, as far as they fit.
-  static const _versesAfter = 3;
+  /// The most verses built after the step's: those that fit whole on the
+  /// page are shown (FitsWhole), so that the page is filled rather than
+  /// left blank below a few short ones, as the Targum's are on a tablet.
+  static const _versesAfter = 8;
 
   /// The window's height, at the default reading size, from which the
   /// step's verse is shown among its neighbours.
@@ -2251,7 +2253,7 @@ class _GuidedStep extends StatelessWidget {
       builder: (context, constraints) {
         const padding = EdgeInsets.fromLTRB(20, 16, 20, 24);
         final page = constraints.maxHeight - padding.vertical;
-        final amongNeighbours = _amongNeighbours(context, styles);
+        final amongNeighbours = _amongNeighbours(context, styles, kind);
         // Among its neighbours, the verse just read is above the step's
         // verse where the step still fits whole beneath it, and those to
         // come are after it, as far as they fit whole on the page. A
@@ -2313,9 +2315,12 @@ class _GuidedStep extends StatelessWidget {
   /// Whether the step's verse is shown among its neighbours (§9): read verse
   /// by verse, in a window at least 600 wide and [_neighbourHeight] tall, or
   /// taller in proportion as the Torah's lines are larger than they are at
-  /// the default size. Not in high contrast, which dims nothing.
-  bool _amongNeighbours(BuildContext context, ScriptureStyles styles) {
+  /// the default size. Not in high contrast, which dims nothing, nor at
+  /// Rashi's step, whose reading is Rashi: his comments have no neighbours,
+  /// and the verse they explain is set in the quieter ink beside them.
+  bool _amongNeighbours(BuildContext context, ScriptureStyles styles, StepKind kind) {
     if (flow.method != ReadingMethod.verseByVerse) return false;
+    if (kind == StepKind.rashi) return false;
     if (SeferColors.of(context).isHighContrast) return false;
     final window = MediaQuery.sizeOf(context);
     if (window.width < Breakpoints.medium) return false;
