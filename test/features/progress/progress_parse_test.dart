@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_merge.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/backup.dart';
-import 'package:shnayim_mikra/features/settings/screens/data_settings_screen.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_merge.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/backup.dart';
+import 'package:shnayim_mikrah/features/settings/screens/data_settings_screen.dart';
 
 import '../../helpers.dart';
 
@@ -174,7 +174,7 @@ void main() {
     test('a well-formed week reads back exactly, even strictly', () {
       final week = WeekProgress(weekId: '5787:2')
           .withAliyah(0, _d1)
-          .withUnit(1, ReadingPass.mikra1, _d2)
+          .withUnit(1, ReadingPass.mikrah1, _d2)
           .withHaftarah(_d2)
           .withPosition(1, const [3, 0, 0]);
       final json = jsonDecode(jsonEncode(week.toJson())) as Map<String, dynamic>;
@@ -335,7 +335,7 @@ void main() {
       (await reopen()).read(progressProvider);
       expect(backups(ProgressController.newerBackupPrefix), hasLength(1));
 
-      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
+      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikrah1, _d2);
       expect((await stored())['version'], kProgressFormat);
       expect(backups(ProgressController.newerBackupPrefix).values, [raw]);
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty);
@@ -347,9 +347,9 @@ void main() {
       expect(c.read(progressProvider), const ProgressState());
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
 
-      c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikra1, _d1);
+      c.read(progressProvider.notifier).markUnit('5787:2', 0, ReadingPass.mikrah1, _d1);
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
-      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikrah1), isTrue);
     });
 
     test('a week without a unit grid is kept aside untouched, not read as empty and overwritten', () async {
@@ -358,7 +358,7 @@ void main() {
       ];
       final c = await load(_stored('{"5787:1": {"units": ${jsonEncode(units)}}, "5787:2": {"u": ${_grid()}}}', version: 2));
       expect(c.read(progressProvider).unknownWeeks.keys, ['5787:1']);
-      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
+      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikrah1, _d2);
       expect(((await stored())['weeks'] as Map)['5787:1'], {'units': units});
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was lost');
     });
@@ -372,7 +372,7 @@ void main() {
       expect(c.read(progressProvider).week('5787:1').units[0], [_d1, null, _d1]);
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
 
-      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikra1, _d2);
+      c.read(progressProvider.notifier).markUnit('5787:2', 1, ReadingPass.mikrah1, _d2);
       expect(((await stored())['weeks'] as Map)['5787:1']['u'][0], [_d1.rd, null, _d1.rd], reason: 'saved fixed');
       expect(backups(ProgressController.corruptBackupPrefix).values, [raw]);
       (await reopen()).read(progressProvider);
@@ -395,16 +395,16 @@ void main() {
       final c = await load(_stored('{"5787:1": {"u": ${_grid()}}, "5787:2": {"u": "done"}}'));
       final progress = c.read(progressProvider.notifier);
 
-      progress.markUnit('5787:1', 1, ReadingPass.mikra1, _d2);
+      progress.markUnit('5787:1', 1, ReadingPass.mikrah1, _d2);
       progress.addPause(_d1, _d2);
       expect(jsonEncode(((await stored())['weeks'] as Map)['5787:2']), unknown);
       expect(backups(ProgressController.corruptBackupPrefix), isEmpty, reason: 'nothing was at risk yet');
 
       // Reading in that week replaces the entry this version couldn't read.
-      progress.markUnit('5787:2', 0, ReadingPass.mikra1, _d2);
+      progress.markUnit('5787:2', 0, ReadingPass.mikrah1, _d2);
       expect(backups(ProgressController.corruptBackupPrefix).values, ['{"weeks":{"5787:2":$unknown}}']);
       expect(c.read(progressProvider).unknownWeeks, isEmpty);
-      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikra1), isTrue);
+      expect((await reopen()).read(progressProvider).week('5787:2').isUnitDone(0, ReadingPass.mikrah1), isTrue);
     });
 
     test('resetting all progress erases what could not be read too, as asked', () async {
@@ -463,7 +463,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Paste backup text'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), jsonEncode({'app': 'shnayim_mikra', 'progress': progress}));
+      await tester.enterText(find.byType(TextField), jsonEncode({'app': 'shnayim_mikrah', 'progress': progress}));
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
       return c;

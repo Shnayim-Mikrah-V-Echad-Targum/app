@@ -12,27 +12,27 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/app.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/jewish_holidays.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/features/community/data/backend.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/services/notifications.dart';
-import 'package:shnayim_mikra/services/optional_fonts.dart';
-import 'package:shnayim_mikra/services/reminder_planner.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/widgets/lines.dart';
+import 'package:shnayim_mikrah/app/app.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/backend.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/services/notifications.dart';
+import 'package:shnayim_mikrah/services/optional_fonts.dart';
+import 'package:shnayim_mikrah/services/reminder_planner.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/widgets/lines.dart';
 
 ParshaRepository? _repo;
 
@@ -86,7 +86,7 @@ ProgressState captureProgress() {
   for (final p in ReadingPass.values) {
     w = w.withUnit(0, p, mon).withUnit(1, p, mon.addDays(1));
   }
-  w = w.withUnit(2, ReadingPass.mikra1, mon.addDays(2)).withUnit(2, ReadingPass.mikra2, mon.addDays(2));
+  w = w.withUnit(2, ReadingPass.mikrah1, mon.addDays(2)).withUnit(2, ReadingPass.mikrah2, mon.addDays(2));
   return ProgressState(weeks: {'5787:1': w});
 }
 
@@ -190,7 +190,7 @@ Future<ProviderContainer> pumpApp(
     ...overrides,
   ]);
   addTearDown(container.dispose);
-  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikraApp()));
+  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ShnayimMikrahApp()));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
   return container;

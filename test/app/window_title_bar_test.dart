@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/window_title_bar.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/window_title_bar.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../helpers.dart';
 
@@ -87,20 +87,20 @@ void main() {
     final titles = listen(tester).titles;
     final container = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.english));
     await tester.pumpAndSettle();
-    expect(titles, ['Shnayim Mikra']);
+    expect(titles, ['Shnayim Mikrah']);
 
     setLanguage(container, AppLanguage.hebrew);
     await tester.pumpAndSettle();
-    expect(titles, ['Shnayim Mikra', 'שניים מקרא']);
+    expect(titles, ['Shnayim Mikrah', 'שניים מקרא']);
 
     // The runner hears only of a new title.
     setTheme(container, AppThemeMode.dark);
     await tester.pumpAndSettle();
-    expect(titles, ['Shnayim Mikra', 'שניים מקרא']);
+    expect(titles, ['Shnayim Mikrah', 'שניים מקרא']);
 
     setLanguage(container, AppLanguage.english);
     await tester.pumpAndSettle();
-    expect(titles, ['Shnayim Mikra', 'שניים מקרא', 'Shnayim Mikra']);
+    expect(titles, ['Shnayim Mikrah', 'שניים מקרא', 'Shnayim Mikrah']);
   }, variant: windows);
 
   testWidgets("following the system's language, the title follows it too", (tester) async {
@@ -113,7 +113,7 @@ void main() {
 
     tester.platformDispatcher.localesTestValue = const [Locale('en', 'US')];
     await tester.pumpAndSettle();
-    expect(titles, ['שניים מקרא', 'Shnayim Mikra']);
+    expect(titles, ['שניים מקרא', 'Shnayim Mikrah']);
   }, variant: windows);
 
   testWidgets('a runner without the channel is no error', (tester) async {

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/lang.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/lang.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -18,7 +18,7 @@ void main() {
   /// A Wednesday, when the plan step also asks about this week.
   final wednesday = DateTime(2026, 10, 14, 10);
   const fresh = AppSettings();
-  const appTitleFull = 'Shnayim Mikra v’Echad Targum';
+  const appTitleFull = 'Shnayim Mikrah v’Echad Targum';
 
   /// Expects [finder]'s node to be a heading of [level], labelled [label] if
   /// given.
@@ -118,7 +118,7 @@ void main() {
       expect(tester.getSize(start), const Size(400, 52));
       expect(tester.getCenter(start).dx, 683);
       // The way back in for a reader who already uses the app, as wide.
-      final restore = find.widgetWithText(TextButton, 'I already use Shnayim Mikra');
+      final restore = find.widgetWithText(TextButton, 'I already use Shnayim Mikrah');
       expect(tester.getSize(restore).width, 400);
       expect(tester.getCenter(restore).dx, 683);
       // The title block is at most 520 wide, in the middle.
@@ -203,7 +203,7 @@ void main() {
       await openRoute(tester, '/welcome/plan', settings: fresh, now: wednesday);
       final notice = tester.widget<NoticeBanner>(find.byType(NoticeBanner));
       expect(notice.marginalia, isTrue);
-      expect(notice.text, startsWith('Shnayim Mikra runs on the honor system.'));
+      expect(notice.text, startsWith('Shnayim Mikrah runs on the honor system.'));
     });
 
     for (final (route, label) in [

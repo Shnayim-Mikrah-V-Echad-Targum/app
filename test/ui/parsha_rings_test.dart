@@ -4,14 +4,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 
@@ -69,8 +69,8 @@ void main() {
 
     test('a sweep fills the new arcs behind a head that travels clockwise', () {
       const equal = [1, 1, 1, 1, 1, 1, 1];
-      final finished = bit(ReadingPass.mikra2, 0) | bit(ReadingPass.mikra2, 1);
-      final kept = bit(ReadingPass.mikra1, 0);
+      final finished = bit(ReadingPass.mikrah2, 0) | bit(ReadingPass.mikrah2, 1);
+      final kept = bit(ReadingPass.mikrah1, 0);
       final full = ringArcs(weights: equal, from: kept | finished, to: kept | finished);
       final keptArc = full.singleWhere((a) => a.ring == 0);
       final first = full.firstWhere((a) => a.ring == 1);
@@ -357,7 +357,7 @@ void main() {
           .widgetList<DecoratedBox>(find.descendant(of: find.byType(RingLegend), matching: find.byType(DecoratedBox)))
           .map((d) => (d.decoration as BoxDecoration).color)
           .toList();
-      expect(dots, [Palettes.seferLight.ringMikra1, Palettes.seferLight.ringMikra2, Palettes.seferLight.ringTargum]);
+      expect(dots, [Palettes.seferLight.ringMikrah1, Palettes.seferLight.ringMikrah2, Palettes.seferLight.ringTargum]);
       final count = tester.widget<Text>(find.text('3 of 7'));
       expect(count.style?.fontFeatures, contains(const FontFeature.tabularFigures()));
       expect(count.style?.color, Palettes.light.onSurfaceVariant);

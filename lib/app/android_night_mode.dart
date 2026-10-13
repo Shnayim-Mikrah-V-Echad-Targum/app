@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../features/settings/app_settings.dart';
 
-/// MainActivity's (android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt).
-const uiModeChannel = MethodChannel('shnayim_mikra/ui_mode');
+/// MainActivity's (android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah/MainActivity.kt).
+const uiModeChannel = MethodChannel('shnayim_mikrah/ui_mode');
 
 /// Whether the app runs on Android, where it holds the system's night mode
 /// for itself to its theme ([setAndroidNightMode]).

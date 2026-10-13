@@ -6,13 +6,13 @@ import '../progress/domain/progress_merge.dart';
 import 'app_settings.dart';
 
 /// What a backup file says it was made by.
-const _app = 'shnayim_mikra';
+const _app = 'shnayim_mikrah';
 
 /// The name a backup made at [now] is saved under, such as
-/// `shnayim-mikra-backup-2026-10-11.json`.
+/// `shnayim-mikrah-backup-2026-10-11.json`.
 String backupFileName(DateTime now) {
   String two(int n) => n.toString().padLeft(2, '0');
-  return 'shnayim-mikra-backup-${now.year.toString().padLeft(4, '0')}-${two(now.month)}-${two(now.day)}.json';
+  return 'shnayim-mikrah-backup-${now.year.toString().padLeft(4, '0')}-${two(now.month)}-${two(now.day)}.json';
 }
 
 /// A backup of [progress], [settings] and the reader's bookmarks and notes

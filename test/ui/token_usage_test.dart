@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/progress_widgets.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/progress_widgets.dart';
 
 import '../helpers.dart';
 
@@ -45,11 +45,11 @@ void main() {
     (AppThemeMode.dark, Palettes.seferDark),
     (AppThemeMode.highContrastDark, Palettes.seferHcDark),
   ]) {
-    testWidgets('${mode.name}: the rings are the two Mikra blues and the Targum gold on their track', (tester) async {
+    testWidgets('${mode.name}: the rings are the two Mikrah blues and the Targum gold on their track', (tester) async {
       // Rishon read all three ways: one arc in each ring.
       final rishon = WeekProgress(weekId: '5787:1')
-          .withUnit(0, ReadingPass.mikra1, LocalDate(2026, 10, 5))
-          .withUnit(0, ReadingPass.mikra2, LocalDate(2026, 10, 5))
+          .withUnit(0, ReadingPass.mikrah1, LocalDate(2026, 10, 5))
+          .withUnit(0, ReadingPass.mikrah2, LocalDate(2026, 10, 5))
           .withUnit(0, ReadingPass.targum, LocalDate(2026, 10, 5));
       await pumpThemed(
         tester,
@@ -64,13 +64,13 @@ void main() {
           ..circle(color: sefer.ringTrack)
           ..circle(color: sefer.ringTrack)
           ..circle(color: sefer.ringTrack)
-          ..arc(color: sefer.ringMikra1)
-          ..arc(color: sefer.ringMikra2)
+          ..arc(color: sefer.ringMikrah1)
+          ..arc(color: sefer.ringMikrah2)
           ..arc(color: sefer.ringTargum),
       );
-      // Mikra 2 used to be Mikra 1 at 80% alpha, and the Targum tertiary.
-      expect(sefer.ringMikra2, isNot(sefer.ringMikra1));
-      expect(sefer.ringMikra2.a, 1);
+      // Mikrah 2 used to be Mikrah 1 at 80% alpha, and the Targum tertiary.
+      expect(sefer.ringMikrah2, isNot(sefer.ringMikrah1));
+      expect(sefer.ringMikrah2.a, 1);
     });
   }
 

@@ -6,7 +6,7 @@ import '../../ui/theme/app_theme.dart';
 import 'reader_flow.dart';
 
 /// Where the reader is among the three readings of the verses on screen
-/// (docs/DESIGN_SYSTEM.md §6.17): "1 · Mikra", "2 · Mikra" and "3 · Targum"
+/// (docs/DESIGN_SYSTEM.md §6.17): "1 · Mikrah", "2 · Mikrah" and "3 · Targum"
 /// side by side, each over a bar in its ring colour once reached. A reading
 /// done is checked, and the one under way is set in bold.
 ///
@@ -26,8 +26,8 @@ class PassTrack extends StatelessWidget {
   /// both, and a verse's Hebrew read a third time with them). Ending with the
   /// last verse once more comes after all three.
   static int segmentOf(StepKind kind) => switch (kind) {
-        StepKind.mikra1 => 0,
-        StepKind.mikra2 => 1,
+        StepKind.mikrah1 => 0,
+        StepKind.mikrah2 => 1,
         StepKind.repeatLast => _segments,
         StepKind.targum || StepKind.rashi || StepKind.thirdHebrew => 2,
       };
@@ -45,14 +45,14 @@ class PassTrack extends StatelessWidget {
   String _name(AppLocalizations l, StepKind kind) => switch (kind) {
         StepKind.targum => l.passTargum,
         StepKind.rashi => l.passRashi,
-        StepKind.mikra1 || StepKind.mikra2 || StepKind.thirdHebrew || StepKind.repeatLast => l.passTrackMikra,
+        StepKind.mikrah1 || StepKind.mikrah2 || StepKind.thirdHebrew || StepKind.repeatLast => l.passTrackMikrah,
       };
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final current = segmentOf(steps[step]);
-    final names = [l.passTrackMikra, l.passTrackMikra, _name(l, _thirdKind)];
+    final names = [l.passTrackMikrah, l.passTrackMikrah, _name(l, _thirdKind)];
     return ExcludeSemantics(
       child: Row(
         // The bars on one line, should a label be set smaller to fit.
@@ -97,7 +97,7 @@ class _Segment extends StatelessWidget {
     );
     final bar = state == _SegmentState.upcoming
         ? sefer.ringTrack
-        : [sefer.ringMikra1, sefer.ringMikra2, sefer.ringTargum][index];
+        : [sefer.ringMikrah1, sefer.ringMikrah2, sefer.ringTargum][index];
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,

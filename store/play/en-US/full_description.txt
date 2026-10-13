@@ -1,4 +1,4 @@
-Shnayim Mikra v’Echad Targum is the weekly practice of reading the parsha twice in Hebrew and once in Targum Onkelos. This app guides you through it, calmly and at your own pace, and keeps out of the way on Shabbat.
+Shnayim Mikrah v’Echad Targum is the weekly practice of reading the parsha twice in Hebrew and once in Targum Onkelos. This app guides you through it, calmly and at your own pace, and keeps out of the way on Shabbat.
 
 Guided, verse by verse
 • Read verse by verse, section by section, or aliyah by aliyah: the Hebrew twice, then the Targum.
@@ -22,7 +22,7 @@ The haftarah of your custom
 
 Listen along
 • Hear the text read aloud, verse by verse, in your device’s Hebrew voice: an aid to follow by, not a chanting of the cantillation.
-• Listen along reads Mikra, Mikra and Targum hands-free.
+• Listen along reads Mikrah, Mikrah and Targum hands-free.
 
 For every reader
 • Made for TalkBack: each verse is read cleanly, in Hebrew.

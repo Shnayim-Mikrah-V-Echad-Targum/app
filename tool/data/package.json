@@ -1,5 +1,5 @@
 {
-  "name": "shnayim-mikra-data-tools",
+  "name": "shnayim-mikrah-data-tools",
   "private": true,
   "type": "module",
   "description": "Build-time scripts that generate the bundled text/calendar assets and test fixtures. Nothing here ships in the app.",

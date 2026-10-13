@@ -608,7 +608,7 @@ const _samples = [
         'Chana',
         Duration(days: 12),
         'Welcome! Every parsha has one shared discussion, which the “This week” card opens. Share a thought on '
-            'the reading, a question on a Targum or a Rashi, or how you fit Shnayim Mikra into your week. Please '
+            'the reading, a question on a Targum or a Rashi, or how you fit Shnayim Mikrah into your week. Please '
             'keep to the community guidelines, and bring a source where you can.',
         todah: 8,
       ),
@@ -723,7 +723,7 @@ const _samples = [
         '714',
         'Miriam',
         Duration(days: 5, hours: 20),
-        'The Gemara (Berachot 8a) says to complete the parsha twice in Mikra and once in Targum “even Atarot and '
+        'The Gemara (Berachot 8a) says to complete the parsha twice in Mikrah and once in Targum “even Atarot and '
             'Divon”, a verse that is almost all place names. For a verse with no Targum, Rashi holds that it is read '
             'three times in Hebrew, while Tosafot suggest reading another Targum instead. Your rav can tell you '
             'which practice to follow.',
@@ -783,7 +783,7 @@ const _samples = [
   _SampleThread(
     id: '41',
     forumId: 4,
-    title: 'Shnayim Mikra with children',
+    title: 'Shnayim Mikrah with children',
     posts: [
       _SamplePost(
         '719',

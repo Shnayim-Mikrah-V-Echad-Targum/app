@@ -241,7 +241,7 @@ class FrameTest(unittest.TestCase):
                     self.assertEqual(len(lines), 2)
                     self.assertTrue(all(line and line == line.strip() for line in lines))
                     # After a comma or colon, where it has one, so that no
-                    # phrase ("aliyah by aliyah", "Mikra and Targum") is split.
+                    # phrase ("aliyah by aliyah", "Mikrah and Targum") is split.
                     if re.search(r'[,:]', text):
                         self.assertRegex(lines[0], r'[,:]$')
 

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
-import 'package:shnayim_mikra/features/community/ui/community_ui.dart';
-import 'package:shnayim_mikra/features/community/ui/forum_screen.dart';
-import 'package:shnayim_mikra/features/community/ui/thread_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/ui/community_ui.dart';
+import 'package:shnayim_mikrah/features/community/ui/forum_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/thread_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
 

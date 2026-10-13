@@ -16,7 +16,7 @@ const windowChannel = MethodChannel('shnayim/window');
 /// bars, or the platform draws none.
 ///
 /// The window's title, which the taskbar and Alt+Tab show too, is the app's
-/// name in its language: the runner opens the window as "Shnayim Mikra".
+/// name in its language: the runner opens the window as "Shnayim Mikrah".
 class WindowTitleBar extends StatefulWidget {
   const WindowTitleBar({super.key, required this.child});
 

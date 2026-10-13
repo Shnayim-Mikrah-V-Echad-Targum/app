@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shnayim_mikra/app/config.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/services/recent_errors.dart';
-import 'package:shnayim_mikra/ui/widgets/app_mark.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
-import 'package:shnayim_mikra/ui/widgets/paper_group.dart';
+import 'package:shnayim_mikrah/app/config.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/services/recent_errors.dart';
+import 'package:shnayim_mikrah/ui/widgets/app_mark.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../../helpers.dart';
 
@@ -32,7 +32,7 @@ void main() {
         (tester) async {
       await openAbout(tester, language: language);
       expect(find.text('שניים מקרא ואחד תרגום'), findsOneWidget, reason: 'never twice in the Hebrew interface');
-      expect(find.text('Shnayim Mikra v’Echad Targum'), language == AppLanguage.english ? findsOneWidget : findsNothing);
+      expect(find.text('Shnayim Mikrah v’Echad Targum'), language == AppLanguage.english ? findsOneWidget : findsNothing);
     });
   }
 
@@ -42,10 +42,10 @@ void main() {
     expect(find.byWidgetPredicate((w) => w is AppMark && w.size == 72), findsOneWidget);
     expect(
       tester.getSemantics(find.text('שניים מקרא ואחד תרגום')),
-      isSemantics(label: 'Shnayim Mikra v’Echad Targum', isHeader: true),
+      isSemantics(label: 'Shnayim Mikrah v’Echad Targum', isHeader: true),
     );
     // The English name under it is for the eye: the heading says it.
-    expect(find.bySemanticsLabel('Shnayim Mikra v’Echad Targum'), findsOneWidget);
+    expect(find.bySemanticsLabel('Shnayim Mikrah v’Echad Targum'), findsOneWidget);
     expect(find.byType(SeferDivider), findsOneWidget);
     // The page's one heading of level 1: the app bar's "About" shows, for
     // the eye alone, only once the name has scrolled under it.
@@ -53,7 +53,7 @@ void main() {
       final data = node.getSemanticsData();
       return data.flagsCollection.isHeader && data.headingLevel == 1;
     });
-    expect(levelOne.evaluate().map((n) => n.label), ['Shnayim Mikra v’Echad Targum']);
+    expect(levelOne.evaluate().map((n) => n.label), ['Shnayim Mikrah v’Echad Targum']);
     double titleOpacity() => tester
         .widget<AnimatedOpacity>(find.descendant(of: find.byType(AppBar), matching: find.byType(AnimatedOpacity)))
         .opacity;
@@ -125,8 +125,8 @@ void main() {
 
   group('after something has gone wrong', () {
     setUp(() => PackageInfo.setMockInitialValues(
-          appName: 'Shnayim Mikra',
-          packageName: 'org.shnayimmikra.app',
+          appName: 'Shnayim Mikrah',
+          packageName: 'org.shnayimmikrah.app',
           version: '1.0.0',
           buildNumber: '12',
           buildSignature: '',
@@ -155,7 +155,7 @@ void main() {
       recentErrors.add(FlutterErrorDetails(
         exception: StateError('no element'),
         context: ErrorDescription('building TodayScreen'),
-        stack: StackTrace.fromString('#0      TodayScreen.build (package:shnayim_mikra/today_screen.dart:1:1)'),
+        stack: StackTrace.fromString('#0      TodayScreen.build (package:shnayim_mikrah/today_screen.dart:1:1)'),
       ));
       // Told once the frame the error came in is over, it shows in the next.
       await tester.pumpAndSettle();
@@ -168,11 +168,11 @@ void main() {
       await tester.pump();
       expect(
         copied,
-        'Shnayim Mikra 1.0.0 (12) on android\n'
+        'Shnayim Mikrah 1.0.0 (12) on android\n'
         '\n'
         'Bad state: no element\n'
         'building TodayScreen\n'
-        '#0      TodayScreen.build (package:shnayim_mikra/today_screen.dart:1:1)',
+        '#0      TodayScreen.build (package:shnayim_mikrah/today_screen.dart:1:1)',
       );
       expect(find.text('Details copied'), findsOneWidget);
     });

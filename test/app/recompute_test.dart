@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/data/models/parsha.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/progress/domain/streak_engine.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/data/models/parsha.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/progress/domain/streak_engine.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../helpers.dart';
 
@@ -66,7 +66,7 @@ void main() {
       expect(revision(), start, reason: 'a place is not part of the log');
       expect(container.read(progressProvider).week('5787:2').positions[0], [3, 2, 0]);
 
-      progress().markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      progress().markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       final marked = revision();
       expect(marked, isNot(start));
       progress().addPause(_monday, _monday);
@@ -120,7 +120,7 @@ void main() {
       }
       expect(_evaluations, 1);
 
-      progress.markUnit('5787:2', 0, ReadingPass.mikra1, _monday);
+      progress.markUnit('5787:2', 0, ReadingPass.mikrah1, _monday);
       container.read(streakSummaryProvider);
       expect(_evaluations, 2);
     });

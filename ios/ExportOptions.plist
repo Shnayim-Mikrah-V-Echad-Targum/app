@@ -23,9 +23,9 @@
 	<string>IOS_TEAM_ID</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>org.shnayimmikra.app</key>
+		<key>org.shnayimmikrah.app</key>
 		<string>IOS_PROFILE_NAME</string>
-		<key>org.shnayimmikra.app.ParshaWidget</key>
+		<key>org.shnayimmikrah.app.ParshaWidget</key>
 		<string>IOS_WIDGET_PROFILE_NAME</string>
 	</dict>
 	<!-- The workflow numbers each build itself. -->

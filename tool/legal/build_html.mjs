@@ -48,7 +48,7 @@ const UI = {
   en: {
     otherLanguage: 'עברית',
     pages: 'Policies and help',
-    open: 'Open Shnayim Mikra',
+    open: 'Open Shnayim Mikrah',
   },
   he: {
     otherLanguage: 'English',

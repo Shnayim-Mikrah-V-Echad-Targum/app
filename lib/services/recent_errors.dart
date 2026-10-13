@@ -142,7 +142,7 @@ class RecentErrors extends ChangeNotifier {
   /// interface's language: it is for the maintainers to read.
   String report({required String version}) {
     final platform = kIsWeb ? 'the web (${defaultTargetPlatform.name})' : defaultTargetPlatform.name;
-    final out = StringBuffer('Shnayim Mikra ${version.isEmpty ? '' : '$version '}on $platform');
+    final out = StringBuffer('Shnayim Mikrah ${version.isEmpty ? '' : '$version '}on $platform');
     if (_dropped > 0) out.write('\n\n$_dropped earlier ${_dropped == 1 ? 'error' : 'errors'} not kept');
     for (final error in _errors) {
       out

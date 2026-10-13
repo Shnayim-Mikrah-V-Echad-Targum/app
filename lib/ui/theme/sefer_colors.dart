@@ -13,8 +13,8 @@ class SeferColors extends ThemeExtension<SeferColors> {
     required this.hairline,
     required this.hairlineWidth,
     required this.goldLeaf,
-    required this.ringMikra1,
-    required this.ringMikra2,
+    required this.ringMikrah1,
+    required this.ringMikrah2,
     required this.ringTargum,
     required this.ringTrack,
     required this.restWash,
@@ -37,8 +37,8 @@ class SeferColors extends ThemeExtension<SeferColors> {
   final Color goldLeaf;
 
   /// The parsha rings: first reading, second reading, Targum, and the track.
-  final Color ringMikra1;
-  final Color ringMikra2;
+  final Color ringMikrah1;
+  final Color ringMikrah2;
   final Color ringTargum;
   final Color ringTrack;
 
@@ -67,8 +67,8 @@ class SeferColors extends ThemeExtension<SeferColors> {
     Color? hairline,
     double? hairlineWidth,
     Color? goldLeaf,
-    Color? ringMikra1,
-    Color? ringMikra2,
+    Color? ringMikrah1,
+    Color? ringMikrah2,
     Color? ringTargum,
     Color? ringTrack,
     Color? restWash,
@@ -83,8 +83,8 @@ class SeferColors extends ThemeExtension<SeferColors> {
         hairline: hairline ?? this.hairline,
         hairlineWidth: hairlineWidth ?? this.hairlineWidth,
         goldLeaf: goldLeaf ?? this.goldLeaf,
-        ringMikra1: ringMikra1 ?? this.ringMikra1,
-        ringMikra2: ringMikra2 ?? this.ringMikra2,
+        ringMikrah1: ringMikrah1 ?? this.ringMikrah1,
+        ringMikrah2: ringMikrah2 ?? this.ringMikrah2,
         ringTargum: ringTargum ?? this.ringTargum,
         ringTrack: ringTrack ?? this.ringTrack,
         restWash: restWash ?? this.restWash,
@@ -103,8 +103,8 @@ class SeferColors extends ThemeExtension<SeferColors> {
       hairline: Color.lerp(hairline, other.hairline, t)!,
       hairlineWidth: lerpDouble(hairlineWidth, other.hairlineWidth, t)!,
       goldLeaf: Color.lerp(goldLeaf, other.goldLeaf, t)!,
-      ringMikra1: Color.lerp(ringMikra1, other.ringMikra1, t)!,
-      ringMikra2: Color.lerp(ringMikra2, other.ringMikra2, t)!,
+      ringMikrah1: Color.lerp(ringMikrah1, other.ringMikrah1, t)!,
+      ringMikrah2: Color.lerp(ringMikrah2, other.ringMikrah2, t)!,
       ringTargum: Color.lerp(ringTargum, other.ringTargum, t)!,
       ringTrack: Color.lerp(ringTrack, other.ringTrack, t)!,
       restWash: Color.lerp(restWash, other.restWash, t)!,

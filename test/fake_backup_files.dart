@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:shnayim_mikra/services/backup_files.dart';
+import 'package:shnayim_mikrah/services/backup_files.dart';
 
 /// Backup files without the platform: [file] is what the reader chooses
 /// (null to cancel), and what is saved is kept in [saved].

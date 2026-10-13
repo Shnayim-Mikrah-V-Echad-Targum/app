@@ -374,7 +374,7 @@ List<Widget> _verses(
           children: [
             ScriptureVerse(
               verse: list[i].hebrew,
-              kind: ScriptureKind.mikra,
+              kind: ScriptureKind.mikrah,
               settings: settings,
               onLongPress: () => options(list[i]),
             ),

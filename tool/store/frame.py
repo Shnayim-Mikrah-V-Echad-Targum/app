@@ -116,7 +116,7 @@ SHOTS = (
     Shot('store_progress', Caption('A gentle rhythm\nthat respects Shabbat', 'קצב נינוח\nששומר שבת')),
     Shot('store_listen', Caption('Listen along,\nhands-free', 'להאזין לקריאה,\nבלי לגעת במסך'),
          instead={'ipad': 'store_full'},
-         captions={'ipad': Caption('Mikra and Targum,\nside by side', 'מקרא ותרגום,\nזה לצד זה')}),
+         captions={'ipad': Caption('Mikrah and Targum,\nside by side', 'מקרא ותרגום,\nזה לצד זה')}),
     Shot('store_access', Caption('For every reader: large text,\nhigh contrast, screen readers',
                                  'לכל קורא: טקסט גדול,\nניגודיות גבוהה וקוראי מסך'),
          instead={'ipad': 'store_access_full', 'playtab': 'store_access_full'}),

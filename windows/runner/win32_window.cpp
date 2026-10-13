@@ -45,7 +45,7 @@ constexpr double kMaxWorkAreaShare = 0.9;
 // Where the window was when it was last closed, as a WINDOWPLACEMENT, to
 // open there again. The MSIX package's writes to HKCU stay its own, and go
 // with it when it is uninstalled.
-constexpr const wchar_t kWindowRegKey[] = L"Software\\ShnayimMikra\\Window";
+constexpr const wchar_t kWindowRegKey[] = L"Software\\ShnayimMikrah\\Window";
 constexpr const wchar_t kPlacementRegValue[] = L"Placement";
 
 // How far below the window's top edge, in logical pixels, its title bar is

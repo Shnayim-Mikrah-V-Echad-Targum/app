@@ -160,7 +160,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: org.shnayimmikra.app
+          packageName: org.shnayimmikrah.app
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: internal
           status: draft
@@ -228,9 +228,9 @@ jobs:
             rm "$profile" "$profile.plist"
           }
           install_profile IOS_PROVISIONING_PROFILE_BASE64 "$APP_PROFILE_BASE64" \
-            "$IOS_PROFILE_NAME" org.shnayimmikra.app
+            "$IOS_PROFILE_NAME" org.shnayimmikrah.app
           install_profile IOS_WIDGET_PROVISIONING_PROFILE_BASE64 "$WIDGET_PROFILE_BASE64" \
-            "$IOS_WIDGET_PROFILE_NAME" org.shnayimmikra.app.ParshaWidget
+            "$IOS_WIDGET_PROFILE_NAME" org.shnayimmikrah.app.ParshaWidget
       # In this checkout only: the repository's project keeps automatic
       # signing for builds made in Xcode.
       - name: Sign the app and its widget with their profiles
@@ -240,8 +240,8 @@ jobs:
           IOS_WIDGET_PROFILE_NAME: ${{ vars.IOS_WIDGET_PROFILE_NAME }}
         run: |
           python3 tool/ios/sign_for_app_store.py --team "$IOS_TEAM_ID" \
-            --profile "org.shnayimmikra.app=$IOS_PROFILE_NAME" \
-            --profile "org.shnayimmikra.app.ParshaWidget=$IOS_WIDGET_PROFILE_NAME"
+            --profile "org.shnayimmikrah.app=$IOS_PROFILE_NAME" \
+            --profile "org.shnayimmikrah.app.ParshaWidget=$IOS_WIDGET_PROFILE_NAME"
       - name: Build the IPA
         id: ipa
         run: |
@@ -301,13 +301,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-msix
-          path: build/windows/msix/ShnayimMikra.msix
+          path: build/windows/msix/ShnayimMikrah.msix
           if-no-files-found: error
       - name: Draft the release with the installer
         uses: softprops/action-gh-release@v2
         with:
-          name: Shnayim Mikra ${{ github.ref_name }}
+          name: Shnayim Mikrah ${{ github.ref_name }}
           draft: true
           generate_release_notes: true
-          files: build/windows/msix/ShnayimMikra.msix
+          files: build/windows/msix/ShnayimMikrah.msix
           fail_on_unmatched_files: true

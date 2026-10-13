@@ -18,9 +18,9 @@ import sign_for_app_store as signing
 
 TEXT = signing.PROJECT.read_text(encoding='utf-8')
 TEAM = 'ABCDE12345'
-APP = 'org.shnayimmikra.app'
-WIDGET = 'org.shnayimmikra.app.ParshaWidget'
-PROFILES = {APP: 'Shnayim Mikra App Store', WIDGET: 'Shnayim Mikra Widget App Store'}
+APP = 'org.shnayimmikrah.app'
+WIDGET = 'org.shnayimmikrah.app.ParshaWidget'
+PROFILES = {APP: 'Shnayim Mikrah App Store', WIDGET: 'Shnayim Mikrah Widget App Store'}
 
 
 def configuration(text: str, target: str) -> str:
@@ -150,9 +150,9 @@ class SignTest(unittest.TestCase):
         self.assertEqual(text.count('DEVELOPMENT_TEAM = QWERT54321;'), 6)
 
     def test_names_are_quoted_as_xcode_quotes_them(self):
-        name = 'Shnayim "Mikra" \\ App Store'
+        name = 'Shnayim "Mikrah" \\ App Store'
         signed = signing.sign(TEXT, TEAM, {**PROFILES, APP: name})
-        self.assertIn('PROVISIONING_PROFILE_SPECIFIER = "Shnayim \\"Mikra\\" \\\\ App Store";', signed)
+        self.assertIn('PROVISIONING_PROFILE_SPECIFIER = "Shnayim \\"Mikrah\\" \\\\ App Store";', signed)
         self.assertIn(f'DEVELOPMENT_TEAM = {TEAM};', signed)
         self.assertIn('CODE_SIGN_IDENTITY = "Apple Distribution";', signed)
         self.assertEqual(signing.setting(signed, configuration(signed, 'Runner'),
@@ -165,8 +165,8 @@ class SignTest(unittest.TestCase):
             signing.sign(TEXT, TEAM, {APP: PROFILES[APP]})
 
     def test_a_profile_for_no_shipped_target_is_refused(self):
-        with self.assertRaisesRegex(signing.SigningError, 'org.shnayimmikra.app.RunnerTests'):
-            signing.sign(TEXT, TEAM, {**PROFILES, 'org.shnayimmikra.app.RunnerTests': 'Tests'})
+        with self.assertRaisesRegex(signing.SigningError, 'org.shnayimmikrah.app.RunnerTests'):
+            signing.sign(TEXT, TEAM, {**PROFILES, 'org.shnayimmikrah.app.RunnerTests': 'Tests'})
 
 
 class ExportOptionsTest(unittest.TestCase):

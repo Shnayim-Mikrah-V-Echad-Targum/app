@@ -4,12 +4,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/app.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/app/app.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
 
 import '../helpers.dart';
 import 'tolerant_comparator.dart';
@@ -105,10 +105,10 @@ void main() {
           for (final MapEntry(key: theme, value: tag) in themes.entries) {
             c.read(settingsProvider.notifier).update((s) => s.copyWith(theme: theme));
             await tester.pumpAndSettle();
-            await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
+            await expectLater(find.byType(ShnayimMikrahApp), matchesGoldenFile('screens/${name}_${language}_$tag.png'));
             if (!hebrew && theme == AppThemeMode.light && webNarrow.contains(name)) {
               await expectLater(
-                find.byType(ShnayimMikraApp),
+                find.byType(ShnayimMikrahApp),
                 matchesGoldenFile('../../web/screenshots/$name-narrow.png'),
               );
             }
@@ -126,7 +126,7 @@ void main() {
     debugDisableShadows = false;
     try {
       await open(tester, screens[webWide]!, size: const Size(1366, 860));
-      await expectLater(find.byType(ShnayimMikraApp), matchesGoldenFile('../../web/screenshots/$webWide-wide.png'));
+      await expectLater(find.byType(ShnayimMikrahApp), matchesGoldenFile('../../web/screenshots/$webWide-wide.png'));
     } finally {
       debugDisableShadows = true;
     }

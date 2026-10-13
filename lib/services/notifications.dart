@@ -73,8 +73,8 @@ class NotificationService {
             requestSoundPermission: false,
           ),
           windows: WindowsInitializationSettings(
-            appName: 'Shnayim Mikra',
-            appUserModelId: 'ShnayimMikra.App',
+            appName: 'Shnayim Mikrah',
+            appUserModelId: 'ShnayimMikrah.App',
             guid: '7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57',
             iconPath: defaultTargetPlatform == TargetPlatform.windows ? _windowsIconPath() : null,
           ),

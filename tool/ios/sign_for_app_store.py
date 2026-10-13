@@ -3,8 +3,8 @@
 Release workflow's checkout (.github/workflows/release.yml):
 
     python3 tool/ios/sign_for_app_store.py --team ABCDE12345 \\
-        --profile 'org.shnayimmikra.app=Shnayim Mikra App Store' \\
-        --profile 'org.shnayimmikra.app.ParshaWidget=Shnayim Mikra Widget App Store'
+        --profile 'org.shnayimmikrah.app=Shnayim Mikrah App Store' \\
+        --profile 'org.shnayimmikrah.app.ParshaWidget=Shnayim Mikrah Widget App Store'
 
 The project in the repository signs automatically, for builds made in Xcode.
 This switches the Release configuration of every target the app ships (the

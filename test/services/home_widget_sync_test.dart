@@ -9,27 +9,27 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shnayim_mikra/app/city_providers.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/city.dart';
-import 'package:shnayim_mikra/core/calendar/hebrew_date.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/calendar/parsha_schedule.dart';
-import 'package:shnayim_mikra/core/calendar/tz_database.dart';
-import 'package:shnayim_mikra/core/calendar/zmanim.dart';
-import 'package:shnayim_mikra/data/parsha_repository.dart';
-import 'package:shnayim_mikra/features/onboarding/onboarding_screen.dart';
-import 'package:shnayim_mikra/features/parsha/week_context.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/progress/domain/reading_plan.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/today/today_screen.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/services/app_shortcuts.dart';
-import 'package:shnayim_mikra/services/home_widget_sync.dart';
-import 'package:shnayim_mikra/ui/l10n.dart';
+import 'package:shnayim_mikrah/app/city_providers.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/city.dart';
+import 'package:shnayim_mikrah/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
+import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
+import 'package:shnayim_mikrah/data/parsha_repository.dart';
+import 'package:shnayim_mikrah/features/onboarding/onboarding_screen.dart';
+import 'package:shnayim_mikrah/features/parsha/week_context.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/today/today_screen.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/services/app_shortcuts.dart';
+import 'package:shnayim_mikrah/services/home_widget_sync.dart';
+import 'package:shnayim_mikrah/ui/l10n.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../helpers.dart';
@@ -152,7 +152,7 @@ void main() {
 
       final bereshit = t.weeks[0];
       expect((bereshit.hebrew, bereshit.name, bereshit.spoken), ('בְּרֵאשִׁית', 'Bereshit', 'Bereshit'));
-      expect((bereshit.mikra1, bereshit.mikra2, bereshit.targum), (3, 3, 2));
+      expect((bereshit.mikrah1, bereshit.mikrah2, bereshit.targum), (3, 3, 2));
       expect(bereshit.progress, '2 of 7 aliyot');
       expect(
         bereshit.spokenProgress,
@@ -170,7 +170,7 @@ void main() {
       // Then Noach, with the progress as it stands: what Today would say
       // each day if nothing more were read.
       expect(t.weeks[1].next, 'Start · Rishon');
-      expect((t.weeks[1].mikra1, t.weeks[1].mikra2, t.weeks[1].targum), (0, 0, 0));
+      expect((t.weeks[1].mikrah1, t.weeks[1].mikrah2, t.weeks[1].targum), (0, 0, 0));
       final sunday = only(t, LocalDate(2026, 10, 11));
       expect((sunday.kind, sunday.week, sunday.line), (WidgetDayKind.weekday, 1, 'Today: Rishon'));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Catching up: Rishon and Sheni');
@@ -198,7 +198,7 @@ void main() {
       t = timeline(_monday, progress: ProgressState(weeks: {'5787:2': week.withAll(LocalDate(2026, 10, 12))}));
       expect(only(t, LocalDate(2026, 10, 12)).line, 'Parsha complete · Yasher koach!');
       expect(t.weeks.first.next, isNull);
-      expect((t.weeks.first.mikra1, t.weeks.first.mikra2, t.weeks.first.targum), (7, 7, 7));
+      expect((t.weeks.first.mikrah1, t.weeks.first.mikrah2, t.weeks.first.targum), (7, 7, 7));
 
       // A plan that reads everything on Friday plans nothing before it.
       t = timeline(_monday, settings: AppSettings(joinDate: captureJoinDate, plan: ReadingPlanType.erevShabbat));
@@ -401,8 +401,8 @@ void main() {
       final regular = t.weeks[only(t, fast.addDays(-1)).week];
       expect(week.id, regular.id);
       expect(
-        (week.mikra1, week.progress, week.spokenProgress),
-        (regular.mikra1, regular.progress, regular.spokenProgress),
+        (week.mikrah1, week.progress, week.spokenProgress),
+        (regular.mikrah1, regular.progress, regular.spokenProgress),
       );
       expect(regular.next, 'Continue · Sheni');
       expect(week.next, isNull);
@@ -516,8 +516,8 @@ void main() {
       expect(json.keys, ['v', 'rtl', 'open', 'continue', 'stale', 'weeks', 'days', 'rest']);
       expect((json['rest'] as Map).entries.first, isA<MapEntry<String, dynamic>>());
       expect((json['rest'] as Map)['2026-10-24'], 'Shabbat Shalom');
-      expect(json['open'], 'shnayimmikra://widget/today?homeWidget');
-      expect(json['continue'], 'shnayimmikra://widget/continue?homeWidget');
+      expect(json['open'], 'shnayimmikrah://widget/today?homeWidget');
+      expect(json['continue'], 'shnayimmikrah://widget/continue?homeWidget');
       final days = (json['days'] as List).cast<Map<String, dynamic>>();
       expect(days.first, {
         'date': '2026-10-09',
@@ -546,15 +546,15 @@ void main() {
 
   group('links', () {
     test('name a page, which the app reads back', () {
-      expect(WidgetLink.today.uri.toString(), 'shnayimmikra://widget/today?homeWidget');
-      expect(WidgetLink.continueReading.uri.toString(), 'shnayimmikra://widget/continue?homeWidget');
+      expect(WidgetLink.today.uri.toString(), 'shnayimmikrah://widget/today?homeWidget');
+      expect(WidgetLink.continueReading.uri.toString(), 'shnayimmikrah://widget/continue?homeWidget');
       for (final link in WidgetLink.values) {
         expect(WidgetLink.fromUri(link.uri), link);
       }
       for (final other in [
         'https://widget/today',
-        'shnayimmikra://other/today?homeWidget',
-        'shnayimmikra://widget/elsewhere?homeWidget',
+        'shnayimmikrah://other/today?homeWidget',
+        'shnayimmikrah://widget/elsewhere?homeWidget',
         '',
       ]) {
         expect(WidgetLink.fromUri(Uri.parse(other)), isNull, reason: other);
@@ -612,7 +612,7 @@ void main() {
     });
 
     test('holds the link that launched the app until it is listened to', () async {
-      final fake = FakeHomeWidget()..launchedWith = 'shnayimmikra://widget/continue?homeWidget';
+      final fake = FakeHomeWidget()..launchedWith = 'shnayimmikrah://widget/continue?homeWidget';
       final service = await HomeWidgetService.create();
       final opened = <WidgetLink>[];
       service.listen(opened.add);
@@ -627,19 +627,19 @@ void main() {
       final opened = <WidgetLink>[];
       service.listen(opened.add);
 
-      fake.tap('shnayimmikra://widget/today?homeWidget');
+      fake.tap('shnayimmikrah://widget/today?homeWidget');
       await pumpEventQueue();
       expect(opened, [WidgetLink.today]);
 
       // The same tap reported again at once, as the app resumes.
-      fake.tap('shnayimmikra://widget/today?homeWidget');
+      fake.tap('shnayimmikrah://widget/today?homeWidget');
       await pumpEventQueue();
       expect(opened, [WidgetLink.today]);
 
       fake.tap('https://example.org/');
       now = now.add(const Duration(seconds: 3));
-      fake.tap('shnayimmikra://widget/today?homeWidget');
-      fake.tap('shnayimmikra://widget/continue?homeWidget');
+      fake.tap('shnayimmikrah://widget/today?homeWidget');
+      fake.tap('shnayimmikrah://widget/continue?homeWidget');
       await pumpEventQueue();
       expect(opened, [WidgetLink.today, WidgetLink.today, WidgetLink.continueReading]);
     });

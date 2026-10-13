@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
-import 'package:shnayim_mikra/ui/theme/typography.dart';
-import 'package:shnayim_mikra/ui/widgets/common.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/ui/theme/typography.dart';
+import 'package:shnayim_mikrah/ui/widgets/common.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../helpers.dart';
 
@@ -165,7 +165,7 @@ void main() {
           child: NoticeBanner(
             icon: Icons.handshake_outlined,
             marginalia: true,
-            text: 'Shnayim Mikra runs on the honor system. Log what you read, wherever you read it.',
+            text: 'Shnayim Mikrah runs on the honor system. Log what you read, wherever you read it.',
           ),
         ),
       );

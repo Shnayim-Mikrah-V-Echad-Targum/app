@@ -1,4 +1,4 @@
-package org.shnayimmikra.shnayim_mikra
+package org.shnayimmikrah.shnayim_mikrah
 
 import android.app.UiModeManager
 import android.content.Context
@@ -25,7 +25,7 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
         audioSession = ListenAudioFocus(applicationContext, messenger)
-        uiModeChannel = MethodChannel(messenger, "shnayim_mikra/ui_mode").apply {
+        uiModeChannel = MethodChannel(messenger, "shnayim_mikrah/ui_mode").apply {
             setMethodCallHandler { call, result ->
                 if (call.method == "setNightMode") setNightMode(call.arguments, result) else result.notImplemented()
             }
@@ -110,7 +110,7 @@ class MainActivity : FlutterActivity() {
  */
 private class ListenAudioFocus(context: Context, messenger: BinaryMessenger) : MethodChannel.MethodCallHandler {
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val channel = MethodChannel(messenger, "shnayim_mikra/audio_session")
+    private val channel = MethodChannel(messenger, "shnayim_mikrah/audio_session")
     private val main = Handler(Looper.getMainLooper())
 
     // A brief duck (a notification's sound, a navigation prompt) is no

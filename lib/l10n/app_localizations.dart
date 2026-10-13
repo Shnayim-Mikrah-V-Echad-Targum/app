@@ -102,13 +102,13 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikra'**
+  /// **'Shnayim Mikrah'**
   String get appTitle;
 
   /// No description provided for @appTitleFull.
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikra v’Echad Targum'**
+  /// **'Shnayim Mikrah v’Echad Targum'**
   String get appTitleFull;
 
   /// No description provided for @navToday.
@@ -393,17 +393,17 @@ abstract class AppLocalizations {
   /// **'{first} and {second}'**
   String andJoiner(String first, String second);
 
-  /// No description provided for @passMikra1.
+  /// No description provided for @passMikrah1.
   ///
   /// In en, this message translates to:
   /// **'First reading'**
-  String get passMikra1;
+  String get passMikrah1;
 
-  /// No description provided for @passMikra2.
+  /// No description provided for @passMikrah2.
   ///
   /// In en, this message translates to:
   /// **'Second reading'**
-  String get passMikra2;
+  String get passMikrah2;
 
   /// No description provided for @passTargum.
   ///
@@ -1305,17 +1305,17 @@ abstract class AppLocalizations {
   /// **'Preview — you can log this parsha from {date}.'**
   String previewNotOpen(String date);
 
-  /// No description provided for @stepMikra1.
+  /// No description provided for @stepMikrah1.
   ///
   /// In en, this message translates to:
   /// **'Read the Hebrew'**
-  String get stepMikra1;
+  String get stepMikrah1;
 
-  /// No description provided for @stepMikra2.
+  /// No description provided for @stepMikrah2.
   ///
   /// In en, this message translates to:
   /// **'Read the Hebrew again'**
-  String get stepMikra2;
+  String get stepMikrah2;
 
   /// No description provided for @stepTargum.
   ///
@@ -1338,7 +1338,7 @@ abstract class AppLocalizations {
   /// No description provided for @stepRepeatLast.
   ///
   /// In en, this message translates to:
-  /// **'End with Mikra: read the last verse once more'**
+  /// **'End with Mikrah: read the last verse once more'**
   String get stepRepeatLast;
 
   /// No description provided for @stepOf.
@@ -1575,11 +1575,11 @@ abstract class AppLocalizations {
   /// **'Helps with the meaning; it doesn’t take the place of the Targum.'**
   String get translationDisclaimer;
 
-  /// No description provided for @mikraLabel.
+  /// No description provided for @mikrahLabel.
   ///
   /// In en, this message translates to:
-  /// **'Mikra'**
-  String get mikraLabel;
+  /// **'Mikrah'**
+  String get mikrahLabel;
 
   /// No description provided for @targumLabel.
   ///
@@ -2424,7 +2424,7 @@ abstract class AppLocalizations {
   /// No description provided for @repeatLastVerse.
   ///
   /// In en, this message translates to:
-  /// **'End with Mikra'**
+  /// **'End with Mikrah'**
   String get repeatLastVerse;
 
   /// No description provided for @repeatLastVerseDesc.
@@ -3696,7 +3696,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbHonor.
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikra runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.'**
+  /// **'Shnayim Mikrah runs on the honor system. Log what you read, wherever you read it — a Chumash in shul counts just as much as this app.'**
   String get onbHonor;
 
   /// No description provided for @onbChangeAnytime.
@@ -3720,7 +3720,7 @@ abstract class AppLocalizations {
   /// No description provided for @guideWhatTitle.
   ///
   /// In en, this message translates to:
-  /// **'What is Shnayim Mikra?'**
+  /// **'What is Shnayim Mikrah?'**
   String get guideWhatTitle;
 
   /// Under the Talmud's words that open the guide, in Hebrew: where they are written.
@@ -3768,7 +3768,7 @@ abstract class AppLocalizations {
   /// Beside three marks for the three readings, at the top of the guide's How section: the text twice, then the Targum. No-break spaces keep each reading's number with its name.
   ///
   /// In en, this message translates to:
-  /// **'1 · Mikra  2 · Mikra  3 · Targum'**
+  /// **'1 · Mikrah  2 · Mikrah  3 · Targum'**
   String get guidePassesCaption;
 
   /// No description provided for @guideTargumTitle.
@@ -4914,13 +4914,13 @@ abstract class AppLocalizations {
   /// Said when choosing the Chabad haftarah custom turns repeatLastVerse off, since the reader hasn't set it themselves.
   ///
   /// In en, this message translates to:
-  /// **'“End with Mikra” is now off, following the Chabad custom.'**
+  /// **'“End with Mikrah” is now off, following the Chabad custom.'**
   String get repeatLastVerseFollowsChabad;
 
   /// Said when choosing another haftarah custom than Chabad turns repeatLastVerse back on.
   ///
   /// In en, this message translates to:
-  /// **'“End with Mikra” is on again.'**
+  /// **'“End with Mikrah” is on again.'**
   String get repeatLastVerseBackOn;
 
   /// What screen readers say for divineAdonai, which is written with a hyphen out of respect, and would be spelled out letter by letter as written.
@@ -5088,7 +5088,7 @@ abstract class AppLocalizations {
   /// No description provided for @onbRestore.
   ///
   /// In en, this message translates to:
-  /// **'I already use Shnayim Mikra'**
+  /// **'I already use Shnayim Mikrah'**
   String get onbRestore;
 
   /// No description provided for @onbRestoreTitle.
@@ -5151,17 +5151,17 @@ abstract class AppLocalizations {
   /// **'Signed in as {name}'**
   String signedInNow(String name);
 
-  /// A segment of the reader's pass track: the reading's number and what is read, e.g. "1 · Mikra", "3 · Targum".
+  /// A segment of the reader's pass track: the reading's number and what is read, e.g. "1 · Mikrah", "3 · Targum".
   ///
   /// In en, this message translates to:
   /// **'{n} · {name}'**
   String passTrackLabel(int n, String name);
 
-  /// The Hebrew text of the Torah, as a reading on the reader's pass track ("1 · Mikra").
+  /// The Hebrew text of the Torah, as a reading on the reader's pass track ("1 · Mikrah").
   ///
   /// In en, this message translates to:
-  /// **'Mikra'**
-  String get passTrackMikra;
+  /// **'Mikrah'**
+  String get passTrackMikrah;
 
   /// The reader's Next button on the last step of an aliyah.
   ///
@@ -5289,7 +5289,7 @@ abstract class AppLocalizations {
   /// **'read'**
   String get tabRead;
 
-  /// Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikra, Mikra again, Targum) are done.
+  /// Spoken after an aliyah tab's label in the reader: how many of its three readings (Mikrah, Mikrah again, Targum) are done.
   ///
   /// In en, this message translates to:
   /// **'{done} of 3 readings done'**
@@ -5652,7 +5652,7 @@ abstract class AppLocalizations {
   /// Under the guide's Using the app heading: one point to a line, each shown after a bullet. It quotes readFromBook, and names Today, Listen and grace days as the app does.
   ///
   /// In en, this message translates to:
-  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikra, Mikra again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
+  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy, share or ask about it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
   String get guideAppBody;
 
   /// In the account's deletion dialog: closes it and opens Your data, where a backup file can be exported.

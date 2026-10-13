@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/data/models/verse_ref.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/reader/verse_anchor.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/data/models/verse_ref.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/reader/verse_anchor.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../../helpers.dart';
 
@@ -92,15 +92,15 @@ void main() {
   // fill and padding) stays off once the mark goes, until focus moves.
   testWidgets('in focus mode too, nothing moves when the mark goes', (tester) async {
     await open(tester, '$_shlishi?verse=3:8', settings: const AppSettings(onboardingComplete: true, focusMode: true));
-    ScriptureVerse mikra(int verse) => tester.widget<ScriptureVerse>(
+    ScriptureVerse mikrah(int verse) => tester.widget<ScriptureVerse>(
           find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == VerseRef(3, verse) && !w.secondary).first,
         );
     // Focus mode highlights the verse's whole block.
     VerseGroup group(int verse) =>
         tester.widget<VerseGroup>(find.byWidgetPredicate((w) => w is VerseGroup && w.verse == VerseRef(3, verse)));
     final verse = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 8)).first;
-    expect(mikra(8).dimmed, isFalse);
-    expect(mikra(9).dimmed, isTrue, reason: 'focus mode reads around the verse opened at');
+    expect(mikrah(8).dimmed, isFalse);
+    expect(mikrah(9).dimmed, isTrue, reason: 'focus mode reads around the verse opened at');
     final before = tester.getRect(verse);
 
     // A tap on the text that lands on no verse (whose tap would move the
@@ -110,7 +110,7 @@ void main() {
     expect(marked(), findsNothing);
     expect(tester.getRect(verse), before);
     expect(group(8).highlighted, isFalse);
-    expect(mikra(9).dimmed, isTrue, reason: 'still focused');
+    expect(mikrah(9).dimmed, isTrue, reason: 'still focused');
 
     // Focus that moves shows its highlight as ever.
     final nine = find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == const VerseRef(3, 9)).first;
@@ -119,14 +119,14 @@ void main() {
     await tester.tap(nine);
     await tester.pump();
     expect(group(9).highlighted, isTrue);
-    expect(mikra(8).dimmed, isTrue);
+    expect(mikrah(8).dimmed, isTrue);
   });
 
   // ↓ and ↑ move focus mode's verse as a tap does, so they clear the mark:
   // left in place, the verse opened at would show dimmed on its wash.
   testWidgets('in focus mode, ↓ and ↑ move on from the verse and clear its mark', (tester) async {
     await open(tester, '$_shlishi?verse=3:8', settings: const AppSettings(onboardingComplete: true, focusMode: true));
-    ScriptureVerse mikra(int verse) => tester.widget<ScriptureVerse>(
+    ScriptureVerse mikrah(int verse) => tester.widget<ScriptureVerse>(
           find.byWidgetPredicate((w) => w is ScriptureVerse && w.verse.ref == VerseRef(3, verse) && !w.secondary).first,
         );
     // Focus mode highlights the verse's whole block.
@@ -138,13 +138,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(marked(), findsNothing);
     expect(group(9).highlighted, isTrue);
-    expect(mikra(8).dimmed, isTrue);
+    expect(mikrah(8).dimmed, isTrue);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pumpAndSettle();
     expect(marked(), findsNothing);
     expect(group(8).highlighted, isTrue, reason: 'focus has moved, so its own highlight shows');
-    expect(mikra(9).dimmed, isTrue);
+    expect(mikrah(9).dimmed, isTrue);
   });
 
   testWidgets('a scroll keeps the mark, the next tap clears it', (tester) async {

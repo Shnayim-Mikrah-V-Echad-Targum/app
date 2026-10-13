@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/android_night_mode.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/app/android_night_mode.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 
 import '../helpers.dart';
 
@@ -101,7 +101,7 @@ void main() {
   // The activity's half.
   test('MainActivity answers on the same channel, from Android 12', () {
     final activity =
-        File('android/app/src/main/kotlin/org/shnayimmikra/shnayim_mikra/MainActivity.kt').readAsStringSync();
+        File('android/app/src/main/kotlin/org/shnayimmikrah/shnayim_mikrah/MainActivity.kt').readAsStringSync();
     expect(activity, contains('MethodChannel(messenger, "${uiModeChannel.name}")'));
     expect(activity, contains('call.method == "setNightMode"'));
     for (final (mode, constant) in [('yes', 'MODE_NIGHT_YES'), ('no', 'MODE_NIGHT_NO'), ('auto', 'MODE_NIGHT_AUTO')]) {

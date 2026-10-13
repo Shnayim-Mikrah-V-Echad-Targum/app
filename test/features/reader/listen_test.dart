@@ -4,19 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/haftarah_screen.dart';
-import 'package:shnayim_mikra/features/reader/listen_along.dart';
-import 'package:shnayim_mikra/features/reader/listen_bar.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/l10n/app_localizations.dart';
-import 'package:shnayim_mikra/services/tts.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
+import 'package:shnayim_mikrah/features/reader/listen_along.dart';
+import 'package:shnayim_mikrah/features/reader/listen_bar.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/l10n/app_localizations.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
 
 import '../../helpers.dart';
 
@@ -140,7 +140,7 @@ void main() {
       expect(highlighted(tester), [2]);
       await press(tester, LogicalKeyboardKey.arrowLeft);
       expect(highlighted(tester), [1]);
-      // Each move reads the verse from its Mikra.
+      // Each move reads the verse from its Mikrah.
       expect(tts.last, startsWith('ויולד נח שלשה בנים'));
 
       await press(tester, LogicalKeyboardKey.keyL);
@@ -255,7 +255,7 @@ void main() {
       expect(marked(tester), isEmpty);
     });
 
-    testWidgets('with Listen along, reads Mikra, Mikra and Targum hands-free, and leaves Finish to the reader',
+    testWidgets('with Listen along, reads Mikrah, Mikrah and Targum hands-free, and leaves Finish to the reader',
         (tester) async {
       final tts = RecordingTts();
       final c = await open(tester, '/read/5787:2/0', tts,
@@ -294,8 +294,8 @@ void main() {
 
       // Each reading recorded as Next records it, and no more.
       final week = c.read(progressProvider).week('5787:2');
-      expect(week.isUnitDone(0, ReadingPass.mikra1), isTrue);
-      expect(week.isUnitDone(0, ReadingPass.mikra2), isTrue);
+      expect(week.isUnitDone(0, ReadingPass.mikrah1), isTrue);
+      expect(week.isUnitDone(0, ReadingPass.mikrah2), isTrue);
       expect(week.isUnitDone(0, ReadingPass.targum), isFalse);
     });
 
@@ -531,11 +531,11 @@ void main() {
 
   test("a queue's verses: where one starts, or the next after it", () {
     final queue = SpeechQueue(language: 'he-IL')
-      ..add(0, 'mikra 1')
+      ..add(0, 'mikrah 1')
       ..add(0, 'targum 1')
       ..add(1, '  ')
-      ..add(2, 'mikra 3');
-    expect(queue.items, ['mikra 1', 'targum 1', 'mikra 3']);
+      ..add(2, 'mikrah 3');
+    expect(queue.items, ['mikrah 1', 'targum 1', 'mikrah 3']);
     expect(queue.verses, [0, 0, 2]);
     expect(queue.startOf(0), 0);
     expect(queue.startOf(1), 2, reason: 'a verse with nothing to say starts at the next');

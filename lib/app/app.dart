@@ -27,14 +27,14 @@ import 'system_bars.dart';
 import 'window_title_bar.dart';
 import 'windows_back.dart';
 
-class ShnayimMikraApp extends ConsumerStatefulWidget {
-  const ShnayimMikraApp({super.key});
+class ShnayimMikrahApp extends ConsumerStatefulWidget {
+  const ShnayimMikrahApp({super.key});
 
   @override
-  ConsumerState<ShnayimMikraApp> createState() => _ShnayimMikraAppState();
+  ConsumerState<ShnayimMikrahApp> createState() => _ShnayimMikrahAppState();
 }
 
-class _ShnayimMikraAppState extends ConsumerState<ShnayimMikraApp> with WidgetsBindingObserver {
+class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with WidgetsBindingObserver {
   StreamSubscription<String>? _taps;
   PendingSaves? _pendingSaves;
   void Function()? _stopFollowingRestarts;

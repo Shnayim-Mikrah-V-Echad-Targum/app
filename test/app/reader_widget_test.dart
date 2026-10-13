@@ -4,24 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/app/providers.dart';
-import 'package:shnayim_mikra/app/router.dart';
-import 'package:shnayim_mikra/core/calendar/local_date.dart';
-import 'package:shnayim_mikra/core/text/hebrew_text.dart';
-import 'package:shnayim_mikra/features/progress/domain/progress_models.dart';
-import 'package:shnayim_mikra/features/reader/aliyah_ribbon.dart';
-import 'package:shnayim_mikra/features/reader/listen_bar.dart';
-import 'package:shnayim_mikra/features/reader/pass_track.dart';
-import 'package:shnayim_mikra/features/reader/reader_bottom_bar.dart';
-import 'package:shnayim_mikra/features/reader/reader_screen.dart';
-import 'package:shnayim_mikra/features/reader/scripture_text.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/features/settings/widgets/settings_widgets.dart';
-import 'package:shnayim_mikra/services/tts.dart';
-import 'package:shnayim_mikra/ui/theme/focus.dart';
-import 'package:shnayim_mikra/ui/theme/motion.dart';
-import 'package:shnayim_mikra/ui/widgets/lang.dart';
-import 'package:shnayim_mikra/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
+import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
+import 'package:shnayim_mikrah/features/reader/aliyah_ribbon.dart';
+import 'package:shnayim_mikrah/features/reader/listen_bar.dart';
+import 'package:shnayim_mikrah/features/reader/pass_track.dart';
+import 'package:shnayim_mikrah/features/reader/reader_bottom_bar.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
+import 'package:shnayim_mikrah/features/reader/scripture_text.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/features/settings/widgets/settings_widgets.dart';
+import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/ui/theme/focus.dart';
+import 'package:shnayim_mikrah/ui/theme/motion.dart';
+import 'package:shnayim_mikrah/ui/widgets/lang.dart';
+import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
 
 import '../helpers.dart';
 
@@ -129,8 +129,8 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
       final firstChunkIsWholeAliyah = method == ReadingMethod.aliyahByAliyah;
-      expect(week().isUnitDone(0, ReadingPass.mikra1), firstChunkIsWholeAliyah);
-      expect(week().isUnitDone(0, ReadingPass.mikra2), isFalse);
+      expect(week().isUnitDone(0, ReadingPass.mikrah1), firstChunkIsWholeAliyah);
+      expect(week().isUnitDone(0, ReadingPass.mikrah2), isFalse);
       expect(week().isUnitDone(0, ReadingPass.targum), isFalse);
       expect(week().positions[0], [firstChunkIsWholeAliyah ? 14 : 1, 0, 0]);
     });
@@ -163,8 +163,8 @@ void main() {
     final day = LocalDate(2026, 10, 12);
     final week = WeekProgress(weekId: '5787:2')
         .withAliyah(0, day)
-        .withUnit(2, ReadingPass.mikra1, day)
-        .withUnit(2, ReadingPass.mikra2, day);
+        .withUnit(2, ReadingPass.mikrah1, day)
+        .withUnit(2, ReadingPass.mikrah2, day);
     final c = await pumpApp(
       tester,
       settings: const AppSettings(onboardingComplete: true),
@@ -311,7 +311,7 @@ void main() {
     for (final a in [0, 1, 3, 4, 5]) {
       week = week.withAliyah(a, day);
     }
-    week = week.withUnit(2, ReadingPass.mikra1, day);
+    week = week.withUnit(2, ReadingPass.mikrah1, day);
     final c = await pumpApp(
       tester,
       settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true),
@@ -397,10 +397,10 @@ void main() {
     expect(find.bySemanticsLabel('Read the Targum\nReading 3 of 3'), findsOneWidget,
         reason: 'no separate step for the third reading');
     expect(find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names'), findsOneWidget);
-    expect(find.text('Mikra'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
+    expect(find.text('Mikrah'), findsOneWidget, reason: 'the Hebrew is labelled among the Targum');
     // Its block is ruled where the Hebrew begins, at the right, as every
     // scripture rule is in either language of the app.
-    final block = tester.widget<Container>(find.ancestor(of: find.text('Mikra'), matching: find.byType(Container)).first);
+    final block = tester.widget<Container>(find.ancestor(of: find.text('Mikrah'), matching: find.byType(Container)).first);
     final border = (block.decoration! as BoxDecoration).border! as Border;
     expect(border.right.width, 3);
     expect(border.left, BorderSide.none);
@@ -436,7 +436,7 @@ void main() {
     expect(track, findsOneWidget);
     final targumLabel = find.descendant(of: scroll, matching: find.text('Targum Onkelos'));
     expect(targumLabel, findsOneWidget);
-    final torah = find.descendant(of: scroll, matching: find.text('Mikra'));
+    final torah = find.descendant(of: scroll, matching: find.text('Mikrah'));
     expect(torah, findsOneWidget);
     final note = find.textContaining('Onkelos here gives mostly the Aramaic forms of the place names');
     expect(tester.getTopLeft(track).dy, lessThan(tester.getTopLeft(torah).dy));
@@ -1310,7 +1310,7 @@ void main() {
       // its second reading, from Genesis 6:9.
       final day = LocalDate(2026, 10, 12);
       final progress = ProgressState(weeks: {
-        '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikra1, day).withPosition(0, const [14, 0, 0]),
+        '5787:2': WeekProgress(weekId: '5787:2').withUnit(0, ReadingPass.mikrah1, day).withPosition(0, const [14, 0, 0]),
       });
       await open(
         tester,
@@ -1484,17 +1484,17 @@ void main() {
 
     testWidgets('the pass track checks the readings done and sets the one under way in bold', (tester) async {
       await open(tester, '/read/5787:2/0');
-      expect(find.text('1 · Mikra'), findsOneWidget);
-      expect(find.text('2 · Mikra'), findsOneWidget);
+      expect(find.text('1 · Mikrah'), findsOneWidget);
+      expect(find.text('2 · Mikrah'), findsOneWidget);
       expect(find.text('3 · Targum'), findsOneWidget);
-      expect(weight(tester, '1 · Mikra'), FontWeight.w700);
-      expect(trackIcon('1 · Mikra', Icons.check), findsNothing);
+      expect(weight(tester, '1 · Mikrah'), FontWeight.w700);
+      expect(trackIcon('1 · Mikrah', Icons.check), findsNothing);
 
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
-      expect(trackIcon('1 · Mikra', Icons.check), findsOneWidget);
-      expect(weight(tester, '1 · Mikra'), isNot(FontWeight.w700));
-      expect(weight(tester, '2 · Mikra'), FontWeight.w700);
+      expect(trackIcon('1 · Mikrah', Icons.check), findsOneWidget);
+      expect(weight(tester, '1 · Mikrah'), isNot(FontWeight.w700));
+      expect(weight(tester, '2 · Mikrah'), FontWeight.w700);
       expect(trackIcon('3 · Targum', Icons.check), findsNothing);
       // Nothing but the instruction comes between the track and the verse.
       expect(find.text('Chapter 6'), findsNothing);
@@ -1512,7 +1512,7 @@ void main() {
       // third time in Hebrew instead.
       await tester.tap(tab('Revi’i'));
       await tester.pumpAndSettle();
-      expect(find.text('3 · Mikra'), findsOneWidget);
+      expect(find.text('3 · Mikrah'), findsOneWidget);
       expect(find.text('3 · Rashi'), findsNothing);
     });
 

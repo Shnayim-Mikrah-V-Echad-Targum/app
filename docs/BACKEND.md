@@ -87,7 +87,7 @@ Two views the forum lists read, both `security_invoker`, so that every policy ap
    - **Confirm email:** off. The code the user types is itself the proof of ownership.
    - **Email OTP length:** 6. **Email OTP expiration:** 900 seconds.
 
-4. **Edit the email templates** under *Authentication → Emails → Templates*. Set both **Magic Link** and **Confirm signup** to the contents of `supabase/templates/magic_link.html`, with the subject *Your Shnayim Mikra sign-in code*.
+4. **Edit the email templates** under *Authentication → Emails → Templates*. Set both **Magic Link** and **Confirm signup** to the contents of `supabase/templates/magic_link.html`, with the subject *Your Shnayim Mikrah sign-in code*.
 
    The template must contain `{{ .Token }}`, because the app asks for the six-digit code and never opens a link. The default templates only contain a link, and with them nobody can sign in.
 

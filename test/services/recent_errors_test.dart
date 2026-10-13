@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/services/recent_errors.dart';
+import 'package:shnayim_mikrah/services/recent_errors.dart';
 
 /// [count] frames of a stack trace, "#0 frame0" and on.
 String _frames(int count, {String indent = ''}) => [for (var i = 0; i < count; i++) '$indent#$i frame$i'].join('\n');
@@ -31,7 +31,7 @@ void main() {
     expect(
       errors.report(version: '1.0.0 (12)').split('\n'),
       [
-        'Shnayim Mikra 1.0.0 (12) on android',
+        'Shnayim Mikrah 1.0.0 (12) on android',
         '',
         'Bad state: no element',
         'building TodayScreen',
@@ -41,7 +41,7 @@ void main() {
         for (var i = 0; i < 3; i++) '#$i frame$i',
       ],
     );
-    expect(RecentErrors().report(version: '').split('\n').first, 'Shnayim Mikra on android');
+    expect(RecentErrors().report(version: '').split('\n').first, 'Shnayim Mikrah on android');
   });
 
   test('keeps the lines a trace without its symbols begins with, which reading its frames needs', () {

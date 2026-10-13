@@ -1,5 +1,5 @@
-name: shnayim_mikra
-description: "Shnayim Mikra v’Echad Targum — the weekly parsha twice in Hebrew and once in Targum, with daily and weekly streaks, community forums and extensive accessibility options."
+name: shnayim_mikrah
+description: "Shnayim Mikrah v’Echad Targum — the weekly parsha twice in Hebrew and once in Targum, with daily and weekly streaks, community forums and extensive accessibility options."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -97,14 +97,14 @@ flutter_native_splash:
 # The Windows MSIX installer: build with `flutter build windows --release`,
 # then package with tool/windows/make_msix.sh (docs/RELEASE.md).
 msix_config:
-  # The app's name in each language, from windows/msix/Strings (Shnayim Mikra,
+  # The app's name in each language, from windows/msix/Strings (Shnayim Mikrah,
   # שניים מקרא), which tool/windows/make_msix.sh indexes.
   display_name: ms-resource:AppName
-  publisher_display_name: Shnayim Mikra
+  publisher_display_name: Shnayim Mikrah
   # The app id on every platform. The Microsoft Store assigns its own, passed
   # with --identity-name when packaging for it.
-  identity_name: org.shnayimmikra.app
-  output_name: ShnayimMikra
+  identity_name: org.shnayimmikrah.app
+  output_name: ShnayimMikrah
   # The rounded tile of app_icon.ico; make_icon.py --post writes it.
   logo_path: windows/msix/logo.png
   languages: en-us, he-il
@@ -131,7 +131,7 @@ flutter:
     - assets/branding/mark_128.png
     - assets/data/
     - assets/text/
-    - assets/text/mikra/
+    - assets/text/mikrah/
     - assets/text/onkelos/
     - assets/text/english/
     - assets/text/rashi/

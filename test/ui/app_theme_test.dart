@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/settings/app_settings.dart';
-import 'package:shnayim_mikra/ui/theme/app_theme.dart';
-import 'package:shnayim_mikra/ui/theme/palette.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/app_theme.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 
 import '../helpers.dart';
 
@@ -57,8 +57,8 @@ const _sefer = {
   'paper': 'FFFDF8/1C1915/FAF3E3/FFFFFF/000000',
   'hairline': 'D8CFBF/4A443A/CBB994/000000/FFFFFF',
   'goldLeaf': 'B38D3F/B8954B/A9853A/4F3500/FFD970',
-  'ringMikra1': '1D3F75/AFC6EE/25406C/0A2A5E/B5CEFF',
-  'ringMikra2': '55779F/7E9BC8/4F6B92/2F4F82/8FB0F0',
+  'ringMikrah1': '1D3F75/AFC6EE/25406C/0A2A5E/B5CEFF',
+  'ringMikrah2': '55779F/7E9BC8/4F6B92/2F4F82/8FB0F0',
   'ringTargum': '946C1E/C9A458/8A651C/4F3500/FFD970',
   'ringTrack': 'E8E1D3/36312A/E0D3B4/E0E0E0/333333',
   'restWash': 'F2E7CD/4A3A16/EADBB4/FFF0C2/3D2E00',
@@ -125,8 +125,8 @@ Map<String, Color> _seferTokens(SeferColors c) => {
       'paper': c.paper,
       'hairline': c.hairline,
       'goldLeaf': c.goldLeaf,
-      'ringMikra1': c.ringMikra1,
-      'ringMikra2': c.ringMikra2,
+      'ringMikrah1': c.ringMikrah1,
+      'ringMikrah2': c.ringMikrah2,
       'ringTargum': c.ringTargum,
       'ringTrack': c.ringTrack,
       'restWash': c.restWash,

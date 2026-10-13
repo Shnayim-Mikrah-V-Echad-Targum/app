@@ -616,7 +616,7 @@ class VerseQuote extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final scheme = Theme.of(context).colorScheme;
     // A verse as search sets one (§6.25), in the scripture's font.
-    final style = ScriptureStyles(context, s).style(ScriptureKind.mikra).copyWith(fontSize: 20, height: 1.7);
+    final style = ScriptureStyles(context, s).style(ScriptureKind.mikrah).copyWith(fontSize: 20, height: 1.7);
     final joined = TextSpan(text: keepLinesSound(hebrew));
     var measured = DefaultTextStyle.of(context).style.merge(style);
     if (MediaQuery.boldTextOf(context)) measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));

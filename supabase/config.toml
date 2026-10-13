@@ -1,7 +1,7 @@
 # Supabase CLI configuration for local development (`supabase start`).
 # For a hosted project, apply the same settings in the dashboard — see
 # docs/BACKEND.md.
-project_id = "shnayim-mikra"
+project_id = "shnayim-mikrah"
 
 [api]
 enabled = true
@@ -40,11 +40,11 @@ otp_expiry = 900
 max_frequency = "60s"
 
 [auth.email.template.magic_link]
-subject = "Your Shnayim Mikra sign-in code"
+subject = "Your Shnayim Mikrah sign-in code"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.confirmation]
-subject = "Your Shnayim Mikra sign-in code"
+subject = "Your Shnayim Mikrah sign-in code"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.rate_limit]

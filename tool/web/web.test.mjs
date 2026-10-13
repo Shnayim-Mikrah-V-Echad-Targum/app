@@ -376,7 +376,7 @@ async function bootstrap({
 describe('the bootstrap', () => {
   const loaded = [
     'https://example.org/app/canvaskit/chromium/canvaskit.wasm',
-    'https://example.org/app/assets/assets/text/mikra/genesis.json#fragment',
+    'https://example.org/app/assets/assets/text/mikrah/genesis.json#fragment',
     'https://example.org/app/assets/assets/fonts/NotoSans-Regular.ttf',
     'https://example.org/app/main.dart.js',
     'https://fonts.gstatic.com/s/notocoloremoji/v1/a.woff2',
@@ -398,7 +398,7 @@ describe('the bootstrap', () => {
         payload: {
           urlsToCache: [
             'https://example.org/app/canvaskit/chromium/canvaskit.wasm',
-            'https://example.org/app/assets/assets/text/mikra/genesis.json',
+            'https://example.org/app/assets/assets/text/mikrah/genesis.json',
             'https://example.org/app/assets/assets/fonts/NotoSans-Regular.ttf',
           ],
         },
@@ -661,7 +661,7 @@ describe("the service worker's update", () => {
   const older = {
     'canvaskit-old000000000': ['https://example.org/canvaskit/canvaskit.js', 'https://example.org/canvaskit/canvaskit.wasm'],
     // The books' cache, as it was named before it had a version.
-    content: ['https://example.org/assets/assets/text/mikra/genesis.json'],
+    content: ['https://example.org/assets/assets/text/mikrah/genesis.json'],
     'content-old000000000': ['https://example.org/assets/assets/fonts/optional/Lexend-Regular.ttf'],
     pages: ['https://example.org/legal/privacy.html'],
     'workbox-precache-v2-https://example.org/': ['https://example.org/index.html'],
@@ -733,13 +733,13 @@ describe('the build', () => {
   }
 
   it("names the caches after the engine and the texts", () => {
-    const texts = { 'mikra/genesis.json': '[1]', 'haftarot.json': '{}' };
+    const texts = { 'mikrah/genesis.json': '[1]', 'haftarot.json': '{}' };
     const names = cacheNames(build(texts));
     assert.equal(names.engine, 'canvaskit-0123456789ab');
     assert.match(names.content, /^content-[0-9a-f]{12}$/);
     assert.deepEqual(cacheNames(build(texts)), names, 'the same texts, the same name');
-    assert.notEqual(cacheNames(build({ ...texts, 'mikra/genesis.json': '[2]' })).content, names.content);
-    assert.notEqual(cacheNames(build({ ...texts, 'mikra/exodus.json': '[]' })).content, names.content);
+    assert.notEqual(cacheNames(build({ ...texts, 'mikrah/genesis.json': '[2]' })).content, names.content);
+    assert.notEqual(cacheNames(build({ ...texts, 'mikrah/exodus.json': '[]' })).content, names.content);
   });
 
   it('refuses a folder that is not a build', () => {

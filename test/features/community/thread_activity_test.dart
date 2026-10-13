@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shnayim_mikra/features/community/data/demo_forum_repository.dart';
-import 'package:shnayim_mikra/features/community/data/models.dart';
+import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dart';
+import 'package:shnayim_mikrah/features/community/data/models.dart';
 
 /// A forum's discussions listed with an excerpt and their thanks, and each
 /// forum with how busy it is (supabase/migrations/20261011000000_thread_stats.sql),
