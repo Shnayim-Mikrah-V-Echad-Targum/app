@@ -602,6 +602,46 @@ void main() {
     });
   }
 
+  for (final why in [null, 'לא ניתן להתחבר לשרת.']) {
+    testWidgets('he: a leading widget stays by a long name whose Unblock goes under it, '
+        '${why == null ? 'with nothing under them' : 'over why it failed'}', (tester) async {
+      // A 360 dp phone's sheet, and a name too long to share its line with
+      // the Hebrew Unblock, in the test font.
+      const name = 'אברהם בן שרה מירושלים';
+      await pumpThemed(
+        tester,
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 328,
+            child: PaperRow(
+              leading: const SizedBox.square(key: Key('disc'), dimension: 32),
+              title: name,
+              subtitle: why,
+              trailing: TextButton(onPressed: () {}, child: const Text('ביטול חסימה')),
+            ),
+          ),
+        ),
+        hebrew: true,
+      );
+      final title = tester.renderObject<RenderParagraph>(find.text(name));
+      final button = tester.getRect(find.byType(TextButton));
+      expect(button.top, greaterThanOrEqualTo(tester.getRect(find.text(name)).bottom - 0.5), reason: 'wrapped under it');
+      // Centred on the name's first line, not on the name and the button.
+      final first = title
+          .getBoxesForSelection(const TextSelection(baseOffset: 0, extentOffset: 1), boxHeightStyle: ui.BoxHeightStyle.max)
+          .first;
+      final middle = title.localToGlobal(Offset(0, (first.top + first.bottom) / 2)).dy;
+      expect(tester.getCenter(find.byKey(const Key('disc'))).dy, moreOrLessEquals(middle, epsilon: 1));
+      // At the start, as the name starts.
+      expect(tester.getRect(find.byKey(const Key('disc'))).right, moreOrLessEquals(tester.getRect(find.byType(PaperRow)).right - 16));
+      expect(button.right, moreOrLessEquals(tester.getRect(find.text(name)).right, epsilon: 0.5), reason: 'under it, at its start');
+      if (why != null) {
+        expect(tester.getRect(find.text(why)).top, greaterThanOrEqualTo(button.bottom - 0.5));
+      }
+    });
+  }
+
   testWidgets('the help icon keeps its question mark the right way round in Hebrew', (tester) async {
     await pumpThemed(tester, const PaperRow(icon: Icons.help_outline, title: 'שאלות ותשובות'), hebrew: true);
     final icon = find.byIcon(Icons.help_outline);

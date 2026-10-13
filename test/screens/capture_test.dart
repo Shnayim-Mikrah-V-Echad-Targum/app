@@ -2009,6 +2009,8 @@ const _hugeTallScreens = {
   // A verse quoted above a question's message, and in the question posted.
   'compose_verse',
   'thread_verse',
+  // A moderator's card: the tag beside the initial, its words whole.
+  'account_member',
 };
 const _hugeWideScreens = {'parsha', 'settings'};
 

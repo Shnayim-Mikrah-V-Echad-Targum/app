@@ -1687,10 +1687,6 @@
     "description": "The Language row's value in Settings when the app follows the device's language."
   },
   "dataGroupBackup": "Backup & restore",
-  "resetProgressDesc": "This can’t be undone.",
-  "@resetProgressDesc": {
-    "description": "Under resetProgress in Your data."
-  },
   "aboutTitle": "About",
   "versionLabel": "Version {version}",
   "@versionLabel": {
@@ -1966,7 +1962,7 @@
   "deletePostConfirm": "Delete this post?",
   "cantBeUndone": "This can’t be undone.",
   "@cantBeUndone": {
-    "description": "The message of a dialog that confirms what can't be undone, such as deleting a post, under its question."
+    "description": "Said of what can't be undone: the message of a dialog that confirms it, such as deleting a post, under its question, and the line under Reset all progress in Your data."
   },
   "postDeleted": "Post deleted.",
   "posted": "Posted.",

@@ -480,7 +480,7 @@ class DataSettingsScreen extends ConsumerWidget {
           children: [
             PaperRow(
               title: l.resetProgress,
-              subtitle: l.resetProgressDesc,
+              subtitle: l.cantBeUndone,
               destructive: true,
               chevron: false,
               onTap: reset,

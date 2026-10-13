@@ -3435,12 +3435,6 @@ abstract class AppLocalizations {
   /// **'Backup & restore'**
   String get dataGroupBackup;
 
-  /// Under resetProgress in Your data.
-  ///
-  /// In en, this message translates to:
-  /// **'This can’t be undone.'**
-  String get resetProgressDesc;
-
   /// No description provided for @aboutTitle.
   ///
   /// In en, this message translates to:
@@ -4095,7 +4089,7 @@ abstract class AppLocalizations {
   /// **'Delete this post?'**
   String get deletePostConfirm;
 
-  /// The message of a dialog that confirms what can't be undone, such as deleting a post, under its question.
+  /// Said of what can't be undone: the message of a dialog that confirms it, such as deleting a post, under its question, and the line under Reset all progress in Your data.
   ///
   /// In en, this message translates to:
   /// **'This can’t be undone.'**

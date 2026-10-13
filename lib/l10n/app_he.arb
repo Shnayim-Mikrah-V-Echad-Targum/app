@@ -556,7 +556,6 @@
   "languageHebrew": "עברית",
   "languageDevice": "לפי המכשיר",
   "dataGroupBackup": "גיבוי ושחזור",
-  "resetProgressDesc": "אי אפשר לבטל פעולה זו.",
   "aboutTitle": "אודות",
   "versionLabel": "גרסה {version}",
   "sourcesTitle": "טקסטים ומקורות",

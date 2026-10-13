@@ -566,7 +566,6 @@ HE = {
   "languageSystem": "שפת המכשיר",
   "languageDevice": "לפי המכשיר",
   "dataGroupBackup": "גיבוי ושחזור",
-  "resetProgressDesc": "אי אפשר לבטל פעולה זו.",
   "languageEnglish": "English",
   "languageHebrew": "עברית",
   "aboutTitle": "אודות",

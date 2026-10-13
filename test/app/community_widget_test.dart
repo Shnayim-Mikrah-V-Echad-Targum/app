@@ -3775,6 +3775,14 @@ void main() {
       expect(forums.calls, 1);
       expect(find.descendant(of: sheet, matching: find.textContaining('connection')), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
+      // In full, however many lines it takes: here, in the test font's wide
+      // letters, more than the two a row's subtitle is otherwise cut at.
+      final why = tester.renderObject<RenderParagraph>(
+        find.descendant(of: find.descendant(of: sheet, matching: find.textContaining('connection')), matching: find.byType(RichText)).first,
+      );
+      final lines = why.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: why.text.toPlainText().length));
+      expect({for (final box in lines) box.top.round()}.length, greaterThan(2));
+      expect(why.didExceedMaxLines, isFalse);
     });
 
     for (final announces in [true, false]) {

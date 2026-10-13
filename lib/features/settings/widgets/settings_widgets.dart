@@ -550,6 +550,11 @@ class _RadioRowState<T> extends State<_RadioRow<T>> {
 /// A slider with a visible, spoken value and +/- buttons for users who
 /// can't drag precisely. Assistive technology reads the slider by its
 /// setting and value ("Reading size, 100%"), and each button by what it does.
+///
+/// Its value ends the title's line, or goes under the title where the two
+/// don't fit side by side (§6.8): decided alike for every slider of a
+/// [group], and whatever the value is, so that none of them lays out apart
+/// from the rest, nor changes its layout as its value moves.
 class LabeledSlider extends StatelessWidget {
   const LabeledSlider({
     super.key,
@@ -560,9 +565,14 @@ class LabeledSlider extends StatelessWidget {
     required this.step,
     required this.onChanged,
     required this.format,
+    this.group = const [],
   });
 
   final String title;
+
+  /// The titles of the sliders shown with this one, as on the same paper,
+  /// which set their values beside their titles or under them alike.
+  final List<String> group;
   final double value;
   final double min;
   final double max;
@@ -586,7 +596,14 @@ class LabeledSlider extends StatelessWidget {
         children: [
           // The slider says all of this itself.
           ExcludeSemantics(
-            child: _SliderHead(title: title, value: format(value), widest: [format(min), format(max)]),
+            child: _SliderHead(
+              title: title,
+              value: format(value),
+              // Every value it may show: the widest needn't be at an end of
+              // the range ("Normal" at the speech rate's middle).
+              values: [for (var i = 0; i <= divisions; i++) format(snap(min + i * step))],
+              group: group,
+            ),
           ),
           Row(
             children: [
@@ -626,18 +643,23 @@ class LabeledSlider extends StatelessWidget {
 }
 
 /// A [LabeledSlider]'s title with its value at the end of the line, or,
-/// where a word of the title would have to be set smaller to fit beside the
-/// value (large text on a phone), the value under the title: the title is
-/// never squeezed, as a stacked [PaperRow]'s isn't.
+/// where the title, whole on one line, wouldn't fit beside the value at its
+/// size (large text on a phone), the value under the title: the title is
+/// never squeezed, as a stacked [PaperRow]'s isn't, and its words stay
+/// whole. The title of each slider of its [group] is held to the same, so
+/// that they all decide alike; and so is the widest of its [values], so that
+/// the head keeps its layout as the value moves.
 class _SliderHead extends StatelessWidget {
-  const _SliderHead({required this.title, required this.value, required this.widest});
+  const _SliderHead({required this.title, required this.value, required this.values, required this.group});
 
   final String title;
   final String value;
 
-  /// The values that may be widest, the least and the greatest, so that the
-  /// head keeps its layout as the value changes.
-  final List<String> widest;
+  /// Every value the slider may show.
+  final List<String> values;
+
+  /// The titles of the sliders shown with it.
+  final List<String> group;
 
   /// What the value is allowed at least, as wide as a percentage: so that
   /// the sliders of a group, whose values are as wide or narrower, decide
@@ -654,22 +676,24 @@ class _SliderHead extends StatelessWidget {
     final valueStyle = textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
     final scaler = MediaQuery.textScalerOf(context);
     final direction = Directionality.of(context);
+    // Measured as drawn: bold where the platform asks for bold text.
+    final bold = MediaQuery.boldTextOf(context);
+    double width(String text, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: bold ? style?.copyWith(fontWeight: FontWeight.bold) : style),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    final valueWidth = {...values, _allowance}.map((v) => width(v, valueStyle)).reduce(math.max);
+    final titleWidth = {title, ...group}.map((t) => width(t, titleStyle)).reduce(math.max);
     return LayoutBuilder(builder: (context, constraints) {
-      // Measured as drawn: bold where the platform asks for bold text.
-      final drawn = MediaQuery.boldTextOf(context) ? valueStyle?.copyWith(fontWeight: FontWeight.bold) : valueStyle;
-      var valueWidth = 0.0;
-      for (final text in {value, ...widest, _allowance}) {
-        final painter = TextPainter(
-          text: TextSpan(text: text, style: drawn),
-          textDirection: direction,
-          textScaler: scaler,
-          maxLines: 1,
-        )..layout();
-        valueWidth = math.max(valueWidth, painter.width);
-        painter.dispose();
-      }
-      final room = constraints.maxWidth - valueWidth - _gap;
-      final beside = room > 0 && WholeWords.scaleIn(context, title, width: room, style: titleStyle) >= 1;
+      final beside = titleWidth + _gap + valueWidth <= constraints.maxWidth;
       final titleText = WholeWords(title, style: titleStyle, textAlign: TextAlign.start);
       final valueText = Text(value, style: valueStyle);
       if (beside) {

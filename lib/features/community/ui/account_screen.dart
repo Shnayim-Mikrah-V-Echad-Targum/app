@@ -1139,6 +1139,8 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> with
                               leading: InitialDisc(name),
                               title: _shown(name),
                               subtitle: _errors[id],
+                              // Why, in full, however narrow the phone.
+                              subtitleMaxLines: null,
                               subtitleStyle: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
                               // Said as it appears where the platform takes
                               // no announcements (see _unblock).

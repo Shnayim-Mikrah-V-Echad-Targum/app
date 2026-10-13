@@ -884,11 +884,19 @@ class PostCard extends ConsumerWidget {
     ];
 
     // The header's first line is the name's: the initial is centred on it,
-    // and the menu on the 48 dp row it shares, however large the text.
+    // and the menu on the 48 dp row it shares, however large the text. A tag
+    // beside the name may stand taller than the name's line (in high
+    // contrast, its outline outside its padding), and the line, which centres
+    // the name, is then as tall as the tag.
     final scaler = MediaQuery.textScalerOf(context);
     final nameStyle = text.titleSmall!;
+    final tagStyle = text.labelSmall!;
     final nameLine = scaler.scale(nameStyle.fontSize!) * (nameStyle.height ?? 1.4);
-    final firstLine = max(kMinInteractiveDimension / 2, nameLine / 2);
+    final tagLine = tag == null
+        ? 0.0
+        : scaler.scale(tagStyle.fontSize!) * (tagStyle.height ?? 1.4) + 2 + (SeferColors.of(context).isHighContrast ? 4 : 0);
+    final bylineLine = max(nameLine, tagLine);
+    final firstLine = max(kMinInteractiveDimension / 2, bylineLine / 2);
     final discTop = firstLine - _discSize / 2;
 
     final header = Row(
@@ -898,7 +906,7 @@ class PostCard extends ConsumerWidget {
         const Gap(Space.md),
         Expanded(
           child: Padding(
-            padding: EdgeInsets.only(top: firstLine - nameLine / 2),
+            padding: EdgeInsets.only(top: firstLine - bylineLine / 2),
             child: Semantics(
               label: '${l.postedBy(tag == null ? name : '$name, $tag', when)}${edited ? ', ${l.edited}' : ''}',
               excludeSemantics: true,

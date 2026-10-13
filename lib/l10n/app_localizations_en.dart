@@ -2056,9 +2056,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataGroupBackup => 'Backup & restore';
 
   @override
-  String get resetProgressDesc => 'This can’t be undone.';
-
-  @override
   String get aboutTitle => 'About';
 
   @override

@@ -117,7 +117,7 @@ New and changed files:
 2. **Gold ink (`secondary`)** is the rubric colour: eyebrows, verse numbers, chapter heads, petuchah/setumah marks, the Targum pass, overdue state and rest days. Gold is never used for buttons.
 3. **goldLeaf** is decorative only: frame rules, lozenges, the Targum rule in full-text mode. It never carries information. In high contrast it becomes solid `secondary`, or is removed where noted.
 4. **Hyssop green (`tertiary`)** is only for grace.
-5. **Missed** is always `neutral` plus a dash glyph. Never red. `error` is only for form validation and destructive confirmations.
+5. **Missed** is always `neutral` plus a dash glyph. Never red. `error` is only for validation and destruction: form validation, destructive confirmations, and a deletion's row or Text button (§6.3, §6.5).
 6. **No Material tint anywhere:**
    - `surfaceTint: Colors.transparent`;
    - every component theme sets `surfaceTintColor: Colors.transparent`;
@@ -534,7 +534,7 @@ Controls pick the ring as they build, but Material rebuilds them only when their
 Navigation destinations, menu items and list tiles have no shape a ring can go on, and Material marks their focus only with a wash in onSurface, under 3:1 (on the bar, darker than the selected indicator, so focus read as selection). Each draws the ring instead, and clears the wash. The rings below ask the focus manager for the highlight mode, as `SeferInkWell` does, since a popup menu keeps the theme it was opened with.
 - **Bar and rail** (`IndicatorFocusRing`, around each destination's icon and selected icon): `FocusRingBorder`'s gap and ring around the indicator, 64×32 radius 16 on the bar and 56×32 radius 12 on the rail, centred on the icon, whether or not the destination is selected. Nothing between the icon and the bar clips it, nor the edges of the rail as it scrolls in a short window: each destination has room above its indicator for the ring (§6.10).
 - **Popup menu items** (`SeferMenuItem`, a `PopupMenuItem` whose content is a `MenuItemFocusRing`): a 3 px ring in focus inside the item, 4 in from its edges, radius 8 (the menu's own edges are near). The content is laid out as Material's (12 in, centred in at least 48), so the item has no padding of its own, and kept 10 clear of the item's top and bottom, so that a label set on two lines by large text clears the ring.
-- **List tiles** (`TileFocusRing`, around a ListTile or CheckboxListTile): a 3 px ring in focus, radius 8, 4 in from the tile's edges as a menu item's, clear of the edges (and the high-contrast outline) of a sheet the tile spans. A tile with no content padding, in a dialog, has its text and icons at its sides, so its ring stands 4 out from them instead, as high as the tile (`outside: true`), within the padding of a dialog that scrolls with it (`AlertDialog(scrollable: true)`). The tiles that still show the wash are those of the date sheet (`read_date_sheet.dart`), which later become PaperRows, and the haftarah page's ExpansionTile.
+- **List tiles** (`TileFocusRing`, around a ListTile or CheckboxListTile): a 3 px ring in focus, radius 8, 4 in from the tile's edges as a menu item's, clear of the edges (and the high-contrast outline) of a sheet the tile spans. A tile with no content padding, in a dialog, has its text and icons at its sides, so its ring stands 4 out from them instead, as high as the tile (`outside: true`), within the padding of a dialog that scrolls with it (`AlertDialog(scrollable: true)`). The tiles that still show the wash are those of the date sheet (`read_date_sheet.dart`), which later become PaperRows, and the haftarah page's ExpansionTile. The check-in's and the Chumash reading's sheets are ringed tiles until they too become paper rows (§6.19).
 
 Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7). The ring appears instantly.
 
@@ -632,7 +632,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 **Slider**
 - Active track primary, inactive outline (a boundary, at 3:1 or 4.5:1 in high contrast, so the whole range shows), the inactive part 2 high and the active part 6 (`SliderTrack`, app_theme.dart), so it reads apart from the inactive part by its weight, not only its colour: in high contrast primary and outline are barely apart (about 1.5:1); round thumb primary 20 (`RoundSliderThumbShape(enabledThumbRadius: 10)`). Every shape is named in the theme, so the deprecated `year2023` flag is left unset and neither Material slider generation shows through.
 - `tickMarkShape: SliderTickMarkShape.noTickMark`.
-- Value at the end in labelLarge with tabular figures, 12 clear of the title; −/+ IconButtons 48. Where a word of the title wouldn't fit beside the value at its size (large text on a phone, the value allowed at least a percentage's width), the value goes under the title rather than either being squeezed, and the title's words stay whole.
+- Value at the end in labelLarge with tabular figures, 12 clear of the title; −/+ IconButtons 48. Where the title, whole on one line, wouldn't fit beside the value at its size (large text on a phone), the value goes under the title rather than either being squeezed, and the title's words stay whole. The value is allowed as much as the widest it may show, measured at every step (the speech rate's widest, "Normal", is mid-range), and at least a percentage's width, so that none changes its layout as its value moves; and the sliders of one paper (Display's size and spacing) decide alike, by the longest of their titles (`LabeledSlider.group`).
 
 **Scrollbar**
 - The thumb is outline, a boundary as the slider's track is, and onSurfaceVariant under the pointer or while dragged, on every platform (`scrollbarTheme`). It is named because Material's own thumb on Android is the theme's highlight colour made opaque, which here would be the press wash's ink (§6.5) in full.
@@ -808,7 +808,7 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
 **Bottom sheet**
 - Background paper; top radius 20; `showDragHandle: true` (36×4, in full outline: the handle is also a dismiss button, so it is held to a control's 3:1).
 - Title titleLarge serif (`SheetTitle`), its lines balanced where it wraps, so that no word stands alone on the last; padding 24 (16 under 360); max width 640, centred.
-- Rows: on PaperGroups (§6.3) within the same padding (`sheetPadding`), never bare list tiles, so that from sheet to sheet the paper's edge is on the title's, the icons (or a member's initial disc, or a radio) 16 in from it and the text 54 in, and a row's focus is a ring (§6.1): the verse's actions (§6.27), the choice sheets and the language's (§9 Settings), onboarding's restore sheet and the blocked members (§9). A row that does something in place has no chevron; one that leads to a page has one.
+- Rows: on PaperGroups (§6.3) within the same padding (`sheetPadding`), never bare list tiles, so that from sheet to sheet the paper's edge is on the title's, the icons (or a member's initial disc, or a radio) 16 in from it and the text 54 in, and a row's focus is a ring (§6.1): the verse's actions (§6.27), the choice sheets and the language's (§9 Settings), onboarding's restore sheet and the blocked members (§9). A row that does something in place has no chevron; one that leads to a page has one. Three sheets still set bare tiles across the sheet, ringed in focus (`TileFocusRing`, §6.1), and are to become paper checkbox and radio rows in their turn: the after-Shabbat check-in's aliyot (`CheckInSheet`, check_in.dart), the reading from a Chumash (`_BookSheet`, today_screen.dart), each a CheckboxListTile, and the date sheet (`read_date_sheet.dart`).
 
 **Dialog**
 - Background paper, radius 16, padding 24.
@@ -849,13 +849,13 @@ It sits in the scaffold's bottom slot, so status messages rise above it, and run
   - tapping it opens a sheet with the full explanation (how to sign in to try it only to a reader signed out);
   - its tooltip, "About the demo", says what it does, to screen readers too ("Demo, About the demo, button"), so it isn't taken for a switch to a demo.
 
-**Tags** (`SeferTag`, lib/ui/widgets/sefer_tag.dart): a word that labels what stands beside it, never a control, so it has no ink, no focus and no button's shape: labelSmall in onSecondaryContainer on secondaryContainer, radius 6, padding 6/1, with a 2 px outline outside it in high contrast only, where the pale fill alone barely shows; with an icon, it leads at 14 in onSecondaryContainer, 4 before the word. It marks the member who began a discussion on their posts (§6.21), a source's license (Sources) and a moderator on the account card (Account). The Demo tag, which opens an explanation, is a button instead (`DemoTag`, above).
+**Tags** (`SeferTag`, lib/ui/widgets/sefer_tag.dart): a word that labels what stands beside it, never a control, so it has no ink, no focus and no button's shape: labelSmall in onSecondaryContainer on secondaryContainer, radius 6, padding 6/1, with a 2 px outline outside it in high contrast only, where the pale fill alone barely shows; with an icon, it leads at 14 in onSecondaryContainer, 4 before the word and level with its first line. Its words stay whole (`WholeWords`, §4, no smaller than 12): "Moderator" beside the account card's initial, at 200% on a 360 dp phone, is set a little smaller rather than broken. It marks the member who began a discussion on their posts (§6.21), a source's license (Sources) and a moderator on the account card (Account). The Demo tag, which opens an explanation, is a button instead (`DemoTag`, above).
 
 ### 6.21 Forum posts as "letters" (thread_screen.dart)
 
 - No card per post. Posts are separated by full-width 1 px hairlines (2 px outline in high contrast), the first under the thread's title. About 20 of air above the initial and below the last line: 12 and 6 of padding, plus what the header's and footer's 48 dp rows leave around their text.
 - **Header row:**
-  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty), centred on the name's first line however large the text;
+  - 32 px initial disc in secondaryContainer, initial in EBG 600 16 onSecondaryContainer (`InitialDisc`, excluded from semantics; a person when the name is empty), centred on the name's first line however large the text (a line as tall as the tag beside the name, where that stands taller, as its high-contrast outline does);
   - 12 gap, then the author in titleSmall in its OWN Text with `textDirection: autoDirection(name)`;
   - on the posts of the member who began the thread, a tag (`SeferTag`, §6.20): "Question" on the post that asked a question, "Author" on the asker's later posts and on the posts of whoever began any other discussion, none in a weekly thread;
   - then " · " and the relative time in bodySmall onSurfaceVariant in a separate Text, with the full date in a tooltip; when the three don't fit on one line (enlarged text, a long name) the time goes under the name, without the separator;
@@ -1426,7 +1426,7 @@ In order:
 
 **Your data**
 - Group 1, "Backup & restore": a "Cloud backup" row (cloud_outlined, chevron) that opens the account page, then Export (`ios_share_outlined`), Import (`download_outlined`) and "Paste backup text" (`content_paste_outlined`), which open dialogs and have no chevron. The descriptions of Cloud backup and Export, which say what each keeps, are never cut short (`subtitleMaxLines: null`): Export's takes three lines on a 360 dp phone.
-- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and "This can’t be undone." under it. The confirm dialog uses the destructive Filled button.
+- Group 2, apart: "Reset all progress" in error-coloured text with no icon tile, and `cantBeUndone` ("This can’t be undone.", the sentence a confirmation of what can't be undone says, §6.5) under it. The confirm dialog uses the destructive Filled button.
 
 ### Onboarding (onboarding_screen.dart; phone_welcome, he_welcome, dark_welcome, desktop_welcome)
 
@@ -1446,7 +1446,7 @@ In order:
 - Then, 16 below, the disclaimer in bodySmall onSurfaceVariant.
 - As the app opens on it, it enters once (§8, Welcome entrance): the frame and the title rise into place, the divider draws outward, then come the English name and the body, and last the way on and the disclaimer, all within 900 ms. It is whole from its first frame with Reduce Motion, and tappable and heard from its first frame either way.
 
-**Steps 2–4**
+**The three steps** (after the welcome)
 - At the top, 16 below the app bar (clear of its rule): three 12 px lozenges, one for each step (the welcome is none), 12 apart and centred: filled up to the current step, outlined after it, in primary (onSurface in high contrast), hidden from screen readers. The app bar's title says the same in words ("Step 1 of 3"), so that the marks agree with it: one of three filled on the first step.
 - 24 below, the question in headlineSmall, a level-2 heading (`ChoiceGroup(prominent: true)`).
 - Options as paper radio cards: min 72 high, radius 12, 8 apart; selected = 2 px primary border plus primaryContainer fill, unselected = paper within a 1 px outline (3 px and 2 px in high contrast), with RadioGroup semantics and arrow keys. A focused card takes the focus ring with its gap (§6.1), clear of its own border.

@@ -2055,9 +2055,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get dataGroupBackup => 'גיבוי ושחזור';
 
   @override
-  String get resetProgressDesc => 'אי אפשר לבטל פעולה זו.';
-
-  @override
   String get aboutTitle => 'אודות';
 
   @override
