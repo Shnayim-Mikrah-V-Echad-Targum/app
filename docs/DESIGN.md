@@ -93,6 +93,8 @@ A planned day counts if any of these is true:
 
 Rest days and quiet days are skipped entirely. They neither count nor break the streak.
 
+Shabbat and Yom Tov are never planned days, and a day of rest is never judged. A week with no reading day before its parsha is read (Bereshit on the Shabbat straight after a Friday Simchat Torah, outside Israel) is planned for Shabbat morning, from a printed Chumash, and judged by its completion alone. Where the six days before the reading hold no reading day but the week began earlier (Chol HaMoed kept free when Israel reads Shemini on the Shabbat straight after Pesach), the whole week is planned, from the day after the previous reading.
+
 ### Parsha streak (weekly)
 A portion can end in one of these states:
 

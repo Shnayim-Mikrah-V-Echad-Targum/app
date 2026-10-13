@@ -230,6 +230,9 @@ class StreakEngine {
         final day = allDays[dayIndex].$2;
         final d = day.date;
         if (d < joinDate || d > today) continue;
+        // A day of rest is never judged (DESIGN.md §2), whatever the plan
+        // says.
+        if (JewishHolidays.isRestDay(d, israel: planner.oneDayYomTov)) continue;
         final next = dayIndex + 1 < allDays.length ? allDays[dayIndex + 1] : null;
         DayStatus status;
         if (paused(d)) {
@@ -262,8 +265,11 @@ class StreakEngine {
       final lateDeadline = lateDeadlineOf(plan.week);
       WeekStatus status;
       final starterWeek = plan.week.start < joinDate;
-      final isPausedWeek = plan.days.isNotEmpty &&
-          (paused(plan.days.last.date) || plan.days.where((d) => paused(d.date)).length * 2 >= plan.days.length);
+      // A week with no planned day has its Shabbat morning as its only
+      // reading: paused if that is.
+      final isPausedWeek = plan.days.isEmpty
+          ? paused(plan.week.occasion)
+          : paused(plan.days.last.date) || plan.days.where((d) => paused(d.date)).length * 2 >= plan.days.length;
       if (doneAt != null && doneAt <= plan.week.occasion) {
         status = WeekStatus.onTime;
       } else if (doneAt != null && doneAt <= lateDeadline) {

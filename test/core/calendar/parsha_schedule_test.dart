@@ -103,6 +103,19 @@ void main() {
         expect(plan.expand((a) => a.aliyot), [0, 1, 2, 3, 4, 5, 6], reason: 'n=$n');
         expect(plan.every((a) => a.aliyot.isNotEmpty), isTrue);
       }
+      expect(ParshaSchedule.divideAliyot(const []), isEmpty);
+    });
+
+    test('a week with no day before its reading plans none, rather than Yom Tov', () {
+      // 5789 outside Israel: Simchat Torah on Friday 13 October 2028, and
+      // Bereshit read the next day.
+      final week = diaspora.weekFor(LocalDate(2028, 10, 14));
+      expect(week.portion, const PortionId(1));
+      expect(week.start, LocalDate(2028, 10, 14));
+      expect(week.occasion, LocalDate(2028, 10, 14));
+      expect(week.plan, isEmpty);
+      // In Israel, Simchat Torah was on Thursday: Friday is Bereshit's.
+      expect(israel.weekFor(LocalDate(2028, 10, 14)).plan.single.date, LocalDate(2028, 10, 13));
     });
 
     test('shabbatWithoutPortion is the coming Shabbat when it reads the day\'s own portion', () {
