@@ -32,6 +32,7 @@ import '../parsha/parsha_heading.dart';
 import '../parsha/week_context.dart';
 import '../parsha/week_rows.dart';
 import '../progress/domain/progress_models.dart';
+import '../progress/domain/reading_plan.dart' show WeekPlan;
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 import '../settings/widgets/pause_setting.dart';
@@ -778,6 +779,16 @@ enum CatchUpDay {
   /// logged after Shabbat.
   erevYomTovThenShabbat,
 
+  /// The eve of a Yom Tov after which this week still has a planned reading
+  /// day before its parsha is read — the eve of the last days of Pesach
+  /// outside Israel, with Friday still to come, say: what is not read
+  /// before it can be read after ([nextPlannedDayAfterRest]).
+  beforeYomTovMoreAfter,
+
+  /// As [beforeYomTovMoreAfter], the eve of a Shabbat that reads no portion
+  /// of this week's (a festival's).
+  beforeShabbatMoreAfter,
+
   /// The day before Yom Kippur, whatever day of the week it is: neither
   /// called Yom Tov nor the end of the week, which always has a reading day
   /// after it.
@@ -785,17 +796,29 @@ enum CatchUpDay {
 }
 
 /// The [CatchUpDay] of [today], a reading day, by the reader's custom for
-/// the days of Yom Tov.
-CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
+/// the days of Yom Tov, and by the week's [plan], if given: on the eve of
+/// days of rest with a planned day of it still to come after them, there is
+/// time after them too.
+CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov, WeekPlan? plan}) {
   final tomorrow = today.addDays(1);
   if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
+    if (plan != null && nextPlannedDayAfterRest(today, plan, oneDayYomTov: oneDayYomTov) != null) {
+      return tomorrow.isShabbat ? CatchUpDay.beforeShabbatMoreAfter : CatchUpDay.beforeYomTovMoreAfter;
+    }
     // Logged once the days of rest are over, after whichever ends them.
     final endsWithShabbat = JewishHolidays.lastRestDay(tomorrow, israel: oneDayYomTov).isShabbat;
     if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
     return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
   }
   return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
+}
+
+/// The first day of [plan] after the days of rest that begin the evening of
+/// [today], their eve; null when none comes after them.
+LocalDate? nextPlannedDayAfterRest(LocalDate today, WeekPlan plan, {required bool oneDayYomTov}) {
+  final last = JewishHolidays.lastRestDay(today.addDays(1), israel: oneDayYomTov);
+  return plan.days.firstWhereOrNull((d) => d.date > last)?.date;
 }
 
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
@@ -902,13 +925,18 @@ class _TodayCard extends ConsumerWidget {
       // button starts too, so no other button leads to one. The line counts
       // what the card names.
       final count = due.length;
-      final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: settings.oneDayYomTov)) {
+      final oneDayYomTov = settings.oneDayYomTov;
+      // The weekday the reading can wait for, after the days of rest.
+      String after() => names.weekday(nextPlannedDayAfterRest(ctx.today, ctx.plan, oneDayYomTov: oneDayYomTov)!);
+      final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: oneDayYomTov, plan: ctx.plan)) {
         CatchUpDay.midweek => l.todayBehind(count),
         CatchUpDay.thursday => l.todayBehindThursday(count),
         CatchUpDay.erevShabbat => l.todayLastDayShabbat(count),
         CatchUpDay.erevShabbatThenYomTov => l.todayLastDayShabbatThenYomTov(count),
         CatchUpDay.erevYomTov => l.todayLastDayYomTov(count),
         CatchUpDay.erevYomTovThenShabbat => l.todayLastDayYomTovThenShabbat(count),
+        CatchUpDay.beforeYomTovMoreAfter => l.todayBehindBeforeYomTovMore(count, after()),
+        CatchUpDay.beforeShabbatMoreAfter => l.todayBehindBeforeShabbatMore(count, after()),
         CatchUpDay.erevYomKippur => l.todayLastDayYomKippur(count),
       };
       children = [

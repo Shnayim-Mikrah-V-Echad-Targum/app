@@ -747,6 +747,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}'**
   String todayLastDayYomTovThenShabbat(int count);
 
+  /// As todayBehind, on the eve of a Yom Tov after which this week still has a planned reading day before its parsha is read (Erev Shavuot on Tuesday, with Friday still to read on): day is that day's weekday ('Friday'). count is every aliyah planned up to today and not yet read. 'Yom Tov' is held together by a no-break space, so that a line never ends between its words.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Yom Tov — or after it, on {day}.} other{{count} aliyot to catch up before Yom Tov — or after it, on {day}.}}'**
+  String todayBehindBeforeYomTovMore(int count, String day);
+
+  /// As todayBehindBeforeYomTovMore, on the eve of a Shabbat that does not read this week's parsha (a Shabbat of a festival), after which this week still has a planned reading day: day is that day's weekday. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Shabbat — or after it, on {day}.} other{{count} aliyot to catch up before Shabbat — or after it, on {day}.}}'**
+  String todayBehindBeforeShabbatMore(int count, String day);
+
   /// As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
