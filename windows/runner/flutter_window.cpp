@@ -5,9 +5,11 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <variant>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "utils.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -60,6 +62,23 @@ void FlutterWindow::RegisterWindowChannel() {
             return;
           }
           SetDarkTitleBar(*dark);
+          result->Success();
+        } else if (call.method_name() == "setTitle") {
+          // The app's name in its language, for the title bar, the taskbar
+          // and Alt+Tab.
+          const auto* title = std::get_if<std::string>(call.arguments());
+          if (!title) {
+            result->Error("bad-arguments", "Expected a string.");
+            return;
+          }
+          const std::wstring utf16_title = Utf16FromUtf8(*title);
+          if (utf16_title.empty() && !title->empty()) {
+            result->Error("bad-arguments", "Expected UTF-8.");
+            return;
+          }
+          if (HWND window = GetHandle()) {
+            SetWindowTextW(window, utf16_title.c_str());
+          }
           result->Success();
         } else {
           result->NotImplemented();
