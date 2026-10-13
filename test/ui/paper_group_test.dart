@@ -412,11 +412,12 @@ void main() {
     expect(await maxLines(2), isNull);
   });
 
-  // At 300% on a small phone, "haftarah:" and "discussions" are wider than
-  // a row's text beside its icon and chevron.
+  // The Haftarah row for Chabad on Shabbat Machar Chodesh: at 300% on a
+  // small phone, "Samuel", "Chodesh" and "haftarah" are wider than a row's
+  // text beside its icon and chevron.
   testWidgets('enlarged, a subtitle and a detail line keep each word whole', (tester) async {
-    const subtitle = 'Special haftarah: Shabbat Machar Chodesh';
-    const detail = '3 discussions · active 3 hours ago';
+    const subtitle = 'I Samuel 20:18–42';
+    const detail = 'Shabbat Machar Chodesh · Chabad custom: the regular haftarah too';
     await pumpThemed(
       tester,
       const Align(
@@ -620,18 +621,27 @@ void main() {
     expect(find.descendant(of: icon, matching: find.byType(Transform)), findsNothing);
   });
 
-  testWidgets('a subtitle of several facts, a line each, can be let run', (tester) async {
-    const facts = 'I Samuel 20:18–42\nSpecial haftarah: Shabbat Machar Chodesh\nAlso the regular haftarah';
+  // The haftarah of Re'eh for Sephardim on Rosh Chodesh Elul: its own, with
+  // the first and last verses of two more.
+  testWidgets('a subtitle that is never cut short, as a long reference, can be let run', (tester) async {
+    const reference = 'Isaiah 54:11–\u206055:5\u00A0· Isaiah 66:1\u00A0· Isaiah 66:23\u00A0· '
+        'I\u00A0Samuel 20:18\u00A0· I\u00A0Samuel 20:42';
     await pumpThemed(
       tester,
       const Align(
         alignment: Alignment.topCenter,
-        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: facts, subtitleMaxLines: null)),
+        child: SizedBox(width: 300, child: PaperRow(title: 'Haftarah', subtitle: reference, subtitleMaxLines: null)),
       ),
     );
-    final text = tester.widget<Text>(find.text(facts));
+    final text = tester.widget<Text>(find.text(reference));
     expect((text.maxLines, text.overflow), (null, null));
-    expect(tester.getSize(find.text(facts)).height, greaterThan(3 * 22 - 1), reason: 'every line shows');
+    final paragraph = tester.renderObject<RenderParagraph>(
+      find.descendant(of: find.text(reference), matching: find.byType(RichText)),
+    );
+    final boxes = paragraph.getBoxesForSelection(TextSelection(baseOffset: 0, extentOffset: reference.length));
+    final lines = {for (final box in boxes) box.top.round()};
+    expect(lines.length, greaterThan(2), reason: 'more than the two lines a subtitle keeps to by default');
+    expect(paragraph.didExceedMaxLines, isFalse, reason: 'every line shows');
   });
 
   group('at large text sizes', () {

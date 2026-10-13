@@ -338,8 +338,9 @@ class PaperRow extends StatelessWidget {
   /// At most [subtitleMaxLines] lines, unless the text is enlarged.
   final String? subtitle;
 
-  /// Two by default; null for a subtitle of several facts, each on a line
-  /// of its own, that is never cut short.
+  /// Two by default; null for a subtitle that is never cut short, such as a
+  /// long reference (the haftarah's, three lines on a phone for Sephardim on
+  /// Re'eh on Rosh Chodesh Elul) or a setting's description.
   final int? subtitleMaxLines;
 
   /// The language of [subtitle], for screen readers, where it isn't the
