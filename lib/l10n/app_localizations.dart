@@ -3621,6 +3621,36 @@ abstract class AppLocalizations {
   /// **'Something on this page didn’t load.'**
   String get errorPanelMessage;
 
+  /// The one sentence, in the app's gentle italic voice, of the page shown in place of the whole app when something it can't open without failed as it started. Under it, startFailedReopen (or startFailedReload on the web) and startFailedWriteTo, then the buttons copySupportDetails (and actionRetry on the web).
+  ///
+  /// In en, this message translates to:
+  /// **'Shnayim Mikrah couldn’t open.'**
+  String get startFailedTitle;
+
+  /// Under startFailedTitle, in the installed app: what the reader can do first.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing the app and opening it again may help.'**
+  String get startFailedReopen;
+
+  /// Under startFailedTitle, in the web app, where a dropped connection is the likely cause: actionRetry, beneath, reloads the page.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the connection, then try again.'**
+  String get startFailedReload;
+
+  /// After startFailedReopen or startFailedReload: the button copySupportDetails, beneath, copies what went wrong, for an email to the maintainers' address.
+  ///
+  /// In en, this message translates to:
+  /// **'If that doesn’t help, copy the details and send them to {address}.'**
+  String startFailedWriteTo(String address);
+
+  /// startFailedWriteTo, in a build that names no support address.
+  ///
+  /// In en, this message translates to:
+  /// **'If that doesn’t help, copy the details and send them to us.'**
+  String get startFailedWriteToUs;
+
   /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
   ///
   /// In en, this message translates to:

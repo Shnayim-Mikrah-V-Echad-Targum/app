@@ -2201,6 +2201,24 @@ class AppLocalizationsHe extends AppLocalizations {
   String get errorPanelMessage => 'חלק מהדף לא נטען.';
 
   @override
+  String get startFailedTitle => 'לא ניתן היה לפתוח את שניים מקרא.';
+
+  @override
+  String get startFailedReopen => 'סגירת האפליקציה ופתיחתה מחדש עשויה לעזור.';
+
+  @override
+  String get startFailedReload => 'כדאי לבדוק את החיבור לאינטרנט ולנסות שוב.';
+
+  @override
+  String startFailedWriteTo(String address) {
+    return 'אם זה לא עוזר, אפשר להעתיק את הפרטים ולשלוח אותם אל $address.';
+  }
+
+  @override
+  String get startFailedWriteToUs =>
+      'אם זה לא עוזר, אפשר להעתיק את הפרטים ולשלוח אותם אלינו.';
+
+  @override
   String get linkOpenFailed => 'לא ניתן היה לפתוח את הקישור כאן.';
 
   @override

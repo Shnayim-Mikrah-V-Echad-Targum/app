@@ -1882,6 +1882,32 @@
   "@errorPanelMessage": {
     "description": "Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built."
   },
+  "startFailedTitle": "Shnayim Mikrah couldn’t open.",
+  "@startFailedTitle": {
+    "description": "The one sentence, in the app's gentle italic voice, of the page shown in place of the whole app when something it can't open without failed as it started. Under it, startFailedReopen (or startFailedReload on the web) and startFailedWriteTo, then the buttons copySupportDetails (and actionRetry on the web)."
+  },
+  "startFailedReopen": "Closing the app and opening it again may help.",
+  "@startFailedReopen": {
+    "description": "Under startFailedTitle, in the installed app: what the reader can do first."
+  },
+  "startFailedReload": "Check the connection, then try again.",
+  "@startFailedReload": {
+    "description": "Under startFailedTitle, in the web app, where a dropped connection is the likely cause: actionRetry, beneath, reloads the page."
+  },
+  "startFailedWriteTo": "If that doesn’t help, copy the details and send them to {address}.",
+  "@startFailedWriteTo": {
+    "description": "After startFailedReopen or startFailedReload: the button copySupportDetails, beneath, copies what went wrong, for an email to the maintainers' address.",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "support@shnayimmikrah.org"
+      }
+    }
+  },
+  "startFailedWriteToUs": "If that doesn’t help, copy the details and send them to us.",
+  "@startFailedWriteToUs": {
+    "description": "startFailedWriteTo, in a build that names no support address."
+  },
   "linkOpenFailed": "The link couldn’t be opened here.",
   "@linkOpenFailed": {
     "description": "A status message when tapping a link opened nothing, as on a device with no browser to hand it to."
