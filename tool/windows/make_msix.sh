@@ -22,6 +22,26 @@ if [ ! -f "$release/shnayim_mikrah.exe" ]; then
 fi
 mkdir -p "$out"
 
+# The Visual C++ runtime that windows/CMakeLists.txt puts beside the
+# executable, so that the folder runs on a PC without the Redistributable:
+# msix:build swaps in the msix tool's own copy, and msix:pack deletes that
+# once it has packed it (the tool's Assets.cleanTemporaryFiles). Kept aside
+# here and put back however the script ends, so that the folder still runs
+# anywhere after packaging.
+runtime="$out/vc-runtime"
+rm -rf "$runtime"
+mkdir -p "$runtime"
+for dll in "$release"/concrt140.dll "$release"/msvcp140*.dll "$release"/vccorlib140.dll "$release"/vcruntime140*.dll; do
+  if [ -f "$dll" ]; then cp "$dll" "$runtime/"; fi
+done
+restore_runtime() {
+  local dll
+  for dll in "$runtime"/*.dll; do
+    if [ -f "$dll" ]; then cp "$dll" "$release/"; fi
+  done
+}
+trap 'restore_runtime || true' EXIT
+
 # The app's name in each of the package's languages: msix_config's
 # display_name is ms-resource:AppName, from Strings/<language>/Resources.resw.
 rm -rf "$release/Strings"
@@ -61,3 +81,6 @@ if ! tr -d '\000' < "$out/resources.xml" | grep -qiE 'language-he(-il)?|"he(-il)
 fi
 
 dart run msix:pack --output-path "$out" "$@"
+# Now as well as on exit, so that a runtime that can't be put back fails the
+# script.
+restore_runtime

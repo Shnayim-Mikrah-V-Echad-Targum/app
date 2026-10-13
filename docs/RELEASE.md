@@ -273,7 +273,7 @@ The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yam
 **Build**
 
 - [ ] The Release workflow packages the MSIX, signed with the certificate, and attaches it to a draft GitHub release for the tag: publish the release once the installer is checked.
-- [ ] To build one by hand, run `flutter build windows --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikrah.msix`.
+- [ ] To build one by hand, run `flutter build windows --release` with the dart-defines from the README, the backend's and `SUPPORT_EMAIL` all set. Then, in Git Bash, run `bash tool/windows/make_msix.sh`, adding `--certificate-path certificate.pfx --certificate-password …` to sign it. The installer is `build/windows/msix/ShnayimMikrah.msix`. The folder still runs as it is on any PC afterwards: the msix tool deletes the Visual C++ runtime from `build/windows/x64/runner/Release` once it has packed it, and the script puts it back, even when signing fails (`test/app/windows_package_test.dart` runs the script with stand-ins for the tool).
 - CI's `windows-msix` artifact (and `windows`, the same build unpackaged) has whatever configuration CI has: release the draft's installer, not CI's.
 
 **Checks**
