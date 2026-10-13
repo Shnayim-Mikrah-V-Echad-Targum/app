@@ -213,10 +213,15 @@ void main() {
           expect(sefer.hairlineWidth, 2);
           expect(sefer.focus, s.onSurface);
           expect(sefer.verseHighlight, Colors.transparent);
+          // The year bar's open segments, a grey between the page and a
+          // finished segment, where outlineVariant is as dark as done.
+          expect(contrast(sefer.yearTrack, sefer.paper), greaterThanOrEqualTo(3));
+          expect(contrast(sefer.yearTrack, t.status.done), greaterThanOrEqualTo(4));
         } else {
           expect(sefer.hairlineWidth, 1);
           expect(sefer.focus, s.primary);
           expect(sefer.verseHighlight, sefer.paper);
+          expect(sefer.yearTrack, s.outlineVariant);
         }
         expect(sefer.focusGap, s.surface);
         // Techelet means Mikra progress, so "done" and the first ring share it.

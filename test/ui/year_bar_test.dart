@@ -215,18 +215,19 @@ void main() {
 
     const clear = Color(0x00000000);
 
-    testWidgets('on a phone, marks this week with a tall solid segment, and runs right to left in Hebrew',
-        (tester) async {
+    testWidgets('on a phone, brackets this week with its ticks, and runs right to left in Hebrew', (tester) async {
       // A 1 px border in a segment of 5 would leave a speck that reads as a
-      // "0": the current and made-up segments are solid instead.
+      // "0": the made-up segment is solid instead, and the current one keeps
+      // only its ticks in primary, never solid primary, done's colour.
       final expected = [
         Palettes.statusLight.done,
         Palettes.statusLight.late,
         Palettes.statusLight.late,
         Palettes.light.outlineVariant,
-        Palettes.light.primary,
+        Palettes.light.primaryContainer,
         Palettes.statusLight.late,
-        Palettes.light.primary,
+        // No border at its sides.
+        Palettes.light.primaryContainer,
         // The current parsha's ticks, above and below the bar; nothing else
         // reaches there.
         Palettes.light.primary,
@@ -267,9 +268,31 @@ void main() {
           (await colours(tester, width: barWidth, segment: segment, theme: theme))[3];
       expect(await open(AppThemeMode.dark), Palettes.dark.outlineVariant);
       expect(await open(AppThemeMode.sepia), Palettes.sepia.outlineVariant);
-      expect(await open(AppThemeMode.highContrastDark), Palettes.seferHcDark.ringTrack);
-      expect(await open(AppThemeMode.highContrastLight), Palettes.seferHcLight.ringTrack);
+      // A grey between the page and a finished segment (palette_contrast_test
+      // holds it 3:1 from one and 4:1 from the other).
+      expect(await open(AppThemeMode.highContrastDark), Palettes.seferHcDark.yearTrack);
+      expect(await open(AppThemeMode.highContrastLight), Palettes.seferHcLight.yearTrack);
     });
+
+    // A reader who finished Bereshit on time and is now in the week of
+    // Noach: on a phone, the two segments side by side must not look alike.
+    for (final theme in AppThemeMode.values.where((m) => m != AppThemeMode.system)) {
+      testWidgets('on a phone, this week never looks like the finished one beside it (${theme.name})', (tester) async {
+        await pumpBar(
+          tester,
+          YearBar(segments: year({1: YearSegment.onTime, 2: YearSegment.current})),
+          theme: theme,
+        );
+        final image = await snapshot(tester);
+        final finished = await pixel(tester, image, left(1) + segment / 2, middle);
+        final current = await pixel(tester, image, left(2) + segment / 2, middle);
+        final tick = await pixel(tester, image, left(2) + segment / 2, 0.5);
+        image.dispose();
+        expect(current, isNot(finished));
+        // Its ticks, which nothing finished has, say "you are here".
+        expect(tick, isNot(clear));
+      });
+    }
 
     testWidgets('fits a 360 dp phone, even with 200% text', (tester) async {
       // 360 less two 20 dp gutters and a card's 20 dp padding each side.

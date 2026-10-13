@@ -187,6 +187,7 @@ They must be set explicitly so no stock widget (DatePicker, SearchBar, Badge) fa
 | ringMikra2 | #55779F | #7E9BC8 | #4F6B92 | #3D629C | #7A9FE8 |
 | ringTargum | #946C1E | #C9A458 | #8A651C | #4F3500 | #FFD970 |
 | ringTrack | #E8E1D3 | #36312A | #E0D3B4 | #E0E0E0 | #333333 |
+| yearTrack (the year bar's open segments, §6.15) | = outlineVariant | = outlineVariant | = outlineVariant | #949494 | #5C5C5C |
 | restWash | #F2E7CD | #4A3A16 | #EADBB4 | #FFF0C2 | #3D2E00 |
 | focus | #1D3F75 | #AFC6EE | #25406C | #000000 | #FFFFFF |
 | focusGap | = surface | = surface | = surface | #FFFFFF | #000000 |
@@ -250,6 +251,8 @@ Targets:
 | ringTargum / paper | 4.67 | 7.45 | 4.80 | 11.40 | 15.41 |
 | ringMikra2 / ringTrack | 3.57 | 4.55 | 3.67 | 4.64 | 4.78 |
 | ringTargum / ringTrack | 3.65 | 5.48 | 3.57 | 8.64 | 9.27 |
+| yearTrack / paper (an open segment; at least 3:1 in high contrast, tested) | 1.52 | 1.82 | 1.74 | 3.03 | 3.14 |
+| yearTrack / done (open against finished; at least 4:1 in high contrast, tested) | 6.73 | 5.57 | 5.38 | 4.60 | 4.22 |
 | goldLeaf / surface (decorative only, exempt) | 2.89 | 6.62 | 2.85 | 11.40 | 15.41 |
 | hairline / paper (decorative only, exempt; HC uses 2 px outline) | 1.52 | 1.82 | 1.74 | 21.00 | 21.00 |
 
@@ -752,8 +755,8 @@ A tile's screen-reader label and tooltip name its exact status ("Noach: Finished
 
 - 54 segments across the content width; segment gap 2; an extra 4 px between books; height 8; radius 1.5.
 - Current is 4 taller than the bar (2 above, 2 below: `YearBar.tick`), so it marks "you are here" at any width; the bar is painted 12 high, with the names 4 under the bar itself.
-- Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; open (everything else) = outlineVariant (ringTrack in high contrast, where outlineVariant would be as loud as a finished segment).
-- Below 8 px a segment (`YearBar.compactSegment`: every phone), a 1 px border leaves a speck of fill that reads as a "0", so current is solid primary and made up is solid late.
+- Colours: on time = done; late = late; made up = paper with a 1 px late border; current = primaryContainer with a 1 px primary border; open (everything else) = `yearTrack`: outlineVariant, and in high contrast a grey between the card and a finished segment (#949494, #5C5C5C: 3:1 from the card, over 4:1 from done), where outlineVariant would be as loud as a finished segment and ringTrack all but vanishes.
+- Below 8 px a segment (`YearBar.compactSegment`: every phone), a 1 px border leaves a speck of fill that reads as a "0", so made up is solid late, and current loses the border at its sides: its primaryContainer body sits between the two ticks, drawn in primary, a bracket around the week. It is never solid primary, which is done's colour, so this week never looks like the week before it finished on time (tested in every theme).
 - Below it, book abbreviations in labelSmall onSurfaceVariant at each book's start: "Gen Exo Lev Num Deu" / "בר׳ שמ׳ וי׳ במ׳ דב׳". If very large text would run one into the next book's, all five shrink together to the size the tightest needs.
 - Its states and the Torah map's come from one function (`parshaStandings`), so the two never disagree.
 - One Semantics node: "This year: 0 of 54 parshiyot complete; Bereshit in progress". RepaintBoundary.

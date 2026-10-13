@@ -611,6 +611,9 @@ const _screens = {
   'legend_week': '/progress',
   'legend_map': '/progress',
   'progress_map': '/progress',
+  // The same history at the page's head: the year bar with weeks finished
+  // on time, late and made up beside this week's.
+  'progress_history': '/progress',
   // The map with a parsha finished with the next and one that still can
   // be (see [rescueProgress]), Genesis opened above Exodus.
   'progress_map_rescue': '/progress',
@@ -812,6 +815,7 @@ class _PreparingIndex extends VerseIndexLoader {
 /// every tile state, and the days and histories of [_screenSettings].
 final _screenNow = <String, DateTime>{
   'progress_map': historyNow,
+  'progress_history': historyNow,
   'progress_map_rescue': rescueNow,
   'today_divergence': DateTime(2029, 4, 24, 11),
   'today_divergence_abroad': DateTime(2029, 4, 24, 11),
@@ -872,6 +876,7 @@ final _screenNow = <String, DateTime>{
 };
 final _screenProgress = <String, ProgressState Function()>{
   'progress_map': historyProgress,
+  'progress_history': historyProgress,
   'progress_map_rescue': rescueProgress,
   'browse_summer': _yearRead,
   'today_haftarah_left': () => ProgressState(weeks: {

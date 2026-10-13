@@ -17,6 +17,7 @@ class SeferColors extends ThemeExtension<SeferColors> {
     required this.ringMikra2,
     required this.ringTargum,
     required this.ringTrack,
+    required this.yearTrack,
     required this.restWash,
     required this.focus,
     required this.focusGap,
@@ -41,6 +42,12 @@ class SeferColors extends ThemeExtension<SeferColors> {
   final Color ringMikra2;
   final Color ringTargum;
   final Color ringTrack;
+
+  /// The year bar's open segments (§6.15), a few pixels wide, which the
+  /// rings' track would leave all but invisible: outlineVariant, and in high
+  /// contrast, where outlineVariant is as dark as a finished segment, a grey
+  /// midway, at least 3:1 from the page and 4:1 from a finished segment.
+  final Color yearTrack;
 
   /// The fill behind Shabbat and Yom Tov days.
   final Color restWash;
@@ -71,6 +78,7 @@ class SeferColors extends ThemeExtension<SeferColors> {
     Color? ringMikra2,
     Color? ringTargum,
     Color? ringTrack,
+    Color? yearTrack,
     Color? restWash,
     Color? focus,
     Color? focusGap,
@@ -87,6 +95,7 @@ class SeferColors extends ThemeExtension<SeferColors> {
         ringMikra2: ringMikra2 ?? this.ringMikra2,
         ringTargum: ringTargum ?? this.ringTargum,
         ringTrack: ringTrack ?? this.ringTrack,
+        yearTrack: yearTrack ?? this.yearTrack,
         restWash: restWash ?? this.restWash,
         focus: focus ?? this.focus,
         focusGap: focusGap ?? this.focusGap,
@@ -107,6 +116,7 @@ class SeferColors extends ThemeExtension<SeferColors> {
       ringMikra2: Color.lerp(ringMikra2, other.ringMikra2, t)!,
       ringTargum: Color.lerp(ringTargum, other.ringTargum, t)!,
       ringTrack: Color.lerp(ringTrack, other.ringTrack, t)!,
+      yearTrack: Color.lerp(yearTrack, other.yearTrack, t)!,
       restWash: Color.lerp(restWash, other.restWash, t)!,
       focus: Color.lerp(focus, other.focus, t)!,
       focusGap: Color.lerp(focusGap, other.focusGap, t)!,

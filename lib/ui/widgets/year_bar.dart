@@ -66,8 +66,9 @@ class YearBar extends StatelessWidget {
   /// The least space between two books' names.
   static const double labelGap = 4;
 
-  /// Segments narrower than this have no room for a border: the current
-  /// parsha's is solid primary, and a made-up one solid late.
+  /// Segments narrower than this have no room for a border at their sides:
+  /// the current parsha's keeps only its [tick]s, in primary, above and
+  /// below its primaryContainer body, and a made-up one is solid late.
   static const double compactSegment = 8;
 
   /// The segments for [cycle], by the same rules as the Torah map
@@ -252,9 +253,7 @@ class _YearBarColors {
       paper: sefer.paper,
       current: scheme.primaryContainer,
       currentBorder: scheme.primary,
-      // The rings' track is too faint for a segment a few pixels wide, but
-      // in high contrast outlineVariant would be as loud as a finished one.
-      track: sefer.isHighContrast ? sefer.ringTrack : scheme.outlineVariant,
+      track: sefer.yearTrack,
     );
   }
 
@@ -294,7 +293,9 @@ class _YearBarPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     // A 1 px border inside a segment of a few pixels leaves a speck of fill
-    // that reads as a "0": there, the bordered states are solid.
+    // that reads as a "0": there, a made-up segment is solid, and the
+    // current one keeps its fill between its ticks, drawn in the border's
+    // colour, a bracket that never reads as a finished segment beside it.
     final compact = layout.segment < YearBar.compactSegment;
     for (var i = 0; i < segments.length; i++) {
       final start = layout.starts[i];
@@ -316,6 +317,12 @@ class _YearBarPainter extends CustomPainter {
         YearSegment.open => (colors.track, null),
       };
       canvas.drawRRect(box, fill..color = body);
+      if (segment == YearSegment.current && compact) {
+        canvas.drawRect(
+          Rect.fromLTWH(left, YearBar.tick, layout.segment, YearBar.height),
+          fill..color = colors.current,
+        );
+      }
       // A 1 px border inside the segment.
       if (edge != null) canvas.drawRRect(box.deflate(0.5), border..color = edge);
     }
