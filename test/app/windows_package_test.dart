@@ -71,6 +71,16 @@ void main() {
     expect(description, isNot(contains("'")));
   });
 
+  // path_provider_windows keeps the app's support directory, and with it
+  // shared_preferences' file (settings, progress, notes), at
+  // %APPDATA%\<CompanyName>\<ProductName>: changing either after publishing
+  // would leave every reader's local data behind.
+  test('the data folder keeps the names it was published under', () {
+    final rc = File('windows/runner/Runner.rc').readAsStringSync();
+    expect(rc, contains('VALUE "CompanyName", "Shnayim Mikrah" "\\0"'));
+    expect(rc, contains('VALUE "ProductName", "Shnayim Mikrah" "\\0"'));
+  });
+
   testWidgets('the logo is the rounded tile of app_icon.ico', (tester) async {
     expect(config['logo_path'], 'windows/msix/logo.png');
     final logo = await _pixels(tester, 'windows/msix/logo.png');
