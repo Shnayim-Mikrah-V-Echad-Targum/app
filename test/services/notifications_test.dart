@@ -12,6 +12,7 @@ import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/data/parsha_repository.dart';
 import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
@@ -545,9 +546,9 @@ void main() {
       expect(service.reschedules, 6);
     });
 
-    test('plans again when the city for Shabbat times, or the reader\'s times there, change', () {
+    test('plans again when the city for Shabbat times, or the reader\'s times there, change', () async {
       // As the app loads the time zones after its first frame.
-      Zmanim.timeZone('UTC');
+      await ensureTimeZones();
       const london = City(
         id: 2643743,
         nameEn: 'London',

@@ -13,8 +13,10 @@ import '../services/feedback.dart' show StatusMessageArea;
 import '../services/home_widget_sync.dart';
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
+import '../services/web_update.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
+import 'android_night_mode.dart';
 import 'celebrations.dart';
 import 'device_accessibility.dart';
 import 'pending_saves.dart';
@@ -23,6 +25,7 @@ import 'router.dart';
 import 'shell.dart';
 import 'system_bars.dart';
 import 'window_title_bar.dart';
+import 'windows_back.dart';
 
 class ShnayimMikrahApp extends ConsumerStatefulWidget {
   const ShnayimMikrahApp({super.key});
@@ -34,12 +37,16 @@ class ShnayimMikrahApp extends ConsumerStatefulWidget {
 class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with WidgetsBindingObserver {
   StreamSubscription<String>? _taps;
   PendingSaves? _pendingSaves;
+  void Function()? _stopFollowingRestarts;
 
   // The interface font the theme is built in: the one chosen, once it has
   // loaded, and until then the one shown before it. Text measured as it is
   // built (the navigation bar's labels, say) is then never measured in a
   // stand-in font, and nothing flashes in one.
   UiFont _uiFont = UiFont.standard;
+
+  /// The night mode last sent to Android's activity ([setAndroidNightMode]).
+  String? _nightMode;
 
   @override
   void initState() {
@@ -49,10 +56,25 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
     // Subscribed directly, so that a tap opening the same page as the last
     // one still opens it.
     _taps = notifications.taps.listen(_open);
+    // A restart in another window of the web app has let the new version
+    // take this one over: it restarts too, rather than run the old version's
+    // code on the new version's files.
+    _stopFollowingRestarts = ref
+        .read(webUpdatesProvider)
+        .listenForTakeover(() => unawaited(ref.read(webUpdateReadyProvider.notifier).restart()));
     // main() loaded the opt-in fonts the settings choose, or gave up waiting
     // for them: this tries again for one that failed, and shows it once it
     // has loaded.
     _loadFonts();
+    // On Android the app's theme sets the night mode the system holds it in,
+    // which from Android 12 colours the launch screen of the next cold start.
+    // The system then reports the theme's brightness as the device's, so the
+    // app takes the device's only to follow it, when the mode is the
+    // system's own.
+    if (holdsAndroidNightMode) {
+      ref.listenManual(settingsProvider.select((s) => s.theme), (_, theme) => _holdNightMode(theme),
+          fireImmediately: true);
+    }
     // The app starts on Today; a notification that launched it opens over
     // it. Shortcuts on the app's icon and taps on the home-screen widget open
     // once Today is up too, the one that launched the app first, so each has
@@ -82,6 +104,7 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _taps?.cancel();
+    _stopFollowingRestarts?.call();
     _pendingSaves?.dispose();
     super.dispose();
   }
@@ -90,6 +113,15 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
     // Reminders exist only after onboarding, which must come first anyway.
     if (!mounted || !ref.read(settingsProvider).onboardingComplete) return;
     openFromOutside(ref.read(routerProvider), route);
+  }
+
+  /// Holds Android's night mode for the app to [theme], telling the activity
+  /// only of a change: light and sepia, say, are both 'no'.
+  void _holdNightMode(AppThemeMode theme) {
+    final mode = androidNightMode(theme);
+    if (mode == _nightMode) return;
+    _nightMode = mode;
+    unawaited(setAndroidNightMode(mode));
   }
 
   // A font that couldn't load (a network blip on the web) is tried again.
@@ -266,11 +298,15 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
             ),
             child: SystemBars(
               child: WindowTitleBar(
-                child: FontsChangeScope(
-                  // Status messages set for pages as wide as the window: those
-                  // over the tabs, and a phone's (the shell sets them for the
-                  // pane beside the rail).
-                  child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                // The mouse's back button and Alt+←, in the Windows app.
+                child: WindowsBack(
+                  router: router,
+                  child: FontsChangeScope(
+                    // Status messages set for pages as wide as the window:
+                    // those over the tabs, and a phone's (the shell sets them
+                    // for the pane beside the rail).
+                    child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                  ),
                 ),
               ),
             ),

@@ -138,7 +138,9 @@ const kCheckInLatestMinutes = 22 * 60 + 30;
 /// planner keeps to its rules for when no city is chosen. [deviceOffset]
 /// stands in for the device's offset from UTC on a day, for tests.
 ///
-/// Needs the time-zone database, which it loads if no one has.
+/// Needs the time-zone database already in (`ensureTimeZones`; see
+/// `timeZonesReady`): before then, every day reads as one on which the
+/// device doesn't keep the city's clock, and has no times.
 ReminderZmanim Function(LocalDate) reminderZmanim(ShabbatCity place,
     {Duration Function(LocalDate date) deviceOffset = deviceNoonOffset}) {
   return (date) {

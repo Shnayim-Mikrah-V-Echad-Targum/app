@@ -1635,6 +1635,12 @@ abstract class AppLocalizations {
   /// **'Previous step'**
   String get shortcutBack;
 
+  /// In the Windows app’s list of the reader’s keyboard shortcuts, beside Alt+←: close the reading screen and return to the page it was opened from, as the system’s Back would. Not a page of text, nor the reader’s previous step, which are rows of their own.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the reader, as the mouse’s back button does'**
+  String get shortcutGoBack;
+
   /// No description provided for @shortcutLarger.
   ///
   /// In en, this message translates to:
@@ -3573,11 +3579,47 @@ abstract class AppLocalizations {
   /// **'Policies'**
   String get aboutGroupPolicies;
 
-  /// Heading over About's links to email us and to send feedback.
+  /// Heading over About's links to email us and to send feedback, and, after something has gone wrong, the row that copies details for support.
   ///
   /// In en, this message translates to:
   /// **'Contact'**
   String get aboutGroupContact;
+
+  /// A row in About, shown only after something has gone wrong since the app started: it copies the app's version and what went wrong, to paste into a message to the maintainers.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details for support'**
+  String get copySupportDetails;
+
+  /// Under copySupportDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong since the app opened, to paste into a message to us'**
+  String get copySupportDetailsDesc;
+
+  /// A status message once copySupportDetails has copied the details to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Details copied'**
+  String get supportDetailsCopied;
+
+  /// In the web app, at the top of Today and in About, once a new version of the app has downloaded and is waiting to replace the one open.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version is ready.'**
+  String get webUpdateReady;
+
+  /// The button beside webUpdateReady, which reloads the app in the new version, keeping the reader's progress and settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get webUpdateRestart;
+
+  /// Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built.
+  ///
+  /// In en, this message translates to:
+  /// **'Something on this page didn’t load.'**
+  String get errorPanelMessage;
 
   /// A status message when tapping a link opened nothing, as on a device with no browser to hand it to.
   ///
@@ -3812,6 +3854,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All forums'**
   String get allForums;
+
+  /// A link to a discussion that isn't there, or that the reader may not see, under the title notFoundTitle, above All forums.
+  ///
+  /// In en, this message translates to:
+  /// **'This discussion couldn’t be found. It may have been deleted.'**
+  String get threadNotFound;
 
   /// No description provided for @thisWeeksThread.
   ///
@@ -4238,6 +4286,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unpin'**
   String get unpinThread;
+
+  /// In a discussion's menu (More options, in its app bar): copies the discussion's address on the web app, for the member to share.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get copyLink;
+
+  /// A status message once copyLink has copied the discussion's address to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get linkCopied;
 
   /// No description provided for @hidePost.
   ///

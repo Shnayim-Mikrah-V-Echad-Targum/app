@@ -1,7 +1,8 @@
 // Tests for the web build's JavaScript, run against fixtures in Node's vm:
-// the loading screen's script in web/index.html, web/flutter_bootstrap.js,
-// and the service worker's update script (tool/web/sw_update.js and
-// sw_build.cjs).
+// the scripts in web/index.html (an older link's redirect and the loading
+// screen), web/flutter_bootstrap.js, the service worker's update script and
+// configuration (tool/web/sw_update.js, sw_build.cjs and
+// workbox-config.cjs), and the fonts' preloads (tool/web/preload_fonts.mjs).
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
@@ -15,7 +16,8 @@ import vm from 'node:vm';
 const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
-const { cacheNames, writeUpdateScript } = require('./sw_build.cjs');
+const { cacheNames, fileNavigation, missingFromPrecache, writeUpdateScript } = require('./sw_build.cjs');
+const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
 after(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
@@ -32,14 +34,25 @@ const html = read('web/index.html');
 /// The inline scripts of index.html, in order.
 const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 
-/// Runs the head's script, which reads the saved settings before the first
-/// paint, with [stored] as localStorage's flutter.settings.v1 (an object is
-/// stored as shared_preferences stores it, JSON inside a JSON string) and
-/// [languages] as the browser's. Returns the attributes it set on <html>.
-function loader({ stored, languages = ['en-US'], language = languages[0], throws = false } = {}) {
+/// Runs the head's script on the page at [href], whose <base href> makes
+/// [base] its base URI. It moves an older link's #/ page to its own address,
+/// and reads the saved settings before the first paint, with [stored] as
+/// localStorage's flutter.settings.v1 (an object is stored as
+/// shared_preferences stores it, JSON inside a JSON string) and [languages]
+/// as the browser's. Returns the attributes it set on <html>, and the
+/// address it gave the page in place of its own, if it did.
+function headScript({
+  href = 'https://example.org/app/',
+  base = 'https://example.org/app/',
+  stored,
+  languages = ['en-US'],
+  language = languages[0],
+  throws = false,
+} = {}) {
   const attributes = {};
   const root = { lang: 'en', setAttribute: (name, value) => (attributes[name] = value) };
   const value = stored === undefined ? null : typeof stored === 'string' ? stored : JSON.stringify(JSON.stringify(stored));
+  const replaced = [];
   vm.runInNewContext(inlineScripts[0], {
     localStorage: {
       getItem(key) {
@@ -48,10 +61,60 @@ function loader({ stored, languages = ['en-US'], language = languages[0], throws
       },
     },
     navigator: { languages, language },
-    document: { documentElement: root },
+    location: new URL(href),
+    history: { replaceState: (state, title, url) => replaced.push({ state, title, url }) },
+    document: { documentElement: root, baseURI: base },
   });
-  return { ...attributes, lang: root.lang };
+  assert.ok(replaced.length <= 1);
+  return { attributes: { ...attributes, lang: root.lang }, replaced: replaced[0] };
 }
+
+/// The attributes the head's script set on <html> (see [headScript]).
+const loader = (fixture) => headScript(fixture).attributes;
+
+describe('a link from before path URLs', () => {
+  /// The address the page at [href] is given, or undefined where it keeps
+  /// its own.
+  const redirect = (href, base = 'https://example.org/app/') => {
+    const { replaced } = headScript({ href, base });
+    if (replaced) assert.deepEqual([replaced.state, replaced.title], [null, '']);
+    return replaced?.url;
+  };
+
+  it('goes to the address of the page it names, in place of its own', () => {
+    assert.equal(redirect('https://example.org/app/#/community/thread/1'), 'https://example.org/app/community/thread/1');
+    assert.equal(redirect('https://example.org/app/#/progress'), 'https://example.org/app/progress');
+    // Its query is the page's.
+    assert.equal(redirect('https://example.org/app/#/search?q=light'), 'https://example.org/app/search?q=light');
+    assert.equal(redirect('https://example.org/app/#/'), 'https://example.org/app/');
+  });
+
+  it("goes there under the site's base, wherever the site is served from", () => {
+    assert.equal(redirect('https://example.org/#/legal/privacy', 'https://example.org/'), 'https://example.org/legal/privacy');
+    assert.equal(
+      redirect('https://example.org/app/index.html#/today', 'https://example.org/app/'),
+      'https://example.org/app/today',
+    );
+  });
+
+  it('leaves an address that names no page after # as it is', () => {
+    for (const href of [
+      'https://example.org/app/',
+      'https://example.org/app/progress',
+      'https://example.org/app/search?q=light',
+      'https://example.org/app/#',
+      'https://example.org/app/#top',
+    ]) {
+      assert.equal(redirect(href), undefined, href);
+    }
+  });
+
+  it('goes there before the loading screen reads the settings, which may fail', () => {
+    const { attributes, replaced } = headScript({ href: 'https://example.org/app/#/progress', throws: true });
+    assert.equal(replaced.url, 'https://example.org/app/progress');
+    assert.deepEqual(attributes, { lang: 'en' });
+  });
+});
 
 describe('the loading screen', () => {
   it('takes the saved theme, and only a theme the app has', () => {
@@ -198,30 +261,104 @@ describe('the loading screen', () => {
 // ---------------------------------------------------------------------------
 // web/flutter_bootstrap.js
 
-/// Runs flutter_bootstrap.js (without Flutter's own loader) on a page whose
-/// service worker [controller] is set on a later visit, after the page has
-/// loaded [loaded].
-async function bootstrap({ controller = null, loaded = [], launchQueue = false, hash = '' } = {}) {
-  const messages = [];
+/// A service worker of the fake page, in [state]: it records the messages
+/// posted to it, and [become] moves it on, as the browser does.
+function fakeWorker(state) {
+  const listeners = {};
+  return {
+    state,
+    messages: [],
+    addEventListener: (type, listener) => (listeners[type] = listener),
+    // Copied out of the page's realm, so that deepEqual compares plain values.
+    postMessage(message) {
+      this.messages.push(JSON.parse(JSON.stringify(message)));
+    },
+    become(next) {
+      this.state = next;
+      listeners.statechange?.();
+    },
+  };
+}
+
+/// Runs flutter_bootstrap.js (without Flutter's own loader) on a page at
+/// [href], under the site's [base], whose service worker [controller] is set
+/// on a later visit, after the page has loaded [loaded]. The registration
+/// has [waiting] and [installing] workers, if given; the clock reads [now]
+/// until the test moves it.
+async function bootstrap({
+  controller = null,
+  loaded = [],
+  launchQueue = false,
+  href = 'https://example.org/app/today',
+  base = 'https://example.org/app/',
+  waiting = null,
+  installing = null,
+} = {}) {
   const listeners = {};
   const registered = [];
-  // Copied out of the page's realm, so that deepEqual compares plain values.
-  const registration = { active: { postMessage: (message) => messages.push(JSON.parse(JSON.stringify(message))) } };
+  const dispatched = [];
+  const clock = { now: 1e12 };
+  const active = fakeWorker('activated');
+  const registration = {
+    active,
+    waiting,
+    installing,
+    listeners: {},
+    updates: 0,
+    addEventListener: (type, listener) => (registration.listeners[type] = listener),
+    update: async () => registration.updates++,
+  };
+  const serviceWorker = {
+    controller,
+    listeners: [],
+    register: async (url) => {
+      registered.push(url);
+      return registration;
+    },
+    ready: Promise.resolve(registration),
+    addEventListener: (type, listener, options) => serviceWorker.listeners.push({ type, listener, options }),
+  };
+  const document = {
+    baseURI: base,
+    visibilityState: 'visible',
+    listeners: {},
+    addEventListener: (type, listener) => (document.listeners[type] = listener),
+  };
+  const { origin, pathname, search, hash } = new URL(href);
+  // The window's history, which records each address pushed on it, and
+  // moves the page's address there.
+  const history = {
+    pushed: [],
+    pushState(state, title, url) {
+      history.pushed.push({ state, title, url });
+      const next = new URL(url, page.location.origin + page.location.pathname);
+      Object.assign(page.location, { pathname: next.pathname, search: next.search, hash: next.hash });
+    },
+  };
   const page = {
     _flutter: { loader: { load: () => (page.loaderStarted = true) } },
-    navigator: {
-      serviceWorker: {
-        controller,
-        register: async (url) => registered.push(url),
-        ready: Promise.resolve(registration),
-      },
-    },
+    navigator: { serviceWorker },
+    document,
     performance: {
       setResourceTimingBufferSize: (size) => (page.bufferSize = size),
       getEntriesByType: (type) => (type === 'resource' ? loaded.map((name) => ({ name })) : []),
     },
-    location: { origin: 'https://example.org', hash },
+    location: { origin, pathname, search, hash, reloads: 0, reload: () => page.location.reloads++ },
+    history,
     addEventListener: (type, listener) => (listeners[type] = listener),
+    dispatchEvent: (event) => dispatched.push(event.type === 'popstate' ? { type: event.type, state: event.state } : event.type),
+    Event: class {
+      constructor(type) {
+        this.type = type;
+      }
+    },
+    PopStateEvent: class {
+      constructor(type, init) {
+        this.type = type;
+        this.state = init?.state;
+      }
+    },
+    Date: { now: () => clock.now },
     URL,
     console,
   };
@@ -233,7 +370,7 @@ async function bootstrap({ controller = null, loaded = [], launchQueue = false, 
     listeners['flutter-first-frame']();
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  return { page, messages, registered };
+  return { page, messages: active.messages, registered, registration, serviceWorker, document, history, dispatched, clock, listeners };
 }
 
 describe('the bootstrap', () => {
@@ -274,14 +411,197 @@ describe('the bootstrap', () => {
     assert.deepEqual(messages, []);
   });
 
-  it("shows a shortcut's page in the window it opens in", async () => {
-    const { page } = await bootstrap({ launchQueue: true, hash: '#/today' });
-    page.consumer({ targetURL: 'https://example.org/app/#/progress' });
-    assert.equal(page.location.hash, '#/progress');
-    page.consumer({ targetURL: 'https://example.org/app/' });
-    assert.equal(page.location.hash, '#/progress', 'a plain launch keeps the page');
-    page.consumer({});
-    assert.equal(page.location.hash, '#/progress');
+  it('offers a new version that is waiting as the app starts', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, dispatched } = await bootstrap({ controller: {}, waiting });
+    assert.equal(page.smUpdateReady, waiting);
+    assert.deepEqual(dispatched, ['sm-update-ready']);
+  });
+
+  it('offers a new version once it has installed, whenever it was found', async () => {
+    // One the browser began installing as the page loaded.
+    const early = fakeWorker('installing');
+    const first = await bootstrap({ controller: {}, installing: early });
+    assert.deepEqual(first.dispatched, []);
+    early.become('installed');
+    assert.equal(first.page.smUpdateReady, early);
+    assert.deepEqual(first.dispatched, ['sm-update-ready']);
+
+    // One found later, while the app is open.
+    const { page, registration, dispatched } = await bootstrap({ controller: {} });
+    const later = fakeWorker('installing');
+    registration.installing = later;
+    registration.listeners.updatefound();
+    assert.deepEqual(dispatched, []);
+    later.become('installed');
+    assert.equal(page.smUpdateReady, later);
+    assert.deepEqual(dispatched, ['sm-update-ready']);
+    // A newer one still, which replaces it, is the one offered.
+    const newer = fakeWorker('installing');
+    registration.installing = newer;
+    registration.listeners.updatefound();
+    newer.become('installed');
+    later.become('redundant');
+    assert.equal(page.smUpdateReady, newer);
+  });
+
+  it('never offers the first version, which takes over at once', async () => {
+    const installing = fakeWorker('installing');
+    const { page, dispatched } = await bootstrap({ installing });
+    installing.become('installed');
+    installing.become('activated');
+    assert.equal(page.smUpdateReady, undefined);
+    assert.deepEqual(dispatched, []);
+  });
+
+  it('looks for a new version when the window comes back to the front, at most once an hour', async () => {
+    const { registration, document, clock } = await bootstrap({ controller: {} });
+    const hour = 60 * 60 * 1000;
+    const shown = (state) => {
+      document.visibilityState = state;
+      document.listeners.visibilitychange();
+    };
+    // The browser looked as the page loaded.
+    clock.now += hour - 1;
+    shown('visible');
+    assert.equal(registration.updates, 0);
+    clock.now += 1;
+    shown('hidden');
+    assert.equal(registration.updates, 0, 'not as it goes behind');
+    shown('visible');
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    shown('visible');
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    shown('visible');
+    assert.equal(registration.updates, 2);
+  });
+
+  it('looks for a new version when a window is brought forward without having been hidden', async () => {
+    const { registration, document, clock, listeners } = await bootstrap({ controller: {} });
+    const hour = 60 * 60 * 1000;
+    clock.now += hour - 1;
+    listeners.focus();
+    assert.equal(registration.updates, 0);
+    clock.now += 1;
+    listeners.focus();
+    assert.equal(registration.updates, 1);
+    // Within the hour, focused or shown again: not again.
+    clock.now += hour / 2;
+    listeners.focus();
+    document.listeners.visibilitychange();
+    assert.equal(registration.updates, 1);
+    clock.now += hour / 2;
+    document.listeners.visibilitychange();
+    listeners.focus();
+    assert.equal(registration.updates, 2);
+  });
+
+  /// The worker's controllerchange listeners: the restart's own (once), and
+  /// the one that follows a restart in another window.
+  const restartListeners = (serviceWorker) => serviceWorker.listeners.filter(({ options }) => options?.once);
+  const takeoverListeners = (serviceWorker) =>
+    serviceWorker.listeners.filter(({ type, options }) => type === 'controllerchange' && !options?.once);
+  const changeController = (serviceWorker) => serviceWorker.listeners.forEach(({ listener }) => listener());
+
+  it('restarts into the new version: it takes over, and the page reloads under it', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
+    page.smRestart();
+    assert.deepEqual(waiting.messages, [{ type: 'SKIP_WAITING' }]);
+    assert.equal(page.location.reloads, 0, 'not before it has taken over');
+    // Pressed again before it has: told again, with one reload to come.
+    page.smRestart();
+    assert.equal(waiting.messages.length, 2);
+    const restarts = restartListeners(serviceWorker);
+    assert.equal(restarts.length, 1);
+    assert.equal(restarts[0].type, 'controllerchange');
+    changeController(serviceWorker);
+    assert.equal(page.location.reloads, 1);
+    // Its own restart, not another window's.
+    assert.ok(!dispatched.includes('sm-update-took-over'));
+    assert.equal(page.smUpdateTookOver, undefined);
+  });
+
+  it('reloads at once where the new version took over in another window', async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker } = await bootstrap({ controller: {}, waiting });
+    waiting.become('activating');
+    page.smRestart();
+    assert.equal(page.location.reloads, 1);
+    assert.deepEqual(waiting.messages, []);
+    assert.deepEqual(restartListeners(serviceWorker), []);
+  });
+
+  it("tells the app when another window's restart has let the new version take this one over", async () => {
+    const waiting = fakeWorker('installed');
+    const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
+    assert.equal(takeoverListeners(serviceWorker).length, 1);
+    waiting.become('activated');
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, true);
+    assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
+    // The app then saves and restarts, which simply reloads.
+    page.smRestart();
+    assert.equal(page.location.reloads, 1);
+    assert.deepEqual(waiting.messages, []);
+  });
+
+  it('takes the first version taking over a first visit for no restart', async () => {
+    const { page, serviceWorker, dispatched } = await bootstrap();
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, undefined);
+    assert.deepEqual(dispatched, []);
+    // A later version, which another window restarted into, is one.
+    changeController(serviceWorker);
+    assert.equal(page.smUpdateTookOver, true);
+    assert.deepEqual(dispatched, ['sm-update-took-over']);
+  });
+
+  describe("shows a shortcut's page in the window it opens in", () => {
+    /// The addresses pushed on the window's history, each told to the app
+    /// as the browser's Back and Forward are, with no state of the app's.
+    const shown = ({ history, dispatched }) => {
+      const popped = dispatched.filter((event) => event.type === 'popstate');
+      assert.equal(popped.length, history.pushed.length);
+      assert.ok(popped.every((event) => event.state === null));
+      assert.ok(history.pushed.every(({ state, title }) => state === null && title === ''));
+      return history.pushed.map(({ url }) => url);
+    };
+
+    it('at its own address, as the app goes there from Back and Forward', async () => {
+      const fixture = await bootstrap({ launchQueue: true });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/progress' });
+      assert.deepEqual(shown(fixture), ['/app/progress']);
+      assert.equal(fixture.page.location.pathname, '/app/progress');
+      fixture.page.consumer({ targetURL: 'https://example.org/app/today' });
+      assert.deepEqual(shown(fixture), ['/app/progress', '/app/today']);
+    });
+
+    it('keeping the page on show for a plain launch, or the page it is on', async () => {
+      const fixture = await bootstrap({ launchQueue: true, href: 'https://example.org/app/community/thread/1' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/?source=pwa' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/community/thread/1' });
+      fixture.page.consumer({});
+      assert.deepEqual(shown(fixture), []);
+    });
+
+    it("from an older version's shortcut, which names its page after #/", async () => {
+      const fixture = await bootstrap({ launchQueue: true });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/progress' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/progress' });
+      fixture.page.consumer({ targetURL: 'https://example.org/app/#/search?q=light' });
+      assert.deepEqual(shown(fixture), ['/app/progress', '/app/search?q=light']);
+    });
+
+    it("under the site's base, wherever the site is served from", async () => {
+      const fixture = await bootstrap({ launchQueue: true, href: 'https://example.org/today', base: 'https://example.org/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/' });
+      fixture.page.consumer({ targetURL: 'https://example.org/#/progress' });
+      assert.deepEqual(shown(fixture), ['/progress']);
+    });
   });
 });
 
@@ -441,5 +761,204 @@ describe('the build', () => {
     assert.match(config, /cacheName: runtimeCaches\.engine/);
     assert.match(config, /cacheName: runtimeCaches\.content/);
     assert.match(config, /skipWaiting: false/);
+  });
+
+  // Workbox passes over a file above maximumFileSizeToCacheInBytes with a
+  // warning alone; without main.dart.js the app opened offline on its
+  // loading screen and stayed there.
+  it('finds a file the app needs to open offline that the worker leaves out', () => {
+    const web = tempDir();
+    for (const name of ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js']) {
+      writeFileSync(join(web, name), '');
+    }
+    const entry = (url) => `{url:"${url}",revision:"0123"}`;
+    const worker = (urls) => `define(["./workbox-1"],(function(e){"use strict";e.precacheAndRoute([${urls.map(entry).join(',')}],{})}));`;
+    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', 'icons/Icon-192.png'];
+    writeFileSync(join(web, 'sw.js'), worker(all));
+    assert.deepEqual(missingFromPrecache(web), []);
+    writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => !url.startsWith('main.dart.js'))));
+    assert.deepEqual(missingFromPrecache(web), ['main.dart.js', 'main.dart.js_1.part.js']);
+    // Unminified, as Workbox's development mode writes it.
+    writeFileSync(join(web, 'sw.js'), `precacheAndRoute(${JSON.stringify(all.slice(1).map((url) => ({ url, revision: '1' })), null, 2)});`);
+    assert.deepEqual(missingFromPrecache(web), ['index.html']);
+    writeFileSync(join(web, 'sw.js'), 'self.addEventListener("fetch", () => {});');
+    assert.throws(() => missingFromPrecache(web), /precaches nothing/);
+  });
+
+  it('is checked in CI, once Workbox has written it, before the build is uploaded', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const written = ci.indexOf('npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs');
+    const checked = ci.indexOf('node tool/web/sw_build.cjs check build/web');
+    assert.ok(written >= 0 && checked > written, 'the check follows the worker');
+    assert.ok(checked < ci.indexOf('name: web\n'), 'and comes before the upload');
+    // No size of its own leaves a file out.
+    const limit = /maximumFileSizeToCacheInBytes: (.+),/.exec(read('workbox-config.cjs'));
+    assert.ok(limit && Function(`return ${limit[1]}`)() >= 32 * 1024 * 1024, 'room for any main.dart.js');
+  });
+
+  it("serves the app for any of its pages' addresses, offline too, and leaves files to the server", () => {
+    const config = read('workbox-config.cjs');
+    assert.match(config, /navigateFallback: 'index\.html',/);
+    assert.match(config, /navigateFallbackDenylist: \[fileNavigation\],/);
+    assert.match(config, /'index\.html',/, 'which the worker precaches');
+    // As Workbox tests a navigation: its address's path and query.
+    for (const page of [
+      '/app/',
+      '/app/community',
+      '/app/community/thread/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+      '/app/community/legal/guidelines',
+      '/app/legal/privacy',
+      '/app/read/5787:1/0?verse=28:12',
+      '/app/celebrate/sefer:5787:0',
+      '/app/search?q=1.5',
+      '/app/search?q=a/b.c',
+      '/today',
+    ]) {
+      assert.equal(fileNavigation.test(page), false, page);
+    }
+    for (const file of [
+      '/app/legal/privacy.html',
+      '/app/legal/delete-account.he.html?utm_source=play',
+      '/app/og.png',
+      '/app/manifest.json',
+      '/legal/support.html',
+    ]) {
+      assert.equal(fileNavigation.test(file), true, file);
+    }
+  });
+
+  it("gives every page's address the app on GitHub Pages, as the finished index.html", () => {
+    const ci = read('.github/workflows/ci.yml');
+    const copied = ci.indexOf('cp build/web/index.html build/web/404.html');
+    assert.ok(copied >= 0, 'CI copies index.html to 404.html');
+    // After every step that changes index.html, before the worker precaches.
+    for (const step of [
+      'node tool/web/preload_fonts.mjs build/web',
+      'node tool/legal/build_html.mjs build/web',
+      'name: Absolute link-preview URLs',
+    ]) {
+      const at = ci.indexOf(step);
+      assert.ok(at >= 0 && at < copied, step);
+    }
+    assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, 'nothing changes it after');
+    assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
+    assert.match(read('docs/RELEASE.md'), /`cp build\/web\/index\.html build\/web\/404\.html`/);
+  });
+
+  it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {
+    assert.match(read('workbox-config.cjs'), /'main\.dart\.js',\n(?:\s*\/\/.*\n)*\s*'main\.dart\.js_\*\.part\.js',/);
+  });
+
+  it('holds main.dart.js to the budget docs/RELEASE.md records, unless a repository variable sets one', () => {
+    const budget = read('.github/workflows/ci.yml').match(/BUDGET: \$\{\{ vars\.BUDGET_MAIN_JS_GZIP \|\| '(\d+)' \}\}/);
+    assert.ok(budget, 'the Bundle size budget step');
+    assert.match(read('docs/RELEASE.md'), new RegExp(`\`${budget[1]}\` bytes`));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tool/web/preload_fonts.mjs
+
+describe("the fonts' preloads", () => {
+  /// A FontManifest.json as flutter build web writes it, in a build without
+  /// the CDN, with a font listed twice and one whose name needs encoding.
+  const manifest = [
+    { family: 'MaterialIcons', fonts: [{ asset: 'fonts/MaterialIcons-Regular.otf' }] },
+    {
+      family: 'EBGaramond',
+      fonts: [
+        { weight: 500, asset: 'assets/fonts/EBGaramond-Medium.ttf' },
+        { weight: 500, style: 'italic', asset: 'assets/fonts/EBGaramond-MediumItalic.ttf' },
+      ],
+    },
+    { family: 'Display', fonts: [{ asset: 'assets/fonts/My Font&Co.ttf' }, { asset: 'assets/fonts/EBGaramond-Medium.ttf' }] },
+    { family: 'Roboto', fonts: [{ asset: 'fonts/fallback/Roboto-Regular.ttf' }] },
+  ];
+
+  /// A build/web with the source index.html and [fonts] as its manifest.
+  function build(fonts = manifest) {
+    const web = tempDir();
+    mkdirSync(join(web, 'assets'));
+    writeFileSync(join(web, 'assets', 'FontManifest.json'), JSON.stringify(fonts));
+    writeFileSync(join(web, 'index.html'), html);
+    return web;
+  }
+
+  const preloads = (page) => [...page.matchAll(/<link rel="preload" href="([^"]*)" as="fetch" crossorigin>/g)].map((m) => m[1]);
+
+  it("preloads the manifest and every font in it, once each, as the engine fetches them", () => {
+    const web = build();
+    assert.deepEqual(preloadFonts(web), [
+      'fonts/MaterialIcons-Regular.otf',
+      'assets/fonts/EBGaramond-Medium.ttf',
+      'assets/fonts/EBGaramond-MediumItalic.ttf',
+      'assets/fonts/My Font&Co.ttf',
+      'fonts/fallback/Roboto-Regular.ttf',
+    ]);
+    const page = readFileSync(join(web, 'index.html'), 'utf8');
+    assert.deepEqual(preloads(page), [
+      'assets/FontManifest.json',
+      'assets/fonts/MaterialIcons-Regular.otf',
+      'assets/assets/fonts/EBGaramond-Medium.ttf',
+      'assets/assets/fonts/EBGaramond-MediumItalic.ttf',
+      'assets/assets/fonts/My%20Font&amp;Co.ttf',
+      'assets/fonts/fallback/Roboto-Regular.ttf',
+    ]);
+    // In place of the source's two, in the head, before the engine's script.
+    assert.equal(page.match(/rel="preload"/g).length, 6);
+    assert.ok(page.indexOf('assets/FontManifest.json') < page.indexOf('</head>'));
+    assert.ok(page.indexOf('</head>') < page.indexOf('flutter_bootstrap.js'));
+    // Nothing else changes.
+    const outside = (text) => text.replace(/<!-- preload:[\s\S]*?<!-- \/preload -->/, '');
+    assert.equal(outside(page), outside(html));
+  });
+
+  it('gives the same page when it runs again', () => {
+    const web = build();
+    preloadFonts(web);
+    const once = readFileSync(join(web, 'index.html'), 'utf8');
+    preloadFonts(web);
+    assert.equal(readFileSync(join(web, 'index.html'), 'utf8'), once);
+  });
+
+  it('keeps the indentation of its markers', () => {
+    const page = withPreloads('<head>\n    <!-- preload: tool/web/preload_fonts.mjs -->\n    <!-- /preload -->\n</head>', [
+      'fonts/a.otf',
+    ]);
+    assert.equal(
+      page,
+      [
+        '<head>',
+        '    <!-- preload: tool/web/preload_fonts.mjs -->',
+        '    <link rel="preload" href="assets/FontManifest.json" as="fetch" crossorigin>',
+        '    <link rel="preload" href="assets/fonts/a.otf" as="fetch" crossorigin>',
+        '    <!-- /preload -->',
+        '</head>',
+      ].join('\n'),
+    );
+  });
+
+  it("preloads the display fonts in the source, for a build that doesn't run it", () => {
+    assert.deepEqual(preloads(html), [
+      'assets/assets/fonts/EBGaramond-Medium.ttf',
+      'assets/assets/fonts/FrankRuhlLibre-Medium.ttf',
+    ]);
+  });
+
+  it('refuses a page without its markers, or a manifest without fonts', () => {
+    assert.throws(() => withPreloads('<head></head>', ['fonts/a.otf']), /no <!-- preload/);
+    assert.throws(() => fontAssets([]), /lists no fonts/);
+    assert.throws(() => fontAssets({ fonts: [] }), /not a list/);
+    assert.throws(() => fontAssets([{ family: 'A', fonts: [{ weight: 700 }] }]), /without an asset in A/);
+    assert.throws(() => preloadFonts(tempDir()), /FontManifest\.json/);
+  });
+
+  it('runs in CI right after the build, before the service worker precaches the page', () => {
+    const ci = read('.github/workflows/ci.yml');
+    const built = ci.indexOf('flutter build web');
+    const preloaded = ci.indexOf('node tool/web/preload_fonts.mjs build/web');
+    assert.ok(built >= 0 && preloaded > built, 'after flutter build web');
+    assert.ok(preloaded < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
+    assert.match(read('docs/RELEASE.md'), /node tool\/web\/preload_fonts\.mjs build\/web/);
   });
 });

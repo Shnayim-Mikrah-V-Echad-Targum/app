@@ -121,9 +121,10 @@ void main() {
       expect(manifest['description'], isNotEmpty);
     });
 
+    // At the pages' own addresses (lib/main.dart's path URLs).
     test('has shortcuts to Today and Progress, with icons', () {
       final shortcuts = (manifest['shortcuts'] as List).cast<Map<String, dynamic>>();
-      expect([for (final s in shortcuts) s['url']], ['./#/today', './#/progress']);
+      expect([for (final s in shortcuts) s['url']], ['./today', './progress']);
       for (final shortcut in shortcuts) {
         for (final icon in (shortcut['icons'] as List).cast<Map<String, dynamic>>()) {
           final (w, h) = _pngSize('web/${icon['src']}');
@@ -151,6 +152,41 @@ void main() {
       expect(ratios.keys, unorderedEquals(['narrow', 'wide']));
       expect(ratios.values.every((r) => r.length == 1), isTrue, reason: 'one aspect ratio per form factor');
     });
+
+    // That they are the ones the goldens write, so that the dialog never
+    // shows a design the app has left behind, is checked beside them, in
+    // test/goldens/screens_golden_test.dart.
+  });
+
+  // Each page has an address of its own (…/community/thread/1), as the
+  // manifest's shortcuts and a discussion's Copy link name it.
+  // tool/web/web.test.mjs runs the move of an older link's #/ there, and the
+  // service worker's answer to any page's address.
+  test("the app's pages have path URLs from before the app starts", () {
+    final main = File('lib/main.dart').readAsStringSync();
+    final body = main.substring(main.indexOf('Future<void> main() async {'));
+    expect(body.indexOf('usePathUrlStrategy();'), allOf(isNonNegative, lessThan(body.indexOf('runApp('))));
+    expect(
+      html.indexOf("location.hash.indexOf('#/') === 0"),
+      allOf(isNonNegative, lessThan(html.indexOf('flutter_bootstrap.js'))),
+    );
+  });
+
+  // So that main.dart.js never holds the database's zones, which its own
+  // file (main.dart.js_N.part.js) brings once a city's times need them. CI's
+  // Bundle size budget step looks for one in the build, too.
+  test('the time-zone database is imported only as a deferred library', () {
+    final imports = <String>[];
+    for (final file in Directory('lib').listSync(recursive: true).whereType<File>()) {
+      if (!file.path.endsWith('.dart')) continue;
+      for (final line in file.readAsLinesSync()) {
+        if (line.trimLeft().startsWith(RegExp('(import|export) .package:timezone/data/'))) imports.add('${file.path}: $line');
+      }
+    }
+    expect(imports, isNotEmpty);
+    for (final import in imports) {
+      expect(import, matches(RegExp(r"^\S+: import 'package:timezone/data/[\w.]+' deferred as \w+;$")));
+    }
   });
 
   group('offline', () {

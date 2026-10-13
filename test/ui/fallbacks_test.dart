@@ -1,7 +1,13 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shnayim_mikrah/features/settings/app_settings.dart';
+import 'package:shnayim_mikrah/ui/theme/palette.dart';
 import 'package:shnayim_mikrah/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikrah/ui/widgets/ornaments.dart';
+import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 
 import '../helpers.dart';
 
@@ -96,4 +102,213 @@ void main() {
       expect(retries, 1);
     });
   });
+
+  group('AppErrorPanel', () {
+    const english = 'Something on this page didn’t load.';
+    const hebrew = 'חלק מהדף לא נטען.';
+
+    /// [child], within which a widget fails to build, in a release build.
+    Future<void> pumpFailing(
+      WidgetTester tester,
+      Widget Function(Widget broken) child, {
+      bool hebrew = false,
+      AppThemeMode theme = AppThemeMode.light,
+      double textScale = 1,
+    }) async {
+      final builder = ErrorWidget.builder;
+      AppErrorPanel.install(debug: false);
+      // Put back before the test ends, as the binding checks.
+      try {
+        await pumpThemed(tester, child(const _Fails()), hebrew: hebrew, theme: theme, textScale: textScale);
+      } finally {
+        ErrorWidget.builder = builder;
+      }
+      expect(tester.takeException(), isA<StateError>());
+    }
+
+    Widget Function(Widget) slot(double width, double height) =>
+        (broken) => Center(child: SizedBox(width: width, height: height, child: broken));
+
+    Color paper(WidgetTester tester) => tester
+        .widget<ColoredBox>(find.descendant(of: find.byType(AppErrorPanel), matching: find.byType(ColoredBox)))
+        .color;
+
+    /// Whether the panel paints anything but its sentence: within the app's
+    /// theme, the surface beneath shows through.
+    Finder paperPainted() => find.descendant(of: find.byType(AppErrorPanel), matching: find.byType(ColoredBox));
+
+    for (final (inHebrew, text) in [(false, english), (true, hebrew)]) {
+      testWidgets('stands calmly for a widget that fails, in ${inHebrew ? 'Hebrew' : 'English'}', (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpFailing(tester, slot(300, 120), hebrew: inHebrew);
+        expect(find.byType(AppErrorPanel), findsOneWidget);
+        expect(find.byType(ErrorWidget), findsNothing, reason: 'no grey box');
+        expect(find.text(text), findsOneWidget);
+        expect(tester.getCenter(find.text(text)), tester.getCenter(find.byType(AppErrorPanel)));
+        expect(tester.widget<Text>(find.text(text)).textDirection, inHebrew ? TextDirection.rtl : TextDirection.ltr);
+        // Read once, as the sentence, in its own direction.
+        expect(
+          tester.getSemantics(find.byType(AppErrorPanel)),
+          isSemantics(label: text, textDirection: inHebrew ? TextDirection.rtl : TextDirection.ltr),
+        );
+        expect(find.bySemanticsLabel(text), findsOneWidget);
+        semantics.dispose();
+      });
+    }
+
+    for (final (width, height) in [(100.0, 120.0), (300.0, 40.0)]) {
+      testWidgets('where the line has no room ($width × $height), is only the page beneath, said all the same',
+          (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpFailing(tester, slot(width, height));
+        expect(find.text(english), findsNothing);
+        expect(tester.getSize(find.byType(AppErrorPanel)), Size(width, height));
+        expect(paperPainted(), findsNothing);
+        expect(find.bySemanticsLabel(english), findsOneWidget);
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('in a list, is as tall as its line and 12 either side', (tester) async {
+      await pumpFailing(tester, (broken) => ListView(children: [broken]));
+      expect(tester.getSize(find.byType(AppErrorPanel)), const Size(800, 48));
+      expect(find.text(english), findsOneWidget);
+    });
+
+    testWidgets('at twice the text size, ends in an ellipsis rather than overflow its slot', (tester) async {
+      await pumpFailing(tester, slot(200, 60), textScale: 2);
+      final text = tester.widget<Text>(find.text(english));
+      expect(text.maxLines, 1, reason: 'one 48-high line fits in 60');
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(tester.getSize(find.text(english)).height, lessThanOrEqualTo(60));
+    });
+
+    for (final theme in [AppThemeMode.dark, AppThemeMode.sepia, AppThemeMode.highContrastDark]) {
+      testWidgets('writes in the ink of the app’s theme, on its page (${theme.name})', (tester) async {
+        await pumpFailing(tester, slot(300, 120), theme: theme);
+        final scheme = Theme.of(tester.element(find.byType(AppErrorPanel))).colorScheme;
+        expect(paperPainted(), findsNothing);
+        expect(tester.widget<Text>(find.text(english)).style?.color, scheme.onSurface);
+      });
+    }
+
+    testWidgets('is of a piece with the card it lies on', (tester) async {
+      await pumpFailing(tester, (broken) => Card(child: SizedBox(width: 300, height: 120, child: broken)));
+      expect(paperPainted(), findsNothing);
+      final scheme = Theme.of(tester.element(find.byType(AppErrorPanel))).colorScheme;
+      expect(tester.widget<Text>(find.text(english)).style?.color, scheme.onSurface);
+    });
+
+    testWidgets('on a surface of the other brightness, writes in the theme’s surface', (tester) async {
+      await pumpFailing(
+        tester,
+        (broken) => Material(color: Palettes.light.primary, child: SizedBox(width: 300, height: 120, child: broken)),
+      );
+      expect(paperPainted(), findsNothing);
+      expect(tester.widget<Text>(find.text(english)).style?.color, Palettes.light.surface);
+    });
+
+    // A group's rows paint their hairlines beneath them, and its card's
+    // corners stand clear of its rows: a failed row covers neither, and a
+    // row drawn as its share of the card keeps the card's paper.
+    for (final theme in [AppThemeMode.light, AppThemeMode.dark]) {
+      testWidgets('keeps a group’s hairlines, corners and paper about a failed row (${theme.name})', (tester) async {
+        final row = PaperRow(title: 'Reminders', onTap: () {});
+        // Each as it stands for a row that failed to build.
+        const broken = AppErrorPanel();
+        await pumpThemed(
+          tester,
+          Align(
+            alignment: Alignment.topCenter,
+            child: RepaintBoundary(
+              key: const Key('groups'),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // First, among and last in a card.
+                      PaperGroup(children: [SizedBox(height: 60, child: broken), row]),
+                      const SizedBox(height: 16),
+                      PaperGroup(children: [row, SizedBox(height: 60, child: broken), row]),
+                      const SizedBox(height: 16),
+                      PaperGroup(children: [row, SizedBox(height: 60, child: broken)]),
+                      const SizedBox(height: 16),
+                      // A row drawn as its share of the card.
+                      PaperGroupRow(first: true, last: false, child: SizedBox(height: 60, child: broken)),
+                      PaperGroupRow(first: false, last: true, child: row),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          theme: theme,
+        );
+        expect(find.byType(AppErrorPanel), findsNWidgets(4));
+        final context = tester.element(find.byType(AppErrorPanel).first);
+        final sefer = SeferColors.of(context);
+        final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(const Key('groups')));
+        final image = (await tester.runAsync(() => boundary.toImage()))!;
+        final data = (await tester.runAsync(() => image.toByteData(format: ui.ImageByteFormat.rawRgba)))!;
+        Color pixel(Offset global) {
+          final p = boundary.globalToLocal(global);
+          final i = (p.dy.floor() * image.width + p.dx.floor()) * 4;
+          return Color.fromARGB(data.getUint8(i + 3), data.getUint8(i), data.getUint8(i + 1), data.getUint8(i + 2));
+        }
+
+        final panels = [for (var i = 0; i < 4; i++) tester.getRect(find.byType(AppErrorPanel).at(i))];
+        // The hairline under each failed row that has one, drawn within its
+        // foot, past its inset.
+        for (final panel in [panels[0], panels[1], panels[3]]) {
+          expect(pixel(Offset(panel.right - 24, panel.bottom - 0.5)), isNot(sefer.paper));
+        }
+        // The card's paper beside each failed row's sentence, never the page's.
+        for (final panel in panels) {
+          expect(pixel(Offset(panel.left + 8, panel.center.dy)), sefer.paper);
+        }
+        // Nothing of the card outside its rounded corners, about a failed
+        // first row and a failed last row.
+        expect(pixel(panels[0].topLeft + const Offset(0.5, 0.5)), isNot(sefer.paper));
+        expect(pixel(panels[2].bottomRight - const Offset(0.5, 0.5)), isNot(sefer.paper));
+        image.dispose();
+      });
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('above the app’s theme, takes the device’s light or dark paper (${brightness.name})',
+          (tester) async {
+        tester.platformDispatcher.platformBrightnessTestValue = brightness;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        final builder = ErrorWidget.builder;
+        AppErrorPanel.install(debug: false);
+        try {
+          // No theme, no localizations, no directionality: only the view.
+          await tester.pumpWidget(const _Fails());
+        } finally {
+          ErrorWidget.builder = builder;
+        }
+        expect(tester.takeException(), isA<StateError>());
+        final scheme = brightness == Brightness.dark ? Palettes.dark : Palettes.light;
+        expect(paper(tester), scheme.surface);
+        expect(tester.widget<Text>(find.text(english)).style?.color, scheme.onSurface);
+      });
+    }
+
+    testWidgets('leaves a debug build its red screen', (tester) async {
+      final builder = ErrorWidget.builder;
+      AppErrorPanel.install(debug: true);
+      expect(ErrorWidget.builder, same(builder));
+    });
+  });
+}
+
+/// A widget that fails to build.
+class _Fails extends StatelessWidget {
+  const _Fails();
+
+  @override
+  Widget build(BuildContext context) => throw StateError('broken');
 }

@@ -196,6 +196,10 @@ class _Cities extends ConsumerWidget {
       );
     }
     final zone = ref.watch(deviceTimeZoneProvider).value;
+    // The places on the device's clock in another zone, as for an old name
+    // such as US/Eastern, once the time-zone database is in; until then,
+    // or if it can't load, those in its own zone.
+    ref.watch(timeZoneDatabaseProvider);
     // The chosen city is already at the top.
     final nearby = [
       if (zone != null)

@@ -727,9 +727,10 @@ class NoticeBanner extends StatelessWidget {
     final dismiss = onDismiss;
     // The text starts at the top beside the icon, which stands on its first
     // line however many lines it runs to, as it does beside a title, a
-    // close button or a button below; only a text beside a button at its
-    // end is centred with the two on the row.
-    final topAligned = action == null || below != null || title != null || dismiss != null || marginalia;
+    // close button alone or a button below; only a text beside a button at
+    // its end is centred with the two on the row, and with a close button
+    // after it.
+    final topAligned = action == null || below != null || title != null || marginalia;
     // The height of the first line: the title's, or the text's.
     final first = title != null ? titleStyle! : style!;
     final firstLine = MediaQuery.textScalerOf(context).scale(first.fontSize!) * first.height!;
@@ -760,9 +761,9 @@ class NoticeBanner extends StatelessWidget {
         if (dismiss != null)
           // Centred on the first line, its 48 dp target reaching the edge at
           // most: raised into the padding while the line is shorter than the
-          // target.
+          // target; or centred on the row with a button beside it.
           Transform.translate(
-            offset: Offset(0, math.max(-12.0, (firstLine - 48) / 2)),
+            offset: Offset(0, topAligned ? math.max(-12.0, (firstLine - 48) / 2) : 0),
             child: IconButton(
               tooltip: dismissLabel,
               icon: Icon(Icons.close, size: 20, color: ink),

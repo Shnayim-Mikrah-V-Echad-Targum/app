@@ -18,6 +18,9 @@ From the repository root:
                                                 # web's link preview, shortcut
                                                 # icons and loading mark, and
                                                 # iOS's shortcut icon
+    python3 tool/branding/make_icon.py --feature-graphic
+                                                # Google Play's feature
+                                                # graphic (store/play/)
 
 A Hebrew reader checks the results by eye before every release.
 """
@@ -117,6 +120,13 @@ HAIRLINE = '#D8CFBF'
 GOLD_LEAF = '#B38D3F'
 OG_TITLE_HE = 'שניים מקרא ואחד תרגום'
 OG_TITLE_EN = 'Shnayim Mikrah v’Echad Targum'
+# Google Play's feature graphic: the link preview's composition on Play's
+# 1024 × 500, without alpha, everything that matters in the middle 70% each
+# way, clear of the crops and overlays Play may lay over its edges.
+FEATURE_WIDTH, FEATURE_HEIGHT = 1024, 500
+FEATURE_MARGIN = 0.15
+FEATURE_SCALE = 0.85
+FEATURE_GRAPHIC = ROOT / 'store' / 'play' / 'feature-graphic.png'
 # The web app's shortcuts (manifest.json) wear the navigation's icons
 # (lib/app/shell.dart): Icons.today and Icons.donut_large, from the Material
 # icons font in the Flutter SDK.
@@ -389,48 +399,88 @@ def tile_at(mark: Mark, x: float, y: float, side: float) -> str:
             + group(mark).replace('\n', '') + '</g>')
 
 
-def og_image(mark: Mark) -> str:
-    """The link preview, as the About header is laid out: the mark's tile,
-    the full name in Hebrew (Techelet) and in English, a divider between,
-    on Klaf in a title page's frame. Everything sits in the middle 630 px,
-    so a square crop keeps it."""
-    centre = OG_WIDTH / 2
-    tile = 168
-    top = 126
-    he_baseline = top + tile + 98
-    divider = he_baseline + 40
-    en_baseline = divider + 62
+# The title block's lengths at 1×, from the tile's top: the tile, the
+# baselines of the Hebrew and the English, and the divider between them.
+TITLE_TILE = 168
+TITLE_HE_BASELINE = TITLE_TILE + 98
+TITLE_DIVIDER = TITLE_HE_BASELINE + 40
+TITLE_EN_BASELINE = TITLE_DIVIDER + 62
+
+
+def title_block(mark: Mark, *, centre: float, top: float,
+                scale: float = 1.0) -> tuple[str, float]:
+    """The About header's title block at [scale], centred on x = [centre]
+    from y = [top]: the mark's tile, the full name in Hebrew (Techelet), a
+    SeferDivider and the name in English. Returns the SVG and the width of
+    its widest line."""
+    tile = TITLE_TILE * scale
+    he_baseline = top + TITLE_HE_BASELINE * scale
+    divider = top + TITLE_DIVIDER * scale
+    en_baseline = top + TITLE_EN_BASELINE * scale
     hebrew, he_width = text_path(FONTS / 'FrankRuhlLibre-Medium.ttf', OG_TITLE_HE,
-                                 58, centre=centre, baseline=he_baseline,
+                                 58 * scale, centre=centre, baseline=he_baseline,
                                  fill=TECHELET, direction='rtl')
     english, en_width = text_path(FONTS / 'EBGaramond-Medium.ttf', OG_TITLE_EN,
-                                  36, centre=centre, baseline=en_baseline,
+                                  36 * scale, centre=centre, baseline=en_baseline,
                                   fill=INK_VARIANT)
-    if max(he_width, en_width, tile) > OG_HEIGHT - 2 * 48:
-        fail('the link preview is too wide for a square crop')
     # SeferDivider (§7.2) at 2×, 0.45 of the square crop wide: hairlines to
     # 20 px short of a gold lozenge.
     rules = ''.join(
         f'<path d="M{num(a)} {num(divider)}H{num(b)}" stroke="{HAIRLINE}" '
-        'stroke-width="2"/>'
-        for a, b in ((centre - 140, centre - 20), (centre + 20, centre + 140)))
-    lozenge = (f'<path fill="{GOLD_LEAF}" d="M{num(centre)} {num(divider - 8)}'
-               f'L{num(centre + 8)} {num(divider)}L{num(centre)} '
-               f'{num(divider + 8)}L{num(centre - 8)} {num(divider)}Z"/>')
-    # TitlePageFrame (§7.4) at 2×: a hairline, and a gold rule inset within it.
-    frame = (f'<rect x="32" y="32" width="{OG_WIDTH - 64}" height="{OG_HEIGHT - 64}" '
+        f'stroke-width="{num(2 * scale)}"/>'
+        for a, b in ((centre - 140 * scale, centre - 20 * scale),
+                     (centre + 20 * scale, centre + 140 * scale)))
+    lozenge = (f'<path fill="{GOLD_LEAF}" d="M{num(centre)} {num(divider - 8 * scale)}'
+               f'L{num(centre + 8 * scale)} {num(divider)}L{num(centre)} '
+               f'{num(divider + 8 * scale)}L{num(centre - 8 * scale)} {num(divider)}Z"/>')
+    body = '\n'.join([tile_at(mark, centre - tile / 2, top, tile),
+                      hebrew, rules, lozenge, english])
+    return body, max(he_width, en_width, tile)
+
+
+def title_page(width: int, height: int, body: str) -> str:
+    """[body] on Klaf in a title page's frame (§7.4) at 2×: a hairline, and
+    a gold rule inset within it."""
+    frame = (f'<rect x="32" y="32" width="{width - 64}" height="{height - 64}" '
              f'rx="24" fill="none" stroke="{HAIRLINE}" stroke-width="2"/>'
-             f'<rect x="44" y="44" width="{OG_WIDTH - 88}" height="{OG_HEIGHT - 88}" '
+             f'<rect x="44" y="44" width="{width - 88}" height="{height - 88}" '
              f'rx="16" fill="none" stroke="{GOLD_LEAF}" stroke-width="2"/>')
-    body = '\n'.join([
-        f'<rect width="{OG_WIDTH}" height="{OG_HEIGHT}" fill="{KLAF}"/>',
-        frame,
-        tile_at(mark, centre - tile / 2, top, tile),
-        hebrew, rules, lozenge, english,
-    ])
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{OG_WIDTH}" '
-            f'height="{OG_HEIGHT}" viewBox="0 0 {OG_WIDTH} {OG_HEIGHT}">\n'
-            + GRADIENT_DEFS + body + '\n</svg>\n')
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" '
+            f'height="{height}" viewBox="0 0 {width} {height}">\n'
+            + GRADIENT_DEFS
+            + '\n'.join([f'<rect width="{width}" height="{height}" fill="{KLAF}"/>',
+                         frame, body])
+            + '\n</svg>\n')
+
+
+def og_image(mark: Mark) -> str:
+    """The link preview, as the About header is laid out. Everything sits in
+    the middle 630 px, so a square crop keeps it."""
+    body, widest = title_block(mark, centre=OG_WIDTH / 2, top=126)
+    if widest > OG_HEIGHT - 2 * 48:
+        fail('the link preview is too wide for a square crop')
+    return title_page(OG_WIDTH, OG_HEIGHT, body)
+
+
+def feature_safe_area() -> tuple[float, float, float, float]:
+    """The middle of the feature graphic, where everything that matters is."""
+    return (FEATURE_MARGIN * FEATURE_WIDTH, FEATURE_MARGIN * FEATURE_HEIGHT,
+            (1 - FEATURE_MARGIN) * FEATURE_WIDTH, (1 - FEATURE_MARGIN) * FEATURE_HEIGHT)
+
+
+def feature_graphic(mark: Mark) -> str:
+    """Google Play's feature graphic: the link preview's title block, smaller,
+    with its letters centred in the safe area."""
+    left, top, right, bottom = feature_safe_area()
+    span = TITLE_EN_BASELINE * FEATURE_SCALE
+    block_top = round((FEATURE_HEIGHT - span) / 2)
+    body, widest = title_block(mark, centre=FEATURE_WIDTH / 2, top=block_top,
+                               scale=FEATURE_SCALE)
+    # The English's descenders reach about a third of its size below it.
+    if widest > right - left or block_top < top or \
+            block_top + span + 12 * FEATURE_SCALE > bottom:
+        fail('the feature graphic\'s title leaves its safe area')
+    return title_page(FEATURE_WIDTH, FEATURE_HEIGHT, body)
 
 
 def loader_mark(mark: Mark) -> str:
@@ -633,6 +683,12 @@ def write_web(mark: Mark) -> None:
     write_loader_mark(mark)
 
 
+def write_feature_graphic(mark: Mark) -> None:
+    """Google Play's feature graphic, opaque (Play refuses alpha)."""
+    write_png(FEATURE_GRAPHIC, render(feature_graphic(mark), FEATURE_WIDTH,
+                                      height=FEATURE_HEIGHT, opaque=True))
+
+
 def write_post(mark: Mark) -> None:
     """Outputs flutter_launcher_icons cannot make, and the launch themes'
     system bars after flutter_native_splash; run after both."""
@@ -670,6 +726,10 @@ def main() -> None:
              'system bars; run after '
              '`dart run flutter_launcher_icons` and '
              '`dart run flutter_native_splash:create`')
+    parser.add_argument(
+        '--feature-graphic', action='store_true',
+        help='write only Google Play\'s feature graphic, '
+             f'{FEATURE_GRAPHIC.relative_to(ROOT)}')
     args = parser.parse_args()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -691,7 +751,9 @@ def main() -> None:
     print(f'Wordmark: letters {mark.letter_height:.0f} px tall, ink '
           f'{mark.word_width:.0f} px wide ({mark.advance_width:.0f} px of '
           f'advances); group spans y {mark.bounds[1]:.0f}–{mark.bounds[3]:.0f}.')
-    if args.post:
+    if args.feature_graphic:
+        write_feature_graphic(mark)
+    elif args.post:
         write_post(mark)
     else:
         write_sources(mark)

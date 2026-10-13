@@ -9,7 +9,7 @@ import 'package:shnayim_mikrah/app/city_providers.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
-import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/data/city_directory.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 import 'package:shnayim_mikrah/features/settings/screens/city_picker_screen.dart';
@@ -36,11 +36,11 @@ class _Notifications extends PhoneNotifications {
 
 void main() {
   late CityDirectory directory;
-  setUpAll(() {
+  setUpAll(() async {
     directory = CityDirectory.parse(File('assets/data/cities.json').readAsStringSync());
     // Loaded as the app loads it once the first frame is up, which tests
     // never report.
-    Zmanim.timeZone('UTC');
+    await ensureTimeZones();
   });
 
   Future<ProviderContainer> openReminders(WidgetTester tester, _Notifications service,

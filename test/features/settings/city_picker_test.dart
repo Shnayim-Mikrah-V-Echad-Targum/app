@@ -12,6 +12,7 @@ import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/data/city_directory.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
@@ -29,9 +30,12 @@ void main() {
   late CityDirectory directory;
   late City jerusalem;
 
-  setUpAll(() {
+  setUpAll(() async {
     directory = CityDirectory.parse(File('assets/data/cities.json').readAsStringSync());
     jerusalem = directory.cities.firstWhere((c) => c.nameEn == 'Jerusalem');
+    // Loaded as the app loads it once the first frame is up, which tests
+    // never report.
+    await ensureTimeZones();
   });
 
   City named(String name) => directory.cities.firstWhere((c) => c.nameEn == name);

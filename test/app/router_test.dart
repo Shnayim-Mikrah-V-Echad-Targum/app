@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/features/about/about_screen.dart';
 import 'package:shnayim_mikrah/features/about/guide_screen.dart';
@@ -8,8 +10,10 @@ import 'package:shnayim_mikrah/features/about/legal_screen.dart';
 import 'package:shnayim_mikrah/features/about/sources_screen.dart';
 import 'package:shnayim_mikrah/features/community/ui/account_screen.dart';
 import 'package:shnayim_mikrah/features/community/ui/community_screen.dart';
+import 'package:shnayim_mikrah/features/community/ui/thread_screen.dart';
 import 'package:shnayim_mikrah/features/onboarding/onboarding_screen.dart';
 import 'package:shnayim_mikrah/features/progress/progress_screen.dart';
+import 'package:shnayim_mikrah/features/reader/reader_screen.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 import 'package:shnayim_mikrah/features/settings/screens/accessibility_settings_screen.dart';
 import 'package:shnayim_mikrah/features/settings/screens/settings_screen.dart';
@@ -122,6 +126,41 @@ void main() {
     }
   });
 
+  // The address a discussion's Copy link gives, on the web, which opens it
+  // as a link from outside goes there.
+  group("a discussion's address", () {
+    testWidgets('opens it within Community, over the forums', (tester) async {
+      final router = await _pump(tester);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(find.text('Why read the Targum rather than a translation?'), findsWidgets);
+      expect(_tabShown(), 3);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(CommunityScreen), findsOneWidget);
+      expect(_tabShown(), 3);
+    });
+
+    testWidgets('of one that is not there (deleted, say) says so within Community, with a way to the forums',
+        (tester) async {
+      final router = await _pump(tester);
+      router.go('/community/thread/0');
+      await _settle(tester);
+      expect(find.byType(ThreadScreen), findsOneWidget);
+      expect(find.text('Page not found'), findsOneWidget);
+      expect(find.text('This discussion couldn’t be found. It may have been deleted.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.widgetWithText(TextField, 'Write a reply'), findsNothing);
+      expect(_tabShown(), 3);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'All forums'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CommunityScreen), findsOneWidget);
+    });
+  });
+
   group('on their own, over the tabs', () {
     const pages = [('/guide', GuideScreen), ('/sources', SourcesScreen), ('/legal/privacy', LegalScreen)];
     for (final (path, page) in pages) {
@@ -190,6 +229,99 @@ void main() {
         expect(router.state.uri.path, '/welcome');
       });
     }
+  });
+
+  // The site's own address, as a link from elsewhere gives it: with what
+  // the site that showed the link added (Facebook's ?fbclid=, a campaign's
+  // ?utm_source=), or its index.html by name.
+  group("the site's own address", () {
+    for (final address in ['/', '/?utm_source=x', '/?fbclid=abc', '/index.html', '/index.html?fbclid=abc']) {
+      testWidgets('$address opens Today', (tester) async {
+        final router = await _pump(tester);
+        router.go(address);
+        await _settle(tester);
+        expect(find.byType(TodayScreen), findsOneWidget);
+        expect(find.text('Page not found'), findsNothing);
+        expect(router.state.uri.path, '/today');
+      });
+
+      testWidgets('$address opens the welcome on a first visit', (tester) async {
+        final router = await _pump(tester, settings: const AppSettings());
+        router.go(address);
+        await _settle(tester);
+        expect(find.byType(OnboardingScreen), findsOneWidget);
+        expect(router.state.uri.path, '/welcome');
+      });
+    }
+  });
+
+  // A discussion shared with someone who has never opened the app.
+  group('a page a link opens before onboarding', () {
+    Future<(GoRouter, ProviderContainer)> firstVisit(WidgetTester tester, DateTime now) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final c = await pumpApp(tester, settings: const AppSettings(), now: now);
+      await tester.pumpAndSettle();
+      return (c.read(routerProvider), c);
+    }
+
+    testWidgets('opens once onboarding is done, beneath the reader it ends on', (tester) async {
+      final (router, _) = await firstVisit(tester, _now);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      await tester.tap(find.text('Start this week’s parsha'));
+      await tester.pumpAndSettle();
+      for (var step = 0; step < 2; step++) {
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+      }
+      final start = find.text('Start reading');
+      await tester.ensureVisible(start);
+      await tester.pumpAndSettle();
+      await tester.tap(start);
+      await _settle(tester);
+      expect(find.byType(ReaderScreen), findsOneWidget);
+
+      // Closing the reader shows the discussion, within Community.
+      await tester.tap(find.byType(BackButton));
+      await _settle(tester);
+      expect(find.byType(ReaderScreen), findsNothing);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(router.state.uri.path, '/community/thread/1');
+      expect(_tabShown(), 3);
+    });
+
+    testWidgets('opens once a restore has ended onboarding', (tester) async {
+      final (router, c) = await firstVisit(tester, _now);
+      router.go('/community/thread/1');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      // As restoring progress ends it.
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(onboardingComplete: true));
+      await _settle(tester);
+      expect(tester.widget<ThreadScreen>(find.byType(ThreadScreen)).threadId, '1');
+      expect(_tabShown(), 3);
+
+      // Once: the welcome, should it be asked for again, leads to Today.
+      router.go('/welcome');
+      await _settle(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+    });
+
+    testWidgets('is not held for an address that is no page, nor for Today', (tester) async {
+      final (router, c) = await firstVisit(tester, _now);
+      router.go('/no/such/page');
+      await _settle(tester);
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+      expect(c.read(heldLocationProvider).take(), isNull);
+      router.go('/today');
+      await _settle(tester);
+      expect(c.read(heldLocationProvider).take(), isNull);
+    });
   });
 
   group('a tab chosen', () {

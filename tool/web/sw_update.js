@@ -5,12 +5,13 @@
 //
 // The engine and the books are cached as they are used, not precached. A
 // new version's worker installs while the app is online, then waits until
-// the old version's windows have closed, so it may activate only when the
-// app is next opened, offline. While it installs, it therefore fetches into
-// its own caches every file that older caches of the same kind hold: the
-// update finishes installing with them, or not at all, and the old version
-// stays, with its own caches, until it can. Once the new version is active,
-// the older caches go.
+// the old version's windows have closed (or until Restart in one of them
+// lets it take over all of them, which then reload: web/flutter_bootstrap.js),
+// so it may activate only when the app is next opened, offline. While it
+// installs, it therefore fetches into its own caches every file that older
+// caches of the same kind hold: the update finishes installing with them, or
+// not at all, and the old version stays, with its own caches, until it can.
+// Once the new version is active, the older caches go.
 
 const CACHES = null;
 

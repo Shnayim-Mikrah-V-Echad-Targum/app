@@ -9,6 +9,7 @@ import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/tz_database.dart';
 import 'package:shnayim_mikrah/core/calendar/zmanim.dart';
 import 'package:shnayim_mikrah/features/settings/app_settings.dart';
 import 'package:shnayim_mikrah/features/today/today_clock.dart';
@@ -42,6 +43,7 @@ Duration _jerusalemClock(LocalDate d) =>
     tz.TZDateTime(Zmanim.timeZone(_jerusalem.timeZone)!, d.year, d.month, d.day, 12).timeZoneOffset;
 
 void main() {
+  setUpAll(ensureTimeZones);
   group('restDayProvider', () {
     /// The provider read at [now], with [settings], and a device on
     /// Jerusalem's clock with its time zones loaded.

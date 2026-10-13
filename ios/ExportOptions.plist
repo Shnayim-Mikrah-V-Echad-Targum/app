@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  How the Release workflow (.github/workflows/release.yml) exports the App
+  Store build, with flutter build ipa and its export-options-plist option.
+  In the workflow's checkout, tool/ios/sign_for_app_store.py replaces the
+  team and the profiles' names below with the repository variables
+  IOS_TEAM_ID, IOS_PROFILE_NAME and IOS_WIDGET_PROFILE_NAME. Every target the
+  app ships needs its profile here, by bundle id: the app and its widget
+  (docs/RELEASE.md, iOS).
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>export</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>teamID</key>
+	<string>IOS_TEAM_ID</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>org.shnayimmikrah.app</key>
+		<string>IOS_PROFILE_NAME</string>
+		<key>org.shnayimmikrah.app.ParshaWidget</key>
+		<string>IOS_WIDGET_PROFILE_NAME</string>
+	</dict>
+	<!-- The workflow numbers each build itself. -->
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>uploadSymbols</key>
+	<true/>
+</dict>
+</plist>

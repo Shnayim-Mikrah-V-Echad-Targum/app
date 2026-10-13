@@ -5,9 +5,14 @@
 //
 // which writes build/web/sw.js; web/flutter_bootstrap.js registers it.
 //
-// Precached: the app shell, its start-up fonts and data. Cached on first use:
-// the engine (only the variant the browser loads), the books, the fonts
-// loaded on demand, and the policy pages.
+// Precached: the app shell and its deferred parts, its start-up fonts and
+// data. Cached on first use: the engine (only the variant the browser
+// loads), the books, the fonts loaded on demand, and the policy pages.
+//
+// Every page of the app has an address of its own (lib/main.dart), and each
+// is the app: index.html, which the worker serves for any of them, offline
+// too, as the server serves its copy, 404.html (CI's web job), for an
+// address it has no file for.
 //
 // The engine's and the books' caches are named after the engine and the
 // texts this version was built with, so a new version never reads, or
@@ -17,7 +22,7 @@
 // installing only with them, so the app still opens, and opens those books,
 // offline after it.
 const { join } = require('node:path');
-const { cacheNames, writeUpdateScript } = require('./tool/web/sw_build.cjs');
+const { cacheNames, fileNavigation, writeUpdateScript } = require('./tool/web/sw_build.cjs');
 
 const web = join(__dirname, 'build', 'web');
 const runtimeCaches = cacheNames(web);
@@ -28,6 +33,9 @@ module.exports = {
   globPatterns: [
     'index.html',
     'main.dart.js',
+    // Its deferred parts, such as the time-zone database
+    // (lib/core/calendar/tz_database.dart), loaded once the app is up.
+    'main.dart.js_*.part.js',
     'flutter.js',
     'flutter_bootstrap.js',
     'manifest.json',
@@ -50,10 +58,21 @@ module.exports = {
   // The notifications plugin's worker goes unused: the web build schedules no
   // notifications.
   globIgnores: ['**/*.symbols', '**/NOTICES', '**/notifications_service_worker.js'],
-  maximumFileSizeToCacheInBytes: 6e6,
+  // Above anything the app ships: which files are precached is for
+  // globPatterns to say, not their size. Workbox would pass over a larger
+  // file with a warning alone, main.dart.js among them, and the app would
+  // not open offline; CI checks the worker for it (tool/web/sw_build.cjs).
+  maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
+  // Any page of the app, such as …/community/thread/1, opened or reloaded.
+  // A file, such as a policy page (legal/privacy.html), is left to the
+  // server and to the pages' cache below.
+  navigateFallback: 'index.html',
+  navigateFallbackDenylist: [fileNavigation],
   ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^cachebuster$/],
   // A new version waits until every window of the old one has closed, so a
-  // window never mixes the two.
+  // window never mixes the two. The app offers to restart into it instead
+  // (web/flutter_bootstrap.js), with the SKIP_WAITING message that the worker
+  // Workbox writes without skipWaiting answers.
   skipWaiting: false,
   clientsClaim: true,
   cleanupOutdatedCaches: true,
@@ -81,7 +100,8 @@ module.exports = {
       },
     },
     {
-      // Pages other than the app itself, such as legal/privacy.html.
+      // Pages other than the app itself, such as legal/privacy.html (see
+      // navigateFallbackDenylist).
       urlPattern: ({ request }) => request.mode === 'navigate',
       handler: 'NetworkFirst',
       options: {
