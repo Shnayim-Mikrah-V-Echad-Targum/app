@@ -130,6 +130,8 @@ CI (`.github/workflows/ci.yml`) runs analysis and every test, then builds all fo
 
 Releases come from the Release workflow (`.github/workflows/release.yml`), which a tag `vX.Y.Z` starts. It checks that the production configuration and the signing keys are all set, then builds with them and uploads to Google Play's internal testing, TestFlight and a draft GitHub release with the Windows installer (see [docs/RELEASE.md](docs/RELEASE.md#version)). CI's own builds are for checking, never for the stores.
 
+Previews, tagged `v0.Y.Z`, come from the Pre-release workflow (`.github/workflows/prerelease.yml`) instead. It drafts a GitHub pre-release with the Windows installer (`tool/windows/build_msi.ps1`) and the Android web app (`tool/android_twa`), and deploys the web app to GitHub Pages (see [docs/RELEASE.md](docs/RELEASE.md#pre-releases)).
+
 ## Tests
 
 ```sh
@@ -175,6 +177,7 @@ tool/
   data/           scripts that generate the text assets, calendar tables and test fixtures
   l10n/           Hebrew translations and the ARB builder
   fonts/          builds static font instances from pinned google/fonts sources
+  android_twa/    the Android web app, a Trusted Web Activity of the site
 docs/             design notes, research, backend and release guides
 android/, ios/    platform projects; the home-screen widget's native side is
                   android/app/src/main/kotlin/…/ParshaWidgetProvider.kt with

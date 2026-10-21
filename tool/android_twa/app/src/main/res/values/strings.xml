@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shnayim Mikrah</string>
+
+    <!-- The site whose links this app may open as its own (Digital Asset
+         Links). The site's /.well-known/assetlinks.json names this app's
+         package and signing certificate in return; the pre-release workflow
+         writes it with the run's certificate. -->
+    <string name="asset_statements" translatable="false">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://shnayimmikrah.org\"}}]</string>
+</resources>
