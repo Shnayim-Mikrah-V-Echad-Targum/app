@@ -93,6 +93,7 @@ A popular ranking (Wikipedia): Friday after midday, then Friday after Shacharit,
   - Starts **only after Bereishit is read on Simchat Torah**. Until then the week's parsha is still Vezot HaBeracha. **[S]** (dinonline 2011/10/08 and 2014/10/15)
   - When Simchat Torah falls on Shabbat (possible in Israel), the Mishnah Acharona holds one may start right after Chatan Bereishit, without waiting for Mincha. **[S]**
   - The window before Shabbat Bereishit is therefore short, and in the diaspora it opens on Yom Tov, so in practice the user can start only after Yom Tov.
+  - App: when Bereshit is read on the Shabbat straight after a Friday Simchat Torah (outside Israel), its week has no weekday; the app plans it for Shabbat morning from a printed Chumash and counts it by its completion.
 - **Yom Tov on Shabbat ("skip week").** When a Yom Tov reading displaces the parsha, two weeks pass between the Shabbat Mincha that begins a parsha and the Shabbat it is read. The OU article (Mishnah Acharona) says the start time is still that earlier Shabbat Mincha, but the full conclusion was cut off in search results. **[U]** (outorah.org/p/81739)
 - **Festival readings themselves** (Yom Tov, Shabbat Chol HaMoed) carry **no Shnayim Mikrah obligation**. Terumat HaDeshen limits the obligation to the Shabbat parshiyot. **[S]** (sheilot.com guide; etzion.org.il)
 

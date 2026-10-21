@@ -26,6 +26,8 @@ class PlannedReminder {
     this.aliyot = const [],
     this.afterYomTov = false,
     this.onYomTov = true,
+    this.erevYomTov,
+    this.endsWithYomTov = false,
   });
 
   final ReminderKind kind;
@@ -49,6 +51,14 @@ class PlannedReminder {
   /// the reader. It is not for one who keeps a single day of Yom Tov but
   /// hears the reading outside Israel, a day after theirs.
   final bool onYomTov;
+
+  /// For the Erev Shabbat reminder: the Yom Tov that begins the evening it
+  /// comes, when the days of rest begin with one rather than with Shabbat.
+  final ErevYomTov? erevYomTov;
+
+  /// For the Erev Shabbat reminder: whether the days of rest that begin that
+  /// evening end with a Yom Tov, as when Shavuot follows Shabbat.
+  final bool endsWithYomTov;
 
   /// Stable, unique per day and kind.
   int get id => date.rd * 10 + kind.index;
@@ -162,9 +172,14 @@ ReminderZmanim Function(LocalDate) reminderZmanim(ShabbatCity place,
 ///    on the fast while it has no reading planned; the check-in after a
 ///    Shabbat just before it comes the morning after it;
 ///  * at most one a day — Erev Shabbat > after-Shabbat check-in > daily;
+///  * the Erev Shabbat reminder only on the last planned day straight before
+///    the parsha's days of rest, named for the Yom Tov when one begins that
+///    evening;
 ///  * the check-in only after a Shabbat whose parsha isn't finished, or
 ///    after Simchat Torah while Vezot HaBerachah isn't;
 ///  * daily reminders only on planned days whose reading isn't done yet;
+///    on the eve of Shabbat or Yom Tov, one set for after midday comes at
+///    [kErevShabbatLatestMinutes];
 ///  * nothing during a pause, and after a pause that runs past the [days]
 ///    ahead, [days] more of them from its end;
 ///  * after the last of them, one message that reminders have paused. Every
@@ -233,11 +248,15 @@ List<PlannedReminder> planReminders({
   }
 
   /// The daily reminder's time on [d]: the reader's, or earlier on the eve
-  /// of Shabbat or Yom Tov, to come before candle-lighting.
+  /// of Shabbat or Yom Tov, to come before candle-lighting. Without it, a
+  /// daily reminder set later comes at 11:30 on the eve rather than not at
+  /// all: on Hoshana Rabbah, the one reading day of Vezot HaBerachah, and on
+  /// a Friday without the Erev Shabbat reminder.
   int dailyAt(LocalDate d) {
     final candles = candlesOn(d);
-    if (candles == null) return prefs.dailyMinutes;
-    return math.max(0, math.min(prefs.dailyMinutes, candles - kDailyBeforeCandles));
+    if (candles != null) return math.max(0, math.min(prefs.dailyMinutes, candles - kDailyBeforeCandles));
+    if (rest(d.addDays(1))) return math.min(prefs.dailyMinutes, kErevShabbatLatestMinutes);
+    return prefs.dailyMinutes;
   }
 
   final byDay = <LocalDate, PlannedReminder>{};
@@ -287,8 +306,15 @@ List<PlannedReminder> planReminders({
       }
     }
 
-    if (prefs.erevShabbat && !progress.isComplete && plan.days.isNotEmpty && !week.portion.isVezotHaberakhah) {
-      final last = plan.days.last.date;
+    // On the last planned day, when nothing but days of rest lies between
+    // it and the parsha's Shabbat: not where weekdays kept free (Chol
+    // HaMoed) come between.
+    final last = plan.days.lastOrNull?.date;
+    if (prefs.erevShabbat &&
+        !progress.isComplete &&
+        last != null &&
+        !week.portion.isVezotHaberakhah &&
+        _onlyRestBetween(last, week.occasion, rest)) {
       final candles = candlesOn(last);
       offer(PlannedReminder(
         kind: ReminderKind.erevShabbat,
@@ -297,6 +323,8 @@ List<PlannedReminder> planReminders({
             ? prefs.erevShabbatMinutes.clamp(0, kErevShabbatLatestMinutes)
             : math.max(0, math.min(prefs.erevShabbatMinutes, candles - kErevShabbatBeforeCandles)),
         plan: plan,
+        erevYomTov: JewishHolidays.erevYomTov(last, israel: planner.oneDayYomTov),
+        endsWithYomTov: !JewishHolidays.lastRestDay(last.addDays(1), israel: planner.oneDayYomTov).isShabbat,
       ));
     }
 
@@ -361,6 +389,14 @@ List<PlannedReminder> planReminders({
   }
 
   return byDay.values.toList()..sort((a, b) => a.localDateTime.compareTo(b.localDateTime));
+}
+
+/// Whether every day after [from] and before [to] is a day of [rest].
+bool _onlyRestBetween(LocalDate from, LocalDate to, bool Function(LocalDate) rest) {
+  for (var d = from.addDays(1); d < to; d = d.addDays(1)) {
+    if (!rest(d)) return false;
+  }
+  return true;
 }
 
 int _priority(ReminderKind k) => switch (k) {

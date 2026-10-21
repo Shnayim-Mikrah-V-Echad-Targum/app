@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikrah/features/parsha/week_context.dart';
 import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikrah/features/progress/domain/reading_plan.dart';
@@ -175,7 +176,7 @@ void main() {
       expect(find.textContaining('midweek'), findsNothing);
     });
 
-    testWidgets('on Erev Yom Tov, it counts every aliyah left before Yom Tov', (tester) async {
+    testWidgets('on Erev Yom Tov with a reading day still ahead that week, it can wait for that day', (tester) async {
       // Tuesday 30 May 2028, Erev Shavuot 5788, in the week of Naso, read on
       // Shabbat 3 June: Friday is a reading day again. Nothing read since
       // Sunday, and Rishon to Chamishi planned by today.
@@ -185,12 +186,24 @@ void main() {
         now: DateTime(2028, 5, 30, 10),
       );
       expect(find.text('Rishon\u00A0– Chamishi'), findsOneWidget);
-      expect(
-        findWords('5 aliyot left to read before Yom Tov — or finish on Yom Tov from a Chumash and log it after Yom Tov.'),
-        findsOneWidget,
-      );
+      expect(findWords('5 aliyot to catch up before Yom Tov — or after it, on Friday.'), findsOneWidget);
+      expect(find.textContaining('or finish on Yom Tov'), findsNothing);
       expect(find.textContaining('midweek'), findsNothing);
       expect(find.textContaining('after Shabbat'), findsNothing);
+    });
+
+    testWidgets('on the eve of the last days of Pesach, with Friday still to read on', (tester) async {
+      // Tuesday 7 April 2026, outside Israel: the last days of Pesach on
+      // Wednesday and Thursday, and Shemini read on Shabbat the 11th.
+      // Rishon to Chamishi planned by today, none of them read.
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 3, 1));
+      await openToday(tester, settings: joined, now: DateTime(2026, 4, 7, 10));
+      expect(find.text('Rishon\u00A0– Chamishi'), findsOneWidget);
+      expect(findWords('5 aliyot to catch up before Yom Tov — or after it, on Friday.'), findsOneWidget);
+      expect(find.textContaining('or finish on Yom Tov'), findsNothing);
+
+      await openToday(tester, settings: joined.copyWith(language: AppLanguage.hebrew), now: DateTime(2026, 4, 7, 10));
+      expect(findWords('עוד 5 עליות להשלים לפני החג — או אחריו, ביום שישי.'), findsOneWidget);
     });
 
     testWidgets('on an Erev Yom Tov that runs into Shabbat, it is logged after Shabbat', (tester) async {
@@ -264,7 +277,7 @@ void main() {
         settings: hebrew.copyWith(joinDate: LocalDate(2028, 5, 1)),
         now: DateTime(2028, 5, 30, 10),
       );
-      expect(findWords('עוד 5 עליות לקרוא לפני החג — או לסיים בחג מתוך חומש ולרשום אחרי החג.'), findsOneWidget);
+      expect(findWords('עוד 5 עליות להשלים לפני החג — או אחריו, ביום שישי.'), findsOneWidget);
 
       await openToday(
         tester,
@@ -350,6 +363,45 @@ void main() {
       expect(catchUpDayFor(LocalDate(2027, 4, 26), oneDayYomTov: true), CatchUpDay.midweek);
       expect(catchUpDayFor(LocalDate(2027, 4, 27), oneDayYomTov: true), CatchUpDay.erevYomTov);
       expect(catchUpDayFor(LocalDate(2027, 4, 29), oneDayYomTov: true), CatchUpDay.thursday);
+    });
+
+    test("with the week's plan, the eve of days of rest knows a reading day of the week is still ahead", () {
+      const diaspora = ReadingPlanner(schedule: ParshaSchedule(israel: false));
+      const israel = ReadingPlanner(schedule: ParshaSchedule(israel: true));
+      WeekPlan planOf(ReadingPlanner planner, LocalDate day) => planner.planFor(planner.schedule.weekFor(day));
+      (CatchUpDay, LocalDate?) dayOf(ReadingPlanner planner, LocalDate today) {
+        final plan = planOf(planner, today);
+        final oneDayYomTov = planner.oneDayYomTov;
+        return (
+          catchUpDayFor(today, oneDayYomTov: oneDayYomTov, plan: plan),
+          nextPlannedDayAfterRest(today, plan, oneDayYomTov: oneDayYomTov),
+        );
+      }
+
+      // Shemini 5786, read on Shabbat 11 April 2026: the last days of
+      // Pesach are Wednesday and Thursday outside Israel, and Wednesday in
+      // Israel.
+      expect(planOf(diaspora, LocalDate(2026, 4, 7)).portion, const PortionId(26));
+      expect(dayOf(diaspora, LocalDate(2026, 4, 7)), (CatchUpDay.beforeYomTovMoreAfter, LocalDate(2026, 4, 10)));
+      expect(dayOf(israel, LocalDate(2026, 4, 7)), (CatchUpDay.beforeYomTovMoreAfter, LocalDate(2026, 4, 9)));
+      // Naso 5788, read on Shabbat 3 June 2028, after Shavuot on Wednesday
+      // (and Thursday).
+      expect(dayOf(diaspora, LocalDate(2028, 5, 30)), (CatchUpDay.beforeYomTovMoreAfter, LocalDate(2028, 6, 2)));
+      expect(dayOf(israel, LocalDate(2028, 5, 30)), (CatchUpDay.beforeYomTovMoreAfter, LocalDate(2028, 6, 1)));
+
+      // With nothing planned after them, as before.
+      // Erev Shavuot 5787 in Israel, Thursday 10 June 2027: Naso is read
+      // on the Shabbat straight after it.
+      expect([for (final d in planOf(israel, LocalDate(2027, 6, 10)).days) d.date].last, LocalDate(2027, 6, 10));
+      expect(dayOf(israel, LocalDate(2027, 6, 10)), (CatchUpDay.erevYomTovThenShabbat, null));
+      // Erev Rosh Hashanah 5789, Wednesday 20 September 2028, with Ha'azinu
+      // read on the Shabbat after both days.
+      expect(dayOf(diaspora, LocalDate(2028, 9, 20)), (CatchUpDay.erevYomTovThenShabbat, null));
+      // Hoshana Rabbah 5789 in Israel, Vezot HaBerachah's only day.
+      expect(planOf(israel, LocalDate(2028, 10, 11)).portion.isVezotHaberakhah, isTrue);
+      expect(dayOf(israel, LocalDate(2028, 10, 11)), (CatchUpDay.erevYomTov, null));
+      // Noach 5787's Friday.
+      expect(dayOf(diaspora, LocalDate(2026, 10, 16)), (CatchUpDay.erevShabbat, null));
     });
   });
 

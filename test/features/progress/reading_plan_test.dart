@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
+import 'package:shnayim_mikrah/core/calendar/hebrew_date.dart';
+import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
 import 'package:shnayim_mikrah/core/calendar/parsha_schedule.dart';
 import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
@@ -282,6 +284,107 @@ void main() {
       const abroad = ReadingPlanner(schedule: diaspora, oneDayYomTov: true);
       expect(datesOf(abroad), ['2027-04-25', '2027-04-26', '2027-04-27', '2027-04-29', '2027-04-30']);
       expect(datesOf(abroad), isNot(contains('2027-04-28')), reason: 'the seventh day is Yom Tov everywhere');
+    });
+  });
+
+  group('no day of rest, and no day kept free, is ever planned', () {
+    const israel = ParshaSchedule(israel: true);
+    PlanSettingsEntry Function(LocalDate) quietCholHamoed({bool quiet = true}) =>
+        (_) => PlanSettingsEntry(cholHamoedQuiet: quiet);
+
+    test('Bereshit on the Shabbat straight after a Friday Simchat Torah is read that morning', () {
+      // 5789 outside Israel: Simchat Torah, a Yom Tov, is Friday 13 October
+      // 2028, and Bereshit is read the next day.
+      final bereshit = diaspora.weekFor(d('2028-10-14'));
+      expect(bereshit.portion, const PortionId(1));
+      for (final type in ReadingPlanType.values) {
+        final plan = ReadingPlanner(schedule: diaspora, settingsAt: (_) => PlanSettingsEntry(plan: type))
+            .planFor(bereshit);
+        expect(plan.days, isEmpty, reason: '$type');
+        expect(plan.shabbatAliyot, [0, 1, 2, 3, 4, 5, 6], reason: '$type');
+      }
+    });
+
+    test('with Chol HaMoed kept free, the week before Pesach takes the parsha read straight after it', () {
+      // 5789 in Israel: Pesach begins on Shabbat 31 March 2029, and Shemini
+      // is read on Shabbat 7 April, after five days of Chol HaMoed and the
+      // seventh day of Pesach. Its week began on Sunday 25 March.
+      final week = israel.weekFor(d('2029-04-01'));
+      expect(week.portion, const PortionId(26));
+      expect(week.occasion, d('2029-04-07'));
+      final quiet = ReadingPlanner(schedule: israel, settingsAt: quietCholHamoed()).planFor(week);
+      expect(daysOf(quiet), [
+        '2029-03-25 [0]',
+        '2029-03-26 [1]',
+        '2029-03-27 [2]',
+        '2029-03-28 [3]',
+        '2029-03-29 [4]',
+        '2029-03-30 [5, 6]',
+      ]);
+      expect(quiet.shabbatAliyot, isEmpty);
+
+      // Without it, Chol HaMoed is read on, as usual.
+      expect(daysOf(ReadingPlanner(schedule: israel, settingsAt: quietCholHamoed(quiet: false)).planFor(week)), [
+        '2029-04-01 [0]',
+        '2029-04-02 [1]',
+        '2029-04-03 [2]',
+        '2029-04-04 [3, 4]',
+        '2029-04-05 [5, 6]',
+      ]);
+
+      // A reader who starts in that week before Pesach has it from then on;
+      // one who starts during Chol HaMoed, with no reading day left, the
+      // usual days.
+      ReadingPlanner from(String day) =>
+          ReadingPlanner(schedule: israel, settingsAt: quietCholHamoed(), starterFrom: d(day));
+      expect(daysOf(from('2029-03-27').planFor(week)), [
+        '2029-03-27 [0]',
+        '2029-03-28 [1, 2]',
+        '2029-03-29 [3, 4]',
+        '2029-03-30 [5, 6]',
+      ]);
+      expect(daysOf(from('2029-04-02').planFor(week)), daysOf(quiet));
+    });
+
+    test('in any week of twenty years, by any custom and plan', () {
+      for (final schedule in [diaspora, israel]) {
+        final weeks = <ReadingWeek>[];
+        for (var w = schedule.weekFor(d('2025-09-01')); w.start <= d('2046-10-01'); w = schedule.nextWeek(w)) {
+          weeks.add(w);
+        }
+        for (final oneDayYomTov in [true, false]) {
+          for (final quiet in [true, false]) {
+            for (final type in ReadingPlanType.values) {
+              final planner = ReadingPlanner(
+                schedule: schedule,
+                oneDayYomTov: oneDayYomTov,
+                settingsAt: (_) => PlanSettingsEntry(plan: type, cholHamoedQuiet: quiet),
+              );
+              for (final week in weeks) {
+                final plan = planner.planFor(week);
+                final label = '${week.portion} on ${week.occasion}, israel: ${schedule.israel}, '
+                    'oneDayYomTov: $oneDayYomTov, cholHamoedQuiet: $quiet, $type';
+                for (final day in plan.days) {
+                  final date = day.date;
+                  expect(JewishHolidays.isRestDay(date, israel: oneDayYomTov), isFalse, reason: '$date, $label');
+                  // Vezot HaBerachah's one day is Hoshana Rabbah, its
+                  // customary day (MB 285:18), whatever the setting.
+                  if (quiet && !week.portion.isVezotHaberakhah) {
+                    expect(
+                      JewishHolidays.isCholHamoed(HebrewDate.fromLocalDate(date), israel: oneDayYomTov),
+                      isFalse,
+                      reason: '$date, $label',
+                    );
+                  }
+                  expect(date >= week.start && date < week.occasion, isTrue, reason: '$date, $label');
+                }
+                final aliyot = [for (final day in plan.days) ...day.aliyot, ...plan.shabbatAliyot]..sort();
+                expect(aliyot, [0, 1, 2, 3, 4, 5, 6], reason: label);
+              }
+            }
+          }
+        }
+      }
     });
   });
 

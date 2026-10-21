@@ -398,7 +398,14 @@ ReminderCopy reminderCopy(
         body: '${l.notifDailyBody(parsha, verses, minutes)}$cue',
       );
     case ReminderKind.erevShabbat:
-      return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
+      // Named for the days of rest that begin that evening: a Yom Tov first,
+      // as the eve's own name has it, or Shabbat, logged after the Yom Tov
+      // that follows it, if one does.
+      final erevYomTov = r.erevYomTov;
+      if (erevYomTov != null) {
+        return (title: l.notifErevTitle(l.erevYomTov(erevYomTov.name), parsha), body: l.notifErevYomTovBody);
+      }
+      return (title: l.notifFridayTitle(parsha), body: r.endsWithYomTov ? l.notifFridayBodyThenYomTov : l.notifFridayBody);
     case ReminderKind.checkIn:
       // Vezot HaBerachah is read on Simchat Torah, a Yom Tov: by name, with
       // no "Shavua tov". For a reader whose Yom Tov ended the day before, by

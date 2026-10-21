@@ -137,6 +137,18 @@ ProgressState _cycleRead(int cycle, {int from = 1, int upTo = 54}) {
   return ProgressState(weeks: read);
 }
 
+/// Screens in the weeks around Pesach 5786, outside Israel, joined on 1 March
+/// with Vayikra and Tzav read ([_screenProgress]).
+const _pesach5786Screens = {
+  'today_festival_shabbat',
+  'today_before_festival_shabbat',
+  'today_festival_restore',
+  'today_festival_strip',
+  'today_festival_second_week',
+  'today_erev_yomtov_more',
+  'week_festival',
+};
+
 /// Week [id], whose first reading day is [first], read an aliyah a day,
 /// with the last two on the fifth day, up to aliyah [upTo] (exclusive).
 WeekProgress _readOnTheirDays(String id, LocalDate first, {int upTo = 7}) {
@@ -244,6 +256,24 @@ const _screens = {
   'today_grace': '/today',
   // Erev Tisha B'Av 5787, the day the reader joined.
   'today_erev_tisha_bav': '/today',
+  // Weeks whose Shabbat reads no weekly parsha, outside Israel: Shabbat Chol
+  // HaMoed Pesach 5786 at rest, the Sunday before it, Erev Pesach with Tzav
+  // still open and its week strip, Shemini's second week, and the first day
+  // of Sukkot 5787 on Shabbat, before Simchat Torah.
+  'today_festival_shabbat': '/today',
+  'today_before_festival_shabbat': '/today',
+  'today_festival_restore': '/today',
+  'today_festival_strip': '/today',
+  'today_festival_second_week': '/today',
+  'today_sukkot_shabbat': '/today',
+  // The same Tuesday, behind on Shemini, scrolled to the catch-up line:
+  // Friday is a reading day after the last days of Pesach.
+  'today_erev_yomtov_more': '/today',
+  // Sunday 15 October 2028, after Simchat Torah on Friday and Bereshit on
+  // Shabbat, outside Israel, with Vezot HaBerachah read on Hoshana Rabbah:
+  // the check-in asks about Bereshit, read only on Shabbat morning.
+  'today_after_friday_simchat_torah': '/today',
+  'today_erev_shabbat_festival': '/today',
   // Tisha B'Av 5787, behind on Va'etchanan and with Devarim still open:
   // the fast heads the page, which invites no reading; and its week strip.
   'today_tisha_bav': '/today',
@@ -269,6 +299,11 @@ const _screens = {
   'week_combined': '/week/5786:22-23',
   // A week and its haftarah opened within a tab, under its navigation bar.
   'week_tab': '/today/week/5787:1',
+  // Shemini 5786 from the Sunday before Pesach: its days dated.
+  'week_festival': '/today/week/5786:26',
+  // Bereshit 5789, after a Friday Simchat Torah outside Israel: every
+  // aliyah planned for Shabbat morning, still to read.
+  'week_friday_simchat_torah': '/today/week/5789:1',
   'haftarah_tab': '/parsha/haftarah/5787:1',
   'reader': '/read/5787:1/2',
   // Next week's, not yet open: the notice at the top of the text, in the
@@ -878,6 +913,8 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
   for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_erev_shabbat_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
+  for (final screen in ['today_after_friday_simchat_torah', 'week_friday_simchat_torah'])
+    screen: (s) => s.copyWith(joinDate: LocalDate(2028, 9, 1)),
   'today_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_yom_kippur': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_friday_night': (s) => s.copyWith(city: _jerusalem),
@@ -886,6 +923,9 @@ final _screenSettings = <String, AppSettings Function(AppSettings)>{
     screen: (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
   'today_checkin_yomtov': (s) => s.copyWith(joinDate: LocalDate(2029, 5, 1)),
   'today_erev_tisha_bav': (s) => s.copyWith(joinDate: LocalDate(2027, 8, 11)),
+  for (final screen in _pesach5786Screens) screen: (s) => s.copyWith(joinDate: LocalDate(2026, 3, 1)),
+  'today_sukkot_shabbat': (s) => s.copyWith(joinDate: LocalDate(2026, 9, 1)),
+  'today_erev_shabbat_festival': (s) => s.copyWith(joinDate: LocalDate(2029, 3, 1)),
   for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
     screen: (s) => s.copyWith(joinDate: LocalDate(2027, 8, 1)),
   'haftarah_chabad': (s) => s.withNusach(HaftarahNusach.chabad),
@@ -1024,6 +1064,21 @@ final _screenNow = <String, DateTime>{
   'today_pause_ended': DateTime(2026, 10, 12, 11),
   'today_grace': DateTime(2026, 10, 16, 11),
   'today_erev_tisha_bav': DateTime(2027, 8, 11, 11),
+  // Shabbat Chol HaMoed Pesach 5786, and the Sunday before it.
+  'today_festival_shabbat': DateTime(2026, 4, 4, 11),
+  'today_before_festival_shabbat': DateTime(2026, 3, 29, 11),
+  'week_festival': DateTime(2026, 3, 29, 11),
+  // Erev Pesach 5786, Wednesday 1 April.
+  'today_festival_restore': DateTime(2026, 4, 1, 11),
+  'today_festival_strip': DateTime(2026, 4, 1, 11),
+  // Tuesday 7 April 2026, Chol HaMoed, before the last days of Pesach.
+  'today_festival_second_week': DateTime(2026, 4, 7, 11),
+  'today_erev_yomtov_more': DateTime(2026, 4, 7, 11),
+  for (final screen in ['today_after_friday_simchat_torah', 'week_friday_simchat_torah'])
+    screen: DateTime(2028, 10, 15, 11),
+  // Shabbat 26 September 2026, the first day of Sukkot 5787.
+  'today_sukkot_shabbat': DateTime(2026, 9, 26, 11),
+  'today_erev_shabbat_festival': DateTime(2029, 3, 30, 15),
   // Thursday 12 August 2027, 9 Av 5787.
   'today_tisha_bav': DateTime(2027, 8, 12, 11),
   'today_tisha_bav_week': DateTime(2027, 8, 12, 11),
@@ -1063,6 +1118,10 @@ final _screenProgress = <String, ProgressState Function()>{
       }),
   for (final screen in ['today_erev_yomtov', 'today_erev_yomtov_afternoon']) screen: () => ProgressState(weeks: {}),
   'today_erev_shabbat_yomtov': () => ProgressState(weeks: {}),
+  'today_after_friday_simchat_torah': () => ProgressState(weeks: {
+        '5788:54': WeekProgress(weekId: '5788:54').withAll(LocalDate(2028, 10, 11)),
+      }),
+  'week_friday_simchat_torah': () => ProgressState(weeks: {}),
   for (final screen in ['today_checkin_vezot', 'today_checkin_vezot_date']) screen: () => ProgressState(weeks: {}),
   'today_late_yomtov': () => ProgressState(weeks: {}),
   'today_welcome_vezot': () => ProgressState(pauses: [Pause(LocalDate(2026, 9, 14), LocalDate(2026, 9, 18), id: 'away')]),
@@ -1073,6 +1132,14 @@ final _screenProgress = <String, ProgressState Function()>{
   'today_yomtov': () => ProgressState(weeks: {}),
   'today_yom_kippur': () => ProgressState(weeks: {}),
   'today_erev_tisha_bav': () => ProgressState(weeks: {}),
+  // Vayikra and Tzav read on their days; for the notice, Tzav not.
+  for (final screen in _pesach5786Screens)
+    screen: () => ProgressState(weeks: {
+          '5786:24': _readOnTheirDays('5786:24', LocalDate(2026, 3, 15)),
+          if (screen != 'today_festival_restore') '5786:25': _readOnTheirDays('5786:25', LocalDate(2026, 3, 22)),
+        }),
+  'today_sukkot_shabbat': () => ProgressState(weeks: {}),
+  'today_erev_shabbat_festival': () => ProgressState(weeks: {}),
   // Devarim read on its days but for Shevi'i; of Va'etchanan, Rishon to
   // Shlishi on theirs, and Wednesday's aliyot not yet.
   for (final screen in ['today_tisha_bav', 'today_tisha_bav_week'])
@@ -2357,11 +2424,14 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   // The catch-up line, on the eve of days of rest.
   'today_erev_yomtov': _showCatchUpLine,
   'today_erev_shabbat_yomtov': _showCatchUpLine,
+  'today_erev_yomtov_more': _showCatchUpLine,
   // The week strip, in the middle of the page.
   'today_yomtov_oneday': _showWeekStrip,
   'today_yomtov_twoday': _showWeekStrip,
   'today_joined_midweek': _showWeekStrip,
   'today_grace': _showWeekStrip,
+  'today_festival_strip': _showWeekStrip,
+  'today_festival_second_week': _showWeekStrip,
 };
 
 /// Scrolls the haftarah page's regular haftarah heading to [alignment].
@@ -2621,6 +2691,16 @@ const _narrowDesktopScreens = {
 
 const _desktopScreens = {
   'thread_guidelines',
+  // A week whose Shabbat has no weekly parsha: at rest, and the week before.
+  'today_festival_shabbat',
+  'today_before_festival_shabbat',
+  'today_festival_restore',
+  'week_festival',
+  // The catch-up line with a reading day after Yom Tov, Bereshit planned
+  // for Shabbat morning alone, and the check-in about it.
+  'today_erev_yomtov_more',
+  'week_friday_simchat_torah',
+  'today_after_friday_simchat_torah',
   // Today's offer of a new version, at the top of its reading column.
   'today_update',
   'about_update',
@@ -2834,6 +2914,14 @@ const _narrowScreens = {
 };
 const _bigTextScreens = {
   'thread_guidelines',
+  // The catch-up line with a reading day still ahead after Yom Tov, and a
+  // week planned for Shabbat morning alone.
+  'today_erev_yomtov_more',
+  'week_friday_simchat_torah',
+  // The title pages of a week whose Shabbat has no weekly parsha.
+  'today_festival_shabbat',
+  'today_before_festival_shabbat',
+  'today_sukkot_shabbat',
   'today_chabad',
   'today_update',
   'about_update',

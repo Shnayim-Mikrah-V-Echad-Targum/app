@@ -682,7 +682,7 @@ void main() {
       );
       expect(
         findWords(
-          'Finish Bereshit and Noach by Shabbat and your 2-week streak continues — '
+          'Finish Bereshit and Noach by Shabbat, October 17, and your 2-week streak continues — '
           'you can do this once in each book of the Torah.',
         ),
         findsOneWidget,
@@ -692,13 +692,59 @@ void main() {
     testWidgets('says both count, with no streak to keep', (tester) async {
       await openToday(tester, now: DateTime(2026, 10, 14, 9));
       expect(
-        findWords('Finish Bereshit and Noach by Shabbat and both count — you can do this once in each book of the Torah.'),
+        findWords(
+          'Finish Bereshit and Noach by Shabbat, October 17, and both count — '
+          'you can do this once in each book of the Torah.',
+        ),
         findsOneWidget,
       );
       expect(find.textContaining('streak continues'), findsNothing);
 
+      // Noach's Shabbat, 17 October, is 6 Cheshvan.
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), now: DateTime(2026, 10, 14, 9));
-      expect(findWords('אם מסיימים את בראשית ואת נח עד שבת, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש.'), findsOneWidget);
+      expect(
+        findWords('אם מסיימים את בראשית ואת נח עד שבת, ו׳ בחשון, שתיהן נחשבות — אפשר לעשות זאת פעם אחת בכל חומש.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('names the day both are due, a Shabbat weeks away after a festival', (tester) async {
+      // Erev Pesach 5786, with Tzav, read on 28 March, still to read:
+      // Shemini is read after Pesach, on 11 April.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2026, 3, 1)),
+        now: DateTime(2026, 4, 1, 9),
+        progress: const ProgressState(),
+      );
+      expect(
+        findWords(
+          'Finish Tzav and Shemini by Shabbat, April 11, and both count — '
+          'you can do this once in each book of the Torah.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('names Simchat Torah, by its weekday, for Vezot HaBerachah', (tester) async {
+      // Erev Sukkot 5787, with Ha'azinu, read on 19 September, still to
+      // read: Simchat Torah is on Sunday 4 October, or in Israel on Shabbat
+      // the 3rd.
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 9, 1));
+      for (final (settings, day) in [
+        (joined, 'Sunday, October 4'),
+        (joined.locatedIn(ReadingSchedule.israel), 'Saturday, October 3'),
+      ]) {
+        await openToday(tester, settings: settings, now: DateTime(2026, 9, 25, 9), progress: const ProgressState());
+        expect(
+          findWords(
+            'Finish Ha’azinu and Vezot HaBerachah by Simchat Torah, $day, and both count — '
+            'you can do this once in each book of the Torah.',
+          ),
+          findsOneWidget,
+          reason: day,
+        );
+      }
     });
   });
 

@@ -516,7 +516,8 @@ void main() {
       expect(find.text('Erev Shabbat'), findsNothing);
     });
 
-    testWidgets('in the week of Vezot HaBerachah, says on a Friday that Shabbat begins this evening', (tester) async {
+    testWidgets('in the week of Vezot HaBerachah, says on a Friday that Shabbat and Yom Tov begin this evening',
+        (tester) async {
       final joined = _settings.copyWith(joinDate: LocalDate(2026, 9, 1));
       // Friday 25 September 2026, Erev Sukkot 5787, which is on Shabbat,
       // after Haazinu was read: not "Simchat Torah in 9 days", nor 8 in
@@ -529,7 +530,7 @@ void main() {
           progress: ProgressState(weeks: {}),
         );
         expect(find.text('Simchat Torah'), findsOneWidget, reason: 'israel: $israel');
-        expect(find.text('Shabbat begins this evening'), findsOneWidget, reason: 'israel: $israel');
+        expect(find.text('Shabbat and Yom Tov begin this evening'), findsOneWidget, reason: 'israel: $israel');
         expect(find.textContaining('Simchat Torah in'), findsNothing, reason: 'israel: $israel');
       }
       // Hoshana Rabbah 5787, Friday 2 October 2026: outside Israel, Shabbat
@@ -537,7 +538,7 @@ void main() {
       // days off; in Israel, Simchat Torah is that Shabbat, tomorrow.
       final hoshanaRabbah = DateTime(2026, 10, 2, 11);
       await openToday(tester, settings: joined, now: hoshanaRabbah, progress: ProgressState(weeks: {}));
-      expect(find.text('Shabbat begins this evening'), findsOneWidget);
+      expect(find.text('Shabbat and Yom Tov begin this evening'), findsOneWidget);
       expect(find.text('Simchat Torah in 2 days'), findsNothing);
       await openToday(
         tester,
@@ -547,6 +548,104 @@ void main() {
       );
       expect(find.text('Simchat Torah is tomorrow'), findsOneWidget);
       expect(find.text('Shabbat begins this evening'), findsNothing);
+    });
+
+    testWidgets('in a week whose Shabbat has no parsha, names the next parsha', (tester) async {
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 3, 1));
+      final inIsrael = joined.locatedIn(ReadingSchedule.israel);
+      // Sunday 29 March 2026, with Shabbat Chol HaMoed Pesach ahead:
+      // Shemini is read the Shabbat after, in Israel too.
+      for (final settings in [joined, inIsrael]) {
+        await openToday(tester, settings: settings, now: DateTime(2026, 3, 29, 10), progress: ProgressState(weeks: {}));
+        final reason = settings.readingSchedule.name;
+        expect(find.text('Next parsha'), findsOneWidget, reason: reason);
+        expect(find.bySemanticsLabel('Parshat Shemini'), findsOneWidget, reason: reason);
+        expect(findWords('Read on Shabbat, April 11'), findsOneWidget, reason: reason);
+        expect(find.text('No weekly parsha this Shabbat'), findsOneWidget, reason: reason);
+        expect(find.text('Shabbat in 13 days'), findsNothing, reason: reason);
+        expect(find.text('Parshat HaShavua'), findsNothing, reason: reason);
+      }
+      // From the Sunday after, Shemini's own Shabbat is coming.
+      await openToday(tester, settings: joined, now: DateTime(2026, 4, 5, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Parshat HaShavua'), findsOneWidget);
+      expect(find.text('Shabbat in 6 days'), findsOneWidget);
+      expect(find.text('No weekly parsha this Shabbat'), findsNothing);
+
+      // Monday 2 April 2029, before the eighth day of Pesach on Shabbat,
+      // which only Israel, where Pesach is over, reads Shemini on.
+      await openToday(tester, settings: joined, now: DateTime(2029, 4, 2, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Next parsha'), findsOneWidget);
+      expect(find.text('No weekly parsha this Shabbat'), findsOneWidget);
+      await openToday(tester, settings: inIsrael, now: DateTime(2029, 4, 2, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Parshat HaShavua'), findsOneWidget);
+      expect(find.text('Shabbat in 5 days'), findsOneWidget);
+
+      // Sunday 17 May 2026, before Shavuot on Friday and, outside Israel,
+      // Shabbat.
+      await openToday(tester, settings: joined, now: DateTime(2026, 5, 17, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Next parsha'), findsOneWidget);
+      expect(find.text('No weekly parsha this Shabbat'), findsOneWidget);
+      await openToday(tester, settings: inIsrael, now: DateTime(2026, 5, 17, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Parshat HaShavua'), findsOneWidget);
+      expect(find.text('Shabbat in 6 days'), findsOneWidget);
+
+      // Monday 7 September 2026, before Rosh Hashanah on Shabbat.
+      await openToday(tester, settings: joined, now: DateTime(2026, 9, 7, 10), progress: ProgressState(weeks: {}));
+      expect(find.text('Next parsha'), findsOneWidget);
+      expect(find.text('No weekly parsha this Shabbat'), findsOneWidget);
+
+      // Erev Pesach 5786, Wednesday 1 April, in the afternoon: headed by
+      // the Yom Tov that begins this evening, as any eve is.
+      await openToday(tester, settings: joined, now: DateTime(2026, 4, 1, 15), progress: ProgressState(weeks: {}));
+      expect(find.text('Erev Yom Tov'), findsOneWidget);
+      expect(find.text('Yom Tov begins this evening'), findsOneWidget);
+
+      await openToday(
+        tester,
+        settings: joined.copyWith(language: AppLanguage.hebrew),
+        now: DateTime(2026, 3, 29, 10),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('הפרשה הבאה'), findsOneWidget);
+      expect(find.text('אין פרשת שבוע בשבת זו'), findsOneWidget);
+    });
+
+    testWidgets('on a Friday whose Shabbat is Yom Tov, names both', (tester) async {
+      // Erev Pesach 5789, Friday 30 March 2029.
+      final joined = _settings.copyWith(joinDate: LocalDate(2029, 3, 1));
+      await openToday(tester, settings: joined, now: DateTime(2029, 3, 30, 15), progress: ProgressState(weeks: {}));
+      expect(find.text('Erev Shabbat and Yom Tov'), findsOneWidget);
+      expect(find.text('Shabbat and Yom Tov begin this evening'), findsOneWidget);
+      expect(find.text('Erev Shabbat'), findsNothing);
+      await openToday(
+        tester,
+        settings: joined.copyWith(language: AppLanguage.hebrew),
+        now: DateTime(2029, 3, 30, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('ערב שבת וחג'), findsOneWidget);
+      expect(find.text('שבת וחג נכנסים הערב'), findsOneWidget);
+
+      // Erev Rosh Hashanah 5787, Friday 11 September 2026.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2026, 9, 1)),
+        now: DateTime(2026, 9, 11, 15),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Erev Shabbat and Rosh Hashanah'), findsOneWidget);
+      expect(find.text('Shabbat and Rosh Hashanah begin this evening'), findsOneWidget);
+
+      // Erev Yom Kippur 5789, Friday 29 September 2028, in the week of Vezot
+      // HaBerachah, which keeps its heading.
+      await openToday(
+        tester,
+        settings: _settings.copyWith(joinDate: LocalDate(2028, 9, 1)),
+        now: DateTime(2028, 9, 29, 11),
+        progress: ProgressState(weeks: {}),
+      );
+      expect(find.text('Simchat Torah'), findsOneWidget);
+      expect(find.text('Shabbat and Yom Kippur begin this evening'), findsOneWidget);
     });
 
     testWidgets("leads to all of the week's aliyot, within Today", (tester) async {

@@ -593,7 +593,14 @@ class _AliyahRow extends ConsumerWidget {
     if (day == ctx.today) {
       return line(l.plannedForToday, style?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w700));
     }
-    final weekday = day == null ? null : Names(context).weekday(day);
+    // A day a week or more away by its date too, as a weekday alone would
+    // name this week's: in a window of two or three weeks around a festival.
+    final names = Names(context);
+    final weekday = day == null
+        ? null
+        : day.differenceInDays(ctx.today).abs() >= 7
+            ? names.practiceDate(day)
+            : names.weekday(day);
     final label = weekday == null ? l.plannedForShabbat : l.plannedFor(weekday);
     if (!_overdue(day ?? ctx.week.occasion, counts: counts)) {
       return line(label, style?.copyWith(color: theme.colorScheme.onSurfaceVariant));

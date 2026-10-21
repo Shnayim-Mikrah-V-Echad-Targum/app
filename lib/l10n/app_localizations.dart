@@ -477,11 +477,29 @@ abstract class AppLocalizations {
   /// **'Read on Simchat Torah, {date}'**
   String readOnSimchatTorah(String date);
 
+  /// The day a parsha is read, inside a sentence: 'by Shabbat, April 11'. date is the day and month, as in readOnShabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'Shabbat, {date}'**
+  String occasionShabbat(String date);
+
+  /// As occasionShabbat for Vezot HaBerachah, which is read on Simchat Torah: 'by Simchat Torah, Sunday, October 4'. date is as in readOnSimchatTorah, with its weekday.
+  ///
+  /// In en, this message translates to:
+  /// **'Simchat Torah, {date}'**
+  String occasionSimchatTorah(String date);
+
   /// No description provided for @shabbatInDays.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}'**
   String shabbatInDays(int count);
+
+  /// On Today's title page on a reading day, in place of shabbatInDays, when the coming Shabbat reads a festival's own portion instead of a weekly parsha.
+  ///
+  /// In en, this message translates to:
+  /// **'No weekly parsha this Shabbat'**
+  String get noWeeklyParshaThisShabbat;
 
   /// On Today, in place of shabbatInDays on the eve of Shabbat or Yom Tov, when a city is chosen for Shabbat times: when candles are lit there today. time is a time of day, such as 4:12 PM.
   ///
@@ -501,6 +519,12 @@ abstract class AppLocalizations {
   /// **'Parshat HaShavua'**
   String get parshatHashavua;
 
+  /// The eyebrow over the parsha's name on Today and on the home-screen widget when the coming Shabbat has no weekly parsha of its own (a Shabbat of Pesach, of Shavuot or Shemini Atzeret outside Israel, of Sukkot, Rosh Hashanah or Yom Kippur, or Shabbat Chol HaMoed; in Israel a Shemini Atzeret on Shabbat is Simchat Torah and reads Vezot HaBerachah), and on Shabbat or Yom Tov before Simchat Torah: the parsha named is the next one read, not this week's.
+  ///
+  /// In en, this message translates to:
+  /// **'Next parsha'**
+  String get nextParsha;
+
   /// The eyebrow over the parsha's name in the Today hero on Friday afternoon.
   ///
   /// In en, this message translates to:
@@ -512,6 +536,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{holiday, select, roshHashanah{Erev Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Yom Tov}}'**
   String erevYomTov(String holiday);
+
+  /// The eyebrow over the parsha's name on Today and on the home-screen widget on Friday afternoon when Shabbat is also a Yom Tov, in place of erevShabbat. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Erev Shabbat and Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Shabbat and Yom Tov}}'**
+  String erevShabbatYomTov(String holiday);
 
   /// The greeting on Today's title page on Shabbat.
   ///
@@ -536,6 +566,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'G’mar Chatimah Tovah'**
   String get gmarChatimaTova;
+
+  /// On Today's title page on Shabbat or Yom Tov, before restDayBody, when these days of rest include a Shabbat with no weekly parsha (a festival's own reading).
+  ///
+  /// In en, this message translates to:
+  /// **'This Shabbat has a reading of its own instead of a weekly parsha.'**
+  String get restDayNoWeeklyParsha;
 
   /// On Today's title page on Shabbat, under the parsha's name.
   ///
@@ -578,6 +614,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{holiday, select, roshHashanah{Rosh Hashanah begins this evening} yomKippur{Yom Kippur begins this evening} other{Yom Tov begins this evening}}'**
   String yomTovBeginsTonight(String holiday);
+
+  /// In the Today hero on a Friday whose Shabbat is also a Yom Tov, in place of shabbatBeginsTonight. holiday is roshHashanah, yomKippur or other.
+  ///
+  /// In en, this message translates to:
+  /// **'{holiday, select, roshHashanah{Shabbat and Rosh Hashanah begin this evening} yomKippur{Shabbat and Yom Kippur begin this evening} other{Shabbat and Yom Tov begin this evening}}'**
+  String shabbatYomTovBeginTonight(String holiday);
 
   /// A link under the rings in the Today hero to the week's page, which lists its seven aliyot.
   ///
@@ -705,6 +747,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{One aliyah left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.} other{{count} aliyot left to read before Yom Tov — or finish on Yom Tov or Shabbat from a Chumash and log it after Shabbat.}}'**
   String todayLastDayYomTovThenShabbat(int count);
 
+  /// As todayBehind, on the eve of a Yom Tov after which this week still has a planned reading day before its parsha is read (Erev Shavuot on Tuesday, with Friday still to read on): day is that day's weekday ('Friday'). count is every aliyah planned up to today and not yet read. 'Yom Tov' is held together by a no-break space, so that a line never ends between its words.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Yom Tov — or after it, on {day}.} other{{count} aliyot to catch up before Yom Tov — or after it, on {day}.}}'**
+  String todayBehindBeforeYomTovMore(int count, String day);
+
+  /// As todayBehindBeforeYomTovMore, on the eve of a Shabbat that does not read this week's parsha (a Shabbat of a festival), after which this week still has a planned reading day: day is that day's weekday. count is every aliyah planned up to today and not yet read.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One aliyah to catch up before Shabbat — or after it, on {day}.} other{{count} aliyot to catch up before Shabbat — or after it, on {day}.}}'**
+  String todayBehindBeforeShabbatMore(int count, String day);
+
   /// As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.
   ///
   /// In en, this message translates to:
@@ -795,17 +849,17 @@ abstract class AppLocalizations {
   /// **'Finish before {holiday, select, shabbat{Shabbat} roshHashanah{Rosh Hashanah} yomKippur{Yom Kippur} other{Yom Tov}} begins {when, select, today{this evening and it still counts.} tomorrow{tomorrow evening and it still counts.} other{on {date}, and it still counts.}}'**
   String openWeekLateEve(String holiday, String when, String date);
 
-  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.
+  /// On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, deadline the day the next parsha is read, by which both must be finished (occasionShabbat or occasionSimchatTorah), and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.'**
-  String openWeekRestore(String name, String next, int count);
+  /// **'Finish {name} and {next} by {deadline}, and your {count}-week streak continues — you can do this once in each book of the Torah.'**
+  String openWeekRestore(String name, String next, String deadline, int count);
 
-  /// As openWeekRestore, when the reader has no parsha streak to continue.
+  /// As openWeekRestore, when the reader has no parsha streak to continue. deadline is the day the next parsha is read (occasionShabbat or occasionSimchatTorah).
   ///
   /// In en, this message translates to:
-  /// **'Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.'**
-  String openWeekRestoreZero(String name, String next);
+  /// **'Finish {name} and {next} by {deadline}, and both count — you can do this once in each book of the Torah.'**
+  String openWeekRestoreZero(String name, String next, String deadline);
 
   /// No description provided for @openWeekHaftarahLeft.
   ///
@@ -1161,13 +1215,13 @@ abstract class AppLocalizations {
   /// **'In progress'**
   String get weekInProgress;
 
-  /// The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.
+  /// On the week's page, the day an aliyah is planned for. day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly; or for a day a week or more away, its weekday and date (Names.practiceDate): 'Sunday, April 5', 'יום ראשון, י״ח בניסן'.
   ///
   /// In en, this message translates to:
   /// **'Planned for {day}'**
   String plannedFor(String day);
 
-  /// Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.
+  /// Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark. day is as in plannedFor.
   ///
   /// In en, this message translates to:
   /// **'Planned for {day}, still to read'**
@@ -3392,6 +3446,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There’s still time — or finish Shabbat morning from your Chumash and log it after Shabbat.'**
   String get notifFridayBody;
+
+  /// As notifFridayBody, when Yom Tov follows straight after Shabbat (Shavuot on Sunday, say), so that reading done on Shabbat is logged once Yom Tov is over.
+  ///
+  /// In en, this message translates to:
+  /// **'There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.'**
+  String get notifFridayBodyThenYomTov;
+
+  /// The title of the reminder before the parsha's Shabbat when a Yom Tov begins that evening, in place of notifFridayTitle: eve is erevYomTov's text ('Erev Yom Tov', 'Erev Rosh Hashanah').
+  ///
+  /// In en, this message translates to:
+  /// **'{eve} · Parshat {parsha}'**
+  String notifErevTitle(String eve, String parsha);
+
+  /// The body of the reminder under notifErevTitle, when Yom Tov begins that evening and runs into the parsha's Shabbat.
+  ///
+  /// In en, this message translates to:
+  /// **'There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.'**
+  String get notifErevYomTovBody;
 
   /// No description provided for @notifCheckInTitle.
   ///

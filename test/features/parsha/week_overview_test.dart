@@ -258,6 +258,75 @@ void main() {
       });
     });
 
+    testWidgets('of a week with no weekday before its reading are all planned for Shabbat morning', (tester) async {
+      // 5789 outside Israel: Simchat Torah, a Yom Tov, on Friday 13 October
+      // 2028, and Bereshit read the next day. Sunday, nothing read.
+      final handle = tester.ensureSemantics();
+      await open(
+        tester,
+        route: '/today/week/5789:1',
+        settings: _settings.copyWith(joinDate: LocalDate(2028, 9, 1)),
+        now: DateTime(2028, 10, 15, 10),
+        progress: const ProgressState(),
+      );
+      expect(find.textContaining('Planned for Friday'), findsNothing);
+      final overdue = StatusColors.of(tester.element(find.byType(WeekOverview))).overdue;
+      for (final name in ['Rishon', 'Sheni', 'Shlishi', 'Revi’i', 'Chamishi', 'Shishi', 'Shevi’i']) {
+        await tester.ensureVisible(row(name));
+        final line = textIn(tester, row(name), 'Shabbat morning');
+        expect(line.textSpan?.toPlainText(), endsWith('Shabbat morning — log it after Shabbat'), reason: name);
+        expect(line.style?.color, overdue, reason: name);
+        expect(find.descendant(of: row(name), matching: find.byIcon(stillToReadIcon)), findsOneWidget, reason: name);
+        expect(
+          tester.getSemantics(find.text(name)).getSemanticsData().label,
+          contains('Planned for Shabbat morning, still to read'),
+          reason: name,
+        );
+      }
+      handle.dispose();
+    });
+
+    group('planned for a day a week or more away, are dated', () {
+      // Shemini 5786, read on 11 April after Pesach: Rishon on Sunday the
+      // 5th, Sheni and Shlishi on Monday, Revi'i and Chamishi on Tuesday,
+      // and after the last days of Pesach, Shishi and Shevi'i on Friday.
+      final joined = _settings.copyWith(joinDate: LocalDate(2026, 3, 1));
+      const route = '/today/week/5786:26';
+
+      /// The line of [name]'s row that says when it is planned, as [words].
+      Finder planned(String name, String words) => find.descendant(of: row(name), matching: findWords(words));
+
+      testWidgets('from the week before', (tester) async {
+        await open(tester, route: route, settings: joined, now: DateTime(2026, 3, 29, 10), progress: const ProgressState());
+        expect(planned('Rishon', 'Planned for Sunday, April 5'), findsOneWidget);
+        expect(planned('Shishi', 'Planned for Friday, April 10'), findsOneWidget);
+        expect(planned('Shevi’i', 'Planned for Friday, April 10'), findsOneWidget);
+
+        // Erev Pesach, nine days before Friday.
+        await open(tester, route: route, settings: joined, now: DateTime(2026, 4, 1, 10), progress: const ProgressState());
+        expect(planned('Shishi', 'Planned for Friday, April 10'), findsOneWidget);
+      });
+
+      testWidgets('but this week by the weekday alone', (tester) async {
+        await open(tester, route: route, settings: joined, now: DateTime(2026, 4, 6, 10), progress: const ProgressState());
+        expect(planned('Sheni', 'Planned for today'), findsOneWidget);
+        expect(planned('Shlishi', 'Planned for today'), findsOneWidget);
+        final revii = tester.widget<Text>(find.descendant(of: row('Revi’i'), matching: find.textContaining('Planned')));
+        expect(revii.data, 'Planned for Tuesday');
+      });
+
+      testWidgets('in Hebrew, by the Hebrew date', (tester) async {
+        await open(
+          tester,
+          route: route,
+          settings: joined.copyWith(language: AppLanguage.hebrew),
+          now: DateTime(2026, 3, 29, 10),
+          progress: const ProgressState(),
+        );
+        expect(planned('ראשון', 'מתוכנן ליום ראשון, י״ח בניסן'), findsOneWidget);
+      });
+    });
+
     testWidgets('of a past week finished on its days are plain, with no reading under way', (tester) async {
       var w = WeekProgress(weekId: '5787:1');
       for (var a = 0; a < 7; a++) {
