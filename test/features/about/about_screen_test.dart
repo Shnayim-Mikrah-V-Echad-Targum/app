@@ -127,8 +127,8 @@ void main() {
     setUp(() => PackageInfo.setMockInitialValues(
           appName: 'Shnayim Mikrah',
           packageName: 'org.shnayimmikrah.app',
-          version: '1.0.0',
-          buildNumber: '12',
+          version: '0.0.1',
+          buildNumber: '1',
           buildSignature: '',
         ));
     tearDown(recentErrors.clear);
@@ -168,7 +168,7 @@ void main() {
       await tester.pump();
       expect(
         copied,
-        'Shnayim Mikrah 1.0.0 (12) on android\n'
+        'Shnayim Mikrah 0.0.1 (1) on android\n'
         '\n'
         'Bad state: no element\n'
         'building TodayScreen\n'

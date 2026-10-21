@@ -1,7 +1,7 @@
 name: shnayim_mikrah
 description: "Shnayim Mikrah v’Echad Targum — the weekly parsha twice in Hebrew and once in Targum, with daily and weekly streaks, community forums and extensive accessibility options."
 publish_to: 'none'
-version: 1.0.0+1
+version: 0.0.1+1
 
 environment:
   sdk: ^3.13.5

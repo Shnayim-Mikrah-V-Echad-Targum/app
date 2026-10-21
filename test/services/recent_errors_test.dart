@@ -29,9 +29,9 @@ void main() {
       ..add(_error('no element', context: 'building TodayScreen', stack: _frames(12)))
       ..add(_error('closed'));
     expect(
-      errors.report(version: '1.0.0 (12)').split('\n'),
+      errors.report(version: '0.0.1 (1)').split('\n'),
       [
-        'Shnayim Mikrah 1.0.0 (12) on android',
+        'Shnayim Mikrah 0.0.1 (1) on android',
         '',
         'Bad state: no element',
         'building TodayScreen',
@@ -66,7 +66,7 @@ void main() {
       errors.add(_error('first'));
     }
     expect([for (final e in errors.errors) (e.summary, e.times)], [('Bad state: first', 101), ('Bad state: second', 1)]);
-    expect(errors.report(version: '1.0.0 (12)'), contains('Bad state: first (101 times)\n#0 frame0'));
+    expect(errors.report(version: '0.0.1 (1)'), contains('Bad state: first (101 times)\n#0 frame0'));
     // The same words from elsewhere in the code are another error.
     errors.add(_error('first', stack: _frames(3, indent: '  ')));
     expect(errors.errors, hasLength(3));
@@ -80,7 +80,7 @@ void main() {
     expect(errors.errors, hasLength(20));
     expect(errors.errors.first.summary, 'Bad state: error 3');
     expect(errors.errors.last.summary, 'Bad state: error 22');
-    expect(errors.report(version: '1.0.0 (12)').split('\n\n')[1], '3 earlier errors not kept');
+    expect(errors.report(version: '0.0.1 (1)').split('\n\n')[1], '3 earlier errors not kept');
   });
 
   test('tells its listeners of the first error alone, once the frame it came in is over', () async {

@@ -2977,7 +2977,7 @@ void main() {
     PackageInfo.setMockInitialValues(
       appName: 'Shnayim Mikrah',
       packageName: 'app.shnayimmikrah',
-      version: '1.0.0',
+      version: '0.0.1',
       buildNumber: '1',
       buildSignature: '',
     );
