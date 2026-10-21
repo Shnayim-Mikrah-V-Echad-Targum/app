@@ -387,6 +387,46 @@ void main() {
     expect(mine.keys.where(theirs.containsKey), containsAll(['actions/checkout', 'actions/upload-pages-artifact', 'actions/deploy-pages']));
   });
 
+  group('Publish pre-release', () {
+    final publishSource = File('.github/workflows/publish_prerelease.yml').readAsStringSync();
+    final publish = loadYaml(publishSource) as YamlMap;
+    final publishJob = (publish['jobs'] as YamlMap)['publish'] as YamlMap;
+    String publishRun(String name) => step(publishJob, name)['run'] as String;
+
+    test('runs by hand for a tag, after any build of the same tag', () {
+      final on = publish['on'] as YamlMap;
+      expect(on.keys, ['workflow_dispatch']);
+      expect(((on['workflow_dispatch'] as YamlMap)['inputs'] as YamlMap).keys, ['tag']);
+      // The Pre-release workflow's group: never while it uploads the files.
+      expect((publish['concurrency'] as YamlMap)['group'], r'prerelease-${{ inputs.tag }}');
+      expect((workflow['concurrency'] as YamlMap)['group'], startsWith('prerelease-'));
+      expect(publish['permissions'], {'contents': 'read'});
+      expect(publishJob['permissions'], {'contents': 'write'});
+      expect((publishJob['env'] as YamlMap)['GH_TOKEN'], r'${{ github.token }}');
+    });
+
+    test("publishes only a draft pre-release whose files match its sums", () {
+      final draft = publishRun('The draft');
+      expect(draft, contains(r'^v0\.[0-9]+\.[0-9]+$'));
+      expect(draft, contains('"true true") ;;'));
+      final files = publishRun('Its files and their SHA-256 sums');
+      for (final asset in assets) {
+        expect(files, contains('"${asset.replaceAll(r'$VERSION', r'$version')}"'.replaceAll('"install.ps1"', 'install.ps1')));
+      }
+      expect(files, contains('sha256sum --check --strict SHA256SUMS.txt'));
+      expect(publishRun("The one-liner's script"), contains('contents/tool/windows/install.ps1'));
+      final names = steps(publishJob).map((step) => step['name']).toList();
+      expect(names.last, 'Publish it');
+      expect(publishRun('Publish it'), contains(r'gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease'));
+      // Only GitHub's own CLI: no actions at all.
+      expect(steps(publishJob).where((step) => step['uses'] != null), isEmpty);
+    });
+
+    test('docs/RELEASE.md says to run it', () {
+      expect(File('docs/RELEASE.md').readAsStringSync(), contains('*Actions → Publish pre-release → Run workflow*'));
+    });
+  });
+
   test('docs/RELEASE.md names every variable and secret it reads', () {
     final release = File('docs/RELEASE.md').readAsStringSync();
     final names = {...referenced('vars'), ...referenced('secrets')};
