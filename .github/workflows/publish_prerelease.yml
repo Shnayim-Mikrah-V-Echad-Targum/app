@@ -1,0 +1,89 @@
+name: Publish pre-release
+
+# Publishes the draft pre-release that the Pre-release workflow
+# (prerelease.yml) made for a tag v0.Y.Z, once it is tested
+# (docs/RELEASE.md, Pre-releases). Run it by hand: Actions → Publish
+# pre-release → Run workflow, with the tag. It first checks that the draft has
+# its five files and that they match its SHA256SUMS.txt; then the README's
+# one-liner and the app's updater see the release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The draft's tag, v0.Y.Z"
+        required: true
+        type: string
+
+concurrency:
+  group: prerelease-${{ inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish the pre-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: The draft
+        run: |
+          if ! [[ "$TAG" =~ ^v0\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not a preview's tag, v0.Y.Z"
+            exit 1
+          fi
+          state=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | \"\(.draft) \(.prerelease)\"")
+          case "$state" in
+            "true true") ;;
+            "")
+              echo "::error::There is no release $TAG. Push the tag, and wait for the Pre-release workflow's draft."
+              exit 1
+              ;;
+            "false "*)
+              echo "::error::The release $TAG is published already."
+              exit 1
+              ;;
+            *)
+              echo "::error::The draft $TAG isn't marked as a pre-release."
+              exit 1
+              ;;
+          esac
+      - name: Its files and their SHA-256 sums
+        run: |
+          version="${TAG#v}"
+          mkdir assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir assets
+          cd assets
+          files=(
+            "ShnayimMikrah-$version-windows-x64.msi"
+            "ShnayimMikrah-$version-windows-x64.zip"
+            "ShnayimMikrah-$version-android-webapp.apk"
+            install.ps1
+          )
+          for file in "${files[@]}" SHA256SUMS.txt; do
+            [ -s "$file" ] || { echo "::error::The draft has no $file"; exit 1; }
+          done
+          listed=$(awk '{ sub(/^\*/, "", $2); print $2 }' SHA256SUMS.txt | sort)
+          expected=$(printf '%s\n' "${files[@]}" | sort)
+          if [ "$listed" != "$expected" ]; then
+            echo "::error::SHA256SUMS.txt lists other files than the four the draft should have"
+            exit 1
+          fi
+          sha256sum --check --strict SHA256SUMS.txt
+      # The one-liner runs install.ps1 from the default branch, not the release.
+      - name: The one-liner's script
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/contents/tool/windows/install.ps1" --silent \
+            || { echo "::error::The default branch has no tool/windows/install.ps1, which the README's one-liner runs"; exit 1; }
+      - name: Publish it
+        run: |
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
+          url=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .html_url)
+          echo "### Published: $url" >> "$GITHUB_STEP_SUMMARY"

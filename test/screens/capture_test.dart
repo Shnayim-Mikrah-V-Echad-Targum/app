@@ -71,6 +71,9 @@ import 'package:shnayim_mikrah/l10n/app_localizations.dart';
 import 'package:shnayim_mikrah/services/backup_files.dart';
 import 'package:shnayim_mikrah/services/recent_errors.dart';
 import 'package:shnayim_mikrah/services/tts.dart';
+import 'package:shnayim_mikrah/services/updates/update_core.dart';
+import 'package:shnayim_mikrah/services/updates/updates.dart';
+import 'package:shnayim_mikrah/services/web_install.dart';
 import 'package:shnayim_mikrah/services/web_update.dart';
 import 'package:shnayim_mikrah/ui/l10n.dart';
 import 'package:shnayim_mikrah/ui/theme/focus.dart';
@@ -85,6 +88,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../fake_backup_files.dart';
 import '../helpers.dart';
+import '../services/updates/update_fixtures.dart';
 import 'galleries.dart';
 
 final _capture = Platform.environment['CAPTURE'] != null;
@@ -627,6 +631,20 @@ const _screens = {
   // Settings and Accessibility open them, beside the navigation bar or rail.
   'about': '/settings/about',
   'about_support': '/settings/about',
+  // The Windows app built to look for updates (UPDATE_CHANNEL): About's
+  // Updates with a new version found, and Today's offer of it.
+  'about_updates': '/settings/about',
+  'today_release': '/today',
+  // On the web: About's ways to install the app on an Android phone, the
+  // sheet Settings opens, Safari's steps on an iPhone, the Android app's
+  // sheet, the Windows app's on a Windows computer, and Today's card on an
+  // iPhone.
+  'about_install': '/settings/about',
+  'sheet_install': '/settings',
+  'sheet_install_ios': '/settings/about',
+  'sheet_install_apk': '/settings/about',
+  'sheet_install_windows': '/settings/about',
+  'today_install': '/today',
   'sources': '/settings/about/sources',
   'guide': '/settings/guide',
   // From Today's help button, within Today.
@@ -961,7 +979,38 @@ final _screenOverrides = <String, List<Override>>{
   for (final screen in _listening) screen: [ttsProvider.overrideWithValue(_HeldTts())],
   'city_error': [cityDirectoryProvider.overrideWith((ref) async => throw Exception('offline'))],
   for (final screen in ['today_update', 'about_update']) screen: [webUpdatesProvider.overrideWithValue(_UpdateWaiting())],
+  for (final screen in ['about_updates', 'today_release'])
+    screen: [
+      updateChannelProvider.overrideWithValue(UpdateChannel.prerelease),
+      updateHttpProvider.overrideWithValue(FakeUpdateHttp({
+        kReleasesApi: UpdateResponse(200, body: utf8.encode(jsonEncode([releaseJson('v0.0.2', prerelease: true)]))),
+      })),
+      updateInstallerProvider.overrideWithValue(FakeInstaller()),
+      updateAppExitProvider.overrideWithValue(() async {}),
+    ],
+  for (final screen in ['about_install', 'sheet_install', 'sheet_install_windows'])
+    screen: [webInstallProvider.overrideWithValue(const _WebInstallOffered(canPrompt: true))],
+  for (final screen in ['sheet_install_ios', 'sheet_install_apk', 'today_install'])
+    screen: [webInstallProvider.overrideWithValue(const _WebInstallOffered(canPrompt: false))],
 };
+
+/// The web app in a browser that has offered to install it ([canPrompt]),
+/// or has no dialog to offer (Safari, Firefox).
+class _WebInstallOffered extends WebInstall {
+  const _WebInstallOffered({required this.canPrompt});
+
+  @override
+  final bool canPrompt;
+
+  @override
+  bool get standalone => false;
+
+  @override
+  bool get installed => false;
+
+  @override
+  void Function() listen(void Function() onChange) => () {};
+}
 
 /// A new version of the web app, installed and waiting.
 class _UpdateWaiting extends WebUpdates {
@@ -1312,8 +1361,12 @@ const _unsettled = {'today_completing'};
 /// Screens shown as on the web, where the reader takes single keys.
 const _webKeys = {'reader_keys_web', 's_a11y_web'};
 
-/// Screens shown as in the Windows app, where Alt+← goes back.
-const _windowsKeys = {'reader_keys_windows'};
+/// Screens shown as in the Windows app, where Alt+← goes back, and as the
+/// Windows app with its updates, or on a Windows computer's browser.
+const _windowsKeys = {'reader_keys_windows', 'about_updates', 'today_release', 'sheet_install_windows'};
+
+/// Screens shown as on an iPhone's browser.
+const _iosKeys = {'sheet_install_ios', 'today_install'};
 
 /// Screens of a build that knows the site's address (WEB_URL), which a
 /// discussion's Copy link gives.
@@ -1724,6 +1777,14 @@ Future<void> _showCatchUpLine(WidgetTester tester) =>
 
 Future<void> _showWeekStrip(WidgetTester tester) =>
     Scrollable.ensureVisible(tester.element(find.byType(WeekStrip)), alignment: 0.5);
+
+/// Taps the paper row marked by [icon], once it is in view.
+Future<void> _tapRow(WidgetTester tester, IconData icon) async {
+  final row = find.widgetWithIcon(PaperRow, icon);
+  await tester.ensureVisible(row);
+  await _settle(tester);
+  await tester.tap(row);
+}
 
 Future<void> _scrollToEnd(WidgetTester tester) async {
   // A lazily built list only learns its full extent as it scrolls.
@@ -2249,6 +2310,10 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'kit_progress': (tester) => _showGallery(tester, const ProgressGallery()),
   'kit_week': (tester) => _showGallery(tester, const WeekGallery()),
   'kit_error': (tester) => _showGallery(tester, const ErrorPanelGallery()),
+  'sheet_install': (tester) => _tapRow(tester, Icons.install_mobile),
+  'sheet_install_ios': (tester) => _tapRow(tester, Icons.ios_share),
+  'sheet_install_apk': (tester) => _tapRow(tester, Icons.android),
+  'sheet_install_windows': (tester) => _tapRow(tester, Icons.desktop_windows_outlined),
   // Something has gone wrong: the row that copies the details for support,
   // last among the ways to reach us.
   'about_support': (tester) async {
@@ -2704,6 +2769,13 @@ const _desktopScreens = {
   // Today's offer of a new version, at the top of its reading column.
   'today_update',
   'about_update',
+  // The Windows app's updates, and the ways to install from a computer's
+  // browser.
+  'about_updates',
+  'today_release',
+  'about_install',
+  'sheet_install',
+  'sheet_install_windows',
   // A widget that failed, and the row that copies the details for support.
   'kit_error',
   'about_support',
@@ -3086,7 +3158,7 @@ void main() {
     PackageInfo.setMockInitialValues(
       appName: 'Shnayim Mikrah',
       packageName: 'app.shnayimmikrah',
-      version: '1.0.0',
+      version: '0.0.1',
       buildNumber: '1',
       buildSignature: '',
     );
@@ -3141,6 +3213,7 @@ void main() {
         // and so is the platform.
         debugDisableShadows = false;
         if (_windowsKeys.contains(entry.key)) debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+        if (_iosKeys.contains(entry.key)) debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
         try {
           final blocked = _syncBlocked.contains(entry.key);
           final onboarding = entry.key.startsWith('welcome');

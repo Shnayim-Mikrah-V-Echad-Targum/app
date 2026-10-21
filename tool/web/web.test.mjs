@@ -35,6 +35,16 @@ const tempDir = () => {
 const html = read('web/index.html');
 /// The inline scripts of index.html, in order.
 const inlineScripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+/// The one inline script that has [marker] in it.
+const inlineScript = (marker) => {
+  const found = inlineScripts.filter((script) => script.includes(marker));
+  assert.equal(found.length, 1, marker);
+  return found[0];
+};
+/// The head's script, the install offer's and the body's loading screen's.
+const headSource = inlineScript('flutter.settings.v1');
+const installSource = inlineScript('beforeinstallprompt');
+const loadingSource = inlineScript("'flutter-first-frame'");
 
 /// Runs the head's script on the page at [href], whose <base href> makes
 /// [base] its base URI. It moves an older link's #/ page to its own address,
@@ -55,7 +65,7 @@ function headScript({
   const root = { lang: 'en', setAttribute: (name, value) => (attributes[name] = value) };
   const value = stored === undefined ? null : typeof stored === 'string' ? stored : JSON.stringify(JSON.stringify(stored));
   const replaced = [];
-  vm.runInNewContext(inlineScripts[0], {
+  vm.runInNewContext(headSource, {
     localStorage: {
       getItem(key) {
         if (throws) throw new Error('SecurityError');
@@ -184,7 +194,7 @@ describe('the loading screen', () => {
       remove: () => removed.push('loading'),
     };
     const text = { textContent: 'Loading…' };
-    vm.runInNewContext(inlineScripts[1], {
+    vm.runInNewContext(loadingSource, {
       document: {
         documentElement: { lang, hasAttribute: (name) => reduceMotion && name === 'data-reduce-motion' },
         getElementById: (id) => ({ loading, 'loading-text': text })[id],
@@ -381,6 +391,124 @@ async function bootstrap({
   }
   return { page, messages: active.messages, registered, registration, serviceWorker, document, history, dispatched, clock, listeners };
 }
+
+// ---------------------------------------------------------------------------
+// web/index.html: the offer to install
+
+/// Runs the install offer's script on a page whose display mode is [mode]
+/// ('browser' in a tab, 'standalone' as an installed app), and where
+/// [iosStandalone] is Safari's navigator.standalone, as a home-screen app
+/// on an iPhone has it. Returns the page, with the events it dispatched and
+/// a way to fire the browser's own.
+function installPage({ mode = 'browser', iosStandalone } = {}) {
+  const listeners = {};
+  const dispatched = [];
+  const page = {
+    addEventListener: (type, listener) => (listeners[type] = listener),
+    dispatchEvent: (event) => dispatched.push(event.type),
+    matchMedia: (query) => ({ matches: query === `(display-mode: ${mode})` }),
+    navigator: iosStandalone === undefined ? {} : { standalone: iosStandalone },
+    Event: class {
+      constructor(type) {
+        this.type = type;
+      }
+    },
+    Promise,
+  };
+  page.window = page;
+  vm.runInNewContext(installSource, page);
+  return { page, listeners, dispatched, install: page.smInstall };
+}
+
+/// The browser's beforeinstallprompt, which the reader's answer [outcome]
+/// settles, or [fails] to show.
+function installPrompt({ outcome = 'accepted', fails = false } = {}) {
+  const event = {
+    prevented: false,
+    prompted: 0,
+    preventDefault() {
+      this.prevented = true;
+    },
+    prompt() {
+      this.prompted++;
+      if (fails) throw new Error('NotAllowedError');
+      return Promise.resolve();
+    },
+    userChoice: Promise.resolve({ outcome, platform: 'web' }),
+  };
+  return event;
+}
+
+describe('the offer to install', () => {
+  it('has none until the browser makes one, and asks nothing then', async () => {
+    const { install, dispatched } = installPage();
+    assert.equal(install.available(), false);
+    assert.equal(install.installed(), false);
+    assert.equal(install.standalone(), false);
+    assert.equal(await install.prompt(), 'unavailable');
+    assert.deepEqual(dispatched, []);
+  });
+
+  it("keeps the browser's offer for the app, in place of the browser's own bar, and tells the app", () => {
+    const { install, listeners, dispatched } = installPage();
+    const event = installPrompt();
+    listeners.beforeinstallprompt(event);
+    assert.ok(event.prevented);
+    assert.equal(event.prompted, 0, 'only as the reader asks');
+    assert.equal(install.available(), true);
+    assert.deepEqual(dispatched, ['sm-install-change']);
+  });
+
+  it("asks the browser once, as the reader taps, and says the reader's answer", async () => {
+    for (const outcome of ['accepted', 'dismissed']) {
+      const { install, listeners, dispatched } = installPage();
+      const event = installPrompt({ outcome });
+      listeners.beforeinstallprompt(event);
+      const answer = install.prompt();
+      // Within the tap: the browser shows its dialog only then.
+      assert.equal(event.prompted, 1);
+      // An offer is made once.
+      assert.equal(install.available(), false);
+      assert.equal(await answer, outcome);
+      assert.equal(await install.prompt(), 'unavailable');
+      assert.equal(event.prompted, 1);
+      assert.deepEqual(dispatched, ['sm-install-change', 'sm-install-change']);
+    }
+  });
+
+  it("says there is nothing to ask where the browser won't show its dialog", async () => {
+    const { install, listeners } = installPage();
+    listeners.beforeinstallprompt(installPrompt({ fails: true }));
+    assert.equal(await install.prompt(), 'unavailable');
+    assert.equal(install.available(), false);
+  });
+
+  it('offers nothing more once the app is installed, and says so', () => {
+    const { install, listeners, dispatched } = installPage();
+    listeners.beforeinstallprompt(installPrompt());
+    listeners.appinstalled({});
+    assert.equal(install.installed(), true);
+    assert.equal(install.available(), false);
+    assert.deepEqual(dispatched, ['sm-install-change', 'sm-install-change']);
+  });
+
+  it('knows when it runs as an installed app: a window, a home-screen app, the Android app', () => {
+    for (const mode of ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay']) {
+      const { install, listeners } = installPage({ mode });
+      assert.equal(install.standalone(), true, mode);
+      listeners.beforeinstallprompt(installPrompt());
+      assert.equal(install.available(), false, mode);
+    }
+    assert.equal(installPage({ iosStandalone: true }).install.standalone(), true);
+    assert.equal(installPage({ iosStandalone: false }).install.standalone(), false);
+    assert.equal(installPage({ mode: 'browser' }).install.standalone(), false);
+  });
+
+  it('comes before the app loads, so that an offer made early is kept', () => {
+    assert.ok(html.indexOf(installSource) < html.indexOf('<script src="flutter_bootstrap.js" async></script>'));
+    assert.ok(html.indexOf(installSource) < html.indexOf('</head>'));
+  });
+});
 
 describe('the bootstrap', () => {
   const loaded = [

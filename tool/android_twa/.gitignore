@@ -1,0 +1,9 @@
+/.gradle/
+/.kotlin/
+/build/
+/app/build/
+/local.properties
+# The signing key comes from the workflow, never from the repository.
+*.jks
+*.keystore
+*.p12

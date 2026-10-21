@@ -222,6 +222,7 @@ class AppSettings {
     this.speechRate = kDefaultSpeechRate,
     this.showStreaks = true,
     this.cloudSync = false,
+    this.autoUpdateCheck = true,
     this.dailyReminder = false,
     this.dailyReminderMinutes = 20 * 60,
     this.fridayReminder = false,
@@ -352,6 +353,10 @@ class AppSettings {
 
   /// Back up progress to the user's community account.
   final bool cloudSync;
+
+  /// Whether the Windows app looks for a new version by itself, twice a day
+  /// at most (lib/services/updates/), in a build that looks for any.
+  final bool autoUpdateCheck;
 
   // Reminders
   final bool dailyReminder;
@@ -564,6 +569,7 @@ class AppSettings {
     double? speechRate,
     bool? showStreaks,
     bool? cloudSync,
+    bool? autoUpdateCheck,
     bool? dailyReminder,
     int? dailyReminderMinutes,
     bool? fridayReminder,
@@ -633,6 +639,7 @@ class AppSettings {
         speechRate: speechRate ?? this.speechRate,
         showStreaks: showStreaks ?? this.showStreaks,
         cloudSync: cloudSync ?? this.cloudSync,
+        autoUpdateCheck: autoUpdateCheck ?? this.autoUpdateCheck,
         dailyReminder: dailyReminder ?? this.dailyReminder,
         dailyReminderMinutes: dailyReminderMinutes ?? this.dailyReminderMinutes,
         fridayReminder: fridayReminder ?? this.fridayReminder,
@@ -726,6 +733,7 @@ class AppSettings {
         'speechRate': speechRate,
         'showStreaks': showStreaks,
         'cloudSync': cloudSync,
+        'autoUpdateCheck': autoUpdateCheck,
         'dailyReminder': dailyReminder,
         'dailyReminderMinutes': dailyReminderMinutes,
         'fridayReminder': fridayReminder,
@@ -824,6 +832,7 @@ class AppSettings {
       speechRate: n('speechRate', d.speechRate, 0.1, 1.0),
       showStreaks: b('showStreaks', d.showStreaks),
       cloudSync: b('cloudSync', d.cloudSync),
+      autoUpdateCheck: b('autoUpdateCheck', d.autoUpdateCheck),
       dailyReminder: b('dailyReminder', d.dailyReminder),
       dailyReminderMinutes: i('dailyReminderMinutes', d.dailyReminderMinutes),
       fridayReminder: b('fridayReminder', d.fridayReminder),

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where LauncherActivity saves the splash image, which the browser reads
+     through the FileProvider to show it while the site loads. -->
+<paths>
+    <files-path name="twa_splash" path="twa_splash/" />
+</paths>

@@ -107,6 +107,7 @@ The app is configured at build time with `--dart-define`:
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
 | `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
+| `COMMUNITY` | `off` hides the community everywhere (its tab, questions on a verse, the account and cloud backup) and sends its links to Today, as the pre-releases do until the accounts' database is ready. Absent: the community as above. |
 
 Example:
 
@@ -129,6 +130,8 @@ Setting up the backend is covered in [docs/BACKEND.md](docs/BACKEND.md).
 CI (`.github/workflows/ci.yml`) runs analysis and every test, then builds all four platforms on each pull request. On `main` it can also deploy the web build to GitHub Pages: set the repository variable `DEPLOY_WEB=true`, set `WEB_BASE_HREF` if the site isn't served from the root, and set `WEB_URL` to the site's address for link previews and discussions' *Copy link*.
 
 Releases come from the Release workflow (`.github/workflows/release.yml`), which a tag `vX.Y.Z` starts. It checks that the production configuration and the signing keys are all set, then builds with them and uploads to Google Play's internal testing, TestFlight and a draft GitHub release with the Windows installer (see [docs/RELEASE.md](docs/RELEASE.md#version)). CI's own builds are for checking, never for the stores.
+
+Previews, tagged `v0.Y.Z`, come from the Pre-release workflow (`.github/workflows/prerelease.yml`) instead. It drafts a GitHub pre-release with the Windows installer (`tool/windows/build_msi.ps1`) and the Android web app (`tool/android_twa`), and deploys the web app to GitHub Pages (see [docs/RELEASE.md](docs/RELEASE.md#pre-releases)).
 
 ## Tests
 
@@ -175,6 +178,7 @@ tool/
   data/           scripts that generate the text assets, calendar tables and test fixtures
   l10n/           Hebrew translations and the ARB builder
   fonts/          builds static font instances from pinned google/fonts sources
+  android_twa/    the Android web app, a Trusted Web Activity of the site
 docs/             design notes, research, backend and release guides
 android/, ios/    platform projects; the home-screen widget's native side is
                   android/app/src/main/kotlin/…/ParshaWidgetProvider.kt with

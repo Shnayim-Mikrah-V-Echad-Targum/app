@@ -44,4 +44,27 @@ abstract final class AppConfig {
   static String? debugWebUrl;
 
   static bool get hasBackend => supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
+
+  /// Whether the community is offered: everywhere but in a build made with
+  /// `COMMUNITY=off`, as the pre-releases are until the accounts' database
+  /// is ready. Off, the Community tab, the questions on a verse, the
+  /// account and its sign-in, the week's discussion and the cloud backup
+  /// are nowhere to be seen, and a link to any of them opens Today; About
+  /// and the guide say that the community is coming. Absent, as in CI and
+  /// the tests, the community is as it was: on Supabase where one is
+  /// configured, and otherwise the on-device demo.
+  static bool get communityEnabled => debugCommunity ?? _community != 'off';
+  static const _community = String.fromEnvironment('COMMUNITY');
+
+  /// Stands in for [communityEnabled] in tests, which can't define
+  /// `COMMUNITY` at build time.
+  @visibleForTesting
+  static bool? debugCommunity;
+
+  /// The releases the Windows app looks for updates among
+  /// (lib/services/updates/): 'prerelease', which takes pre-releases too
+  /// (the pre-releases' own builds), 'stable', or 'none'. Absent, it is
+  /// 'none', and the app never asks: CI, pull requests, the stores' builds
+  /// and the tests make no request.
+  static const updateChannel = String.fromEnvironment('UPDATE_CHANNEL', defaultValue: 'none');
 }

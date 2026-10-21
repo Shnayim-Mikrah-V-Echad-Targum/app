@@ -1,0 +1,485 @@
+name: Pre-release
+
+# Pushing a tag v0.Y.Z, the version in pubspec.yaml, builds a preview and
+# drafts a GitHub pre-release with it (docs/RELEASE.md, Pre-releases):
+#
+#   ShnayimMikrah-X.Y.Z-windows-x64.msi     the Windows installer
+#   ShnayimMikrah-X.Y.Z-windows-x64.zip     the same app as a folder
+#   ShnayimMikrah-X.Y.Z-android-webapp.apk  the Android web app (tool/android_twa)
+#   install.ps1                             the Windows install script
+#   SHA256SUMS.txt                          the others' SHA-256s
+#
+# It also deploys the web app to https://shnayimmikrah.org/ on GitHub Pages,
+# with the Digital Asset Links that let the Android web app open it full
+# screen. Every build is a preview's: no community yet (COMMUNITY=off), and
+# the Windows app looks for updates among this repository's releases,
+# pre-releases included (UPDATE_CHANNEL=prerelease). Unlike the Release
+# workflow (release.yml), it needs no secrets or variables. The draft is
+# tested, then published, by hand.
+
+on:
+  push:
+    tags: ["v0.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to build, v0.Y.Z, which must exist already"
+        required: true
+        type: string
+
+concurrency:
+  group: prerelease-${{ inputs.tag || github.ref_name }}
+  # Never stop an upload part-way.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.7"
+  TAG: ${{ inputs.tag || github.ref_name }}
+  # As in CI, with the site's address, and without the community, which
+  # waits for the accounts database. The Windows build adds its update
+  # channel.
+  DART_DEFINES: >-
+    --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
+    --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
+    --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
+    --dart-define=WEB_URL=https://shnayimmikrah.org/
+    --dart-define=COMMUNITY=off
+
+jobs:
+  preflight:
+    name: Check the tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: A pre-release's tag
+        run: |
+          if [[ ! "$TAG" =~ ^v0\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not a pre-release's tag, v0.Y.Z"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - name: The tag is the version in pubspec.yaml
+        id: version
+        run: |
+          version=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "::error file=pubspec.yaml::The tag $TAG is not the version in pubspec.yaml ($version)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows (MSI and zip)
+    needs: preflight
+    runs-on: windows-latest
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        shell: bash
+        run: |
+          # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.
+          flutter build windows --release --build-name="$VERSION" --build-number="$GITHUB_RUN_NUMBER" $DART_DEFINES --dart-define=UPDATE_CHANNEL=prerelease
+      # The folder runs on a PC without the Visual C++ Redistributable only
+      # with the runtime beside the executable (windows/CMakeLists.txt), and
+      # the MSI installs the folder as it is.
+      - name: The Visual C++ runtime is in the folder
+        shell: bash
+        run: |
+          for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
+            if [ ! -f "build/windows/x64/runner/Release/$dll" ]; then
+              echo "::error file=windows/CMakeLists.txt::$dll is missing from the Windows build, which then won't start on a PC without the Visual C++ Redistributable"
+              exit 1
+            fi
+          done
+      - name: The folder, zipped
+        shell: pwsh
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "ShnayimMikrah-$env:VERSION-windows-x64.zip" -CompressionLevel Optimal
+      # WiX, which tool/windows/build_msi.ps1 installs with the .NET SDK.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      # In Windows PowerShell 5.1, as on a PC.
+      - name: The MSI
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tool\windows\build_msi.ps1 -ReleaseDir build\windows\x64\runner\Release -Version $env:VERSION -Out "ShnayimMikrah-$env:VERSION-windows-x64.msi"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            ShnayimMikrah-${{ env.VERSION }}-windows-x64.msi
+            ShnayimMikrah-${{ env.VERSION }}-windows-x64.zip
+          if-no-files-found: error
+
+  # The Android web app, signed with the ANDROID_TWA_* secrets' key when
+  # they are set (docs/RELEASE.md, Pre-releases), and otherwise with a key
+  # made for this run alone, which no later run can sign with again.
+  twa:
+    name: Android web app (APK)
+    needs: preflight
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+    outputs:
+      fingerprint: ${{ steps.key.outputs.fingerprint }}
+      throwaway: ${{ steps.key.outputs.throwaway }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # The Gradle of android/ (android/gradle/wrapper/gradle-wrapper.properties).
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+      - name: The signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_TWA_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_TWA_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_TWA_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_TWA_KEY_PASSWORD }}
+        run: |
+          keystore="$RUNNER_TEMP/twa.keystore"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            for v in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+              [ -n "${!v}" ] || { echo "::error::ANDROID_TWA_KEYSTORE_BASE64 is set, but ANDROID_TWA_$v is not"; exit 1; }
+            done
+            echo "$KEYSTORE_BASE64" | base64 -d > "$keystore"
+            throwaway=false
+          else
+            KEYSTORE_PASSWORD=$(openssl rand -hex 32)
+            echo "::add-mask::$KEYSTORE_PASSWORD"
+            # A PKCS12 keystore has one password for the store and the key.
+            KEY_PASSWORD=$KEYSTORE_PASSWORD
+            KEY_ALIAS=twa
+            keytool -genkeypair -keystore "$keystore" -storetype PKCS12 -alias "$KEY_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Shnayim Mikrah, O=Shnayim Mikrah" \
+              -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD"
+            throwaway=true
+          fi
+          # The certificate's SHA-256, AB:CD:…, as assetlinks.json gives it:
+          # the first in the listing, the key's own.
+          listing=$(keytool -list -v -keystore "$keystore" -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD")
+          fingerprint=$(sed -n '/^[[:space:]]*SHA256: /{s///p;q}' <<< "$listing")
+          if [[ ! "$fingerprint" =~ ^([0-9A-F]{2}:){31}[0-9A-F]{2}$ ]]; then
+            echo "::error::The signing certificate's SHA-256 fingerprint couldn't be read"
+            exit 1
+          fi
+          {
+            echo "TWA_KEYSTORE=$keystore"
+            echo "TWA_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "TWA_KEY_ALIAS=$KEY_ALIAS"
+            echo "TWA_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          echo "throwaway=$throwaway" >> "$GITHUB_OUTPUT"
+      - name: Build the APK
+        run: |
+          gradle -p tool/android_twa assembleRelease -PversionName="$VERSION" -PversionCode="$GITHUB_RUN_NUMBER"
+          cp tool/android_twa/app/build/outputs/apk/release/app-release.apk "ShnayimMikrah-$VERSION-android-webapp.apk"
+      - name: The APK is org.shnayimmikrah.web, signed with the key
+        env:
+          FINGERPRINT: ${{ steps.key.outputs.fingerprint }}
+          THROWAWAY: ${{ steps.key.outputs.throwaway }}
+        run: |
+          apk="ShnayimMikrah-$VERSION-android-webapp.apk"
+          build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          "$build_tools/aapt2" dump badging "$apk" > "$RUNNER_TEMP/badging.txt"
+          sed -n 1p "$RUNNER_TEMP/badging.txt"
+          if ! grep -q "^package: name='org.shnayimmikrah.web' versionCode='$GITHUB_RUN_NUMBER' versionName='$VERSION'" "$RUNNER_TEMP/badging.txt"; then
+            echo "::error::The APK isn't org.shnayimmikrah.web, version $VERSION ($GITHUB_RUN_NUMBER)"
+            exit 1
+          fi
+          "$build_tools/apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certificates.txt"
+          signed=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/certificates.txt")
+          if [ "$signed" != "$(echo "$FINGERPRINT" | tr -d ':' | tr 'A-F' 'a-f')" ]; then
+            echo "::error::The APK is signed with $signed, not with the key's certificate, $FINGERPRINT"
+            exit 1
+          fi
+          {
+            echo '### Android web app'
+            echo
+            echo "Signed with $([ "$THROWAWAY" = true ] && echo "a key made for this run alone" || echo "the ANDROID_TWA_* secrets' key"), whose certificate's SHA-256 is \`$FINGERPRINT\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-webapp
+          path: ShnayimMikrah-${{ env.VERSION }}-android-webapp.apk
+          if-no-files-found: error
+
+  # As CI's web job (ci.yml), for the site at the domain's root, and with
+  # the Android web app's asset links and the Windows install script.
+  web:
+    name: Web app (shnayimmikrah.org)
+    needs: [preflight, twa]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build (self-hosted engine, no third-party CDN)
+        run: |
+          # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.
+          flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
+            --base-href / $DART_DEFINES
+      # The first frame waits for every font in the manifest: index.html
+      # starts downloading them all while the engine loads.
+      - name: Preload the start-up fonts
+        run: node tool/web/preload_fonts.mjs build/web
+      # main.dart.js, which a first visit downloads before anything shows,
+      # against its budget in bytes gzipped: the repository variable
+      # BUDGET_MAIN_JS_GZIP, or else the budget docs/RELEASE.md records (Web).
+      # The summary gives its deferred parts and the start-up fonts too.
+      - name: Bundle size budget
+        env:
+          BUDGET: ${{ vars.BUDGET_MAIN_JS_GZIP || '1527297' }}
+        run: |
+          [[ "$BUDGET" =~ ^[0-9]+$ ]] || { echo "::error::BUDGET_MAIN_JS_GZIP is not a number of bytes: $BUDGET"; exit 1; }
+          gzipped() { gzip -9c "$1" | wc -c; }
+          kb() { awk -v n="$1" 'BEGIN { printf "%.1f KB", n / 1024 }'; }
+          size=$(gzipped build/web/main.dart.js)
+          parts=0 part_count=0
+          for part in build/web/main.dart.js_*.part.js; do
+            [ -e "$part" ] || continue
+            parts=$((parts + $(gzipped "$part"))) part_count=$((part_count + 1))
+          done
+          assets=$(jq -r '[.[].fonts[].asset] | unique | .[]' build/web/assets/FontManifest.json)
+          fonts=0 font_count=0
+          while read -r asset; do
+            fonts=$((fonts + $(wc -c < "build/web/assets/$asset"))) font_count=$((font_count + 1))
+          done <<< "$assets"
+          {
+            echo '### Web first load'
+            echo
+            echo '| | Size |'
+            echo '| --- | ---: |'
+            echo "| main.dart.js, gzipped | $(kb "$size") ($size bytes, budget $BUDGET) |"
+            echo "| Deferred parts ($part_count), gzipped | $(kb "$parts") |"
+            echo "| Start-up fonts ($font_count) | $(kb "$fonts") |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$size" -gt "$BUDGET" ]; then
+            echo "::error file=build/web/main.dart.js::main.dart.js is $size bytes gzipped, over its budget of $BUDGET (docs/RELEASE.md, Web)"
+            exit 1
+          fi
+          # The time-zone database stays in its deferred part, however small
+          # a database might be imported at once in its place.
+          if grep -q 'America/New_York' build/web/main.dart.js; then
+            echo "::error file=lib/core/calendar/tz_database.dart::main.dart.js holds time-zone data: import package:timezone/data/ only as a deferred library"
+            exit 1
+          fi
+      # The public privacy, support and account-deletion pages the stores
+      # ask for, as static HTML in build/web/legal/ (docs/RELEASE.md).
+      - name: Static policy, support and account-deletion pages
+        env:
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+        run: node tool/legal/build_html.mjs build/web
+      # Link previews want absolute URLs: the site's public address.
+      - name: Absolute link-preview URLs
+        env:
+          WEB_URL: https://shnayimmikrah.org/
+        run: |
+          url="${WEB_URL%/}/"
+          sed -i \
+            -e "s|<link rel=\"canonical\" href=\"./\">|<link rel=\"canonical\" href=\"$url\">\n  <meta property=\"og:url\" content=\"$url\">|" \
+            -e "s|<meta property=\"og:image\" content=\"og.png\">|<meta property=\"og:image\" content=\"${url}og.png\">|" \
+            build/web/index.html
+          grep -q "content=\"${url}og.png\"" build/web/index.html
+      # Each of the app's pages has an address of its own (…/community/
+      # thread/1). GitHub Pages serves 404.html for an address it has no file
+      # for, so a link to a page, or a reload, opens the app there; once the
+      # service worker is in, it serves index.html for them itself.
+      - name: The app at every page's address
+        run: cp build/web/index.html build/web/404.html
+      # The site vouches for the Android web app signed with this run's key,
+      # which may then open it full screen and open its links.
+      - name: Digital Asset Links for the Android web app
+        env:
+          FINGERPRINT: ${{ needs.twa.outputs.fingerprint }}
+        run: |
+          if [[ ! "$FINGERPRINT" =~ ^([0-9A-F]{2}:){31}[0-9A-F]{2}$ ]]; then
+            echo "::error::The Android web app's certificate fingerprint is missing: $FINGERPRINT"
+            exit 1
+          fi
+          mkdir -p build/web/.well-known
+          jq -n --arg fingerprint "$FINGERPRINT" '[{
+            relation: ["delegate_permission/common.handle_all_urls"],
+            target: {
+              namespace: "android_app",
+              package_name: "org.shnayimmikrah.web",
+              sha256_cert_fingerprints: [$fingerprint]
+            }
+          }]' > build/web/.well-known/assetlinks.json
+          cat build/web/.well-known/assetlinks.json
+      # At https://shnayimmikrah.org/install.ps1 too.
+      - name: The Windows install script
+        run: cp tool/windows/install.ps1 build/web/install.ps1
+      # Last, so it precaches the finished files (workbox-config.cjs).
+      - name: Offline service worker
+        run: |
+          npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
+          # Workbox only warns of a file it leaves out; without the app's
+          # own files, the app never opens offline.
+          node tool/web/sw_build.cjs check build/web
+      # v3, as in CI: v4 leaves out every file and folder whose name starts
+      # with a dot, .well-known among them.
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+      - name: The site's artifact has the asset links and the install script
+        run: |
+          listing=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          for file in ./.well-known/assetlinks.json ./install.ps1 ./index.html ./404.html ./sw.js; do
+            grep -qxF "$file" <<< "$listing" || { echo "::error::The site's artifact has no $file"; exit 1; }
+          done
+
+  # Only once GitHub Pages is on, with GitHub Actions as its source, and the
+  # github-pages environment lets tags deploy (docs/RELEASE.md,
+  # Pre-releases). Until then this job fails, and the release goes on
+  # without it; pages-help says what to do.
+  pages:
+    name: Deploy to GitHub Pages
+    needs: web
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  pages-help:
+    name: GitHub Pages isn't set up
+    needs: [web, pages]
+    if: ${{ !cancelled() && needs.web.result == 'success' && needs.pages.outputs.url == '' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: How to deploy the site
+        run: |
+          echo "::warning::The site wasn't deployed to GitHub Pages; the run's summary says how to set it up."
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### The site wasn't deployed
+
+          The release doesn't need it, but the web app at https://shnayimmikrah.org/, and the Android web app's full screen, do. Once, in the repository's settings (docs/RELEASE.md, Pre-releases):
+
+          1. *Settings → Pages*: set *Source* to *GitHub Actions*, and the custom domain to `shnayimmikrah.org` (with the DNS records docs/RELEASE.md lists); tick *Enforce HTTPS* once the certificate is issued.
+          2. *Settings → Environments → github-pages → Deployment branches and tags*: add the tag rule `v*`, so that a pre-release's tag may deploy.
+
+          Then run the workflow again for this tag: *Re-run all jobs* here, or *Actions → Pre-release → Run workflow* with the tag. It updates the draft's files, and deploys the site with the new APK's key.
+          EOF
+
+  release:
+    name: Draft the pre-release
+    needs: [preflight, windows, twa, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.preflight.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      # For install.ps1 and the notes at the tagged commit.
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-webapp
+          path: assets
+      - name: The install script and the SHA-256 sums
+        run: |
+          cp tool/windows/install.ps1 assets/install.ps1
+          cd assets
+          files=(
+            "ShnayimMikrah-$VERSION-windows-x64.msi"
+            "ShnayimMikrah-$VERSION-windows-x64.zip"
+            "ShnayimMikrah-$VERSION-android-webapp.apk"
+            install.ps1
+          )
+          for file in "${files[@]}"; do
+            [ -s "$file" ] || { echo "::error::$file is missing"; exit 1; }
+          done
+          sha256sum "${files[@]}" > SHA256SUMS.txt
+          sha256sum --check --strict SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: The notes
+        env:
+          THROWAWAY: ${{ needs.twa.outputs.throwaway }}
+        run: |
+          # The Android key's paragraph that applies.
+          if [ "$THROWAWAY" = true ]; then
+            drop=permanent-key
+          else
+            drop=throwaway-key
+          fi
+          sed -e "/<!-- $drop -->/,/<!-- \/$drop -->/d" -e '/^<!-- \/\?\(throwaway\|permanent\)-key -->$/d' \
+            -e "s/{{VERSION}}/$VERSION/g" .github/prerelease_notes.md > "$RUNNER_TEMP/notes.md"
+          if grep -q '{{\|<!--' "$RUNNER_TEMP/notes.md"; then
+            echo "::error file=.github/prerelease_notes.md::The notes still have a placeholder or a marker"
+            exit 1
+          fi
+      # A draft: it is tested, then published, by hand. Run again for the
+      # same tag (a re-run, or the workflow run by hand), the draft keeps its
+      # notes, which may have been edited, and gets the new files.
+      - name: Draft the pre-release with the files
+        run: |
+          assets=(
+            "assets/ShnayimMikrah-$VERSION-windows-x64.msi"
+            "assets/ShnayimMikrah-$VERSION-windows-x64.zip"
+            "assets/ShnayimMikrah-$VERSION-android-webapp.apk"
+            assets/install.ps1
+            assets/SHA256SUMS.txt
+          )
+          draft=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .draft")
+          case "$draft" in
+            "")
+              gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --prerelease \
+                --title "Shnayim Mikrah $TAG (preview)" --notes-file "$RUNNER_TEMP/notes.md" "${assets[@]}"
+              ;;
+            true)
+              gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${assets[@]}"
+              ;;
+            *)
+              echo "::error::The release $TAG is published already; this workflow changes only a draft."
+              exit 1
+              ;;
+          esac
+          url=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate \
+            --jq ".[] | select(.tag_name == \"$TAG\") | .html_url")
+          echo "### The draft pre-release: $url" >> "$GITHUB_STEP_SUMMARY"

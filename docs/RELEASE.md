@@ -19,7 +19,7 @@
   - Verify the domain for the organization first, so no one else can claim it on GitHub Pages: *Organization settings → Pages → Add a domain*, then add the `TXT` record GitHub shows (`_github-pages-challenge-shnayim-mikrah-v-echad-targum.shnayimmikrah.org`) at the registrar and click *Verify*.
   - In the repository's *Settings → Pages*, set *Source* to *GitHub Actions* (CI deploys with `actions/deploy-pages`), set the custom domain to `shnayimmikrah.org`, and tick *Enforce HTTPS* once the certificate is issued.
   - At the registrar, point the apex at GitHub Pages with four `A` records (`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`) and four `AAAA` records (`2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`), and add a `CNAME` record for `www` to `shnayim-mikrah-v-echad-targum.github.io`.
-  - Set the repository variables `DEPLOY_WEB=true`, `WEB_BASE_HREF=/` and `WEB_URL=https://shnayimmikrah.org/`.
+  - Set the repository variables `DEPLOY_WEB=true`, `WEB_BASE_HREF=/` and `WEB_URL=https://shnayimmikrah.org/`. While the [pre-releases](#pre-releases) deploy the site, leave `DEPLOY_WEB` unset: CI would replace their site with main's build, which has the community and no asset links for the Android web app.
   - The store listings' privacy, support and account-deletion URLs are then `https://shnayimmikrah.org/legal/privacy.html`, `…/legal/support.html` and `…/legal/delete-account.html`.
   - With the site at the domain's root, Android App Links and iOS Universal Links for discussion URLs become possible (`/.well-known/assetlinks.json` and `/.well-known/apple-app-site-association`).
 - [ ] **Builds from before the rename are a different app.** Test builds made before the name took its h (`org.shnayimmikra.app`, "Shnayim Mikra") don't upgrade to the new one: it installs beside them, with its own data. Before switching, export a backup from the old build (*Settings → Your data*) or turn on cloud backup; then uninstall the old build, so its reminders and widget stop; then import the file in the new one (a backup from the old build still imports) or sign in again.
@@ -38,6 +38,54 @@
   - at least two moderators appointed
   - a mailbox for the stores' reviewers, all three of them (*Review access*, under [iOS](#ios-app-store))
 - [ ] **Moderation commitment.** Someone checks reports at least daily. Both stores expect timely action on user-generated content.
+
+## Pre-releases
+
+A tag `v0.Y.Z` is a preview's. `.github/workflows/prerelease.yml` builds it (the [Release workflow](#the-release-workflow), for the stores, leaves `v0` tags alone), deploys the web app to `https://shnayimmikrah.org/`, and drafts a GitHub pre-release, *Shnayim Mikrah v0.Y.Z (preview)*, with these files and the notes in `.github/prerelease_notes.md`:
+
+- `ShnayimMikrah-X.Y.Z-windows-x64.msi`: the Windows installer, from `tool/windows/build_msi.ps1`, for the reader's account alone, without administrator rights.
+- `ShnayimMikrah-X.Y.Z-windows-x64.zip`: the same app as a folder, to run without installing.
+- `ShnayimMikrah-X.Y.Z-android-webapp.apk`: the Android web app (`tool/android_twa`), which opens the site full screen, as an app of its own (`org.shnayimmikrah.web`).
+- `install.ps1`: `tool/windows/install.ps1` at the tag, which the one-liner runs from main: `Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex`. The site serves it too, at `https://shnayimmikrah.org/install.ps1`.
+- `SHA256SUMS.txt`: the others' SHA-256s, which `install.ps1` and the app's updater check.
+
+Every build is a preview's: no community until the accounts database is ready (`COMMUNITY=off`), and the Windows app looks for updates among this repository's releases, pre-releases included (`UPDATE_CHANNEL=prerelease`). The workflow needs no secrets or variables, though it uses CI's, such as `SUPPORT_EMAIL`, when they're set.
+
+**Once, before the first one**
+
+- [ ] In the repository's *Settings → Pages*, set *Source* to *GitHub Actions*. Set the custom domain to `shnayimmikrah.org`, with the domain verified and the DNS records at the registrar as under *The web address* above, and tick *Enforce HTTPS* once the certificate is issued.
+- [ ] In *Settings → Environments → github-pages → Deployment branches and tags*, add a tag rule `v*`. GitHub makes the environment with the default branch alone allowed to deploy, and a pre-release deploys from its tag.
+- [ ] Leave `DEPLOY_WEB` unset (see *The web address*).
+- Until Pages is set up, the run's *Deploy to GitHub Pages* job fails, without failing the run or the draft, and the run's summary says what to do. Once it is, run the workflow again for the tag (*Re-run all jobs*, or by hand as below), which updates the draft's files and deploys the site with the new APK's key.
+
+**Cutting one**
+
+1. Bump `version:` in `pubspec.yaml` to the next version, `0.0.2+2` say, and merge it to main.
+2. Tag that commit with the version and push the tag: `git tag v0.0.2 && git push origin v0.0.2`. The workflow stops before it builds anything if the tag isn't the version name. To build a tag again, run it by hand: *Actions → Pre-release → Run workflow*, with the tag.
+3. Wait for the run (*Actions → Pre-release*). Its summary links to the draft and gives the APK's certificate fingerprint.
+4. Test the draft. The one-liner and the app's updater see only published releases, so try the MSI with `install.ps1` pointed at the file: `$env:SM_MSI = '<path to the MSI>'`, then the one-liner. Open the site, add it to a phone's home screen, and install the APK.
+   - To ship an MSI built elsewhere (the owner's Windows 11 VM, say), upload it over CI's, then the sums again, or `install.ps1` refuses it: `gh release upload v0.0.2 ShnayimMikrah-0.0.2-windows-x64.msi --clobber`, then, in a folder with the five files, `sha256sum ShnayimMikrah-0.0.2-windows-x64.msi ShnayimMikrah-0.0.2-windows-x64.zip ShnayimMikrah-0.0.2-android-webapp.apk install.ps1 > SHA256SUMS.txt` and `gh release upload v0.0.2 SHA256SUMS.txt --clobber`.
+5. Edit the notes if need be, then publish it as a pre-release: *Actions → Publish pre-release → Run workflow*, with the tag (`.github/workflows/publish_prerelease.yml`, which first checks the draft's five files against its `SHA256SUMS.txt`, and that the default branch has the one-liner's `install.ps1`). Or by hand: `gh release edit v0.0.2 --draft=false --prerelease`, or in the web UI *Edit*, with *Set as a pre-release* ticked, then *Publish release*.
+
+Run again for a tag whose draft exists (a re-run, or by hand), the workflow uploads the files over the draft's with `--clobber`, and keeps its notes. It never changes a published release.
+
+**The Android web app's key**
+
+- [ ] Without the secrets below, each run signs the APK with a key made for that run alone, as decided for v0.0.1, and writes its certificate's fingerprint into the site's `/.well-known/assetlinks.json`. So a later APK won't install over an earlier one: readers export a backup, uninstall, and install the new one, as the notes say. And once a later run has deployed the site, an earlier APK opens it with a URL bar, as the asset links name only the newest key.
+- [ ] To sign with a permanent key instead, make one once, and keep it, and its password, somewhere safe: losing it means another reinstall for everyone.
+
+  ```sh
+  keytool -genkeypair -keystore twa.keystore -storetype PKCS12 -alias twa -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Shnayim Mikrah, O=Shnayim Mikrah"
+  ```
+
+  Then add the repository secrets `ANDROID_TWA_KEYSTORE_BASE64` (the output of `base64 -w0 twa.keystore`), `ANDROID_TWA_KEYSTORE_PASSWORD`, `ANDROID_TWA_KEY_ALIAS` (`twa`) and `ANDROID_TWA_KEY_PASSWORD` (a PKCS12 keystore's key has the keystore's password). The workflow signs with it from then on, and the notes say instead that later APKs install over it. The first APK with it still needs the reinstall.
+- If the web app goes to Google Play, which signs apps with a key of its own, add Play's certificate fingerprint to the asset links too (the web job's *Digital Asset Links* step), and so too the native app's, for App Links.
+- By hand: `gradle -p tool/android_twa assembleRelease -PversionName=X.Y.Z -PversionCode=N`, with Gradle and the Android Gradle Plugin at `android/`'s versions, and `TWA_KEYSTORE` (the keystore's path), `TWA_KEYSTORE_PASSWORD`, `TWA_KEY_ALIAS` and `TWA_KEY_PASSWORD` in the environment. Without them it writes `app-release-unsigned.apk`.
+
+**The MSI is unsigned**
+
+- [ ] The MSI isn't code-signed yet. Installed through `install.ps1`, which downloads it without the mark of the web, it installs with no SmartScreen prompt; downloaded in a browser and opened, it first gets SmartScreen's *Windows protected your PC* (*More info → Run anyway*), as the notes say. To sign it, sign the MSI in the workflow's Windows job, after `build_msi.ps1` and before the upload, with `signtool` and the certificate in the `WINDOWS_CERTIFICATE_BASE64` and `WINDOWS_CERTIFICATE_PASSWORD` secrets ([Windows](#windows)).
+- CI's Windows job builds the MSI on every push too (its `windows-msi` artifact), so that each pull request compiles the WiX source. Like CI's other builds, it has whatever configuration CI has: ship the pre-release's.
 
 ## Every release
 

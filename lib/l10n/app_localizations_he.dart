@@ -3837,4 +3837,159 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get sourcesSunDescription =>
       'מחושבות במכשיר לפי הנוסחאות של מחשבון השמש של NOAA (על פי Meeus, Astronomical Algorithms), ונבדקו מול Hebcal, שזמניו הם ברירת המחדל: הדלקת נרות 18 דקות לפני השקיעה, 20 בישראל, 40 בירושלים ו־30 בחיפה ובזכרון יעקב, וצאת השבת כשהשמש ⁦8.5°⁩ מתחת לאופק. בהגדרות, תחת קריאה ומנהגים, אפשר לבחור דקות אחרות להדלקת הנרות, ולבחור שהשבת תצא 42, 50 או 72 דקות אחרי השקיעה, כמו בלוח המקומי.';
+
+  @override
+  String get communityComingSoon =>
+      'הקהילה תגיע בקרוב. עד אז הקריאה שלך נשמרת במכשיר הזה, ואפשר להעביר אותה בעזרת קובץ גיבוי, בהגדרות תחת ״הנתונים שלך״.';
+
+  @override
+  String get guideAppBodyNoCommunity =>
+      'מסך היום מציג את פרשת השבוע ואת הקריאה של היום. הטבעות מתמלאות עם הקריאה: מקרא, מקרא שוב ותרגום.\nקוראים מתוך חומש מודפס? ״קראתי בחומש״ רושם את הקריאה, ואחרי שבת אפשר לרשום את מה שנקרא בשבת.\nיום שהוחמץ? קריאתו יחד עם הקריאה של למחרת משלימה אותו; אם לא, יום חסד מכסה אותו.\nלחיצה ארוכה על פסוק: סימנייה, הערה, העתקה או שיתוף.\nהשמעה מקריאה את הטקסט כדי לעקוב אחריו — עזר, לא תחליף לקריאה.';
+
+  @override
+  String get updatesHeading => 'עדכונים';
+
+  @override
+  String get updatesThisVersion => 'הגרסה הזו';
+
+  @override
+  String get updatesCheckNow => 'בדיקה עכשיו';
+
+  @override
+  String get updatesChecking => 'בבדיקה…';
+
+  @override
+  String updatesLastChecked(String time) {
+    return 'נבדק לאחרונה $time';
+  }
+
+  @override
+  String get updatesNotChecked => 'עדיין לא נבדק';
+
+  @override
+  String get updatesQuiet => 'העדכונים ממתינים עד אחרי שבת ויום טוב.';
+
+  @override
+  String get updatesLatest => 'זו הגרסה העדכנית ביותר.';
+
+  @override
+  String get updatesWhatsNew => 'מה חדש';
+
+  @override
+  String get updatesWhatsNewDesc => 'הערות הגרסה, ב־GitHub';
+
+  @override
+  String get updatesAuto => 'בדיקה אוטומטית';
+
+  @override
+  String get updatesAutoDesc => 'עד פעמיים ביום, ולעולם לא בשבת וביום טוב';
+
+  @override
+  String updateReady(String version) {
+    return 'גרסה $version מוכנה להתקנה';
+  }
+
+  @override
+  String get updateInstall => 'התקנה';
+
+  @override
+  String updateInstallTitle(String version) {
+    return 'להתקין את גרסה $version?';
+  }
+
+  @override
+  String get updateInstallBody =>
+      'האפליקציה תיסגר, הגרסה החדשה תותקן, והאפליקציה תיפתח שוב. הקריאה וההגדרות שלך יישארו כפי שהן.';
+
+  @override
+  String get updatePreparing => 'העדכון בהכנה…';
+
+  @override
+  String get updateCheckFailed =>
+      'לא ניתן היה לבדוק אם יש עדכונים. נא לנסות שוב מאוחר יותר.';
+
+  @override
+  String get updateInstallFailed =>
+      'לא ניתן היה להכין את העדכון, ושום דבר לא השתנה.';
+
+  @override
+  String updatesPreviewVersion(String version) {
+    return '$version (גרסה מקדימה)';
+  }
+
+  @override
+  String get installTitle => 'התקנת האפליקציה';
+
+  @override
+  String get installDesc => 'לפתוח את שניים מקרא כמו כל אפליקציה אחרת';
+
+  @override
+  String get installHomeScreen => 'הוספה למסך הבית';
+
+  @override
+  String get installHomeScreenDesc => 'נפתחת ממסך הבית, כמו כל אפליקציה';
+
+  @override
+  String get installDesktop => 'התקנה במחשב הזה';
+
+  @override
+  String get installDesktopDesc => 'נפתחת בחלון משלה, כמו כל אפליקציה';
+
+  @override
+  String get installIosTitle => 'הוספה למסך הבית';
+
+  @override
+  String get installIosDesc => 'מתפריט השיתוף של Safari';
+
+  @override
+  String get installIosStep1 =>
+      'להקיש על ״שיתוף״ בסרגל הכלים של Safari, או בתפריט ״עוד״ שלו אם הוא לא שם.';
+
+  @override
+  String get installIosStep2 =>
+      'לבחור ״הוספה למסך הבית״, ואם צריך, לגלול אליו למטה.';
+
+  @override
+  String get installIosStep3 =>
+      'להקיש על ״הוספה״. שניים מקרא נמצאת עכשיו במסך הבית.';
+
+  @override
+  String get installIosBackup =>
+      'האפליקציה שבמסך הבית שומרת את הקריאה בנפרד. כדי להעביר אליה את מה שקראת כאן, אפשר לייצא אותו קודם בהגדרות, תחת ״הנתונים שלך״, ולייבא אותו שם.';
+
+  @override
+  String get installApkTitle => 'אפליקציית Android (קובץ APK)';
+
+  @override
+  String get installApkDesc => 'פותחת את האתר הזה כאפליקציה';
+
+  @override
+  String get installApkBody =>
+      'אפליקציה ל־Android שפותחת את האתר הזה כאפליקציה, עם סמל משלה. יש להוריד את קובץ ה־APK של הגרסה האחרונה ולפתוח אותו כדי להתקין; ייתכן שהטלפון יבקש לאשר התקנות מהדפדפן.';
+
+  @override
+  String get installReleases => 'לדף הגרסאות';
+
+  @override
+  String get installWindowsTitle => 'אפליקציה ל־Windows';
+
+  @override
+  String get installWindowsDesc => 'מותקנת בשורה אחת ב־PowerShell';
+
+  @override
+  String get installWindowsBody =>
+      'יש לפתוח את PowerShell, להדביק בו את השורה הזו ולהקיש Enter. השורה מורידה מ־GitHub את הגרסה האחרונה, בודקת אותה ומתקינה אותה לחשבון שלך בלבד, בלי הרשאות מנהל.';
+
+  @override
+  String get installWindowsMsi => 'או להוריד את קובץ ההתקנה (MSI) מדף הגרסאות.';
+
+  @override
+  String get installCopied => 'הועתק';
+
+  @override
+  String get installCardText =>
+      'אפשר להוסיף את שניים מקרא למסך הבית ולפתוח אותה כמו כל אפליקציה.';
+
+  @override
+  String get installAction => 'התקנה';
 }
