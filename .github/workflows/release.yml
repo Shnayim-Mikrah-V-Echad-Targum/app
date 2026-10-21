@@ -9,7 +9,8 @@ name: Release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    # A tag v0.Y.Z is a pre-release's, which prerelease.yml builds instead.
+    tags: ["v*.*.*", "!v0.*.*"]
 
 concurrency:
   group: release-${{ github.ref }}

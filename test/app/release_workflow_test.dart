@@ -27,10 +27,12 @@ void main() {
   Set<String> referenced(String context) =>
       RegExp('\\b$context\\.(\\w+)').allMatches(source).map((match) => match[1]!).toSet();
 
-  test('runs for version tags alone', () {
+  // A tag v0.Y.Z is a pre-release's: .github/workflows/prerelease.yml builds
+  // it (test/app/prerelease_workflow_test.dart), and the stores never get it.
+  test("runs for version tags alone, and not for a pre-release's", () {
     expect(workflow['on'], {
       'push': {
-        'tags': ['v*.*.*'],
+        'tags': ['v*.*.*', '!v0.*.*'],
       },
     });
   });
