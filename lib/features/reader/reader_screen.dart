@@ -777,6 +777,123 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         onFound: onFound,
       );
 
+  // --- Keeping the place across a change of display ---------------------------
+
+  /// Whether a change of settings from [a] to [b] lays the text out again:
+  /// what goes with each verse, and how it is set. Not the whole parsha
+  /// shown or not, which places the text itself (_setWholeParsha).
+  static bool _relaysText(AppSettings a, AppSettings b) =>
+      a.fullTextWholeParsha == b.fullTextWholeParsha &&
+      (a.secondReading != b.secondReading ||
+          a.showTranslation != b.showTranslation ||
+          a.showRashi != b.showRashi ||
+          a.rashiScript != b.rashiScript ||
+          a.parallelColumns != b.parallelColumns ||
+          a.focusMode != b.focusMode ||
+          a.readingScale != b.readingScale ||
+          a.lineHeight != b.lineHeight ||
+          a.wordSpacing != b.wordSpacing ||
+          a.letterSpacing != b.letterSpacing ||
+          a.lineWidth != b.lineWidth ||
+          a.justifyMode != b.justifyMode ||
+          a.showNikud != b.showNikud ||
+          a.showTeamim != b.showTeamim ||
+          a.showKetiv != b.showKetiv ||
+          a.showVerseNumbers != b.showVerseNumbers ||
+          a.scriptureFont != b.scriptureFont ||
+          a.uiFont != b.uiFont ||
+          a.boldText != b.boldText ||
+          a.nameStyle != b.nameStyle ||
+          a.theme != b.theme);
+
+  /// The verse of the full text held where it stood while a change of
+  /// display lays the text out again, perhaps once texts it now shows have
+  /// loaded: its index among the verses shown, how far below the top of the
+  /// view its top was, and the aliyah and whole parsha it was held in.
+  ({int verse, double top, int aliyah, bool whole})? _held;
+
+  /// Holds the reader's place before a change of display lays the full text
+  /// out again: the verse marked, focused or being read while it is in view,
+  /// or else the verse at the top of the view, even with its top (its
+  /// chapter's heading, say) just above it, unless most of it has scrolled
+  /// past. A place already held, whose text has yet to be laid out anew,
+  /// stays held.
+  void _holdPlace() {
+    final shown = _shown;
+    if (_held != null || !_fullText || shown == null || !_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (!position.hasContentDimensions) return;
+    final whole = _wholeParsha;
+    final verses = whole ? _parshaFor(shown.$1).verses : shown.$3.verses;
+    // Where verse i's block stands: its top below the top of the view, and
+    // its height.
+    (double, double)? placeOf(int i) {
+      final box = i < _verseKeys.length ? _verseKeys[i].currentContext?.findRenderObject() : null;
+      if (box is! RenderBox || !box.attached || !box.hasSize || RenderAbstractViewport.maybeOf(box) == null) return null;
+      return (topInView(box, position), box.size.height);
+    }
+
+    final target = switch (_targetVerse) {
+      final r? => verses.indexOf(r),
+      null => -1,
+    };
+    (int, double)? held;
+    for (final i in [?_listen.verse, ?_focusedVerse, if (target >= 0) target]) {
+      if (placeOf(i) case (final top, _) when top >= -1 && top < position.viewportDimension) {
+        held = (i, top);
+        break;
+      }
+    }
+    if (held == null) {
+      for (var i = 0; i < verses.length; i++) {
+        if (placeOf(i) case (final top, final height) when top + height / 2 > 0) {
+          held = (i, top);
+          break;
+        }
+      }
+    }
+    if (held case (final verse, final top)) _held = (verse: verse, top: top, aliyah: _aliyah, whole: whole);
+  }
+
+  /// Brings the verse held back to where it stood, once the frame being
+  /// built has laid the text out anew. In the whole parsha, a verse moved
+  /// out of what is built is first brought near by its reckoned place, as
+  /// [_seekVerse] does.
+  void _restorePlaceAfterFrame() {
+    final held = _held;
+    if (held == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!identical(_held, held)) return;
+      _held = null;
+      if (!mounted || !_fullText || _aliyah != held.aliyah || _wholeParsha != held.whole) return;
+      // Any scroll under way to another place gives way to this one.
+      final seek = ++_seek;
+      _seeking = true;
+      try {
+        for (var attempt = 0; attempt < 8 && mounted && seek == _seek && _scroll.hasClients; attempt++) {
+          final p = _scroll.position;
+          final i = held.verse;
+          final box = i < _verseKeys.length ? _verseKeys[i].currentContext?.findRenderObject() : null;
+          final double? to;
+          if (box is RenderBox && box.attached && box.hasSize && RenderAbstractViewport.maybeOf(box) != null) {
+            to = p.pixels + topInView(box, p) - held.top;
+          } else {
+            to = held.whole ? _estimatedOffset(i) : null;
+          }
+          if (to == null) return;
+          final clamped = to.clamp(p.minScrollExtent, p.maxScrollExtent);
+          if ((p.pixels - clamped).abs() < 0.5) return;
+          _scroll.jumpTo(clamped);
+          // One aliyah's verses are all built and measured: it is there.
+          if (!held.whole) return;
+          await WidgetsBinding.instance.endOfFrame;
+        }
+      } finally {
+        if (seek == _seek) _seeking = false;
+      }
+    });
+  }
+
   /// Announces the new step, in one message, where the platform takes
   /// announcements: what to read, which reading it is, where it is in the
   /// aliyah, and the verses it shows ("Genesis 3:22"). Elsewhere the step's
@@ -1131,7 +1248,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       _rashiLayer(s),
     )));
 
+    // A change of display holds the full text's place where it stands, to
+    // bring it back once the text is laid out anew.
+    ref.listen<AppSettings>(settingsProvider, (previous, next) {
+      if (previous != null && _relaysText(previous, next)) _holdPlace();
+    });
+
     final title = '${names.portion(ctx.portion, ashkenazi: s.ashkenaziNames)} · ${names.aliyah(_aliyah)}';
+
+    // While a change of display loads texts it now shows (Rashi, the
+    // translation), the reader goes on showing what it showed rather than a
+    // spinner in its place: the text keeps its place, and the keyboard focus
+    // stays where it is (on the display sheet over the reader, whose Esc
+    // would otherwise reach the reader, which a reader built anew takes the
+    // focus for).
+    final shown = _shown;
+    if (textsAsync.isLoading && !textsAsync.hasValue && _positioned && shown != null && shown.$1.id == ctx.id) {
+      return DocumentTitle(
+        title: title,
+        child: _buildReader(context, ctx, shown.$2, shown.$3, _parshaFor(ctx), s),
+      );
+    }
 
     // An app bar of its own, but the tab named as every page names it.
     return DocumentTitle(
@@ -1182,6 +1319,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           if (_chunk >= flow.chunks.length) _chunk = flow.chunks.length - 1;
           if (_step >= flow.stepsFor(_chunk).length) _step = flow.stepsFor(_chunk).length - 1;
           _shown = (ctx, texts, flow);
+          // The texts shown are the settings' own: the place held is brought
+          // back once they are laid out.
+          _restorePlaceAfterFrame();
           return _buildReader(context, ctx, texts, flow, parsha, s);
         },
       ),

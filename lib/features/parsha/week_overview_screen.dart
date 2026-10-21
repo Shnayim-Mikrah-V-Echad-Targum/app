@@ -13,7 +13,6 @@ import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/heading_reveal.dart';
-import '../../ui/widgets/lang.dart';
 import '../../ui/widgets/lines.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/page_columns.dart';
@@ -225,7 +224,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
 }
 
 /// The head of the page, with no card: the parsha's pointed name in Hebrew,
-/// its name in the UI's language, its verses, when it is read, how the week
+/// in the English UI its English name, its verses, when it is read, how the week
 /// stands, and the rings.
 class _WeekHeader extends ConsumerWidget {
   const _WeekHeader({required this.ctx, required this.namesKey});
@@ -277,19 +276,9 @@ class _WeekHeader extends ConsumerWidget {
                 ),
               ),
             ),
-            if (hebrewUi)
-              Lang(
-                const Locale('en'),
-                // Whole, as the name above it is.
-                child: WholeWords(
-                  names.portionAlt(portion, ashkenazi: settings.ashkenaziNames),
-                  style: muted,
-                  textAlign: start,
-                  textDirection: TextDirection.ltr,
-                ),
-              )
-            else
-              // The heading already says it.
+            // In the English UI, its name as the UI gives it, which the
+            // heading already says; the Hebrew UI has the pointed name alone.
+            if (!hebrewUi)
               ExcludeSemantics(
                 child: WholeWords(
                   name,

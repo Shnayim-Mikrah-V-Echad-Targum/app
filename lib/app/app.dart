@@ -15,6 +15,7 @@ import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
 import '../services/web_update.dart';
 import '../ui/theme/app_theme.dart';
+import '../ui/widgets/common.dart' show OverlayDismissal;
 import '../ui/widgets/fonts_change_scope.dart';
 import 'android_night_mode.dart';
 import 'celebrations.dart';
@@ -302,10 +303,14 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
                 child: WindowsBack(
                   router: router,
                   child: FontsChangeScope(
-                    // Status messages set for pages as wide as the window:
-                    // those over the tabs, and a phone's (the shell sets them
-                    // for the pane beside the rail).
-                    child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                    // Esc closes the sheet or dialog on top, whatever has the
+                    // focus.
+                    child: OverlayDismissal(
+                      // Status messages set for pages as wide as the window:
+                      // those over the tabs, and a phone's (the shell sets
+                      // them for the pane beside the rail).
+                      child: FocusHighlightScope(child: StatusMessageArea.window(child: child!)),
+                    ),
                   ),
                 ),
               ),

@@ -123,7 +123,8 @@ class WidgetWeek {
   /// The parsha's Hebrew name, pointed if the reader shows vowels.
   final String hebrew;
 
-  /// Its transliterated name, in the reader's style.
+  /// Its transliterated name, in the reader's style, which the widget shows
+  /// in the English UI alone.
   final String name;
 
   /// How a screen reader names it: in the Hebrew UI its Hebrew name, and in

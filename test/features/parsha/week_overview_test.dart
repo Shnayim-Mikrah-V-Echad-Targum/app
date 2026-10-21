@@ -122,11 +122,11 @@ void main() {
       expect(opacity(), 0);
     });
 
-    testWidgets('in Hebrew, gives the English name under the Hebrew, in English', (tester) async {
+    testWidgets('in Hebrew, gives the pointed name alone, with no transliteration on the page', (tester) async {
       await open(tester, settings: _settings.copyWith(language: AppLanguage.hebrew));
       expect(find.text('בְּרֵאשִׁית'), findsOneWidget);
-      final english = tester.widget<Text>(find.text('Bereshit'));
-      expect(english.textDirection, TextDirection.ltr);
+      expect(find.text('Bereshit'), findsNothing);
+      expect(latinTextIn(tester, find.byType(WeekOverview)), isEmpty);
     });
   });
 

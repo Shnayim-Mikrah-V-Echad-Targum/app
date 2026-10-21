@@ -861,7 +861,7 @@ Future<T?> showAppDialog<T>({
   final navigator = Navigator.of(context, rootNavigator: true);
   final themes = InheritedTheme.capture(from: context, to: navigator.context);
   // The route showGeneralDialog pushes, plus showDialog's focus trap.
-  return navigator.push<T>(RawDialogRoute<T>(
+  final route = RawDialogRoute<T>(
     barrierDismissible: barrierDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: DialogTheme.of(context).barrierColor ?? Colors.black54,
@@ -873,7 +873,63 @@ Future<T?> showAppDialog<T>({
       child: SafeArea(child: themes.wrap(Builder(builder: builder))),
     ),
     transitionBuilder: _dialogTransition,
-  ));
+  );
+  _openOverlays.add(route);
+  return navigator.push<T>(route).whenComplete(() => _openOverlays.remove(route));
+}
+
+/// The sheets and dialogs open ([showAppSheet], [showAppDialog]), the one
+/// shown last at the end.
+final _openOverlays = <ModalRoute<Object?>>[];
+
+/// Lets Esc close the sheet or dialog on top whatever has the keyboard
+/// focus. With the focus in it, its own route closes it (the app's Esc is a
+/// DismissIntent, which the route answers); this is for the focus left on
+/// the page beneath it, or taken back by that page (rebuilt, say). There the
+/// page's route answers the intent, closing nothing, and the sheet would
+/// stay. Around the app's navigator, beneath the app's own shortcuts, so
+/// that it hears Esc before they do.
+class OverlayDismissal extends StatelessWidget {
+  const OverlayDismissal({super.key, required this.child});
+
+  final Widget child;
+
+  /// The sheet or dialog on top, if nothing covers it (another route over
+  /// it, in its navigator or one around it) and its scrim closes it.
+  static ModalRoute<Object?>? get _top {
+    _openOverlays.removeWhere((route) => route.navigator == null);
+    final top = _openOverlays.lastOrNull;
+    if (top == null || !top.isCurrent || !top.barrierDismissible) return null;
+    for (var navigator = top.navigator; navigator != null && navigator.mounted;) {
+      final outer = ModalRoute.of(navigator.context);
+      if (outer == null) break;
+      if (!outer.isCurrent) return null;
+      navigator = outer.navigator;
+    }
+    return top;
+  }
+
+  static KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.escape) return KeyEventResult.ignored;
+    final top = _top;
+    final content = top?.subtreeContext;
+    final focus = FocusManager.instance.primaryFocus;
+    if (top == null || content == null || !content.mounted || focus == null) return KeyEventResult.ignored;
+    // In the sheet, Esc is its own: the focus is in its route's scope.
+    final scope = Focus.maybeOf(content, scopeOk: true, createDependency: false);
+    if (scope == null || focus == scope || focus.ancestors.contains(scope)) return KeyEventResult.ignored;
+    top.navigator?.maybePop();
+    return KeyEventResult.handled;
+  }
+
+  @override
+  Widget build(BuildContext context) => Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        includeSemantics: false,
+        onKeyEvent: _onKey,
+        child: child,
+      );
 }
 
 final _dialogCurve = CurveTween(curve: Motion.decelerate);
@@ -906,22 +962,29 @@ Future<T?> showAppSheet<T>({
   bool isScrollControlled = false,
   bool useRootNavigator = false,
   Color? barrierColor,
-}) =>
-    showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: isScrollControlled,
-      useRootNavigator: useRootNavigator,
-      barrierColor: barrierColor,
-      useSafeArea: true,
-      sheetAnimationStyle: Motion.of(context).style,
-      builder: (context) {
-        final padding = sheetPadding(context);
-        return ListTileTheme.merge(
-          contentPadding: EdgeInsetsDirectional.symmetric(horizontal: padding),
-          child: Builder(builder: builder),
-        );
-      },
-    );
+}) {
+  // The sheet's route, known once it builds, for Esc (OverlayDismissal).
+  ModalRoute<Object?>? shown;
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: isScrollControlled,
+    useRootNavigator: useRootNavigator,
+    barrierColor: barrierColor,
+    useSafeArea: true,
+    sheetAnimationStyle: Motion.of(context).style,
+    builder: (context) {
+      if (shown == null) {
+        shown = ModalRoute.of(context);
+        if (shown case final route?) _openOverlays.add(route);
+      }
+      final padding = sheetPadding(context);
+      return ListTileTheme.merge(
+        contentPadding: EdgeInsetsDirectional.symmetric(horizontal: padding),
+        child: Builder(builder: builder),
+      );
+    },
+  ).whenComplete(() => _openOverlays.remove(shown));
+}
 
 /// A sheet's title, under its drag handle: titleLarge, balanced where it
 /// wraps, and a heading for screen readers.

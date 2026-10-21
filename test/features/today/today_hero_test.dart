@@ -387,7 +387,7 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('in Hebrew, with the Hebrew date first and the name in English beneath, tagged so', (tester) async {
+    testWidgets('in Hebrew, with the Hebrew date first and the pointed name alone, in Hebrew', (tester) async {
       final handle = tester.ensureSemantics();
       await openToday(tester, settings: _settings.copyWith(language: AppLanguage.hebrew), progress: _bereshit());
       expect(find.text('פרשת השבוע'), findsOneWidget);
@@ -396,8 +396,10 @@ void main() {
       expect(findWords('נקראת בשבת, כ״ט בתשרי'), findsOneWidget);
       expect(find.text('שבת נכנסת הערב'), findsOneWidget);
       expect(tester.getSemantics(find.bySemanticsLabel('פרשת בראשית')), isSemantics(isHeader: true));
-      final latin = tester.getSemantics(find.text('Bereshit')).getSemanticsData();
-      expect(latin.label, 'Bereshit');
+      // No transliteration under the name, nor anywhere else on the page:
+      // the line under the name gives the reading in Hebrew.
+      expect(find.text('Bereshit'), findsNothing);
+      expect(latinTextIn(tester, find.byType(TodayScreen)), isEmpty);
       handle.dispose();
     });
 

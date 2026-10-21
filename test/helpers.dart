@@ -407,6 +407,15 @@ List<String> brokenWords(WidgetTester tester) {
   return broken;
 }
 
+/// The texts laid out under [of] that hold a Latin letter, as a
+/// transliteration left in the Hebrew UI would: each as it is shown.
+List<String> latinTextIn(WidgetTester tester, Finder of) => [
+      for (final element in find.descendant(of: of, matching: find.byType(RichText)).evaluate())
+        if ((element.renderObject! as RenderParagraph).text.toPlainText(includeSemanticsLabels: false)
+            case final text when text.contains(RegExp('[A-Za-z]')))
+          text,
+    ];
+
 /// Fails for a word laid out on the screen that is broken across lines
 /// ([brokenWords]).
 void expectWholeWords(WidgetTester tester) => expect(brokenWords(tester), isEmpty, reason: 'words broken across lines');
