@@ -3741,7 +3741,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communityComingSoon =>
-      'The community is coming soon. Until then, your reading stays on this device; use Settings → Your data to move it.';
+      'The community is coming soon. Until then, your reading stays on this device; to move it, use a backup, in Settings under Your data.';
 
   @override
   String get guideAppBodyNoCommunity =>

@@ -5808,7 +5808,7 @@ abstract class AppLocalizations {
   /// In a build without the community (COMMUNITY=off): one calm line in About, under the title page, and in the guide, after Using the app. Your data is the Settings page with the backup file (settingsData).
   ///
   /// In en, this message translates to:
-  /// **'The community is coming soon. Until then, your reading stays on this device; use Settings → Your data to move it.'**
+  /// **'The community is coming soon. Until then, your reading stays on this device; to move it, use a backup, in Settings under Your data.'**
   String get communityComingSoon;
 
   /// guideAppBody in a build without the community (COMMUNITY=off), where a verse can't be asked about: the same points, kept in step with it, but the fourth, which leaves out asking.

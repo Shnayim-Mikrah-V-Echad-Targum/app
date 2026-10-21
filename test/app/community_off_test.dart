@@ -187,7 +187,7 @@ void main() {
     expect(
       find.widgetWithText(
         NoticeBanner,
-        'The community is coming soon. Until then, your reading stays on this device; use Settings → Your data to move it.',
+        'The community is coming soon. Until then, your reading stays on this device; to move it, use a backup, in Settings under Your data.',
       ),
       findsOneWidget,
     );
