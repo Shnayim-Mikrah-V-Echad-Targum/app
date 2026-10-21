@@ -271,6 +271,23 @@ jobs:
         with:
           name: windows
           path: build/windows/x64/runner/Release
+      # The installer the pre-releases ship (.github/workflows/prerelease.yml),
+      # so that every pull request compiles its WiX source. Before the MSIX,
+      # whose msix tool takes the Visual C++ runtime out of the folder. WiX
+      # comes with the .NET SDK (tool/windows/build_msi.ps1).
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build the MSI
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tool\windows\build_msi.ps1 -ReleaseDir build\windows\x64\runner\Release
+      - uses: actions/upload-artifact@v4
+        with:
+          # Unsigned, with whatever configuration CI has: release a
+          # pre-release's installer, not CI's (docs/RELEASE.md, Pre-releases).
+          name: windows-msi
+          path: build/windows/msi/*.msi
+          if-no-files-found: error
       - name: Package as MSIX (signed with the certificate, if it is configured)
         shell: bash
         env:
