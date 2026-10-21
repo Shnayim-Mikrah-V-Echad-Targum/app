@@ -46,6 +46,12 @@
         ]
       },
       {
+        "heading": "Updates of the Windows app",
+        "blocks": [
+          {"type": "para", "text": "When update checks are on (in About, under Updates), the Windows app asks GitHub, where the app’s releases are published, for the list of them: by itself at most twice a day, never on Shabbat or Yom Tov, and whenever you tap Check now. GitHub sees your IP address, as any website does. Nothing else is sent: nothing about you, your device or your reading. A new version is downloaded only when you choose to install it."}
+        ]
+      },
+      {
         "heading": "If you create a community account",
         "blocks": [
           {"type": "para", "text": "Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
@@ -263,6 +269,12 @@
         "heading": "ללא מעקב",
         "blocks": [
           {"type": "para", "text": "אין באפליקציה פרסומות, אנליטיקה או מעקב של צד שלישי. איננו מוכרים או משתפים מידע."}
+        ]
+      },
+      {
+        "heading": "עדכונים באפליקציה ל־Windows",
+        "blocks": [
+          {"type": "para", "text": "כשבדיקת העדכונים מופעלת (במסך ״אודות״, תחת ״עדכונים״), האפליקציה ל־Windows מבקשת מ־GitHub, שבו מתפרסמות הגרסאות של האפליקציה, את רשימתן: מעצמה לכל היותר פעמיים ביום, לעולם לא בשבת וביום טוב, ובכל פעם שמקישים על ״בדיקה עכשיו״. GitHub רואה את כתובת ה־IP שלך, כמו כל אתר. שום דבר אחר אינו נשלח: שום מידע עליך, על המכשיר או על הקריאה שלך. גרסה חדשה מורדת רק כשבוחרים להתקין אותה."}
         ]
       },
       {
