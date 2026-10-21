@@ -11,6 +11,7 @@ import '../ui/l10n.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/app_mark.dart';
 import '../ui/widgets/fonts_change_scope.dart';
+import 'config.dart';
 import 'system_bars.dart';
 
 // Where the layout changes, with the other layout tokens; shared from here
@@ -95,7 +96,8 @@ class AppShell extends StatelessWidget {
       (Icons.menu_book_outlined, Icons.menu_book, l.navParsha),
       // Echoes the parsha rings.
       (Icons.donut_large_outlined, Icons.donut_large, l.navProgress),
-      (Icons.forum_outlined, Icons.forum, l.navCommunity),
+      // As the router has the tab (see routerProvider).
+      if (AppConfig.communityEnabled) (Icons.forum_outlined, Icons.forum, l.navCommunity),
       (Icons.settings_outlined, Icons.settings, l.navSettings),
     ];
     final width = MediaQuery.sizeOf(context).width;

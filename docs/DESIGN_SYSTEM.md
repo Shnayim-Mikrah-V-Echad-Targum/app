@@ -1395,6 +1395,13 @@ In order:
 
 ### Community (community_screen.dart, forum_screen.dart, thread_screen.dart, compose_screen.dart, account_screen.dart)
 
+**Without the community** (a build with `COMMUNITY=off`, `AppConfig.communityEnabled`, lib/app/config.dart; the pre-releases, until the accounts' database is ready): the community is nowhere to be seen, rather than shown and refused.
+- The navigation bar and the rail have four destinations, Today, Parsha, Progress and Settings: the router has no Community tab (routerProvider), and the shell no destination for it.
+- A link to any of its pages or the account's (`/community/…`, `/ask`, `/account`, `/settings/account/…`, `/welcome/account`) opens Today, or before onboarding the welcome, with nothing held for after it (`_isCommunityPage`, router.dart).
+- Gone with it: "Ask about this verse" in the verse's options (§6.27); the week's discussion, Today's row and the finished panel's button and the week page's row (Today's Also this week heading, and the week page's group, go too where they would be left empty, the haftarah off); Settings' Account & community row; Your data's Cloud backup row (its backup file, export, import and paste, stay as they are); onboarding's sign-in to restore; and Send feedback's forum (the issue tracker instead). The backend is the on-device demo whatever the build configures, so the app reaches no community server, and nobody can be signed in to back progress up.
+- About, under the title page (a NoticeBanner with `forum_outlined`, 16 below it), and the guide, under Using the app (in longformBody, 12 below its points), say once, calmly, `communityComingSoon`: "The community is coming soon. Until then, your reading stays on this device; use Settings → Your data to move it." The guide's point on a verse's long press leaves asking out (`guideAppBodyNoCommunity`).
+- Without `COMMUNITY`, as in CI and the tests, everything is as below.
+
 **Home**
 - The app bar's account button: a person signed out; signed in, the member's initial on a 32 px disc (`InitialDisc`), with a person on the disc until their profile comes and while it keeps a machine's name ("user_1a2b3c4d"), whose initial would be no one's.
 - Demo NoticeBanner (§6.20).

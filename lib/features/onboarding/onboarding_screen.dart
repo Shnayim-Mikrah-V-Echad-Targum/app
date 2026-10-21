@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../app/router.dart' show heldLocationProvider, openFromOutside;
 import '../../core/calendar/local_date.dart';
@@ -145,8 +146,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Single
   /// it their streaks, and opens Today.
   Future<void> _restore() async {
     // The demo community keeps nothing from one run to the next, so it has
-    // no backup to sign in to.
-    final cloud = !ref.read(forumRepositoryProvider).isDemo;
+    // no backup to sign in to; nor is there an account without the
+    // community.
+    final cloud = AppConfig.communityEnabled && !ref.read(forumRepositoryProvider).isDemo;
     final from = await showAppSheet<_RestoreFrom>(
       context: context,
       isScrollControlled: true,

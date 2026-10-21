@@ -5804,6 +5804,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
   String get sourcesSunDescription;
+
+  /// In a build without the community (COMMUNITY=off): one calm line in About, under the title page, and in the guide, after Using the app. Your data is the Settings page with the backup file (settingsData).
+  ///
+  /// In en, this message translates to:
+  /// **'The community is coming soon. Until then, your reading stays on this device; use Settings → Your data to move it.'**
+  String get communityComingSoon;
+
+  /// guideAppBody in a build without the community (COMMUNITY=off), where a verse can't be asked about: the same points, kept in step with it, but the fourth, which leaves out asking.
+  ///
+  /// In en, this message translates to:
+  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy or share it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
+  String get guideAppBodyNoCommunity;
 }
 
 class _AppLocalizationsDelegate

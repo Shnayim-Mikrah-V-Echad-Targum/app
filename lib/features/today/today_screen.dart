@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/city_providers.dart';
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/hebrew_date.dart';
 import '../../core/calendar/jewish_holidays.dart';
@@ -157,6 +158,10 @@ class TodayScreen extends ConsumerWidget {
       const Gap(Rhythm.cardGap),
       _TodayCard(ctx: ctx, settings: settings, quietFast: quietFast),
     ];
+    final thisWeek = [
+      if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+      if (AppConfig.communityEnabled) DiscussRow(ctx: ctx),
+    ];
     final week = [
       InfoCard(
         padding: WeekStrip.cardPadding,
@@ -191,14 +196,13 @@ class TodayScreen extends ConsumerWidget {
           onTap: () => context.go('/progress'),
         ),
       ],
-      GroupHeader(l.thisWeek),
-      PaperGroup(
-        ruleInset: PaperGroup.iconInset,
-        children: [
-          if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
-          DiscussRow(ctx: ctx),
-        ],
-      ),
+      // The week's haftarah and its discussion, where there is either: with
+      // the haftarah off and no community, neither the heading nor its
+      // group.
+      if (thisWeek.isNotEmpty) ...[
+        GroupHeader(l.thisWeek),
+        PaperGroup(ruleInset: PaperGroup.iconInset, children: thisWeek),
+      ],
     ];
     return [
       // The reading day in both calendars: on Motzaei Shabbat after
@@ -603,7 +607,8 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
         ctx.week.portion.isVezotHaberakhah ? l.weekCompleteNoteSimchatTorah : l.weekCompleteNote,
         style: SeferType.of(context).marginalia,
       ),
-      if (!widget.quietFast) ...[
+      // Without the community, the haftarah alone, where it is left.
+      if (!widget.quietFast && (haftarah || AppConfig.communityEnabled)) ...[
         const Gap(Space.lg),
         Wrap(
           alignment: WrapAlignment.center,
@@ -617,16 +622,17 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
                 onPressed: () => context.push('/today/haftarah/${ctx.id}'),
                 child: Text(l.readTheHaftarah, textAlign: TextAlign.center),
               ),
-            WeeklyThreadOpener(
-              portion: ctx.portion,
-              hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
-              builder: (context, progress, open) => TextButton.icon(
-                style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-                icon: progress ?? const Icon(Icons.forum_outlined),
-                label: Text(l.discussTheParsha, textAlign: TextAlign.center),
-                onPressed: open,
+            if (AppConfig.communityEnabled)
+              WeeklyThreadOpener(
+                portion: ctx.portion,
+                hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+                builder: (context, progress, open) => TextButton.icon(
+                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                  icon: progress ?? const Icon(Icons.forum_outlined),
+                  label: Text(l.discussTheParsha, textAlign: TextAlign.center),
+                  onPressed: open,
+                ),
               ),
-            ),
           ],
         ),
       ],

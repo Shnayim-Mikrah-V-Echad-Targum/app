@@ -51,10 +51,10 @@ final issueTrackerUri = Uri.parse('${AppConfig.sourceUrl}/issues');
 /// Contact row emails already, doesn't). Otherwise (or with no mail app to
 /// send it) in the feedback forum, where there is a community server for it
 /// to reach, and else on the issue tracker: the on-device demo forum reaches
-/// no one.
+/// no one, and without the community there is no forum.
 Future<void> sendFeedback(BuildContext context, WidgetRef ref, {bool email = true}) async {
   final address = email ? supportEmailUri(context.l10n) : null;
-  final forum = !ref.read(forumRepositoryProvider).isDemo;
+  final forum = AppConfig.communityEnabled && !ref.read(forumRepositoryProvider).isDemo;
   if (address != null && await launchUrl(address).catchError((_) => false)) return;
   if (!context.mounted) return;
   if (forum) {
@@ -94,6 +94,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
           if (ref.watch(webUpdateReadyProvider)) ...[
             const Gap(Space.lg),
             const WebUpdateBanner(),
+          ],
+          // Without the community, one calm line on where the reading is
+          // kept meanwhile, and how it moves.
+          if (!AppConfig.communityEnabled) ...[
+            const Gap(Space.lg),
+            NoticeBanner(icon: Icons.forum_outlined, text: l.communityComingSoon),
           ],
           GroupHeader(l.aboutGroupLearn),
           PaperGroup(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/paper_group.dart';
@@ -78,13 +79,15 @@ class SettingsScreen extends ConsumerWidget {
         GroupHeader(l.settingsGroupYou),
         PaperGroup(
           children: [
-            page(
-              Icons.person_outline,
-              l.settingsAccount,
-              // A name in either script keeps its own direction in the sentence.
-              user == null ? l.settingsAccountDesc : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
-              '/settings/account',
-            ),
+            // No account without the community.
+            if (AppConfig.communityEnabled)
+              page(
+                Icons.person_outline,
+                l.settingsAccount,
+                // A name in either script keeps its own direction in the sentence.
+                user == null ? l.settingsAccountDesc : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
+                '/settings/account',
+              ),
             page(Icons.backup_outlined, l.settingsData, l.settingsDataDesc, '/settings/data'),
             PaperRow(
               icon: Icons.translate_outlined,

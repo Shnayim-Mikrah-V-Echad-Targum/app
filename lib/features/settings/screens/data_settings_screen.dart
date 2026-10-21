@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
 import '../../../services/backup_files.dart';
@@ -437,14 +438,17 @@ class DataSettingsScreen extends ConsumerWidget {
           // Every row has an icon; the Builder around Export hides its own.
           ruleInset: PaperGroup.iconInset,
           children: [
-            PaperRow(
-              icon: Icons.cloud_outlined,
-              title: l.cloudBackup,
-              subtitle: l.syncProgressDesc,
-              subtitleMaxLines: null,
-              // The account's Save a backup file first comes back here.
-              onTap: () => context.push('/settings/account?from=data'),
-            ),
+            // Kept with an account, which there is none of without the
+            // community: a backup file moves the reading instead.
+            if (AppConfig.communityEnabled)
+              PaperRow(
+                icon: Icons.cloud_outlined,
+                title: l.cloudBackup,
+                subtitle: l.syncProgressDesc,
+                subtitleMaxLines: null,
+                // The account's Save a backup file first comes back here.
+                onTap: () => context.push('/settings/account?from=data'),
+              ),
             Builder(
               // The row's own context, where the iPad anchors the share sheet.
               builder: (context) => PaperRow(

@@ -36,6 +36,7 @@ import '../services/feedback.dart' show statusMessageShown;
 import '../ui/theme/motion.dart';
 import '../ui/widgets/fallbacks.dart';
 import 'app_page.dart';
+import 'config.dart';
 import 'providers.dart';
 import 'routes.dart';
 import 'shell.dart';
@@ -73,6 +74,13 @@ String? _pageOverTabs(String path) => switch (path) {
           .firstMatch(path)
           ?.group(2),
     };
+
+/// Whether [path] is a page of the community or of its account, none of
+/// which is offered without it ([AppConfig.communityEnabled]): Community and
+/// its pages, a question asked over the reader, and the account, over the
+/// tabs, in Settings, or signing in to restore a backup at the welcome.
+bool _isCommunityPage(String path) =>
+    RegExp(r'^/(community|ask|account|settings/account|welcome/account)(/|$)').hasMatch(path);
 
 /// A week and its haftarah within each of the [weekTabs], so the navigation
 /// bar stays.
@@ -117,6 +125,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: onboarded,
     redirect: (context, state) {
       final path = state.uri.path;
+      // Without the community, a link to any of its pages (a discussion
+      // shared, the account) opens Today: before onboarding, the welcome.
+      if (!AppConfig.communityEnabled && _isCommunityPage(path)) return '/today';
       // The site's own address, whatever a link added to it (?fbclid=,
       // ?utm_source=), or its index.html by name: the app's start.
       if (path == '/' || path == '/index.html') return onboarded.value ? '/today' : '/welcome';
@@ -158,22 +169,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             ]),
           ]),
           StatefulShellBranch(routes: [_route('/progress', (_) => const ProgressScreen(), routes: _weekPages())]),
-          StatefulShellBranch(routes: [
-            _route('/community', (_) => const CommunityScreen(), routes: [
-              _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
-              _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
-              // ?verse=Genesis 3:22 begins a question on that verse.
-              _route('new', (s) => ComposeScreen(
-                    forumSlug: s.uri.queryParameters['forum'],
-                    verse: s.uri.queryParameters['verse'],
-                  )),
-              // The privacy policy from the account, under it.
-              _route('account', _account, routes: [_legal('legal/:doc')]),
-              _route('moderation', (_) => const ModerationScreen()),
-              // The guidelines from a new discussion.
-              _legal('legal/:doc'),
+          // Without the community there is no Community tab: the shell
+          // leaves its destination out too (AppShell).
+          if (AppConfig.communityEnabled)
+            StatefulShellBranch(routes: [
+              _route('/community', (_) => const CommunityScreen(), routes: [
+                _route('forum/:slug', (s) => ForumScreen(slug: s.pathParameters['slug']!)),
+                _route('thread/:id', (s) => ThreadScreen(threadId: s.pathParameters['id']!)),
+                // ?verse=Genesis 3:22 begins a question on that verse.
+                _route('new', (s) => ComposeScreen(
+                      forumSlug: s.uri.queryParameters['forum'],
+                      verse: s.uri.queryParameters['verse'],
+                    )),
+                // The privacy policy from the account, under it.
+                _route('account', _account, routes: [_legal('legal/:doc')]),
+                _route('moderation', (_) => const ModerationScreen()),
+                // The guidelines from a new discussion.
+                _legal('legal/:doc'),
+              ]),
             ]),
-          ]),
           StatefulShellBranch(routes: [
             _route('/settings', (_) => const SettingsScreen(), routes: [
               _route('reading', (_) => const ReadingSettingsScreen(), routes: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/local_date.dart';
 import '../../core/text/hebrew_text.dart';
@@ -82,6 +83,13 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
     final open = ctx.isOpen && !ctx.progress.isComplete;
     final clearable = ctx.progress.completedUnits > 0;
+    // The week's haftarah, the notes on its verses and its discussion.
+    final weekRows = [
+      if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+      // Once the reader has marked a verse of the parsha.
+      if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
+      if (AppConfig.communityEnabled) DiscussRow(ctx: ctx),
+    ];
 
     Future<void> markWeek() async {
       final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
@@ -192,16 +200,11 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
                   ruleInset: _AliyahRow.textStart,
                   children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
                 ),
-                const Gap(Rhythm.sectionGap),
-                PaperGroup(
-                  ruleInset: PaperGroup.iconInset,
-                  children: [
-                    if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
-                    // Once the reader has marked a verse of the parsha.
-                    if (WeekNotesRow.shows(ref, ctx)) WeekNotesRow(ctx: ctx),
-                    DiscussRow(ctx: ctx),
-                  ],
-                ),
+                // With the haftarah off, no notes and no community, none.
+                if (weekRows.isNotEmpty) ...[
+                  const Gap(Rhythm.sectionGap),
+                  PaperGroup(ruleInset: PaperGroup.iconInset, children: weekRows),
+                ],
                 if (open) ...[
                   const Gap(Space.xl),
                   // Read without the app, from a printed Chumash perhaps: taken

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../app/config.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
@@ -26,8 +27,19 @@ class GuideScreen extends StatelessWidget {
     // The parts of the guide, a divider between each: using the app; what
     // the practice is and when; how to read; the special cases and days; and
     // the sources. Each section is a heading and what follows it.
+    // Without the community, a verse can't be asked about, and the reading
+    // stays on the device until it comes, as the section's last word says.
+    final community = AppConfig.communityEnabled;
     final parts = <List<(String, List<Widget>)>>[
-      [(l.guideAppTitle, [_Items(l.guideAppBody, style: type.longformBody, spacing: Space.sm)])],
+      [
+        (
+          l.guideAppTitle,
+          [
+            _Items(community ? l.guideAppBody : l.guideAppBodyNoCommunity, style: type.longformBody, spacing: Space.sm),
+            if (!community) ...[const Gap(Space.md), paragraph(l.communityComingSoon)],
+          ]
+        ),
+      ],
       [(l.guideWhatTitle, [paragraph(l.guideWhatBody)]), (l.guideWhenTitle, [paragraph(l.guideWhenBody)])],
       [
         (l.guideHowTitle, [const _Passes(), paragraph(l.guideHowBody)]),
