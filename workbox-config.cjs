@@ -6,8 +6,9 @@
 // which writes build/web/sw.js; web/flutter_bootstrap.js registers it.
 //
 // Precached: the app shell and its deferred parts, its start-up fonts and
-// data. Cached on first use: the engine (only the variant the browser
-// loads), the books, the fonts loaded on demand, and the policy pages.
+// data, and the policies' text. Cached on first use: the engine (only the
+// variant the browser loads), the books, the fonts loaded on demand, and the
+// policies' static pages.
 //
 // Every page of the app has an address of its own (lib/main.dart), and each
 // is the app: index.html, which the worker serves for any of them, offline
@@ -51,6 +52,10 @@ module.exports = {
     // the rashi/ and optional/ folders load on demand.
     'assets/assets/fonts/*.{ttf,otf}',
     'assets/assets/data/**',
+    // The policies, which the app shows at /legal/privacy and the like
+    // (lib/features/about/legal_texts.dart): precached rather than cached on
+    // first use, so that a policy never opened online still opens offline.
+    'assets/assets/legal/*',
     'assets/assets/branding/*',
     'assets/shaders/*',
     'assets/packages/**',

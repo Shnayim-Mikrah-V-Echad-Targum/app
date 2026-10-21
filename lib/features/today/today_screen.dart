@@ -28,9 +28,11 @@ import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../../ui/widgets/web_update_banner.dart';
 import '../community/ui/community_ui.dart';
+import '../parsha/parsha_heading.dart';
 import '../parsha/week_context.dart';
 import '../parsha/week_rows.dart';
 import '../progress/domain/progress_models.dart';
+import '../progress/domain/reading_plan.dart' show WeekPlan;
 import '../progress/domain/streak_engine.dart';
 import '../settings/app_settings.dart';
 import '../settings/widgets/pause_setting.dart';
@@ -459,9 +461,15 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
     final vezot = week.portion.isVezotHaberakhah;
     final friday = today.weekday == _friday;
     final complete = ctx.progress.isComplete;
+    final schedule = ref.watch(scheduleProvider);
     // The eve of a Yom Tov that is not Shabbat, by the reader's days of Yom
     // Tov: reading stops this evening, however far off Shabbat is.
     final erevYomTov = JewishHolidays.erevYomTov(today, israel: settings.oneDayYomTov);
+    // On a Friday, the Yom Tov that begins with Shabbat, if one does.
+    final withShabbat = friday ? JewishHolidays.yomTovWithShabbat(today, israel: settings.oneDayYomTov) : null;
+    // A coming Shabbat that reads a festival's own portion: the parsha
+    // below is read the Shabbat after, and so is headed as the next one.
+    final festivalShabbat = schedule.shabbatWithoutPortion(today) != null;
 
     final quietFast = widget.quietFast;
     // Watched only on an eve, which it turns at midday.
@@ -471,30 +479,36 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
         : quietFast
             ? l.tishaBavTitle
             : friday && pastMidday
-                ? l.erevShabbat
+                ? (withShabbat == null ? l.erevShabbat : l.erevShabbatYomTov(withShabbat.name))
                 : erevYomTov != null && pastMidday
                     ? l.erevYomTov(erevYomTov.name)
-                    : l.parshatHashavua;
+                    : parshaHeadingLabel(
+                        l,
+                        parshaHeadingFor(week, today, schedule: schedule, oneDayYomTov: settings.oneDayYomTov),
+                      );
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     final range = portion.range;
     final daysLeft = week.occasion.differenceInDays(today);
     // The days until the portion is read in synagogue: on Shabbat, or for
     // Vezot HaBerachah on Simchat Torah, which is seldom a Shabbat. On
-    // Friday, that Shabbat begins this evening, and on the eve of Yom Tov,
-    // that Yom Tov does: in the long week of Vezot HaBerachah too (Erev
-    // Sukkot, say, or a Friday Hoshana Rabbah), unless Simchat Torah is
-    // itself tomorrow, or today.
+    // Friday, that Shabbat begins this evening (with its Yom Tov, if it is
+    // one), and on the eve of Yom Tov, that Yom Tov does: in the long week of
+    // Vezot HaBerachah too (Erev Sukkot, say, or a Friday Hoshana Rabbah),
+    // unless Simchat Torah is itself tomorrow, or today. A Shabbat with no
+    // weekly parsha is not counted down to, as the parsha is not read then.
     final countdown = daysLeft < 0 || complete
         ? null
         : vezot && (!(friday || erevYomTov != null) || daysLeft <= 1)
             ? l.simchatTorahInDays(daysLeft)
             : friday
-                ? l.shabbatBeginsTonight
+                ? (withShabbat == null ? l.shabbatBeginsTonight : l.shabbatYomTovBeginTonight(withShabbat.name))
                 : erevYomTov != null
                     ? l.yomTovBeginsTonight(erevYomTov.name)
-                    : week.occasion.isShabbat
-                        ? l.shabbatInDays(daysLeft)
-                        : null;
+                    : festivalShabbat
+                        ? l.noWeeklyParshaThisShabbat
+                        : week.occasion.isShabbat
+                            ? l.shabbatInDays(daysLeft)
+                            : null;
     // On the eve of Shabbat or Yom Tov, with a city chosen, when candles are
     // lit there tonight instead.
     final candles = ref.watch(candleLightingTodayProvider);
@@ -678,10 +692,10 @@ class _ParshaHeading extends StatelessWidget {
       );
 }
 
-/// The parsha's name in Latin letters, under its pointed name: in the
-/// English UI as the UI names it, in [style] and onSurface, for the eye
-/// alone, as the heading's label already says it; in the Hebrew UI its
-/// English name, small and muted, tagged as English.
+/// The parsha's name in Latin letters, under its pointed name, as the
+/// English UI names it, in [style] and onSurface, for the eye alone, as the
+/// heading's label already says it. The Hebrew UI has none: the pointed name
+/// is the name, and the line under it gives the reading in Hebrew.
 class _LatinName extends StatelessWidget {
   const _LatinName({required this.portion, required this.ashkenazi, required this.style});
 
@@ -691,23 +705,11 @@ class _LatinName extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final names = Names(context);
-    final theme = Theme.of(context);
-    if (!context.isHebrewUi) {
-      return ExcludeSemantics(
-        child: WholeWords(
-          names.portion(portion, ashkenazi: ashkenazi),
-          style: style?.copyWith(color: theme.colorScheme.onSurface),
-        ),
-      );
-    }
-    return Lang(
-      const Locale('en'),
-      // Whole, as the name above it is: "Acharei" over "Mot-Kedoshim".
+    if (context.isHebrewUi) return const SizedBox.shrink();
+    return ExcludeSemantics(
       child: WholeWords(
-        names.portionAlt(portion, ashkenazi: ashkenazi),
-        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        textDirection: TextDirection.ltr,
+        Names(context).portion(portion, ashkenazi: ashkenazi),
+        style: style?.copyWith(color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }
@@ -783,6 +785,16 @@ enum CatchUpDay {
   /// logged after Shabbat.
   erevYomTovThenShabbat,
 
+  /// The eve of a Yom Tov after which this week still has a planned reading
+  /// day before its parsha is read — the eve of the last days of Pesach
+  /// outside Israel, with Friday still to come, say: what is not read
+  /// before it can be read after ([nextPlannedDayAfterRest]).
+  beforeYomTovMoreAfter,
+
+  /// As [beforeYomTovMoreAfter], the eve of a Shabbat that reads no portion
+  /// of this week's (a festival's).
+  beforeShabbatMoreAfter,
+
   /// The day before Yom Kippur, whatever day of the week it is: neither
   /// called Yom Tov nor the end of the week, which always has a reading day
   /// after it.
@@ -790,17 +802,29 @@ enum CatchUpDay {
 }
 
 /// The [CatchUpDay] of [today], a reading day, by the reader's custom for
-/// the days of Yom Tov.
-CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov}) {
+/// the days of Yom Tov, and by the week's [plan], if given: on the eve of
+/// days of rest with a planned day of it still to come after them, there is
+/// time after them too.
+CatchUpDay catchUpDayFor(LocalDate today, {required bool oneDayYomTov, WeekPlan? plan}) {
   final tomorrow = today.addDays(1);
   if (JewishHolidays.isYomKippur(HebrewDate.fromLocalDate(tomorrow))) return CatchUpDay.erevYomKippur;
   if (JewishHolidays.isRestDay(tomorrow, israel: oneDayYomTov)) {
+    if (plan != null && nextPlannedDayAfterRest(today, plan, oneDayYomTov: oneDayYomTov) != null) {
+      return tomorrow.isShabbat ? CatchUpDay.beforeShabbatMoreAfter : CatchUpDay.beforeYomTovMoreAfter;
+    }
     // Logged once the days of rest are over, after whichever ends them.
     final endsWithShabbat = JewishHolidays.lastRestDay(tomorrow, israel: oneDayYomTov).isShabbat;
     if (tomorrow.isShabbat) return endsWithShabbat ? CatchUpDay.erevShabbat : CatchUpDay.erevShabbatThenYomTov;
     return endsWithShabbat ? CatchUpDay.erevYomTovThenShabbat : CatchUpDay.erevYomTov;
   }
   return today.weekday == _thursday ? CatchUpDay.thursday : CatchUpDay.midweek;
+}
+
+/// The first day of [plan] after the days of rest that begin the evening of
+/// [today], their eve; null when none comes after them.
+LocalDate? nextPlannedDayAfterRest(LocalDate today, WeekPlan plan, {required bool oneDayYomTov}) {
+  final last = JewishHolidays.lastRestDay(today.addDays(1), israel: oneDayYomTov);
+  return plan.days.firstWhereOrNull((d) => d.date > last)?.date;
 }
 
 /// Today's reading (§9 Today, 4), or while aliyot planned for earlier days
@@ -907,13 +931,18 @@ class _TodayCard extends ConsumerWidget {
       // button starts too, so no other button leads to one. The line counts
       // what the card names.
       final count = due.length;
-      final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: settings.oneDayYomTov)) {
+      final oneDayYomTov = settings.oneDayYomTov;
+      // The weekday the reading can wait for, after the days of rest.
+      String after() => names.weekday(nextPlannedDayAfterRest(ctx.today, ctx.plan, oneDayYomTov: oneDayYomTov)!);
+      final line = switch (catchUpDayFor(ctx.today, oneDayYomTov: oneDayYomTov, plan: ctx.plan)) {
         CatchUpDay.midweek => l.todayBehind(count),
         CatchUpDay.thursday => l.todayBehindThursday(count),
         CatchUpDay.erevShabbat => l.todayLastDayShabbat(count),
         CatchUpDay.erevShabbatThenYomTov => l.todayLastDayShabbatThenYomTov(count),
         CatchUpDay.erevYomTov => l.todayLastDayYomTov(count),
         CatchUpDay.erevYomTovThenShabbat => l.todayLastDayYomTovThenShabbat(count),
+        CatchUpDay.beforeYomTovMoreAfter => l.todayBehindBeforeYomTovMore(count, after()),
+        CatchUpDay.beforeShabbatMoreAfter => l.todayBehindBeforeShabbatMore(count, after()),
         CatchUpDay.erevYomKippur => l.todayLastDayYomKippur(count),
       };
       children = [
@@ -1165,6 +1194,12 @@ class _RestDay extends StatelessWidget {
 /// greeting, the parsha's name, a word that reading from a printed Chumash
 /// is logged afterwards, and the way to the parsha. Nothing else, and
 /// nothing moves.
+///
+/// The parsha is the next one read ([ParshaSchedule.weekFor]), headed as
+/// this week's only when it is read today or on the coming Shabbat
+/// ([parshaHeadingFor]); otherwise it is the next parsha, with the day it is
+/// read, and where these days of rest hold a Shabbat with no weekly parsha,
+/// the page says that it has a reading of its own.
 class _RestHero extends ConsumerWidget {
   const _RestHero({required this.date});
 
@@ -1177,8 +1212,12 @@ class _RestHero extends ConsumerWidget {
     final names = Names(context);
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
-    // The parsha read today, or on the Shabbat this Yom Tov comes before.
-    final week = ref.watch(scheduleProvider).weekFor(date);
+    final schedule = ref.watch(scheduleProvider);
+    // The next reading: today's, or the one after these days of rest.
+    final week = schedule.weekFor(date);
+    final heading = parshaHeadingFor(week, date, schedule: schedule, oneDayYomTov: settings.oneDayYomTov);
+    final festivalShabbat =
+        shabbatWithoutPortionInRest(date, schedule: schedule, oneDayYomTov: settings.oneDayYomTov) != null;
     final portion = ref.watch(parshaRepositoryProvider).portion(week.portion);
     final name = names.portion(portion, ashkenazi: settings.ashkenaziNames);
     bool yomTov(LocalDate d) => JewishHolidays.isYomTov(HebrewDate.fromLocalDate(d), israel: settings.oneDayYomTov);
@@ -1212,10 +1251,7 @@ class _RestHero extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Eyebrow(
-                  week.portion.isVezotHaberakhah ? l.simchatTorahEyebrow : l.parshatHashavua,
-                  textAlign: TextAlign.center,
-                ),
+                Eyebrow(parshaHeadingLabel(l, heading), textAlign: TextAlign.center),
                 const Gap(Space.xs),
                 _ParshaHeading(
                   portion: portion,
@@ -1224,18 +1260,30 @@ class _RestHero extends ConsumerWidget {
                 ),
                 // Smaller than the reading day's, as the name above it is.
                 _LatinName(portion: portion, ashkenazi: settings.ashkenaziNames, style: theme.textTheme.headlineSmall),
+                // The next parsha, not read today nor this Shabbat: when it is.
+                if (heading == ParshaHeading.next) ...[
+                  const Gap(Space.xs),
+                  BalancedText(
+                    names.readOnLabel(week),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
               ],
             ),
           ),
           const Gap(Space.lg),
           // Logged once the days of rest are over, after Yom Tov (or Yom
-          // Kippur) where they end with one.
+          // Kippur) where they end with one; first, on a Shabbat with no
+          // weekly parsha, or the Yom Tov before it, that it reads its own.
           BalancedText(
-            yomKippur(last)
-                ? l.restDayBodyYomKippur
-                : yomTov(last)
-                    ? l.restDayBodyChag
-                    : l.restDayBody,
+            [
+              if (festivalShabbat) l.restDayNoWeeklyParsha,
+              yomKippur(last)
+                  ? l.restDayBodyYomKippur
+                  : yomTov(last)
+                      ? l.restDayBodyChag
+                      : l.restDayBody,
+            ].join(' '),
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             bySentence: true,
           ),

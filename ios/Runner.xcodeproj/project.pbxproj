@@ -77,6 +77,7 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		40B7EDF7133FF395771D3DB3 /* ParshaWidget.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ParshaWidget.xcconfig; sourceTree = "<group>"; };
 		4C0B16DA29C56609B365BF89 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -148,6 +149,7 @@
 				6D5CDE6FFCCB2AB1768C2C99 /* Info.plist */,
 				4C0B16DA29C56609B365BF89 /* PrivacyInfo.xcprivacy */,
 				FF4DC33A107C7678C81E787D /* ParshaWidget.entitlements */,
+				40B7EDF7133FF395771D3DB3 /* ParshaWidget.xcconfig */,
 				2FE7AE04FE1B4FAD5615FE25 /* Fonts */,
 			);
 			path = ParshaWidget;
@@ -586,7 +588,7 @@
 		};
 		479F253FF233BD6FFEAF4D6B /* Profile */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			baseConfigurationReference = 40B7EDF7133FF395771D3DB3 /* ParshaWidget.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;
@@ -614,7 +616,7 @@
 		};
 		75D838BC4CF64BB48C658DD2 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			baseConfigurationReference = 40B7EDF7133FF395771D3DB3 /* ParshaWidget.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;
@@ -800,7 +802,7 @@
 		};
 		B47CED927BAC181382E3BD4F /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			baseConfigurationReference = 40B7EDF7133FF395771D3DB3 /* ParshaWidget.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetPaper;

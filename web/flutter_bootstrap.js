@@ -12,10 +12,15 @@ if ('serviceWorker' in navigator) {
   performance.setResourceTimingBufferSize(500);
   // Registered once the app is up, so the worker's downloads don't slow it.
   window.addEventListener('flutter-first-frame', function () {
-    var firstVisit = !navigator.serviceWorker.controller;
+    var firstVisit;
     navigator.serviceWorker.register('sw.js')
       .then(function (registration) {
-        offerUpdates(registration);
+        // The version of the app the page loaded under: the worker that
+        // controls it, or, where a hard reload (Ctrl+Shift+R) loaded it past
+        // the worker, the active one all the same. None on a first visit.
+        var version = navigator.serviceWorker.controller || registration.active;
+        firstVisit = !version;
+        offerUpdates(registration, version);
         return navigator.serviceWorker.ready;
       })
       .then(function (registration) {
@@ -41,21 +46,27 @@ if ('serviceWorker' in navigator) {
 // instead (lib/services/web_update.dart), once it is ready. A restart in one
 // window lets the new version take over every window (clientsClaim), and
 // each of the others then restarts too.
-function offerUpdates(registration) {
+//
+// [version] is the version of the app the window runs under, if any, and
+// one that installs after it is an update. A window that a hard reload
+// loaded past the worker runs under the active one, though no worker
+// controls it until the next version takes it over (clientsClaim takes
+// every window in its scope). A first visit runs under none until the first
+// version has installed and taken over.
+function offerUpdates(registration, version) {
   // Tells the app that [worker], a new version, is ready: as it happens,
   // and in smUpdateReady for an app that asks later.
   function ready(worker) {
     window.smUpdateReady = worker;
     window.dispatchEvent(new Event('sm-update-ready'));
   }
-  // Only an update, never the first version, which installs while nothing
-  // controls the page yet and takes over at once.
+  // Only an update, never the first version.
   function watch(worker) {
     worker.addEventListener('statechange', function () {
-      if (worker.state === 'installed' && navigator.serviceWorker.controller) ready(worker);
+      if (worker.state === 'installed' && version) ready(worker);
     });
   }
-  if (registration.waiting && navigator.serviceWorker.controller) ready(registration.waiting);
+  if (registration.waiting && version) ready(registration.waiting);
   // One the browser began installing as the page loaded, or one found later.
   if (registration.installing) watch(registration.installing);
   registration.addEventListener('updatefound', function () {
@@ -84,12 +95,16 @@ function offerUpdates(registration) {
   // Another window's restart: the new version has taken this window over,
   // whose code is the old version's, while the files it may still load (a
   // deferred part, a book) are now the new version's. The app saves what it
-  // holds back and restarts too (smRestart, which then simply reloads). The
-  // first version taking over a first visit is no restart.
-  var controlled = !!navigator.serviceWorker.controller;
+  // holds back and restarts too (smRestart, which then simply reloads). A
+  // window that a hard reload loaded past the worker is taken over too: at
+  // another window's restart or, with no window of the old version open to
+  // hold the new one back, as soon as it has installed. The first version
+  // taking over a first visit is no restart, nor is the version a window
+  // loaded under taking it over.
   navigator.serviceWorker.addEventListener('controllerchange', function () {
-    var tookOver = controlled && !restarting;
-    controlled = true;
+    var controller = navigator.serviceWorker.controller;
+    var tookOver = !!version && !!controller && controller !== version && !restarting;
+    version = controller;
     if (!tookOver) return;
     window.smUpdateTookOver = true;
     window.dispatchEvent(new Event('sm-update-took-over'));

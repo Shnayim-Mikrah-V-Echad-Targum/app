@@ -281,6 +281,14 @@ bool RepaintsTitleBarOnThemeChange() {
 
 }  // namespace
 
+void BringToFront(HWND window) {
+  // Restored from minimized as it was: maximized, if it was.
+  if (IsIconic(window)) {
+    ShowWindow(window, SW_RESTORE);
+  }
+  SetForegroundWindow(window);
+}
+
 // Manages the Win32Window's window class registration.
 class WindowClassRegistrar {
  public:

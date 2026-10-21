@@ -221,7 +221,7 @@ class ParshaWidgetProvider : HomeWidgetProvider() {
         val eyebrow: String?,
         /** The parsha's Hebrew name, or before the app has sent anything the app's. */
         val title: String?,
-        /** The parsha's transliteration. */
+        /** The parsha's transliteration, in the English UI. */
         val name: String?,
         val part: Part,
         /** On a reading day, the week whose bars it shows. */
@@ -275,7 +275,8 @@ class ParshaWidgetProvider : HomeWidgetProvider() {
                     rtl = timeline.rtl,
                     eyebrow = shown.eyebrow,
                     title = week.hebrew,
-                    name = week.name,
+                    // The Hebrew UI names the parsha in Hebrew alone.
+                    name = week.name.takeIf { !timeline.rtl },
                     part = part,
                     week = week.takeIf { reading },
                     line = line,

@@ -931,6 +931,75 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  // A real Windows PC once found its box deaf to the mouse, the keyboard
+  // still ticking it: each click and tap, on the box or its words, ticks it
+  // once, by either pointer, with a screen reader's tree on.
+  group('the guidelines before a first post', () {
+    const accept = 'I’ll follow the community guidelines';
+
+    Future<void> openGate(WidgetTester tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      await forums.updateDisplayName('Reader');
+      final c = await _pump(tester, forums: forums);
+      c.read(routerProvider).go('/community/thread/1');
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Write a reply'), 'Thank you, this helped me.');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Reply'));
+      await tester.pumpAndSettle();
+      expect(find.text(accept), findsOneWidget);
+    }
+
+    bool ticked(WidgetTester tester) => tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value!;
+    bool canContinue(WidgetTester tester) =>
+        tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Continue')).onPressed != null;
+
+    for (final kind in [PointerDeviceKind.mouse, PointerDeviceKind.touch]) {
+      for (final (where, target) in [('box', find.byType(Checkbox)), ('words', find.text(accept))]) {
+        testWidgets('a ${kind.name} ${kind == PointerDeviceKind.mouse ? 'click' : 'tap'} on its $where ticks it once',
+            (tester) async {
+          final handle = tester.ensureSemantics();
+          await openGate(tester);
+          expect((ticked(tester), canContinue(tester)), (false, false));
+          await tester.tap(target, kind: kind);
+          await tester.pumpAndSettle();
+          expect((ticked(tester), canContinue(tester)), (true, true));
+          await tester.tap(target, kind: kind);
+          await tester.pumpAndSettle();
+          expect((ticked(tester), canContinue(tester)), (false, false), reason: 'a second one unticks it');
+          await tester.tap(target, kind: kind);
+          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(FilledButton, 'Continue'), kind: kind);
+          await tester.pumpAndSettle();
+          expect(find.text(accept), findsNothing);
+          expect(find.text('Thank you, this helped me.'), findsOneWidget, reason: 'the reply is sent');
+          handle.dispose();
+        }, variant: kind == PointerDeviceKind.mouse ? TargetPlatformVariant.desktop() : const DefaultTestVariant());
+      }
+    }
+
+    testWidgets('the keyboard ticks it too', (tester) async {
+      await openGate(tester);
+      bool rowFocused() {
+        final focused = FocusManager.instance.primaryFocus?.context;
+        if (focused == null) return false;
+        var found = false;
+        focused.visitAncestorElements((e) => !(found = e.widget is CheckboxListTile));
+        return found;
+      }
+
+      for (var i = 0; i < 6 && !rowFocused(); i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+      }
+      expect(rowFocused(), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect((ticked(tester), canContinue(tester)), (true, true));
+    });
+  });
+
   testWidgets('signing in to send a reply goes back to it with nothing over it, and says as whom', (tester) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(supportsAnnounce: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);

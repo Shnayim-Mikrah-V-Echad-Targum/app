@@ -398,6 +398,77 @@ void main() {
     });
   });
 
+  group('in a window of two or three weeks around a festival', () {
+    // Shemini 5786, read on 11 April after Pesach: outside Israel the window
+    // opens on 29 March, with the first two days of Pesach (Thursday and
+    // Friday 2 and 3 April) and Shabbat Chol HaMoed in its first week, and
+    // the last two days (Wednesday and Thursday 8 and 9 April) in its
+    // second.
+    const diaspora = ParshaSchedule(israel: false);
+    const israel = ParshaSchedule(israel: true);
+    final shemini = planner.planFor(diaspora.weekFor(LocalDate(2026, 3, 29)));
+    List<LocalDate> week(LocalDate sunday) => [for (var i = 0; i < 7; i++) sunday.addDays(i)];
+    final ordinal = RegExp('^[א-ז](?:[·–][א-ז])?\$');
+    Finder ordinals() => find.byWidgetPredicate((w) => w is Text && ordinal.hasMatch(w.data ?? ''));
+
+    testWidgets('shows the week that holds today, marked, with nothing planned in it', (tester) async {
+      final wednesday = LocalDate(2026, 4, 1);
+      expect(WeekStrip.daysShown(shemini, wednesday), week(LocalDate(2026, 3, 29)));
+      final handle = tester.ensureSemantics();
+      await pumpThemed(tester, strip(week: shemini, today: wednesday));
+      expect(tester.getSemantics(dayOf('Wednesday')).label, contains(', today:'));
+      for (final weekday in ['Thursday', 'Friday']) {
+        expect(find.descendant(of: dayOf(weekday), matching: find.text('Yom Tov')), findsOneWidget, reason: weekday);
+      }
+      expect(ordinals(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('and its second week, with its aliyot and the last days of Pesach', (tester) async {
+      final tuesday = LocalDate(2026, 4, 7);
+      expect(WeekStrip.daysShown(shemini, tuesday), week(LocalDate(2026, 4, 5)));
+      await pumpThemed(tester, strip(week: shemini, today: tuesday));
+      for (final (weekday, aliyot) in [('Sunday', 'א'), ('Monday', 'ב·ג'), ('Tuesday', 'ד·ה'), ('Friday', 'ו·ז')]) {
+        expect(find.descendant(of: dayOf(weekday), matching: find.text(aliyot)), findsOneWidget, reason: weekday);
+      }
+      for (final weekday in ['Wednesday', 'Thursday']) {
+        expect(find.descendant(of: dayOf(weekday), matching: find.text('Yom Tov')), findsOneWidget, reason: weekday);
+      }
+      expect(ordinals(), findsNWidgets(4));
+    });
+
+    testWidgets("in Israel, today is a day of Chol HaMoed in the window's first week", (tester) async {
+      final handle = tester.ensureSemantics();
+      final friday = LocalDate(2026, 4, 3);
+      final plan = ReadingPlanner(schedule: israel, oneDayYomTov: true).planFor(israel.weekFor(friday));
+      expect(WeekStrip.daysShown(plan, friday), week(LocalDate(2026, 3, 29)));
+      await pumpThemed(tester, strip(week: plan, today: friday, oneDayYomTov: true));
+      expect(tester.getSemantics(dayOf('Friday')).label, contains(', today:'));
+      expect(fillOf(tester, 'Friday'), scheme.primaryContainer);
+      expect(ordinals(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('Hoshana Rabbah, read for Simchat Torah on Sunday, is in the week it falls in', (tester) async {
+      final handle = tester.ensureSemantics();
+      final friday = LocalDate(2026, 10, 2);
+      final vezot = planner.planFor(diaspora.weekFor(friday));
+      expect(vezot.week.occasion, LocalDate(2026, 10, 4));
+      expect(WeekStrip.daysShown(vezot, friday), week(LocalDate(2026, 9, 27)));
+      await pumpThemed(tester, strip(week: vezot, today: friday));
+      expect(tester.getSemantics(dayOf('Friday')).label, contains(', today:'));
+      expect(find.descendant(of: dayOf('Friday'), matching: find.text(aliyahOrdinals([0, 1, 2, 3, 4, 5, 6]))),
+          findsOneWidget);
+      expect(fillOf(tester, 'Saturday'), sefer.restWash);
+      handle.dispose();
+    });
+
+    test('a today before the window shows its first week', () {
+      // Simchat Torah, the day before Bereshit's window opens.
+      expect(WeekStrip.daysShown(plan, sunday), week(sunday));
+    });
+  });
+
   testWidgets('each planned day is one button, tapped for its aliyot', (tester) async {
     final handle = tester.ensureSemantics();
     PlanDay? tapped;

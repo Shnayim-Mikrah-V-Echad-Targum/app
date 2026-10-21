@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yaml/yaml.dart';
 
+import 'native_source.dart';
+
 /// The Windows MSIX installer: msix_config in pubspec.yaml, and the icons
 /// under windows/msix that tool/branding/make_icon.py --post writes and
 /// tool/windows/make_msix.sh packages.
@@ -46,6 +48,35 @@ void main() {
   test("the toast activator is the notification plugin's class", () {
     final clsid = (config['toast_activator'] as YamlMap)['clsid'] as String;
     expect(File('lib/services/notifications.dart').readAsStringSync(), contains("guid: '$clsid',"));
+    // And the class the runner says how to start, run from the folder.
+    expect(File('windows/runner/main.cpp').readAsStringSync(),
+        contains('L"Software\\\\Classes\\\\CLSID\\\\{$clsid}"\n    L"\\\\LocalServer32"'));
+  });
+
+  // The notification plugin registers its class only while the app runs:
+  // run from the folder, with no installer to say how to start the app for
+  // it, a click on a reminder that came once the app had closed would do
+  // nothing. The MSIX says so in its manifest (com:ExeServer).
+  test('run from the folder, a click on a reminder starts the app', () {
+    final main = File('windows/runner/main.cpp').readAsStringSync();
+    expect(main, contains('#include <appmodel.h>'));
+    final register = cppBody(main, 'void RegisterToastActivatorServer()');
+    // Only unpackaged: the MSIX's own registration stays its own.
+    expect(register, contains('if (::GetCurrentPackageFullName(&length, nullptr) !=\n      APPMODEL_ERROR_NO_PACKAGE) {\n    return;\n  }'));
+    // The executable where it is now, quoted for a path with spaces, as the
+    // key's default value, for this user alone.
+    expect(register, contains('::GetModuleFileNameW(nullptr, path, MAX_PATH)'));
+    expect(register, contains(r'L"\"" + std::wstring(path, path_length) + L"\""'));
+    expect(register, contains('::RegCreateKeyExW(HKEY_CURRENT_USER, kToastActivatorServerKey, 0,'));
+    expect(register, contains('::RegSetValueExW(key, nullptr, 0, REG_SZ,'));
+    expect(register, contains('static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t))'));
+    expect(register, contains('::RegCloseKey(key);'));
+    // On every start, since the folder can move; by the instance that runs,
+    // not by a second launch that is about to exit.
+    final winMain = cppBody(main, 'int APIENTRY wWinMain(');
+    expect(winMain.indexOf('RegisterToastActivatorServer();'),
+        greaterThan(winMain.indexOf('::WaitForSingleObject(instance_mutex, kInstanceWaitMs)')));
+    expect(winMain.indexOf('RegisterToastActivatorServer();'), lessThan(winMain.indexOf('window.Create(')));
   });
 
   test('it packages the release build as it is, without asking anything', () {
@@ -98,6 +129,36 @@ void main() {
     expect(check, greaterThan(ci.indexOf('flutter build windows --release')));
     expect(check, lessThan(ci.indexOf('name: windows\n')));
   });
+
+  // The msix tool swaps its own copy of the runtime into the folder to pack
+  // it, and deletes that once it has (its Assets.cleanTemporaryFiles), even
+  // should signing then fail. make_msix.sh runs here with stand-ins for the
+  // msix tool and MakePri that do the same to the folder.
+  group('packaging leaves the Visual C++ runtime in the folder', () {
+    test('when it succeeds', () async {
+      final sandbox = _MsixSandbox();
+      final result = await sandbox.run();
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      expect(sandbox.package.existsSync(), isTrue);
+      expect(sandbox.folderDlls(), _MsixSandbox.builtDlls);
+    });
+
+    test('when signing fails after the msix tool has deleted it', () async {
+      final sandbox = _MsixSandbox();
+      final result = await sandbox.run(failSigning: true);
+      expect(result.exitCode, isNot(0));
+      expect(sandbox.folderDlls(), _MsixSandbox.builtDlls);
+    });
+
+    test('when it stops before packing, with the msix tool’s copy in place', () async {
+      final sandbox = _MsixSandbox();
+      final result = await sandbox.run(noHebrewName: true);
+      expect(result.exitCode, isNot(0));
+      expect(result.stderr, contains('resources.pri has no Hebrew name'));
+      expect(sandbox.package.existsSync(), isFalse);
+      expect(sandbox.folderDlls(), _MsixSandbox.builtDlls);
+    });
+  }, skip: Platform.isWindows ? 'runs make_msix.sh in a POSIX shell, as CI does' : false);
 
   testWidgets('the logo is the rounded tile of app_icon.ico', (tester) async {
     expect(config['logo_path'], 'windows/msix/logo.png');
@@ -163,5 +224,119 @@ class _Pixels {
   _Pixel at(int x, int y) {
     final i = (y * width + x) * 4;
     return (red: bytes.getUint8(i), green: bytes.getUint8(i + 1), blue: bytes.getUint8(i + 2), alpha: bytes.getUint8(i + 3));
+  }
+}
+
+/// A repository with a Windows release build in it, as far as
+/// tool/windows/make_msix.sh sees one, and stand-ins for the msix tool (as
+/// `dart`) and its MakePri that do to the build's folder what they do on
+/// Windows.
+class _MsixSandbox {
+  _MsixSandbox() : root = Directory.systemTemp.createTempSync('make_msix_') {
+    addTearDown(() => root.deleteSync(recursive: true));
+    _write('tool/windows/make_msix.sh', File('tool/windows/make_msix.sh').readAsStringSync());
+    _write('$_release/shnayim_mikrah.exe', 'exe');
+    _write('$_release/flutter_windows.dll', 'flutter');
+    builtDlls.forEach((name, contents) => _write('$_release/$name', contents));
+    for (final language in ['en-us', 'he-il']) {
+      _write('windows/msix/Strings/$language/Resources.resw', '<root/>');
+    }
+    _write('windows/msix/Images/Square44x44Logo.targetsize-16.png', 'png');
+    _write('windows/msix/priconfig.xml', '<resources/>');
+    final msix = '${root.path}/pub cache/msix-3.18.0';
+    _write('.dart_tool/package_config.json', '{\n  "packages": [\n    {\n      "name": "msix",\n'
+        '      "rootUri": "file://${msix.replaceAll(' ', '%20')}",\n      "packageUri": "lib/"\n    }\n  ]\n}\n');
+    _executable('pub cache/msix-3.18.0/lib/assets/MSIX-Toolkit/Redist.x64/MakePri.exe', r'''
+command=$1
+of=
+while [ $# -gt 0 ]; do
+  if [ "$1" = /of ]; then of=$2; fi
+  shift
+done
+case "$command" in
+  new) echo pri > "$of" ;;
+  dump)
+    if [ -n "${NO_HEBREW_NAME:-}" ]; then
+      echo '<Candidate qualifiers="Language-EN-US"/>' > "$of"
+    else
+      echo '<Candidate qualifiers="Language-HE-IL"/>' > "$of"
+    fi
+    ;;
+esac
+''');
+    _executable('bin/dart', r'''
+release=build/windows/x64/runner/Release
+runtime="concrt140.dll msvcp140.dll msvcp140_1.dll msvcp140_2.dll msvcp140_atomic_wait.dll
+  msvcp140_codecvt_ids.dll vccorlib140.dll vcruntime140.dll vcruntime140_1.dll vcruntime140_threads.dll"
+case "$2" in
+  msix:build)
+    # cleanTemporaryFiles, then copyVCLibsFiles: the tool's own copy.
+    for dll in $runtime; do rm -f "$release/$dll"; done
+    for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do echo "msix's $dll" > "$release/$dll"; done
+    mkdir -p "$release/Images"
+    echo manifest > "$release/AppxManifest.xml"
+    ;;
+  msix:pack)
+    test -f "$release/resources.pri"
+    mkdir -p build/windows/msix
+    echo package > build/windows/msix/ShnayimMikrah.msix
+    # cleanTemporaryFiles, and only then signing.
+    for dll in $runtime; do rm -f "$release/$dll"; done
+    rm -rf "$release/Images" "$release/AppxManifest.xml" "$release"/resources*.pri
+    if [ -n "${FAIL_SIGNING:-}" ]; then echo 'SignTool Error' >&2; exit 1; fi
+    ;;
+  *) echo "unexpected: $*" >&2; exit 2 ;;
+esac
+''');
+  }
+
+  static const _release = 'build/windows/x64/runner/Release';
+
+  /// The Visual C++ runtime that windows/CMakeLists.txt installs beside the
+  /// executable, by name and contents.
+  static const builtDlls = {
+    'concrt140.dll': 'built concrt140',
+    'msvcp140.dll': 'built msvcp140',
+    'msvcp140_1.dll': 'built msvcp140_1',
+    'msvcp140_2.dll': 'built msvcp140_2',
+    'msvcp140_atomic_wait.dll': 'built msvcp140_atomic_wait',
+    'msvcp140_codecvt_ids.dll': 'built msvcp140_codecvt_ids',
+    'vccorlib140.dll': 'built vccorlib140',
+    'vcruntime140.dll': 'built vcruntime140',
+    'vcruntime140_1.dll': 'built vcruntime140_1',
+  };
+
+  final Directory root;
+
+  File get package => File('${root.path}/build/windows/msix/ShnayimMikrah.msix');
+
+  /// The runtime's DLLs in the build's folder after packaging, by name and
+  /// contents.
+  Map<String, String> folderDlls() => {
+        for (final file in Directory('${root.path}/$_release').listSync().whereType<File>())
+          if (file.path.endsWith('.dll') && !file.path.endsWith('flutter_windows.dll'))
+            file.uri.pathSegments.last: file.readAsStringSync(),
+      };
+
+  /// Runs make_msix.sh, with the msix tool failing to sign the package if
+  /// [failSigning], and MakePri indexing no Hebrew name if [noHebrewName].
+  Future<ProcessResult> run({bool failSigning = false, bool noHebrewName = false}) => Process.run(
+        'bash',
+        ['tool/windows/make_msix.sh'],
+        workingDirectory: root.path,
+        environment: {
+          'PATH': '${root.path}/bin:${Platform.environment['PATH']}',
+          if (failSigning) 'FAIL_SIGNING': '1',
+          if (noHebrewName) 'NO_HEBREW_NAME': '1',
+        },
+      );
+
+  void _write(String path, String contents) => File('${root.path}/$path')
+    ..createSync(recursive: true)
+    ..writeAsStringSync(contents);
+
+  void _executable(String path, String script) {
+    _write(path, '#!/usr/bin/env bash\nset -eu\n$script');
+    Process.runSync('chmod', ['+x', '${root.path}/$path']);
   }
 }

@@ -17,11 +17,15 @@ Future<void> enableEdgeToEdge() async {
 /// screen, so a bar of the app's own drawn there (the shell's navigation bar)
 /// wraps itself in another SystemBars with its [navigationBarColor].
 class SystemBars extends StatelessWidget {
-  const SystemBars({super.key, this.navigationBarColor, required this.child});
+  const SystemBars({super.key, this.navigationBarColor, this.colors, required this.child});
 
   /// The colour of the app just above Android's navigation bar, which the bar
   /// takes where it can't be see-through; the theme's surface by default.
   final Color? navigationBarColor;
+
+  /// The colours of what lies beneath the bars, where no theme gives them
+  /// (the page the app shows when it can't start); the theme's by default.
+  final ColorScheme? colors;
 
   final Widget child;
 
@@ -32,7 +36,7 @@ class SystemBars extends StatelessWidget {
     final inset = MediaQuery.viewPaddingOf(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: systemBarsStyle(
-        Theme.of(context),
+        colors ?? Theme.of(context).colorScheme,
         behindNavigationBar: inset.bottom > 0 || inset.left > 0 || inset.right > 0,
         navigationBarColor: navigationBarColor,
       ),
@@ -41,7 +45,7 @@ class SystemBars extends StatelessWidget {
   }
 }
 
-/// The system bars over [theme]: transparent, so the app's own surface runs
+/// The system bars over [colors]: transparent, so the app's own surface runs
 /// beneath them, with icons that contrast with it. The launch themes
 /// (android/app/src/main/res/values*/styles.xml) start the bars the same way,
 /// so nothing changes when the first frame arrives.
@@ -52,27 +56,26 @@ class SystemBars extends StatelessWidget {
 ///
 /// Android 9 and earlier can't draw an app beneath the navigation bar, so
 /// unless the app is [behindNavigationBar], the bar is painted the colour of
-/// what lies just above it, [navigationBarColor] (the theme's surface by
-/// default): what shows through a transparent one is the window's
-/// background, which follows the system's dark mode rather than the app's
-/// theme. (Flutter can't style that bar at all before Android 8.0, and a
-/// theme can give it dark icons only from 8.1, so until then the light launch
-/// theme keeps it black.)
+/// what lies just above it, [navigationBarColor] (the surface by default):
+/// what shows through a transparent one is the window's background, which
+/// follows the system's dark mode rather than the app's theme. (Flutter
+/// can't style that bar at all before Android 8.0, and a theme can give it
+/// dark icons only from 8.1, so until then the light launch theme keeps it
+/// black.)
 SystemUiOverlayStyle systemBarsStyle(
-  ThemeData theme, {
+  ColorScheme colors, {
   required bool behindNavigationBar,
   Color? navigationBarColor,
   bool web = kIsWeb,
 }) {
-  final icons = theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark;
+  final icons = colors.brightness == Brightness.dark ? Brightness.light : Brightness.dark;
   return SystemUiOverlayStyle(
-    statusBarColor: web ? theme.colorScheme.surface : Colors.transparent,
+    statusBarColor: web ? colors.surface : Colors.transparent,
     statusBarIconBrightness: icons,
     // iOS asks for the brightness of what lies behind the status bar instead.
-    statusBarBrightness: theme.brightness,
+    statusBarBrightness: colors.brightness,
     systemStatusBarContrastEnforced: false,
-    systemNavigationBarColor:
-        behindNavigationBar ? Colors.transparent : navigationBarColor ?? theme.colorScheme.surface,
+    systemNavigationBarColor: behindNavigationBar ? Colors.transparent : navigationBarColor ?? colors.surface,
     systemNavigationBarDividerColor: Colors.transparent,
     systemNavigationBarIconBrightness: icons,
     // No translucent scrim behind three-button navigation.

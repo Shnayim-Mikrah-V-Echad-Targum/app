@@ -38,10 +38,12 @@ void main() {
       expect(find.textContaining('Shabbat is'), findsNothing, reason: 'the portion is read on Simchat Torah');
     });
 
-    testWidgets('outside Israel gives way on that Friday to Shabbat, which begins this evening', (tester) async {
-      // Simchat Torah is on Sunday, two days off; reading stops tonight.
+    testWidgets('outside Israel gives way on that Friday to Shabbat and Yom Tov, which begin this evening',
+        (tester) async {
+      // Simchat Torah is on Sunday, two days off; reading stops tonight, as
+      // Shabbat and Shemini Atzeret begin.
       await openToday(tester, _diaspora, _hoshanaRabbah);
-      expect(find.text('Shabbat begins this evening'), findsOneWidget);
+      expect(find.text('Shabbat and Yom Tov begin this evening'), findsOneWidget);
       expect(find.text('Simchat Torah in 2 days'), findsNothing);
       expect(find.textContaining('Shabbat in'), findsNothing, reason: 'Shabbat is tomorrow, and the reading is not');
     });

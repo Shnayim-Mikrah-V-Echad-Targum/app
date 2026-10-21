@@ -2,9 +2,9 @@
 // workbox-config.cjs: the runtime caches' names, and the script that keeps
 // them across an update (tool/web/sw_update.js), written into build/web;
 // which pages the worker leaves to the network; and, once Workbox has
-// written the worker, whether it precaches what the app needs to start.
+// written the worker, whether it precaches what the app needs offline.
 const { createHash } = require('node:crypto');
-const { readFileSync, readdirSync, writeFileSync } = require('node:fs');
+const { readFileSync, readdirSync, unlinkSync, writeFileSync } = require('node:fs');
 const { join, relative } = require('node:path');
 
 const UPDATE_SCRIPT = 'sw_update.js';
@@ -47,14 +47,28 @@ function cacheNames(web) {
   return { engine: `canvaskit-${engineRevision(web)}`, content: `content-${textsHash(web)}` };
 }
 
-/// Writes build/web/sw_update.js for [caches] and returns its name, for
-/// Workbox's importScripts.
+/// An update script that build/web may hold, this build's or an earlier
+/// one's: sw_update.js, as it was once named, or sw_update.<hash>.js.
+const updateScriptName = /^sw_update(?:\.[0-9a-f]+)?\.js$/;
+
+/// Writes the update script for [caches] into build/web and returns its
+/// name, for Workbox's importScripts: sw_update.<hash>.js, named after its
+/// content. The browser checks sw.js itself with the server, but takes the
+/// scripts it imports from its own cache while that copy is fresh (for ten
+/// minutes on GitHub Pages). Were the name the same in every build, a new
+/// version's worker could run an older version's script, with that
+/// version's CACHES: it would leave its own caches empty, and the app would
+/// not open offline after the update. An earlier build's script goes.
 function writeUpdateScript(web, caches) {
   const template = readFileSync(join(__dirname, UPDATE_SCRIPT), 'utf8');
   const script = template.replace(/^const CACHES = null;$/m, `const CACHES = ${JSON.stringify(caches)};`);
   if (script === template) throw new Error(`${UPDATE_SCRIPT} has no "const CACHES = null;" line`);
-  writeFileSync(join(web, UPDATE_SCRIPT), script);
-  return UPDATE_SCRIPT;
+  const name = `sw_update.${createHash('sha256').update(script).digest('hex').slice(0, 12)}.js`;
+  for (const file of readdirSync(web)) {
+    if (file !== name && updateScriptName.test(file)) unlinkSync(join(web, file));
+  }
+  writeFileSync(join(web, name), script);
+  return name;
 }
 
 /// A navigation to a file rather than to one of the app's pages, which have
@@ -64,12 +78,14 @@ function writeUpdateScript(web, caches) {
 /// Tested against a URL's path and query, as Workbox's NavigationRoute does.
 const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
 
-/// The files of [web] without which the app can't start offline, and which
-/// the service worker Workbox wrote there (sw.js) leaves out of its
-/// precache: the page, the bootstrap, the app itself and its deferred parts.
-/// Workbox passes over a file larger than maximumFileSizeToCacheInBytes with
-/// no more than a warning, and the app then opens offline on its loading
-/// screen, for good; CI checks the worker with this.
+/// The files of [web] that the app needs offline, and which the service
+/// worker Workbox wrote there (sw.js) leaves out of its precache: the page,
+/// the bootstrap, the app itself and its deferred parts, without which it
+/// can't start, and the policies' text, without which their pages
+/// (lib/features/about/legal_texts.dart) show only an error. Workbox passes
+/// over a file larger than maximumFileSizeToCacheInBytes with no more than a
+/// warning, and the app then opens offline on its loading screen, for good;
+/// CI checks the worker with this.
 function missingFromPrecache(web) {
   const worker = readFileSync(join(web, 'sw.js'), 'utf8');
   // {url:"main.dart.js",revision:"…"}, minified or not.
@@ -81,6 +97,7 @@ function missingFromPrecache(web) {
     'flutter_bootstrap.js',
     'main.dart.js',
     ...readdirSync(web).filter((name) => /^main\.dart\.js_\d+\.part\.js$/.test(name)).sort(),
+    'assets/assets/legal/legal.json',
   ];
   return needed.filter((name) => !precached.has(name));
 }
@@ -96,7 +113,7 @@ if (require.main === module) {
   }
   const missing = missingFromPrecache(web);
   for (const name of missing) {
-    console.log(`::error file=workbox-config.cjs::The service worker doesn't precache ${name}, so the app won't open offline`);
+    console.log(`::error file=workbox-config.cjs::The service worker doesn't precache ${name}, which the app needs offline`);
   }
   process.exit(missing.length === 0 ? 0 : 1);
 }

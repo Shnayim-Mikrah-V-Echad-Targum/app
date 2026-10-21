@@ -13,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../app/city_providers.dart';
 import '../app/providers.dart';
+import '../app/window_title_bar.dart' show bringWindowForward;
 import '../core/calendar/tz_database.dart';
 import '../core/text/hebrew_text.dart';
 import '../data/parsha_repository.dart';
@@ -79,8 +80,10 @@ class NotificationService {
             iconPath: defaultTargetPlatform == TargetPlatform.windows ? _windowsIconPath() : null,
           ),
         ),
-        onDidReceiveNotificationResponse: (r) => service.handleTap(r.payload),
+        onDidReceiveNotificationResponse: service._respond,
       );
+      // Never on Windows, whose plugin hears of a click that launched the app
+      // only later, through the callback, like any other.
       final launch = await plugin.getNotificationAppLaunchDetails();
       if (launch?.didNotificationLaunchApp == true) service.launchRoute = launch?.notificationResponse?.payload;
       return service;
@@ -123,9 +126,29 @@ class NotificationService {
   /// Routes to open when the user taps a notification.
   Stream<String> get taps => _taps.stream;
 
+  /// Answers a click or tap on one of the app's notifications. On Windows
+  /// the window comes forward first, whatever the page and however soon the
+  /// app can open it: Windows lets the app take the foreground only until
+  /// the user's next input.
+  void _respond(NotificationResponse response) {
+    if (defaultTargetPlatform == TargetPlatform.windows) unawaited(bringWindowForward());
+    handleTap(response.payload);
+  }
+
   /// Reports a tap on a notification carrying [payload], its route.
+  ///
+  /// A tap that comes before the app listens to [taps] is kept as the
+  /// [launchRoute], which the app opens after its first frame: on Windows,
+  /// a click that launches the app arrives so, while it is still starting.
   @visibleForTesting
-  void handleTap(String? payload) => _taps.add(payload ?? '/today');
+  void handleTap(String? payload) {
+    final route = payload ?? '/today';
+    if (_taps.hasListener) {
+      _taps.add(route);
+    } else {
+      launchRoute = route;
+    }
+  }
 
   /// Asks the OS for permission. Call only after the user has said yes in
   /// the app's own explanation screen, or turned reminders on themselves
@@ -375,7 +398,14 @@ ReminderCopy reminderCopy(
         body: '${l.notifDailyBody(parsha, verses, minutes)}$cue',
       );
     case ReminderKind.erevShabbat:
-      return (title: l.notifFridayTitle(parsha), body: l.notifFridayBody);
+      // Named for the days of rest that begin that evening: a Yom Tov first,
+      // as the eve's own name has it, or Shabbat, logged after the Yom Tov
+      // that follows it, if one does.
+      final erevYomTov = r.erevYomTov;
+      if (erevYomTov != null) {
+        return (title: l.notifErevTitle(l.erevYomTov(erevYomTov.name), parsha), body: l.notifErevYomTovBody);
+      }
+      return (title: l.notifFridayTitle(parsha), body: r.endsWithYomTov ? l.notifFridayBodyThenYomTov : l.notifFridayBody);
     case ReminderKind.checkIn:
       // Vezot HaBerachah is read on Simchat Torah, a Yom Tov: by name, with
       // no "Shavua tov". For a reader whose Yom Tov ended the day before, by

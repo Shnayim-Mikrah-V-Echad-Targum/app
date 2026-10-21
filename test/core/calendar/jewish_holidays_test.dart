@@ -56,6 +56,31 @@ void main() {
     expect(eve(LocalDate(2026, 10, 14)), isNull);
   });
 
+  test('a Friday before a Yom Tov on Shabbat names the Yom Tov, by the days kept', () {
+    ErevYomTov? eve(LocalDate date, {bool israel = false}) => JewishHolidays.yomTovWithShabbat(date, israel: israel);
+    for (final israel in [false, true]) {
+      // Erev Pesach 5789, Erev Sukkot 5787 and Hoshana Rabbah 5787, before
+      // Shemini Atzeret on Shabbat.
+      expect(eve(LocalDate(2029, 3, 30), israel: israel), ErevYomTov.other);
+      expect(eve(LocalDate(2026, 9, 25), israel: israel), ErevYomTov.other);
+      expect(eve(LocalDate(2026, 10, 2), israel: israel), ErevYomTov.other);
+    }
+    // Erev Rosh Hashanah 5787 and Erev Yom Kippur 5789.
+    expect(eve(LocalDate(2026, 9, 11)), ErevYomTov.roshHashanah);
+    expect(eve(LocalDate(2028, 9, 29)), ErevYomTov.yomKippur);
+    // Before Shabbat Bereshit, no Yom Tov.
+    expect(eve(LocalDate(2026, 10, 9)), isNull);
+    // The first day of Shavuot 5786 is itself a day of rest.
+    expect(eve(LocalDate(2026, 5, 22)), isNull);
+    // In Israel, the eighth day of Pesach 5789 is a Shabbat like any other:
+    // neither Thursday, Chol HaMoed, nor Friday, the seventh day, is its eve.
+    expect(eve(LocalDate(2029, 4, 5), israel: true), isNull);
+    expect(eve(LocalDate(2029, 4, 6), israel: true), isNull);
+    // The weekday eves are erevYomTov's, which this leaves be.
+    expect(eve(LocalDate(2028, 9, 20)), isNull);
+    expect(JewishHolidays.erevYomTov(LocalDate(2029, 3, 30), israel: false), isNull);
+  });
+
   test('a day of rest is no eve, though Yom Tov begins as it ends', () {
     ErevYomTov? eve(LocalDate date, {bool israel = false}) => JewishHolidays.erevYomTov(date, israel: israel);
     // Shabbat 19 May 2029, before Shavuot 5789 on Sunday.

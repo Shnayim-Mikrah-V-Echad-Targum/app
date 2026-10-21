@@ -158,6 +158,20 @@ void main() {
       expect(find.byType(TodayScreen), findsOneWidget);
       expect(selectedTab(tester), 0);
     });
+
+    // As a click on a Windows toast that launched the app arrives: through
+    // the plugin's callback, while main() is still starting the app.
+    testWidgets('tapped before the app is up opens once Today is up, within it', (tester) async {
+      final notifications = NotificationService.disabled()..handleTap('/today/week/5787:1');
+      await _pump(tester, notifications: notifications);
+      expect(find.byType(WeekOverviewScreen), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(notifications.launchRoute, isNull);
+
+      await goBack(tester);
+      expect(find.byType(TodayScreen), findsOneWidget);
+      expect(selectedTab(tester), 0);
+    });
   });
 
   group('a page opened with nothing beneath it', () {

@@ -284,9 +284,11 @@ void main() {
     test('in weeks with Yom Tov, by the days of Yom Tov kept', () {
       // Shavuot 5787: Friday and Shabbat outside Israel.
       final diaspora = timeline(DateTime(2027, 6, 7, 10), settings: AppSettings(joinDate: LocalDate(2026, 9, 1)));
-      // Its eve, Erev Yom Tov from midday.
+      // Its eve, Erev Yom Tov from midday. Its Shabbat, the second day of
+      // Shavuot, reads no weekly parsha, so Naso, read the Shabbat after, is
+      // the next parsha.
       expect([for (final d in on(diaspora, LocalDate(2027, 6, 10))) (d.kind, d.eyebrow)], [
-        (WidgetDayKind.erevYomTov, 'Parshat HaShavua'),
+        (WidgetDayKind.erevYomTov, 'Next parsha'),
         (WidgetDayKind.erevYomTov, 'Erev Yom Tov'),
       ]);
       for (final day in [LocalDate(2027, 6, 11), LocalDate(2027, 6, 12)]) {
@@ -301,6 +303,8 @@ void main() {
       expect(only(israel, LocalDate(2027, 6, 11)).kind, WidgetDayKind.yomTov);
       final shabbat = only(israel, LocalDate(2027, 6, 12));
       expect((shabbat.kind, shabbat.line), (WidgetDayKind.shabbat, 'Shabbat Shalom'));
+      // Where Naso is read that Shabbat, it is this week's.
+      expect(on(israel, LocalDate(2027, 6, 10)).first.eyebrow, 'Parshat HaShavua');
 
       // The days of awe have their own greetings, and Vezot HaBerachah is
       // read on Simchat Torah.
@@ -311,6 +315,77 @@ void main() {
       expect(only(tishrei, LocalDate(2026, 9, 26)).line, 'Chag Sameach', reason: 'Sukkot');
       expect(only(tishrei, LocalDate(2026, 10, 4)).eyebrow, 'Simchat Torah');
       expect(tishrei.days.last.date, LocalDate(2026, 10, 4));
+    });
+
+    group('in a week whose Shabbat has no weekly parsha, heads the parsha as the next one, as Today does', () {
+      final joined = AppSettings(joinDate: LocalDate(2026, 3, 1));
+      final inIsrael = joined.locatedIn(ReadingSchedule.israel);
+
+      /// Each entry's eyebrow on [date], in order.
+      List<String> eyebrows(WidgetTimeline t, LocalDate date) => [for (final d in on(t, date)) d.eyebrow];
+
+      test('Shemini 5786, after Shabbat Chol HaMoed Pesach', () {
+        final t = timeline(DateTime(2026, 3, 29, 8), settings: joined);
+        for (var day = LocalDate(2026, 3, 29); day < LocalDate(2026, 4, 1); day = day.addDays(1)) {
+          expect(eyebrows(t, day), ['Next parsha'], reason: '$day');
+        }
+        // Erev Pesach, Erev Yom Tov from midday.
+        expect(eyebrows(t, LocalDate(2026, 4, 1)), ['Next parsha', 'Erev Yom Tov']);
+        for (final (day, kind, greeting) in [
+          (LocalDate(2026, 4, 2), WidgetDayKind.yomTov, 'Chag Sameach'),
+          (LocalDate(2026, 4, 3), WidgetDayKind.yomTov, 'Chag Sameach'),
+          (LocalDate(2026, 4, 4), WidgetDayKind.shabbat, 'Shabbat Shalom'),
+        ]) {
+          final d = only(t, day);
+          expect((d.kind, d.eyebrow, d.line), (kind, 'Next parsha', greeting), reason: '$day');
+        }
+        // From the Sunday after, its own Shabbat is coming.
+        expect(eyebrows(t, LocalDate(2026, 4, 5)), ['Parshat HaShavua']);
+        expect(eyebrows(t, LocalDate(2026, 4, 10)), ['Parshat HaShavua', 'Erev Shabbat']);
+        expect(eyebrows(t, LocalDate(2026, 4, 11)), ['Parshat HaShavua']);
+
+        final hebrew = timeline(DateTime(2026, 3, 29, 8), l: he, settings: joined.copyWith(language: AppLanguage.hebrew));
+        expect(eyebrows(hebrew, LocalDate(2026, 4, 4)), ['הפרשה הבאה']);
+      });
+
+      test('Pesach 5789, which only Israel has finished by its second Shabbat', () {
+        final diaspora = timeline(DateTime(2029, 3, 26, 8), settings: joined);
+        expect(eyebrows(diaspora, LocalDate(2029, 3, 31)), ['Next parsha']);
+        expect(eyebrows(diaspora, LocalDate(2029, 4, 7)), ['Next parsha']);
+        // Erev Pesach, a Friday: Shabbat and Yom Tov from midday.
+        expect(eyebrows(diaspora, LocalDate(2029, 3, 30)), ['Next parsha', 'Erev Shabbat and Yom Tov']);
+        final israel = timeline(DateTime(2029, 3, 26, 8), settings: inIsrael);
+        expect(eyebrows(israel, LocalDate(2029, 4, 7)), ['Parshat HaShavua']);
+      });
+
+      test('Naso 5786, after the second day of Shavuot', () {
+        final day = LocalDate(2026, 5, 23);
+        expect(eyebrows(timeline(DateTime(2026, 5, 18, 8), settings: joined), day), ['Next parsha']);
+        expect(eyebrows(timeline(DateTime(2026, 5, 18, 8), settings: inIsrael), day), ['Parshat HaShavua']);
+      });
+
+      test("Ha'azinu 5787, after Rosh Hashanah on Shabbat", () {
+        expect(eyebrows(timeline(DateTime(2026, 9, 7, 8), settings: joined), LocalDate(2026, 9, 12)), ['Next parsha']);
+      });
+
+      test('Vezot HaBerachah 5787, on the days of rest before Simchat Torah', () {
+        final diaspora = timeline(DateTime(2026, 9, 20, 8), settings: joined);
+        // Yom Kippur, the first day of Sukkot and, outside Israel, Shemini
+        // Atzeret.
+        for (final day in [LocalDate(2026, 9, 21), LocalDate(2026, 9, 26), LocalDate(2026, 10, 3)]) {
+          expect(eyebrows(diaspora, day), ['Next parsha'], reason: '$day');
+        }
+        // Hoshana Rabbah, its reading day, keeps Simchat Torah all day.
+        expect(eyebrows(diaspora, LocalDate(2026, 10, 2)), ['Simchat Torah']);
+        final israel = timeline(DateTime(2026, 9, 20, 8), settings: inIsrael);
+        expect(eyebrows(israel, LocalDate(2026, 10, 3)), ['Simchat Torah']);
+      });
+
+      test('Vezot HaBerachah 5789, on Yom Kippur on Shabbat and Shabbat Chol HaMoed', () {
+        final t = timeline(DateTime(2028, 9, 24, 8), settings: joined);
+        expect(eyebrows(t, LocalDate(2028, 9, 30)), ['Next parsha']);
+        expect(eyebrows(t, LocalDate(2028, 10, 7)), ['Next parsha']);
+      });
     });
 
     test('runs on through a Yom Tov straight after its last Shabbat', () {

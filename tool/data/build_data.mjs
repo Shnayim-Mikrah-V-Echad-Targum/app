@@ -439,6 +439,12 @@ function refs(h) {
   return list.map((x) => ({k: x.k, b: x.b, e: x.e}));
 }
 
+// Hebrew names @hebcal/leyning points wrongly: Shemini keeps the dagesh of
+// the verse's הַשְּׁמִינִי after dropping its article, and Chayei Sarah has a
+// holam where the sin dot belongs. (Pekudei's פְקוּדֵי and Tazria's תַזְרִיעַ
+// follow the verse's pointing, and stay.)
+const HE_NAME_FIXES = {Shmini: 'שְׁמִינִי', 'Chayei Sara': 'חַיֵּי שָׂרָה'};
+
 function leyningEntry(key) {
   const l = getLeyningForParsha(key);
   const fk = l.fullkriyah;
@@ -455,7 +461,7 @@ function leyningEntry(key) {
   }
   const out = {
     key,
-    he: l.name.he,
+    he: HE_NAME_FIXES[key] ?? l.name.he,
     book,
     start: aliyot[0].b,
     end: aliyot[6].e,

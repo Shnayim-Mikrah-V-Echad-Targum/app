@@ -142,7 +142,7 @@ class WeekPlan {
   final String weekId;
 
   /// Days with reading assigned, in order. Rest days and quiet days never
-  /// appear here.
+  /// appear here; it may be empty (see [shabbatAliyot]).
   final List<PlanDay> days;
 
   /// Aliyot planned for Shabbat morning (read from a printed Chumash).
@@ -228,6 +228,10 @@ class ReadingPlanner {
   /// midweek finds the whole portion still ahead of them rather than half
   /// of it already due.
   ///
+  /// With no reading day among those six but some earlier in the week, the
+  /// whole week is used; with none at all, the aliyot are left for Shabbat
+  /// morning ([WeekPlan.shabbatAliyot]).
+  ///
   /// The week is planned by the settings in force on its first planned day.
   /// If they change later in the week, the days before the change keep what
   /// they were given, and the aliyot left are spread over the days from the
@@ -256,8 +260,26 @@ class ReadingPlanner {
     }
     var settings = settingsAt(first);
     var available = _readingDays(first, week.occasion, settings).toList();
-    if (available.isEmpty) available = [week.plan.last.date];
-    var (days, shabbatAliyot) = _spread(week, available, settings.plan, 0);
+    if (available.isEmpty && first > week.start) {
+      // No reading day among the six before it, as when the reader keeps
+      // Chol HaMoed free and Israel reads Shemini on the Shabbat straight
+      // after Pesach: the whole window, from the day after the previous
+      // reading, or as above from the day the reader started, if that is
+      // in it and leaves a reading day.
+      first = from != null &&
+              from > week.start &&
+              from < first &&
+              _readingDays(from, week.occasion, settingsAt(from)).isNotEmpty
+          ? from
+          : week.start;
+      settings = settingsAt(first);
+      available = _readingDays(first, week.occasion, settings).toList();
+    }
+    var (days, shabbatAliyot) = available.isEmpty
+        // No day before the reading can take any: read on Shabbat morning
+        // from a printed Chumash and logged after it.
+        ? (const <PlanDay>[], week.occasion.isShabbat ? _allAliyot : const <int>[])
+        : _spread(week, available, settings.plan, 0);
 
     for (var d = first.addDays(1); d < week.occasion; d = d.addDays(1)) {
       final changed = settingsAt(d);

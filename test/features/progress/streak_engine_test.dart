@@ -251,6 +251,48 @@ void main() {
     expect(unlogged.weeks.singleWhere((w) => w.plan.weekId == '5786:54').status, WeekStatus.missed);
   });
 
+  test('a Friday Simchat Torah never costs Bereshit a day', () {
+    // 5789 outside Israel: Simchat Torah on Friday 13 October 2028, and
+    // Bereshit read the next day, with no weekday between. Every week from
+    // joining through Vezot HaBerachah finished on its first planned day.
+    final join = d('2028-09-01');
+    final log = <String, WeekProgress>{};
+    for (var week = diaspora.weekFor(join);; week = diaspora.nextWeek(week)) {
+      final plan = planner.planFor(week);
+      log[plan.weekId] = WeekProgress(weekId: plan.weekId).withAll(plan.days.first.date);
+      if (week.portion.isVezotHaberakhah) break;
+    }
+    final bereshit = planner.planFor(diaspora.weekFor(d('2028-10-14')));
+    expect(bereshit.weekId, '5789:1');
+    expect(bereshit.days, isEmpty);
+    WeekStatus statusOf(StreakSummary s) => s.weeks.singleWhere((w) => w.plan.weekId == '5789:1').status;
+
+    final sunday = engine.evaluate(progress: log, joinDate: join, today: d('2028-10-15'));
+    final s = engine.evaluate(progress: log, joinDate: join, today: d('2028-10-16'));
+    expect(s.days.containsKey(d('2028-10-13')), isFalse, reason: 'Simchat Torah is Yom Tov');
+    expect(s.days.containsKey(d('2028-10-14')), isFalse, reason: 'Shabbat');
+    expect(s.graceBalance, sunday.graceBalance);
+    expect(statusOf(s), WeekStatus.inProgress);
+
+    // Read on Shabbat morning from a Chumash, and logged after it.
+    final read = {...log, '5789:1': WeekProgress(weekId: '5789:1').withAll(d('2028-10-14'))};
+    expect(statusOf(engine.evaluate(progress: read, joinDate: join, today: d('2028-10-16'))), WeekStatus.onTime);
+
+    // Unread past its late window, it is missed; with a pause over its
+    // Shabbat, it neither counts nor breaks the streak.
+    expect(statusOf(engine.evaluate(progress: log, joinDate: join, today: d('2028-10-25'))), WeekStatus.missed);
+    final paused = engine.evaluate(
+      progress: log,
+      joinDate: join,
+      today: d('2028-10-25'),
+      pauses: [Pause(d('2028-10-08'), d('2028-10-20'))],
+    );
+    expect(statusOf(paused), WeekStatus.transparent);
+    final vezot = paused.weeks.indexWhere((w) => w.plan.portion.isVezotHaberakhah);
+    expect([for (final w in paused.weeks.take(vezot + 1)) w.status], everyElement(WeekStatus.onTime));
+    expect(paused.parshaStreak, vezot + 1);
+  });
+
   group('changing settings', () {
     /// An engine whose plan settings changed as [entries] (oldest first) say.
     StreakEngine engineWith(List<PlanSettingsEntry> entries) => StreakEngine(

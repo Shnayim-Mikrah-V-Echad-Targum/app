@@ -613,18 +613,27 @@ class LabeledSlider extends StatelessWidget {
                 onPressed: value > min ? () => onChanged(snap(value - step)) : null,
               ),
               Expanded(
-                // One node, read as "Reading size, 100%". No value indicator:
-                // the value already shows above.
-                child: MergeSemantics(
-                  child: Semantics(
-                    label: title,
-                    child: Slider(
-                      value: value.clamp(min, max),
-                      min: min,
-                      max: max,
-                      divisions: divisions,
-                      semanticFormatterCallback: format,
-                      onChanged: (v) => onChanged(snap(v)),
+                // In an overlay of its own, which its value indicator goes
+                // in: in the app's, that indicator's semantics node, sent as
+                // the sheet holding the slider opens, isn't yet under any
+                // other, and a desktop's accessibility bridge (Windows')
+                // refuses the update, and every one after it.
+                child: Overlay.wrap(
+                  alwaysSizeToContent: true,
+                  clipBehavior: Clip.none,
+                  // One node, read as "Reading size, 100%". No value
+                  // indicator: the value already shows above.
+                  child: MergeSemantics(
+                    child: Semantics(
+                      label: title,
+                      child: Slider(
+                        value: value.clamp(min, max),
+                        min: min,
+                        max: max,
+                        divisions: divisions,
+                        semanticFormatterCallback: format,
+                        onChanged: (v) => onChanged(snap(v)),
+                      ),
                     ),
                   ),
                 ),

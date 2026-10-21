@@ -158,6 +158,24 @@
       }
     }
   },
+  "occasionShabbat": "Shabbat, {date}",
+  "@occasionShabbat": {
+    "description": "The day a parsha is read, inside a sentence: 'by Shabbat, April 11'. date is the day and month, as in readOnShabbat.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "occasionSimchatTorah": "Simchat Torah, {date}",
+  "@occasionSimchatTorah": {
+    "description": "As occasionShabbat for Vezot HaBerachah, which is read on Simchat Torah: 'by Simchat Torah, Sunday, October 4'. date is as in readOnSimchatTorah, with its weekday.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "shabbatInDays": "{count, plural, =0{Shabbat is today} =1{Shabbat is tomorrow} other{Shabbat in {count} days}}",
   "@shabbatInDays": {
     "placeholders": {
@@ -165,6 +183,10 @@
         "type": "int"
       }
     }
+  },
+  "noWeeklyParshaThisShabbat": "No weekly parsha this Shabbat",
+  "@noWeeklyParshaThisShabbat": {
+    "description": "On Today's title page on a reading day, in place of shabbatInDays, when the coming Shabbat reads a festival's own portion instead of a weekly parsha."
   },
   "todayCandleLighting": "Candle-lighting {time}",
   "@todayCandleLighting": {
@@ -187,6 +209,10 @@
   "@parshatHashavua": {
     "description": "The eyebrow over the parsha's name in the Today hero, on most days."
   },
+  "nextParsha": "Next parsha",
+  "@nextParsha": {
+    "description": "The eyebrow over the parsha's name on Today and on the home-screen widget when the coming Shabbat has no weekly parsha of its own (a Shabbat of Pesach, of Shavuot or Shemini Atzeret outside Israel, of Sukkot, Rosh Hashanah or Yom Kippur, or Shabbat Chol HaMoed; in Israel a Shemini Atzeret on Shabbat is Simchat Torah and reads Vezot HaBerachah), and on Shabbat or Yom Tov before Simchat Torah: the parsha named is the next one read, not this week's."
+  },
   "erevShabbat": "Erev Shabbat",
   "@erevShabbat": {
     "description": "The eyebrow over the parsha's name in the Today hero on Friday afternoon."
@@ -194,6 +220,15 @@
   "erevYomTov": "{holiday, select, roshHashanah{Erev Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Yom Tov}}",
   "@erevYomTov": {
     "description": "The eyebrow over the parsha's name in the Today hero on the afternoon before a Yom Tov that is not Shabbat, as erevShabbat on Friday. holiday is roshHashanah, yomKippur or other.",
+    "placeholders": {
+      "holiday": {
+        "type": "String"
+      }
+    }
+  },
+  "erevShabbatYomTov": "{holiday, select, roshHashanah{Erev Shabbat and Rosh Hashanah} yomKippur{Erev Yom Kippur} other{Erev Shabbat and Yom Tov}}",
+  "@erevShabbatYomTov": {
+    "description": "The eyebrow over the parsha's name on Today and on the home-screen widget on Friday afternoon when Shabbat is also a Yom Tov, in place of erevShabbat. holiday is roshHashanah, yomKippur or other.",
     "placeholders": {
       "holiday": {
         "type": "String"
@@ -215,6 +250,10 @@
   "gmarChatimaTova": "G’mar Chatimah Tovah",
   "@gmarChatimaTova": {
     "description": "The greeting on Today's title page on Yom Kippur, a solemn fast day: 'a good final sealing'."
+  },
+  "restDayNoWeeklyParsha": "This Shabbat has a reading of its own instead of a weekly parsha.",
+  "@restDayNoWeeklyParsha": {
+    "description": "On Today's title page on Shabbat or Yom Tov, before restDayBody, when these days of rest include a Shabbat with no weekly parsha (a festival's own reading)."
   },
   "restDayBody": "Reading from a printed Chumash today? You can log it after Shabbat.",
   "@restDayBody": {
@@ -243,6 +282,15 @@
   "yomTovBeginsTonight": "{holiday, select, roshHashanah{Rosh Hashanah begins this evening} yomKippur{Yom Kippur begins this evening} other{Yom Tov begins this evening}}",
   "@yomTovBeginsTonight": {
     "description": "In the Today hero on the day before a Yom Tov that is not Shabbat, in place of the countdown to Shabbat (shabbatInDays), as shabbatBeginsTonight on Friday. holiday is roshHashanah, yomKippur or other.",
+    "placeholders": {
+      "holiday": {
+        "type": "String"
+      }
+    }
+  },
+  "shabbatYomTovBeginTonight": "{holiday, select, roshHashanah{Shabbat and Rosh Hashanah begin this evening} yomKippur{Shabbat and Yom Kippur begin this evening} other{Shabbat and Yom Tov begin this evening}}",
+  "@shabbatYomTovBeginTonight": {
+    "description": "In the Today hero on a Friday whose Shabbat is also a Yom Tov, in place of shabbatBeginsTonight. holiday is roshHashanah, yomKippur or other.",
     "placeholders": {
       "holiday": {
         "type": "String"
@@ -400,6 +448,32 @@
       }
     }
   },
+  "todayBehindBeforeYomTovMore": "{count, plural, =1{One aliyah to catch up before Yom Tov — or after it, on {day}.} other{{count} aliyot to catch up before Yom Tov — or after it, on {day}.}}",
+  "@todayBehindBeforeYomTovMore": {
+    "description": "As todayBehind, on the eve of a Yom Tov after which this week still has a planned reading day before its parsha is read (Erev Shavuot on Tuesday, with Friday still to read on): day is that day's weekday ('Friday'). count is every aliyah planned up to today and not yet read. 'Yom Tov' is held together by a no-break space, so that a line never ends between its words.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String",
+        "example": "Friday"
+      }
+    }
+  },
+  "todayBehindBeforeShabbatMore": "{count, plural, =1{One aliyah to catch up before Shabbat — or after it, on {day}.} other{{count} aliyot to catch up before Shabbat — or after it, on {day}.}}",
+  "@todayBehindBeforeShabbatMore": {
+    "description": "As todayBehindBeforeYomTovMore, on the eve of a Shabbat that does not read this week's parsha (a Shabbat of a festival), after which this week still has a planned reading day: day is that day's weekday. count is every aliyah planned up to today and not yet read.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String",
+        "example": "Sunday"
+      }
+    }
+  },
   "todayLastDayYomKippur": "{count, plural, =1{One aliyah to catch up before Yom Kippur — and there is still time after it, too.} other{{count} aliyot to catch up before Yom Kippur — and there is still time after it, too.}}",
   "@todayLastDayYomKippur": {
     "description": "As todayBehind, on the day before Yom Kippur, which is never the last reading day of a week. count is every aliyah planned up to today and not yet read.",
@@ -473,14 +547,17 @@
       }
     }
   },
-  "openWeekRestore": "Finish {name} and {next} by Shabbat and your {count}-week streak continues — you can do this once in each book of the Torah.",
+  "openWeekRestore": "Finish {name} and {next} by {deadline}, and your {count}-week streak continues — you can do this once in each book of the Torah.",
   "@openWeekRestore": {
-    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.",
+    "description": "On Today's notice that last week's parsha is still open, after its late window. name is last week's parsha, next this week's, deadline the day the next parsha is read, by which both must be finished (occasionShabbat or occasionSimchatTorah), and count the reader's parsha streak, at least 1. A no-break space keeps the last two words together, so neither is left alone on a line.",
     "placeholders": {
       "name": {
         "type": "String"
       },
       "next": {
+        "type": "String"
+      },
+      "deadline": {
         "type": "String"
       },
       "count": {
@@ -488,14 +565,17 @@
       }
     }
   },
-  "openWeekRestoreZero": "Finish {name} and {next} by Shabbat and both count — you can do this once in each book of the Torah.",
+  "openWeekRestoreZero": "Finish {name} and {next} by {deadline}, and both count — you can do this once in each book of the Torah.",
   "@openWeekRestoreZero": {
-    "description": "As openWeekRestore, when the reader has no parsha streak to continue.",
+    "description": "As openWeekRestore, when the reader has no parsha streak to continue. deadline is the day the next parsha is read (occasionShabbat or occasionSimchatTorah).",
     "placeholders": {
       "name": {
         "type": "String"
       },
       "next": {
+        "type": "String"
+      },
+      "deadline": {
         "type": "String"
       }
     }
@@ -804,7 +884,7 @@
   "weekInProgress": "In progress",
   "plannedFor": "Planned for {day}",
   "@plannedFor": {
-    "description": "The day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly.",
+    "description": "On the week's page, the day an aliyah is planned for. day is the weekday's name (Names.weekday): 'Monday', in Hebrew 'יום שני', which takes ל directly; or for a day a week or more away, its weekday and date (Names.practiceDate): 'Sunday, April 5', 'יום ראשון, י״ח בניסן'.",
     "placeholders": {
       "day": {
         "type": "String"
@@ -813,7 +893,7 @@
   },
   "plannedForOverdue": "Planned for {day}, still to read",
   "@plannedForOverdue": {
-    "description": "Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark.",
+    "description": "Read by screen readers for an aliyah on the week's page planned for a day gone by and still to read, which the page shows in the overdue colour after a mark. day is as in plannedFor.",
     "placeholders": {
       "day": {
         "type": "String",
@@ -1806,6 +1886,28 @@
   "@notifFridayBody": {
     "description": "The Erev Shabbat reminder, sent only while the week's parsha isn't finished."
   },
+  "notifFridayBodyThenYomTov": "There’s still time — or finish Shabbat morning from your Chumash and log it after Yom Tov.",
+  "@notifFridayBodyThenYomTov": {
+    "description": "As notifFridayBody, when Yom Tov follows straight after Shabbat (Shavuot on Sunday, say), so that reading done on Shabbat is logged once Yom Tov is over."
+  },
+  "notifErevTitle": "{eve} · Parshat {parsha}",
+  "@notifErevTitle": {
+    "description": "The title of the reminder before the parsha's Shabbat when a Yom Tov begins that evening, in place of notifFridayTitle: eve is erevYomTov's text ('Erev Yom Tov', 'Erev Rosh Hashanah').",
+    "placeholders": {
+      "eve": {
+        "type": "String",
+        "example": "Erev Yom Tov"
+      },
+      "parsha": {
+        "type": "String",
+        "example": "Naso"
+      }
+    }
+  },
+  "notifErevYomTovBody": "There’s still time — or finish on Yom Tov or Shabbat from your Chumash and log it after Shabbat.",
+  "@notifErevYomTovBody": {
+    "description": "The body of the reminder under notifErevTitle, when Yom Tov begins that evening and runs into the parsha's Shabbat."
+  },
   "notifCheckInTitle": "Shavua tov!",
   "notifCheckInBody": "Did you read on Shabbat? Tap to log it.",
   "notifCheckInBodyShabbatYomTov": "Did you read on Shabbat and Yom Tov? Tap to log it.",
@@ -1904,6 +2006,32 @@
   "errorPanelMessage": "Something on this page didn’t load.",
   "@errorPanelMessage": {
     "description": "Shown, in a release build, in place of a part of a page that failed to appear, such as a card that couldn't be built."
+  },
+  "startFailedTitle": "Shnayim Mikrah couldn’t open.",
+  "@startFailedTitle": {
+    "description": "The one sentence, in the app's gentle italic voice, of the page shown in place of the whole app when something it can't open without failed as it started. Under it, startFailedReopen (or startFailedReload on the web) and startFailedWriteTo, then the buttons copySupportDetails (and actionRetry on the web)."
+  },
+  "startFailedReopen": "Closing the app and opening it again may help.",
+  "@startFailedReopen": {
+    "description": "Under startFailedTitle, in the installed app: what the reader can do first."
+  },
+  "startFailedReload": "Check the connection, then try again.",
+  "@startFailedReload": {
+    "description": "Under startFailedTitle, in the web app, where a dropped connection is the likely cause: actionRetry, beneath, reloads the page."
+  },
+  "startFailedWriteTo": "If that doesn’t help, copy the details and send them to {address}.",
+  "@startFailedWriteTo": {
+    "description": "After startFailedReopen or startFailedReload: the button copySupportDetails, beneath, copies what went wrong, for an email to the maintainers' address.",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "support@shnayimmikrah.org"
+      }
+    }
+  },
+  "startFailedWriteToUs": "If that doesn’t help, copy the details and send them to us.",
+  "@startFailedWriteToUs": {
+    "description": "startFailedWriteTo, in a build that names no support address."
   },
   "linkOpenFailed": "The link couldn’t be opened here.",
   "@linkOpenFailed": {

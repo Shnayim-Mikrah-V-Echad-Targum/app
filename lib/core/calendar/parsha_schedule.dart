@@ -80,7 +80,9 @@ class ReadingWeek {
   final LocalDate start;
 
   /// Suggested division by day, in date order. Each entry lists the 0-based
-  /// aliyah indices (0–6) to read that day.
+  /// aliyah indices (0–6) to read that day. Empty when no day before the
+  /// reading can take any: Bereshit on the Shabbat straight after a Friday
+  /// Simchat Torah, outside Israel.
   final List<DailyAssignment> plan;
 
   final bool israel;
@@ -109,9 +111,6 @@ class ReadingWeek {
         for (final a in plan)
           if (a.date <= date) ...a.aliyot,
       };
-
-  /// The last planned reading day (usually Friday).
-  LocalDate get lastPlannedDay => plan.last.date;
 }
 
 class DailyAssignment {
@@ -170,6 +169,20 @@ class ParshaSchedule {
     }
   }
 
+  /// The Shabbat on or after [date] when no portion of the yearly cycle is
+  /// read on it: a Shabbat of Pesach, of Shavuot outside Israel, of Sukkot or
+  /// Shemini Atzeret, of Rosh Hashanah or Yom Kippur, or Shabbat Chol
+  /// HaMoed, each of which reads the day's own portion. Null when that
+  /// Shabbat reads a weekly portion, or Vezot HaBerachah (Simchat Torah on
+  /// Shabbat, in Israel).
+  ///
+  /// Asked of [nextOccasion] rather than of [portionOnShabbat], whose table
+  /// has no weekly portion for Israel's Simchat Torah on Shabbat either.
+  LocalDate? shabbatWithoutPortion(LocalDate date) {
+    final shabbat = date.onOrAfter(6);
+    return nextOccasion(shabbat).date == shabbat ? null : shabbat;
+  }
+
   /// The last public reading strictly before [date].
   ReadingOccasion previousOccasion(LocalDate date) {
     final before = date.addDays(-1);
@@ -216,7 +229,6 @@ class ParshaSchedule {
       for (var d = first; d < occasion.date; d = d.addDays(1)) {
         if (!rest(d)) days.add(d);
       }
-      if (days.isEmpty) days.add(occasion.date.addDays(-1));
     }
     return ReadingWeek(
       portion: occasion.portion,
@@ -229,9 +241,11 @@ class ParshaSchedule {
 
   /// Spreads the seven aliyot over [days] in order. With six days this gives
   /// the customary Sunday–Thursday one aliyah each and Friday the sixth and
-  /// seventh; with fewer days the later days take the extra aliyot.
+  /// seventh; with fewer days the later days take the extra aliyot. With no
+  /// days, there is nothing to divide.
   static List<DailyAssignment> divideAliyot(List<LocalDate> days) {
     final n = days.length;
+    if (n == 0) return const [];
     final base = 7 ~/ n;
     final extra = 7 % n;
     final result = <DailyAssignment>[];

@@ -242,6 +242,18 @@ jobs:
           channel: stable
           cache: true
       - run: flutter build ios --release --no-codesign $DART_DEFINES
+      # The widget extension, built with the app, links none of its
+      # frameworks (ios/ParshaWidget/ParshaWidget.xcconfig): neither a
+      # plugin's nor the Flutter engine, which WidgetKit would load each time
+      # it draws the widget.
+      - name: The widget extension links none of the app's frameworks
+        run: |
+          widget=build/ios/iphoneos/Runner.app/PlugIns/ParshaWidget.appex/ParshaWidget
+          otool -L "$widget"
+          if otool -L "$widget" | tail -n +2 | grep -E '@rpath/.*\.framework/|@executable_path|@loader_path'; then
+            echo "::error file=ios/ParshaWidget/ParshaWidget.xcconfig::The widget extension links the app's frameworks"
+            exit 1
+          fi
 
   windows:
     name: Build Windows

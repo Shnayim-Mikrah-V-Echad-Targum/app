@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Windows installer: a per-user MSI, built by tool/windows/build_msi.ps1
+  (docs/RELEASE.md, Windows). It installs the Flutter release folder into
+  %LOCALAPPDATA%\Programs\Shnayim Mikrah without asking for administrator
+  rights, adds a Start-menu shortcut that Windows notifications need, and an
+  optional desktop shortcut.
+
+  build_msi.ps1 passes two preprocessor variables:
+    ProductVersion  X.Y.Z, the release's version
+    AppIcon         the path of windows\runner\resources\app_icon.ico
+  and adds Files.wxs, which it writes from the release folder: every file,
+  under the directory InstallFolder, in the component group AppFiles.
+
+  Uninstalling removes what this package installed and nothing else: the
+  reader's settings, progress and notes in %APPDATA%\Shnayim Mikrah stay.
+  Every string here is plain ASCII, as the package's code page (1252) needs.
+  test/app/windows_installer_test.dart pins the values below.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?ifndef ProductVersion?>
+  <?error Pass -d ProductVersion=X.Y.Z (tool/windows/build_msi.ps1 does) ?>
+  <?endif?>
+  <?ifndef AppIcon?>
+  <?error Pass -d AppIcon=<path of app_icon.ico> (tool/windows/build_msi.ps1 does) ?>
+  <?endif?>
+
+  <!--
+    The UpgradeCode is the same for every release, forever: Windows finds the
+    installed version by it, to replace it. The ProductCode is new with each
+    build.
+  -->
+  <Package
+      Name="Shnayim Mikrah"
+      Manufacturer="Shnayim Mikrah"
+      Version="$(var.ProductVersion)"
+      UpgradeCode="{4E6B2C1A-9D3F-4A57-8B21-6F0D3C9E7A15}"
+      Scope="perUser"
+      Language="1033"
+      Codepage="1252"
+      InstallerVersion="500"
+      Compressed="yes">
+
+    <!--
+      A newer version replaces this one, and the same version built again
+      replaces itself (so that a test build and the release's never sit side
+      by side). The old version is removed before the new one is installed,
+      in one transaction: if the install fails, the old version comes back.
+    -->
+    <MajorUpgrade
+        Schedule="afterInstallInitialize"
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of Shnayim Mikrah is already installed. To install this older version, first uninstall the newer one in Settings &gt; Apps &gt; Installed apps." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Settings > Apps > Installed apps. -->
+    <Icon Id="AppIcon.ico" SourceFile="$(var.AppIcon)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/Shnayim-Mikrah-V-Echad-Targum/app/releases" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/Shnayim-Mikrah-V-Echad-Targum/app/releases" />
+    <!-- Nothing to modify, and a repair would ask for the downloaded MSI,
+         which install.ps1 deletes: installing a release again repairs. -->
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[InstallFolder]" After="CostFinalize" />
+
+    <!--
+      DESKTOPSHORTCUT=1 (the default) adds a desktop shortcut; any other value,
+      such as DESKTOPSHORTCUT=0 on msiexec's command line, leaves it out. The
+      choice is remembered, so that an update (which passes nothing) keeps it:
+      the value given on the command line, if any, else the one remembered,
+      else 1. AppSearch overwrites a value given on the command line, so it is
+      kept aside before AppSearch and restored after it.
+    -->
+    <Property Id="DESKTOPSHORTCUT" Secure="yes">
+      <RegistrySearch Id="RememberedDesktopShortcut" Root="HKCU" Key="Software\ShnayimMikrah\Installer" Name="DesktopShortcutChoice" Type="raw" />
+    </Property>
+    <SetProperty Action="KeepDesktopShortcutArgument" Id="DESKTOPSHORTCUT_ARGUMENT" Value="[DESKTOPSHORTCUT]" Before="AppSearch" Sequence="both" Condition='DESKTOPSHORTCUT &lt;&gt; ""' />
+    <SetProperty Action="RestoreDesktopShortcutArgument" Id="DESKTOPSHORTCUT" Value="[DESKTOPSHORTCUT_ARGUMENT]" After="AppSearch" Sequence="both" Condition='DESKTOPSHORTCUT_ARGUMENT &lt;&gt; ""' />
+    <SetProperty Action="DefaultDesktopShortcut" Id="DESKTOPSHORTCUT" Value="1" After="RestoreDesktopShortcutArgument" Sequence="both" Condition='DESKTOPSHORTCUT = ""' />
+
+    <!-- %LOCALAPPDATA%\Programs\Shnayim Mikrah: per user, no administrator rights. -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="LocalProgramsFolder" Name="Programs">
+        <Directory Id="InstallFolder" Name="Shnayim Mikrah" />
+      </Directory>
+    </StandardDirectory>
+
+    <!--
+      Windows shows a reminder (a scheduled toast) of an app that isn't
+      packaged only if a Start-menu shortcut carries the app's id, the
+      appUserModelId of lib/services/notifications.dart; and it brings a
+      click on the reminder back to the app through the shortcut's toast
+      activator, the guid given there (and msix_config's toast_activator).
+      Every component under the user's profile has a key path in HKCU, as
+      Windows Installer requires (ICE38, ICE43), and every folder this package
+      creates is removed with it, if empty (ICE64).
+    -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcutComponent" Guid="{BAD5A156-84D4-455A-8BFA-A32F715CB585}">
+        <Shortcut
+            Id="StartMenuShortcut"
+            Name="Shnayim Mikrah"
+            Description="Shnayim Mikrah v'Echad Targum"
+            Target="[InstallFolder]shnayim_mikrah.exe"
+            WorkingDirectory="InstallFolder">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="ShnayimMikrah.App" />
+          <ShortcutProperty Key="System.AppUserModel.ToastActivatorCLSID" Value="{7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57}" />
+        </Shortcut>
+        <RegistryValue Root="HKCU" Key="Software\ShnayimMikrah\Installer" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="{6177AD0F-DC9B-4A56-A116-7988856A9757}" Condition='DESKTOPSHORTCUT = "1"'>
+        <Shortcut
+            Id="DesktopShortcut"
+            Name="Shnayim Mikrah"
+            Description="Shnayim Mikrah v'Echad Targum"
+            Target="[InstallFolder]shnayim_mikrah.exe"
+            WorkingDirectory="InstallFolder">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="ShnayimMikrah.App" />
+          <ShortcutProperty Key="System.AppUserModel.ToastActivatorCLSID" Value="{7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57}" />
+        </Shortcut>
+        <RegistryValue Root="HKCU" Key="Software\ShnayimMikrah\Installer" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <!--
+      The toast activator's COM server, so that a click on a reminder starts
+      the app when it isn't running (when it is, the notification plugin's
+      own registration takes the click). Windows starts it as
+      "shnayim_mikrah.exe -Embedding", which the app ignores.
+    -->
+    <Component Id="ToastActivatorComponent" Directory="InstallFolder" Guid="{29BA71DB-2008-4D87-8AF0-BC84375E159E}">
+      <RegistryValue Root="HKCU" Key="Software\Classes\CLSID\{7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57}\LocalServer32" Type="string" Value="&quot;[InstallFolder]shnayim_mikrah.exe&quot;" KeyPath="yes" />
+    </Component>
+
+    <!--
+      The desktop shortcut's choice, remembered for the next update, and
+      Programs, removed if this package leaves it empty.
+    -->
+    <Component Id="InstallStateComponent" Directory="LocalProgramsFolder" Guid="{981E0FA0-F974-408F-B266-3668FE9330BD}">
+      <RegistryValue Root="HKCU" Key="Software\ShnayimMikrah\Installer" Name="Version" Type="string" Value="$(var.ProductVersion)" KeyPath="yes" />
+      <RegistryValue Root="HKCU" Key="Software\ShnayimMikrah\Installer" Name="DesktopShortcutChoice" Type="string" Value="[DESKTOPSHORTCUT]" />
+      <RemoveFolder Id="RemoveLocalProgramsFolder" Directory="LocalProgramsFolder" On="uninstall" />
+    </Component>
+
+    <Feature Id="Main" Title="Shnayim Mikrah" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcutComponent" />
+      <ComponentRef Id="DesktopShortcutComponent" />
+      <ComponentRef Id="ToastActivatorComponent" />
+      <ComponentRef Id="InstallStateComponent" />
+    </Feature>
+  </Package>
+</Wix>

@@ -6,6 +6,20 @@ It always knows the right portion for the week, in Israel or abroad and in any y
 
 Accessibility is a core requirement, not an add-on. See [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md).
 
+## Install
+
+**Windows 10 and 11.** Open PowerShell and run:
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex
+```
+
+It finds the newest release on [GitHub Releases](https://github.com/Shnayim-Mikrah-V-Echad-Targum/app/releases), checks the installer's SHA-256 against the release's `SHA256SUMS.txt`, and installs Shnayim Mikrah for your Windows account alone, with no administrator rights, into `%LOCALAPPDATA%\Programs\Shnayim Mikrah`. You can also download `ShnayimMikrah-X.Y.Z-windows-x64.msi` from the release and open it. The app then offers each new release itself (Settings → About → Updates). To uninstall: Settings → Apps → Installed apps → Shnayim Mikrah. Your reading, settings and notes stay in `%APPDATA%\Shnayim Mikrah` until you delete them.
+
+**Phones and browsers.** Open [shnayimmikrah.org](https://shnayimmikrah.org/) and add it to your home screen (the app offers how). On Android you can also install the release's web-app APK, which opens the same site as an app.
+
+Accounts are not ready yet: to move your reading between devices, use Settings → Your data → Back up, then Restore on the other device.
+
 ## Features
 
 **Reading**

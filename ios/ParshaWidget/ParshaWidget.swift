@@ -18,11 +18,22 @@ private let timelineKey = "parsha_widget"
 /// The app's day turns at 3 a.m. (rolloverDate in lib/app/providers.dart).
 private let dayStartsAtHour = 3
 
+/// The calendar of the dates the app writes (LocalDate.toIso): Gregorian,
+/// in the device's time zone, whichever calendar the reader has chosen in
+/// Settings. In a Buddhist or Japanese year, today's date would never be
+/// one of the timeline's.
+private let gregorian: Calendar = {
+  var calendar = Calendar(identifier: .gregorian)
+  calendar.timeZone = .autoupdatingCurrent
+  return calendar
+}()
+
 // MARK: - The timeline the app sends
 
 struct WidgetTimeline: Decodable {
   struct Week: Decodable {
-    /// The parsha's Hebrew name, and its transliteration.
+    /// The parsha's Hebrew name, and its transliteration, which only the
+    /// English UI shows.
     let he: String
     let name: String
     /// How a screen reader names it, in the app's language.
@@ -104,7 +115,7 @@ struct WidgetTimeline: Decodable {
     guard let last = days.last?.date else { return [] }
     let rests = self.rests ?? [:]
     let end = max(last, rests.keys.max() ?? last)
-    let calendar = Calendar.current
+    let calendar = gregorian
     var changes = Set<Date>()
     // Each midnight from yesterday's. The app's day turns 3 hours after it by
     // the hours that pass, however the clocks change that night (as appDate
@@ -130,9 +141,9 @@ struct WidgetTimeline: Decodable {
   }
 }
 
-/// The local date of [date], as yyyy-MM-dd.
+/// The local date of [date], as yyyy-MM-dd in the Gregorian calendar.
 private func localDate(_ date: Date) -> String {
-  let parts = Calendar.current.dateComponents([.year, .month, .day], from: date)
+  let parts = gregorian.dateComponents([.year, .month, .day], from: date)
   return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
 }
 
@@ -388,11 +399,14 @@ struct ParshaWidgetView: View {
         .minimumScaleFactor(0.5)
         .padding(.top, 2)
 
-      Text(week.name)
-        .font(Serif.latin(18))
-        .foregroundColor(.ink)
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
+      // The Hebrew UI names the parsha in Hebrew alone.
+      if !timeline.rtl {
+        Text(week.name)
+          .font(Serif.latin(18))
+          .foregroundColor(.ink)
+          .lineLimit(1)
+          .minimumScaleFactor(0.6)
+      }
 
       if bars {
         VStack(spacing: 3) {

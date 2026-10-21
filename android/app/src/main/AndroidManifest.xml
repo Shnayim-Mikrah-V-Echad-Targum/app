@@ -82,8 +82,13 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/>
             </intent-filter>
         </receiver>
+        <!-- Posts each reminder when it is due. -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+        <!-- Arms the reminders again after a reboot or an update, as
+             flutter_local_notifications' ScheduledNotificationBootReceiver
+             does, to which it hands on, once it has forgotten those missed
+             while the phone was off (ReminderBootReceiver.kt). -->
+        <receiver android:exported="false" android:name=".ReminderBootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
