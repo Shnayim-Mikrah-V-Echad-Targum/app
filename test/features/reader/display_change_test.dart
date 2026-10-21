@@ -219,6 +219,16 @@ void main() {
       await loadTexts(tester);
       expect(topOf(tester, 8, 11), moreOrLessEquals(before, epsilon: 1));
     });
+
+    testWidgets('in the whole parsha in focus mode, under the aliyah\'s heading held at the top', (tester) async {
+      final c = await open(tester, '/read/5787:2/2?verse=8:11',
+          settings: settings.copyWith(fullTextWholeParsha: true, focusMode: true));
+      final before = topOf(tester, 8, 11);
+      expect(before, inInclusiveRange(0, 784));
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(showRashi: true));
+      await loadTexts(tester);
+      expect(topOf(tester, 8, 11), moreOrLessEquals(before, epsilon: 1));
+    });
   });
 
   testWidgets('the guided reader stays at its step as Rashi is turned on', (tester) async {

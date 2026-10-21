@@ -809,8 +809,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// The verse of the full text held where it stood while a change of
   /// display lays the text out again, perhaps once texts it now shows have
   /// loaded: its index among the verses shown, how far below the top of the
-  /// view its top was, and the aliyah and whole parsha it was held in.
+  /// viewport its top was ([_topInViewport]), and the aliyah and whole
+  /// parsha it was held in.
   ({int verse, double top, int aliyah, bool whole})? _held;
+
+  /// Where the top of [box] stands below the top of the full text's
+  /// viewport, under any heading held there, unlike [topInView]: a place
+  /// that holding a heading at the top or letting it go, as turning focus
+  /// mode on or off does in the whole parsha, leaves where it is.
+  static double _topInViewport(RenderBox box) =>
+      box.localToGlobal(Offset.zero, ancestor: RenderAbstractViewport.maybeOf(box)).dy;
 
   /// Holds the reader's place before a change of display lays the full text
   /// out again: the verse marked, focused or being read while it is in view,
@@ -825,12 +833,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (!position.hasContentDimensions) return;
     final whole = _wholeParsha;
     final verses = whole ? _parshaFor(shown.$1).verses : shown.$3.verses;
-    // Where verse i's block stands: its top below the top of the view, and
-    // its height.
-    (double, double)? placeOf(int i) {
+    // Where verse i's block stands: its top below the top of the view,
+    // beneath any heading held there (whether it is in view), its height,
+    // and its top below the top of the viewport (where it is held).
+    (double, double, double)? placeOf(int i) {
       final box = i < _verseKeys.length ? _verseKeys[i].currentContext?.findRenderObject() : null;
       if (box is! RenderBox || !box.attached || !box.hasSize || RenderAbstractViewport.maybeOf(box) == null) return null;
-      return (topInView(box, position), box.size.height);
+      return (topInView(box, position), box.size.height, _topInViewport(box));
     }
 
     final target = switch (_targetVerse) {
@@ -839,15 +848,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     };
     (int, double)? held;
     for (final i in [?_listen.verse, ?_focusedVerse, if (target >= 0) target]) {
-      if (placeOf(i) case (final top, _) when top >= -1 && top < position.viewportDimension) {
-        held = (i, top);
+      if (placeOf(i) case (final top, _, final at) when top >= -1 && top < position.viewportDimension) {
+        held = (i, at);
         break;
       }
     }
     if (held == null) {
       for (var i = 0; i < verses.length; i++) {
-        if (placeOf(i) case (final top, final height) when top + height / 2 > 0) {
-          held = (i, top);
+        if (placeOf(i) case (final top, final height, final at) when top + height / 2 > 0) {
+          held = (i, at);
           break;
         }
       }
@@ -876,7 +885,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           final box = i < _verseKeys.length ? _verseKeys[i].currentContext?.findRenderObject() : null;
           final double? to;
           if (box is RenderBox && box.attached && box.hasSize && RenderAbstractViewport.maybeOf(box) != null) {
-            to = p.pixels + topInView(box, p) - held.top;
+            to = p.pixels + _topInViewport(box) - held.top;
           } else {
             to = held.whole ? _estimatedOffset(i) : null;
           }
