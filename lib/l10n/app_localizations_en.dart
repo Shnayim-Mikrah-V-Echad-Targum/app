@@ -3746,4 +3746,154 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get guideAppBodyNoCommunity =>
       'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy or share it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.';
+
+  @override
+  String get updatesHeading => 'Updates';
+
+  @override
+  String get updatesThisVersion => 'This version';
+
+  @override
+  String get updatesCheckNow => 'Check now';
+
+  @override
+  String get updatesChecking => 'Checking…';
+
+  @override
+  String updatesLastChecked(String time) {
+    return 'Last checked $time';
+  }
+
+  @override
+  String get updatesNotChecked => 'Not checked yet';
+
+  @override
+  String get updatesQuiet => 'Updates wait until after Shabbat and Yom Tov.';
+
+  @override
+  String get updatesLatest => 'This is the latest version.';
+
+  @override
+  String get updatesWhatsNew => 'What’s new';
+
+  @override
+  String get updatesWhatsNewDesc => 'The release notes, on GitHub';
+
+  @override
+  String get updatesAuto => 'Check automatically';
+
+  @override
+  String get updatesAutoDesc =>
+      'At most twice a day, and never on Shabbat or Yom Tov';
+
+  @override
+  String updateReady(String version) {
+    return 'Version $version is ready to install';
+  }
+
+  @override
+  String get updateInstall => 'Install';
+
+  @override
+  String updateInstallTitle(String version) {
+    return 'Install version $version?';
+  }
+
+  @override
+  String get updateInstallBody =>
+      'Shnayim Mikrah will close, install the new version and open again. Your reading and settings stay as they are.';
+
+  @override
+  String get updatePreparing => 'Preparing the update…';
+
+  @override
+  String get updateCheckFailed =>
+      'Couldn’t check for updates. Please try again later.';
+
+  @override
+  String get updateInstallFailed =>
+      'The update couldn’t be prepared, and nothing was changed.';
+
+  @override
+  String updatesPreviewVersion(String version) {
+    return '$version (preview)';
+  }
+
+  @override
+  String get installTitle => 'Install the app';
+
+  @override
+  String get installDesc => 'Open Shnayim Mikrah like any other app';
+
+  @override
+  String get installHomeScreen => 'Add to home screen';
+
+  @override
+  String get installHomeScreenDesc =>
+      'Opens from your home screen, like any app';
+
+  @override
+  String get installDesktop => 'Install on this computer';
+
+  @override
+  String get installDesktopDesc => 'Opens in a window of its own, like any app';
+
+  @override
+  String get installIosTitle => 'Add to Home Screen';
+
+  @override
+  String get installIosDesc => 'From Safari’s Share menu';
+
+  @override
+  String get installIosStep1 =>
+      'Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.';
+
+  @override
+  String get installIosStep2 =>
+      'Choose “Add to Home Screen”, scrolling down if you need to.';
+
+  @override
+  String get installIosStep3 =>
+      'Tap Add. Shnayim Mikrah is now on your home screen.';
+
+  @override
+  String get installIosBackup =>
+      'The app on your home screen keeps its own reading. To take what you have read here, export it first in Settings, under Your data, and import it there.';
+
+  @override
+  String get installApkTitle => 'Android app (APK)';
+
+  @override
+  String get installApkDesc => 'Opens this website as an app';
+
+  @override
+  String get installApkBody =>
+      'An app for Android that opens this website as an app, with an icon of its own. Download the APK of the newest release and open it to install; your phone may ask you to allow installs from your browser.';
+
+  @override
+  String get installReleases => 'Open the releases page';
+
+  @override
+  String get installWindowsTitle => 'Windows app';
+
+  @override
+  String get installWindowsDesc => 'Installs with one line in PowerShell';
+
+  @override
+  String get installWindowsBody =>
+      'Open PowerShell, paste this line and press Enter. It downloads the newest release from GitHub, checks it, and installs it for you alone, with no administrator rights.';
+
+  @override
+  String get installWindowsMsi =>
+      'Or download the installer (MSI) from the releases page.';
+
+  @override
+  String get installCopied => 'Copied';
+
+  @override
+  String get installCardText =>
+      'Add Shnayim Mikrah to your home screen, and open it like any app.';
+
+  @override
+  String get installAction => 'Install';
 }
