@@ -6,6 +6,7 @@
 //   CAPTURE=1 SCREENS=today MODES=sepia,hcl flutter test test/screens/capture_test.dart
 //   CAPTURE=1 WORDS=1 MODES=big,bighe,huge,hugehe,hugetall,hugetallhe,hugewide flutter test test/screens/capture_test.dart
 //   CAPTURE=1 MODES=storeplay,storeplayhe flutter test test/screens/capture_test.dart
+//   CAPTURE=1 SCREENS=start_failure,start_failure_web flutter test test/screens/capture_test.dart
 //
 // The store modes ([_storeModes]) render only when MODES names them, at the
 // stores' screenshot sizes; tool/store/frame.py frames them for upload.
@@ -35,6 +36,7 @@ import 'package:shnayim_mikrah/app/city_providers.dart';
 import 'package:shnayim_mikrah/app/config.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
+import 'package:shnayim_mikrah/app/start_failure.dart';
 import 'package:shnayim_mikrah/core/calendar/city.dart';
 import 'package:shnayim_mikrah/core/calendar/jewish_holidays.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
@@ -3094,4 +3096,52 @@ void main() {
       }, skip: !_capture);
     }
   }
+
+  // The page the app shows in its place when it can't start, which follows
+  // the device, not the app's settings: start_failure as the installed app
+  // shows it, start_failure_web with Try again.
+  for (final MapEntry(key: tag, value: mode) in _startFailureModes.entries) {
+    if (!(_onlyModes?.contains(tag) ?? true)) continue;
+    for (final web in [false, true]) {
+      final name = web ? 'start_failure_web' : 'start_failure';
+      if (!(_only?.contains(name) ?? true)) continue;
+      testWidgets('$tag $name', (tester) async {
+        tester.view.physicalSize = mode.size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        tester.platformDispatcher
+          ..localesTestValue = [mode.locale]
+          ..platformBrightnessTestValue = mode.brightness
+          ..accessibilityFeaturesTestValue = FakeAccessibilityFeatures(highContrast: mode.highContrast)
+          ..textScaleFactorTestValue = mode.textScale;
+        addTearDown(tester.platformDispatcher.clearAllTestValues);
+        AppConfig.debugSupportEmail = 'support@shnayimmikrah.org';
+        addTearDown(() => AppConfig.debugSupportEmail = null);
+        // What a first visit to the web app that lost its connection meets.
+        final errors = RecentErrors()
+          ..add(FlutterErrorDetails(
+            exception: FlutterError('Unable to load asset: "assets/data/parshiyot.json".\n'
+                'The asset does not exist or has empty data.'),
+            stack: StackTrace.current,
+            context: ErrorDescription('while loading the parshiyot'),
+          ));
+        await tester.pumpWidget(StartFailureApp(onRetry: web ? () {} : null, errors: errors));
+        await tester.pump();
+        await _write(tester, '${tag}_$name');
+      }, skip: !_capture);
+    }
+  }
 }
+
+/// The device each mode of the start-up failure page stands for.
+const _startFailureModes = <String, ({Size size, Locale locale, Brightness brightness, bool highContrast, double textScale})>{
+  'phone': (size: Size(412, 915), locale: Locale('en', 'US'), brightness: Brightness.light, highContrast: false, textScale: 1),
+  'dark': (size: Size(412, 915), locale: Locale('en', 'US'), brightness: Brightness.dark, highContrast: false, textScale: 1),
+  'he': (size: Size(412, 915), locale: Locale('he', 'IL'), brightness: Brightness.light, highContrast: false, textScale: 1),
+  'hc': (size: Size(412, 915), locale: Locale('en', 'US'), brightness: Brightness.dark, highContrast: true, textScale: 1),
+  'hcl': (size: Size(412, 915), locale: Locale('en', 'US'), brightness: Brightness.light, highContrast: true, textScale: 1),
+  'desktop': (size: Size(1366, 860), locale: Locale('en', 'US'), brightness: Brightness.light, highContrast: false, textScale: 1),
+  'deskhe': (size: Size(1366, 860), locale: Locale('he', 'IL'), brightness: Brightness.dark, highContrast: false, textScale: 1),
+  'bigphone': (size: Size(412, 915), locale: Locale('en', 'US'), brightness: Brightness.light, highContrast: false, textScale: 2),
+  'hugehe': (size: Size(320, 640), locale: Locale('he', 'IL'), brightness: Brightness.light, highContrast: false, textScale: 3),
+};

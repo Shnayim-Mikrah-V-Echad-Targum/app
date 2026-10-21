@@ -1,0 +1,10 @@
+// The widget extension's base settings: Flutter's generated ones alone, for
+// the version and build number, which must be the app's (FLUTTER_BUILD_NAME
+// and FLUTTER_BUILD_NUMBER).
+//
+// Not Flutter/Debug.xcconfig or Release.xcconfig, the app's: while a plugin
+// (flutter_tts) has no Swift package, flutter build has them include the
+// CocoaPods settings of the app, whose linker flags would link the extension
+// against that plugin's framework, and through it the Flutter engine, which
+// WidgetKit would then load each time it draws the widget.
+#include "../Flutter/Generated.xcconfig"

@@ -209,7 +209,7 @@ class PassPips extends StatelessWidget {
 /// wide. The hairlines stop 10 short of the centre, either side of an 8 px
 /// gold-leaf lozenge.
 class SeferDivider extends StatelessWidget {
-  const SeferDivider({super.key, this.width, this.progress = 1}) : assert(progress >= 0 && progress <= 1);
+  const SeferDivider({super.key, this.width, this.progress = 1, this.inks}) : assert(progress >= 0 && progress <= 1);
 
   static const double maxWidth = 200;
   static const double height = 16;
@@ -221,16 +221,15 @@ class SeferDivider extends StatelessWidget {
   /// lozenge alone) to 1, for the completion animation (§8).
   final double progress;
 
+  /// Its inks where no theme gives them (the page the app shows when it
+  /// can't start): the hairlines', their width and the lozenge's.
+  final ({Color rule, double ruleWidth, Color lozenge})? inks;
+
   @override
   Widget build(BuildContext context) {
-    final sefer = SeferColors.of(context);
+    final (:rule, :ruleWidth, :lozenge) = inks ?? _themeInks(context);
     final painter = CustomPaint(
-      painter: _DividerPainter(
-        rule: _ink(context, sefer.hairline),
-        ruleWidth: sefer.hairlineWidth,
-        lozenge: _ink(context, sefer.goldLeaf),
-        progress: progress,
-      ),
+      painter: _DividerPainter(rule: rule, ruleWidth: ruleWidth, lozenge: lozenge, progress: progress),
     );
     return ExcludeSemantics(
       child: Center(
@@ -240,6 +239,11 @@ class SeferDivider extends StatelessWidget {
             : SizedBox(width: width, height: height, child: painter),
       ),
     );
+  }
+
+  static ({Color rule, double ruleWidth, Color lozenge}) _themeInks(BuildContext context) {
+    final sefer = SeferColors.of(context);
+    return (rule: _ink(context, sefer.hairline), ruleWidth: sefer.hairlineWidth, lozenge: _ink(context, sefer.goldLeaf));
   }
 }
 

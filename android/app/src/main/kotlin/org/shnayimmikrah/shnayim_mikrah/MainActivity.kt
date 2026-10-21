@@ -65,11 +65,11 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Android recreates the activity (once its process was stopped in the
-        // background, say), and reopens it from Recents, with the intent that
-        // first started it. After a shortcut on the app's icon started it, that
-        // intent still names the shortcut, whose page would then open again in
-        // place of the one the user left, even from the plain icon.
+        // Android brings the activity back with the intent that first started
+        // it: from Recents, and with a saved state once it was stopped in the
+        // background (its process ended, say). After a shortcut on the app's
+        // icon started it, that intent still names the shortcut, whose page
+        // would then open again in place of the one the user left.
         val reopened = savedInstanceState != null ||
             (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
         if (reopened) {
@@ -80,15 +80,25 @@ class MainActivity : FlutterActivity() {
                 intent.action = Intent.ACTION_MAIN
                 intent.data = null
             }
+            // And a tapped reminder, which flutter_local_notifications reads
+            // from the intent's action: the Erev Shabbat reminder's week
+            // would open over Today again each time the activity comes back
+            // this way. (A tap on the icon, or on a reminder, while it is
+            // recreated comes after this, as a new intent: onNewIntent.)
+            if (intent.action == SELECT_NOTIFICATION || intent.action == SELECT_FOREGROUND_NOTIFICATION) {
+                intent.action = Intent.ACTION_MAIN
+            }
         }
         super.onCreate(savedInstanceState)
     }
 
     override fun onNewIntent(intent: Intent) {
-        // A shortcut chosen, or the widget tapped, while the activity is being
-        // recreated comes as a new intent, perhaps before Flutter is
-        // listening. Keeping it as the activity's own lets quick_actions and
-        // home_widget find it when the app asks what launched it.
+        // A shortcut chosen, the widget or a reminder tapped, or the plain
+        // icon, while the activity is being recreated comes as a new intent,
+        // perhaps before Flutter is listening. Keeping it as the activity's
+        // own lets quick_actions, home_widget and flutter_local_notifications
+        // find it, and not the one before it, when the app asks what
+        // launched it.
         setIntent(intent)
         super.onNewIntent(intent)
     }
@@ -98,6 +108,13 @@ class MainActivity : FlutterActivity() {
         // QuickActions.EXTRA_ACTION; test/app/app_shortcuts_platform_test.dart
         // checks that the two agree).
         const val QUICK_ACTION_EXTRA = "some unique action key"
+
+        // The actions flutter_local_notifications gives the intent of a tapped
+        // notification, and of a tapped action on one (its SELECT_NOTIFICATION
+        // and SELECT_FOREGROUND_NOTIFICATION_ACTION;
+        // test/app/reminders_platform_test.dart checks that they agree).
+        const val SELECT_NOTIFICATION = "SELECT_NOTIFICATION"
+        const val SELECT_FOREGROUND_NOTIFICATION = "SELECT_FOREGROUND_NOTIFICATION"
     }
 }
 

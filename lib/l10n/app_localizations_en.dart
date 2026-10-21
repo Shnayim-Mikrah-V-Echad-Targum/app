@@ -2218,6 +2218,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorPanelMessage => 'Something on this page didn’t load.';
 
   @override
+  String get startFailedTitle => 'Shnayim Mikrah couldn’t open.';
+
+  @override
+  String get startFailedReopen =>
+      'Closing the app and opening it again may help.';
+
+  @override
+  String get startFailedReload => 'Check the connection, then try again.';
+
+  @override
+  String startFailedWriteTo(String address) {
+    return 'If that doesn’t help, copy the details and send them to $address.';
+  }
+
+  @override
+  String get startFailedWriteToUs =>
+      'If that doesn’t help, copy the details and send them to us.';
+
+  @override
   String get linkOpenFailed => 'The link couldn’t be opened here.';
 
   @override

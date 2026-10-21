@@ -6,7 +6,7 @@
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,6 +17,8 @@ const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
 const { cacheNames, fileNavigation, missingFromPrecache, writeUpdateScript } = require('./sw_build.cjs');
+// Glob matching as Workbox's globPatterns use it (Node 20.17 and later).
+const { matchesGlob } = require('node:path');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
 
 const dirs = [];
@@ -282,11 +284,15 @@ function fakeWorker(state) {
 
 /// Runs flutter_bootstrap.js (without Flutter's own loader) on a page at
 /// [href], under the site's [base], whose service worker [controller] is set
-/// on a later visit, after the page has loaded [loaded]. The registration
-/// has [waiting] and [installing] workers, if given; the clock reads [now]
-/// until the test moves it.
+/// on a later visit, after the page has loaded [loaded]. A version of the
+/// app is [active] as the page registers the worker on a later visit, also
+/// where a hard reload loaded the page past the worker (no [controller]); on
+/// a first visit, the first version is active only once the page waits for
+/// it (ready). The registration has [waiting] and [installing] workers, if
+/// given; the clock reads [now] until the test moves it.
 async function bootstrap({
   controller = null,
+  active: activeAtStart = controller !== null,
   loaded = [],
   launchQueue = false,
   href = 'https://example.org/app/today',
@@ -300,7 +306,7 @@ async function bootstrap({
   const clock = { now: 1e12 };
   const active = fakeWorker('activated');
   const registration = {
-    active,
+    active: activeAtStart ? active : null,
     waiting,
     installing,
     listeners: {},
@@ -315,7 +321,10 @@ async function bootstrap({
       registered.push(url);
       return registration;
     },
-    ready: Promise.resolve(registration),
+    get ready() {
+      registration.active = active;
+      return Promise.resolve(registration);
+    },
     addEventListener: (type, listener, options) => serviceWorker.listeners.push({ type, listener, options }),
   };
   const document = {
@@ -503,7 +512,11 @@ describe('the bootstrap', () => {
   const restartListeners = (serviceWorker) => serviceWorker.listeners.filter(({ options }) => options?.once);
   const takeoverListeners = (serviceWorker) =>
     serviceWorker.listeners.filter(({ type, options }) => type === 'controllerchange' && !options?.once);
-  const changeController = (serviceWorker) => serviceWorker.listeners.forEach(({ listener }) => listener());
+  /// A new [controller] takes the page over.
+  const changeController = (serviceWorker, controller) => {
+    serviceWorker.controller = controller;
+    serviceWorker.listeners.forEach(({ listener }) => listener());
+  };
 
   it('restarts into the new version: it takes over, and the page reloads under it', async () => {
     const waiting = fakeWorker('installed');
@@ -517,7 +530,7 @@ describe('the bootstrap', () => {
     const restarts = restartListeners(serviceWorker);
     assert.equal(restarts.length, 1);
     assert.equal(restarts[0].type, 'controllerchange');
-    changeController(serviceWorker);
+    changeController(serviceWorker, waiting);
     assert.equal(page.location.reloads, 1);
     // Its own restart, not another window's.
     assert.ok(!dispatched.includes('sm-update-took-over'));
@@ -539,7 +552,7 @@ describe('the bootstrap', () => {
     const { page, serviceWorker, dispatched } = await bootstrap({ controller: {}, waiting });
     assert.equal(takeoverListeners(serviceWorker).length, 1);
     waiting.become('activated');
-    changeController(serviceWorker);
+    changeController(serviceWorker, waiting);
     assert.equal(page.smUpdateTookOver, true);
     assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
     // The app then saves and restarts, which simply reloads.
@@ -549,14 +562,75 @@ describe('the bootstrap', () => {
   });
 
   it('takes the first version taking over a first visit for no restart', async () => {
-    const { page, serviceWorker, dispatched } = await bootstrap();
-    changeController(serviceWorker);
+    const { page, registration, serviceWorker, dispatched } = await bootstrap();
+    changeController(serviceWorker, registration.active);
     assert.equal(page.smUpdateTookOver, undefined);
     assert.deepEqual(dispatched, []);
     // A later version, which another window restarted into, is one.
-    changeController(serviceWorker);
+    changeController(serviceWorker, fakeWorker('activated'));
     assert.equal(page.smUpdateTookOver, true);
     assert.deepEqual(dispatched, ['sm-update-took-over']);
+  });
+
+  // A hard reload (Ctrl+Shift+R) loads the page past the worker, which then
+  // controls nothing, though it is active and the window's code is as old as
+  // any other window's. Taken for a first visit, the window was never
+  // offered a new version, and when another window's restart let it take
+  // over every window, this one went on in the old version's code with the
+  // new version's files.
+  describe('in a window that a hard reload loaded past the worker', () => {
+    it('offers a new version, waiting or once it has installed', async () => {
+      const waiting = fakeWorker('installed');
+      const first = await bootstrap({ active: true, waiting });
+      assert.equal(first.page.smUpdateReady, waiting);
+      assert.deepEqual(first.dispatched, ['sm-update-ready']);
+
+      const { page, registration, dispatched } = await bootstrap({ active: true });
+      const later = fakeWorker('installing');
+      registration.installing = later;
+      registration.listeners.updatefound();
+      later.become('installed');
+      assert.equal(page.smUpdateReady, later);
+      assert.deepEqual(dispatched, ['sm-update-ready']);
+    });
+
+    it('restarts when the new version takes it over, at a restart in another window or once installed', async () => {
+      const waiting = fakeWorker('installed');
+      const { page, serviceWorker, dispatched } = await bootstrap({ active: true, waiting });
+      waiting.become('activated');
+      changeController(serviceWorker, waiting);
+      assert.equal(page.smUpdateTookOver, true);
+      assert.deepEqual(dispatched, ['sm-update-ready', 'sm-update-took-over']);
+      page.smRestart();
+      assert.equal(page.location.reloads, 1);
+    });
+
+    it('restarts into the new version itself', async () => {
+      const waiting = fakeWorker('installed');
+      const { page, serviceWorker, dispatched } = await bootstrap({ active: true, waiting });
+      page.smRestart();
+      assert.deepEqual(waiting.messages, [{ type: 'SKIP_WAITING' }]);
+      changeController(serviceWorker, waiting);
+      assert.equal(page.location.reloads, 1);
+      assert.ok(!dispatched.includes('sm-update-took-over'));
+    });
+
+    it('is no first visit: what it loaded is left to the worker', async () => {
+      const { messages } = await bootstrap({ active: true, loaded });
+      assert.deepEqual(messages, []);
+    });
+  });
+
+  it('takes no restart for the version a window loaded under taking it over, nor for none', async () => {
+    // A window that registered the worker just as the first version, which
+    // another window installed, became active, and before it took this
+    // window over.
+    const { page, registration, serviceWorker, dispatched } = await bootstrap({ active: true });
+    changeController(serviceWorker, registration.active);
+    // The worker gone, as when the site's data is cleared.
+    changeController(serviceWorker, null);
+    assert.equal(page.smUpdateTookOver, undefined);
+    assert.deepEqual(dispatched, []);
   });
 
   describe("shows a shortcut's page in the window it opens in", () => {
@@ -720,6 +794,51 @@ describe("the service worker's update", () => {
   });
 });
 
+/// workbox-config.cjs as Workbox reads it, for a build whose caches are
+/// CURRENT.
+function workboxConfig() {
+  const module = { exports: {} };
+  const required = {
+    'node:path': require('node:path'),
+    './tool/web/sw_build.cjs': {
+      cacheNames: () => CURRENT,
+      fileNavigation,
+      writeUpdateScript: () => 'sw_update.0123456789ab.js',
+    },
+  };
+  vm.runInNewContext(read('workbox-config.cjs'), {
+    module,
+    exports: module.exports,
+    __dirname: '/repo',
+    require: (name) => required[name] ?? assert.fail(`workbox-config.cjs requires ${name}`),
+  });
+  return module.exports;
+}
+
+/// The files the app bundles, pubspec.yaml's assets and fonts, at their
+/// paths in the web build (assets/<asset>). A folder holds the files
+/// directly in it.
+function bundledAssets() {
+  const lines = read('pubspec.yaml').split('\n');
+  const declared = [];
+  for (const line of lines.slice(lines.indexOf('  assets:') + 1)) {
+    if (/^ {0,2}\S/.test(line)) break;
+    const entry = /^ {4}- (\S+)$/.exec(line);
+    if (entry) declared.push(entry[1]);
+  }
+  for (const line of lines) {
+    const font = /^\s+- asset: (\S+)$/.exec(line);
+    if (font) declared.push(font[1]);
+  }
+  return declared
+    .flatMap((asset) => {
+      if (!asset.endsWith('/')) return [asset];
+      const dir = new URL(asset, ROOT);
+      return readdirSync(dir).filter((name) => statSync(new URL(name, dir)).isFile()).map((name) => asset + name);
+    })
+    .map((asset) => `assets/${asset}`);
+}
+
 describe('the build', () => {
   /// A build/web with an engine revision and the given texts.
   function build(texts) {
@@ -749,10 +868,31 @@ describe('the build', () => {
   it('writes the update script with the caches filled in', () => {
     const web = build({ 'a.json': '1' });
     const names = cacheNames(web);
-    assert.equal(writeUpdateScript(web, names), 'sw_update.js');
-    const script = readFileSync(join(web, 'sw_update.js'), 'utf8');
+    const name = writeUpdateScript(web, names);
+    const script = readFileSync(join(web, name), 'utf8');
     assert.ok(script.includes(`\nconst CACHES = ${JSON.stringify(names)};\n`));
     assert.doesNotMatch(script, /CACHES = null/);
+  });
+
+  // The browser takes the scripts a new worker imports from its own cache
+  // while that copy is fresh, for ten minutes on GitHub Pages. Under the
+  // same name in every build, a new version's worker could run the older
+  // version's script, with its caches: it left its own engine's and books'
+  // caches empty, and the app didn't open offline after the update.
+  it('names the update script after its content, so that no version imports an older one', () => {
+    const web = build({ 'a.json': '1' });
+    const names = cacheNames(web);
+    const name = writeUpdateScript(web, names);
+    assert.match(name, /^sw_update\.[0-9a-f]{12}\.js$/);
+    assert.equal(writeUpdateScript(web, names), name, 'the same caches, the same name: a build again changes nothing');
+    const other = writeUpdateScript(web, { ...names, content: 'content-0123456789ab' });
+    assert.notEqual(other, name, 'other caches, another name');
+    // Only this build's script is left, not an earlier build's, nor one
+    // from before the scripts were named so.
+    writeFileSync(join(web, 'sw_update.js'), '');
+    writeFileSync(join(web, 'sw_update.js.map'), '');
+    assert.equal(writeUpdateScript(web, names), name);
+    assert.deepEqual(readdirSync(web).filter((file) => file.startsWith('sw_update')).sort(), [name, 'sw_update.js.map']);
   });
 
   it('is what the Workbox config uses', () => {
@@ -773,11 +913,15 @@ describe('the build', () => {
     }
     const entry = (url) => `{url:"${url}",revision:"0123"}`;
     const worker = (urls) => `define(["./workbox-1"],(function(e){"use strict";e.precacheAndRoute([${urls.map(entry).join(',')}],{})}));`;
-    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', 'icons/Icon-192.png'];
+    const legal = 'assets/assets/legal/legal.json';
+    const all = ['index.html', 'flutter.js', 'flutter_bootstrap.js', 'main.dart.js', 'main.dart.js_1.part.js', legal, 'icons/Icon-192.png'];
     writeFileSync(join(web, 'sw.js'), worker(all));
     assert.deepEqual(missingFromPrecache(web), []);
     writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => !url.startsWith('main.dart.js'))));
     assert.deepEqual(missingFromPrecache(web), ['main.dart.js', 'main.dart.js_1.part.js']);
+    // The policies' text, without which their pages show only an error.
+    writeFileSync(join(web, 'sw.js'), worker(all.filter((url) => url !== legal)));
+    assert.deepEqual(missingFromPrecache(web), [legal]);
     // Unminified, as Workbox's development mode writes it.
     writeFileSync(join(web, 'sw.js'), `precacheAndRoute(${JSON.stringify(all.slice(1).map((url) => ({ url, revision: '1' })), null, 2)});`);
     assert.deepEqual(missingFromPrecache(web), ['index.html']);
@@ -843,6 +987,31 @@ describe('the build', () => {
     assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, 'nothing changes it after');
     assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
     assert.match(read('docs/RELEASE.md'), /`cp build\/web\/index\.html build\/web\/404\.html`/);
+  });
+
+  // The policies' text (assets/legal/legal.json) was neither precached nor
+  // cached on use: offline, /legal/privacy and About's policies showed only
+  // "Something went wrong".
+  it('keeps every file the app bundles for offline use, the policies precached', () => {
+    const config = workboxConfig();
+    const precached = (path) =>
+      config.globPatterns.some((glob) => matchesGlob(path, glob)) && !config.globIgnores.some((glob) => matchesGlob(path, glob));
+    const cachedOnUse = (path) =>
+      config.runtimeCaching.some(({ urlPattern }) => typeof urlPattern.test === 'function' && urlPattern.test(`https://example.org/app/${path}`));
+    const assets = bundledAssets();
+    assert.ok(assets.length > 20, 'the app bundles its files');
+    for (const path of assets) assert.ok(precached(path) || cachedOnUse(path), path);
+    // Precached, not cached on use, or a policy never opened online would
+    // not open offline.
+    for (const path of ['assets/assets/legal/legal.json', 'assets/assets/data/parshiyot.json']) {
+      assert.ok(assets.includes(path), path);
+      assert.ok(precached(path), path);
+    }
+    // The books, the fonts loaded on demand: cached as they are read, as the
+    // update script keeps them.
+    for (const path of assets.filter((p) => /^assets\/assets\/(text|fonts\/(optional|rashi))\//.test(p))) {
+      assert.ok(!precached(path) && cachedOnUse(path), path);
+    }
   });
 
   it("precaches main.dart.js's deferred parts, which the app loads once it is up, for offline use", () => {

@@ -84,6 +84,32 @@ void main() {
     expect(swift, isNot(contains('bySettingHour')));
   });
 
+  test("both widgets read today's date as the app writes it, in the Gregorian calendar", () {
+    // The app's dates are ISO and Gregorian, whatever the device's calendar.
+    final day = WidgetDay(
+      date: LocalDate(2026, 10, 13),
+      until: null,
+      week: 0,
+      kind: WidgetDayKind.weekday,
+      eyebrow: '',
+      line: '',
+    );
+    expect(day.toJson()['date'], '2026-10-13');
+    expect(provider, contains('Locale.ROOT,\n                "%04d-%02d-%02d"'));
+
+    // iOS's Calendar.current is the calendar the reader picks in Settings,
+    // which may count Buddhist years (2569) or Japanese ones (Reiwa 8): today
+    // would then never be one of the timeline's days. The widget keeps to
+    // the Gregorian, in the device's time zone. (Android's
+    // Calendar.getInstance() is always Gregorian.)
+    expect(swift, contains('var calendar = Calendar(identifier: .gregorian)'));
+    expect(swift, contains('calendar.timeZone = .autoupdatingCurrent'));
+    expect(swift, contains('let parts = gregorian.dateComponents([.year, .month, .day], from: date)'));
+    expect(swift, contains('let calendar = gregorian'));
+    expect(swift, isNot(contains('Calendar.current')));
+    expect(swift, isNot(contains('Calendar.autoupdatingCurrent')));
+  });
+
   test('past their days, both widgets still rest on Shabbat and Yom Tov', () {
     expect(provider, contains('timeline.rests[appDate(now)]'));
     expect(provider, contains('date in timeline.rests'));
@@ -388,9 +414,11 @@ void main() {
         expect(settings['INFOPLIST_FILE'], 'ParshaWidget/Info.plist');
         expect(settings['CODE_SIGN_ENTITLEMENTS'], 'ParshaWidget/ParshaWidget.entitlements');
         expect(runner['CODE_SIGN_ENTITLEMENTS'], 'Runner/Runner.entitlements');
-        // Its version is the app's, from Flutter's xcconfig.
-        expect(pbxproj.field(config, 'baseConfigurationReference'), pbxproj.field(
-            runnerConfigs.firstWhere((c) => name(c) == name(config)), 'baseConfigurationReference'));
+        // Its version is the app's, from Flutter's generated settings, which
+        // its own xcconfig includes (see below).
+        expect(settings['CURRENT_PROJECT_VERSION'], r'$(FLUTTER_BUILD_NUMBER)');
+        expect(settings['MARKETING_VERSION'], r'$(FLUTTER_BUILD_NAME)');
+        expect(runner['CURRENT_PROJECT_VERSION'], r'$(FLUTTER_BUILD_NUMBER)');
         for (final key in settings.keys) {
           expect(key.startsWith('CODE_SIGN') && key != 'CODE_SIGN_ENTITLEMENTS', isFalse, reason: key);
           expect(key, isNot(anyOf('DEVELOPMENT_TEAM', 'PROVISIONING_PROFILE_SPECIFIER')));
@@ -399,6 +427,49 @@ void main() {
       for (final file in ['ios/ParshaWidget/Info.plist', 'ios/ParshaWidget/ParshaWidget.entitlements', 'ios/Runner/Runner.entitlements']) {
         expect(File(file).existsSync(), isTrue, reason: file);
       }
+    });
+
+    // flutter build makes Flutter/Debug.xcconfig and Release.xcconfig, the
+    // app's, include the app's CocoaPods settings while a plugin
+    // (flutter_tts) has no Swift package. With them the extension would be
+    // linked against that plugin's framework, and through it the Flutter
+    // engine, which WidgetKit would load each time it draws the widget.
+    test("it links none of the app's frameworks", () {
+      final widget = pbxproj.target('ParshaWidget')!;
+      final group = pbxproj.groupNamed('ParshaWidget')!;
+      for (final config in pbxproj.list(pbxproj.field(widget, 'buildConfigurationList')!, 'buildConfigurations')) {
+        final base = pbxproj.field(config, 'baseConfigurationReference')!;
+        expect(pbxproj.list(group, 'children'), contains(base));
+        expect(pbxproj.pathsOf(base, 'ParshaWidget'), ['ParshaWidget/ParshaWidget.xcconfig'],
+            reason: pbxproj.field(config, 'name'));
+        expect(pbxproj.settings(config).keys, isNot(contains('OTHER_LDFLAGS')));
+      }
+      final xcconfig = File('ios/ParshaWidget/ParshaWidget.xcconfig').readAsStringSync();
+      expect([for (final line in xcconfig.split('\n')) if (line.trim().isNotEmpty && !line.startsWith('//')) line],
+          ['#include "../Flutter/Generated.xcconfig"']);
+      // Which flutter build writes, with the app's version, and Flutter's
+      // own xcconfigs include.
+      for (final mode in ['Debug', 'Release']) {
+        expect(File('ios/Flutter/$mode.xcconfig').readAsStringSync(), contains('#include "Generated.xcconfig"'));
+      }
+      // The app's targets keep Flutter's.
+      for (final config
+          in pbxproj.list(pbxproj.field(pbxproj.target('Runner')!, 'buildConfigurationList')!, 'buildConfigurations')) {
+        final base = pbxproj.field(config, 'baseConfigurationReference')!;
+        expect(pbxproj.field(base, 'path'), anyOf('Flutter/Debug.xcconfig', 'Flutter/Release.xcconfig'));
+      }
+      // Nor does the extension link anything of its own beyond the system's.
+      final frameworks = pbxproj.list(widget, 'buildPhases')
+          .singleWhere((phase) => pbxproj.isa(phase) == 'PBXFrameworksBuildPhase');
+      expect(pbxproj.list(frameworks, 'files'), isEmpty);
+      expect(pbxproj.list(widget, 'packageProductDependencies'), isEmpty);
+
+      // CI checks the extension it builds.
+      final ci = File('.github/workflows/ci.yml').readAsStringSync();
+      expect(ci, contains("- name: The widget extension links none of the app's frameworks"));
+      expect(ci, contains('widget=build/ios/iphoneos/Runner.app/PlugIns/ParshaWidget.appex/ParshaWidget'));
+      expect(ci, contains(r'otool -L "$widget" | tail -n +2'));
+      expect(ci, contains(r"grep -E '@rpath/.*\.framework/|@executable_path|@loader_path'; then"));
     });
 
     test("every file the extension builds is on disk", () {

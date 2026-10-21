@@ -19,7 +19,7 @@ void main() {
 
   group('systemBarsStyle', () {
     test('a light theme has transparent bars with dark icons', () {
-      final style = systemBarsStyle(theme(AppThemeMode.light), behindNavigationBar: true);
+      final style = systemBarsStyle(theme(AppThemeMode.light).colorScheme, behindNavigationBar: true);
       expect(style.statusBarColor, Colors.transparent);
       expect(style.statusBarIconBrightness, Brightness.dark);
       expect(style.statusBarBrightness, Brightness.light, reason: 'iOS: what lies behind the status bar');
@@ -32,7 +32,7 @@ void main() {
 
     test('a dark theme has light icons', () {
       for (final mode in [AppThemeMode.dark, AppThemeMode.highContrastDark]) {
-        final style = systemBarsStyle(theme(mode), behindNavigationBar: true);
+        final style = systemBarsStyle(theme(mode).colorScheme, behindNavigationBar: true);
         expect(style.statusBarIconBrightness, Brightness.light, reason: '$mode');
         expect(style.statusBarBrightness, Brightness.dark, reason: '$mode');
         expect(style.systemNavigationBarIconBrightness, Brightness.light, reason: '$mode');
@@ -41,7 +41,7 @@ void main() {
 
     test('sepia and high-contrast light have dark icons', () {
       for (final mode in [AppThemeMode.sepia, AppThemeMode.highContrastLight]) {
-        final style = systemBarsStyle(theme(mode), behindNavigationBar: true);
+        final style = systemBarsStyle(theme(mode).colorScheme, behindNavigationBar: true);
         expect(style.statusBarIconBrightness, Brightness.dark, reason: '$mode');
         expect(style.systemNavigationBarIconBrightness, Brightness.dark, reason: '$mode');
       }
@@ -54,7 +54,7 @@ void main() {
         (AppThemeMode.dark, Palettes.dark.surface),
         (AppThemeMode.sepia, Palettes.sepia.surface),
       ]) {
-        final style = systemBarsStyle(theme(mode), behindNavigationBar: false);
+        final style = systemBarsStyle(theme(mode).colorScheme, behindNavigationBar: false);
         expect(style.systemNavigationBarColor, surface, reason: '$mode');
         expect(style.statusBarColor, Colors.transparent, reason: '$mode');
       }
@@ -65,7 +65,7 @@ void main() {
     test('on the web, the status bar takes the surface colour', () {
       for (final mode in AppThemeMode.values.where((m) => m != AppThemeMode.system)) {
         final t = theme(mode);
-        final style = systemBarsStyle(t, behindNavigationBar: true, web: true);
+        final style = systemBarsStyle(t.colorScheme, behindNavigationBar: true, web: true);
         expect(style.statusBarColor, t.colorScheme.surface, reason: '$mode');
       }
     });

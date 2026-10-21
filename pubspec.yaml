@@ -24,9 +24,15 @@ dependencies:
   go_router: ^18.0.2
   intl: any
   package_info_plus: ^10.2.2
+  # Where shared_preferences keeps its file on Windows, to set a damaged one
+  # aside (lib/services/preferences_file_io.dart).
+  path_provider: ^2.1.6
   quick_actions: ^1.1.1
   share_plus: ^13.3.1
   shared_preferences: ^2.5.6
+  # Preferences kept in memory where the device's can't be read
+  # (lib/services/preferences_recovery.dart).
+  shared_preferences_platform_interface: ^2.4.2
   supabase_flutter: ^2.18.0
   timezone: ^0.11.1
   url_launcher: ^6.3.3

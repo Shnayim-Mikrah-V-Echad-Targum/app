@@ -1,6 +1,9 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
+#include <appmodel.h>
+
+#include <string>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -12,22 +15,66 @@ namespace {
 // second instance would overwrite progress logged in the first.
 constexpr const wchar_t kInstanceMutexName[] = L"Local\\org.shnayimmikrah.app";
 
-// How long a second launch waits for an instance that has no window yet,
-// because it is starting or closing.
+// How long a second launch waits for an instance that has no window yet, or
+// one that is closing.
 constexpr DWORD kInstanceWaitMs = 5000;
 
-// Brings the window of the instance already running to the front. Returns
-// false if it has no window.
-bool ActivateRunningInstance() {
-  HWND window = ::FindWindowW(kWindowClassName, nullptr);
-  if (window == nullptr) {
-    return false;
+// Where COM looks for how to start the app's toast activator: the class that
+// the notification plugin (flutter_local_notifications_windows) registers
+// in the running app, and names to Windows as the app's CustomActivator, to
+// hear of clicks on its notifications. The class id is
+// WindowsInitializationSettings.guid in lib/services/notifications.dart and
+// msix_config's toast_activator in pubspec.yaml.
+constexpr const wchar_t kToastActivatorServerKey[] =
+    L"Software\\Classes\\CLSID\\{7c1d6a3e-5b2f-4d8e-9a61-3f0c2e8b4d57}"
+    L"\\LocalServer32";
+
+// The window of the instance already running, or null if it has none. A
+// window still hidden, as it waits for its first frame, is found too: it
+// shows itself once the frame is drawn, or after a while without one
+// (FlutterWindow::ShowOnce), so an instance stuck before its first frame
+// can't keep every later launch from showing.
+HWND FindRunningWindow() {
+  return ::FindWindowW(kWindowClassName, nullptr);
+}
+
+// Whether |window| is closing (see kClosingProperty): it may already be
+// hidden, and is about to be gone.
+bool IsClosing(HWND window) {
+  return ::GetPropW(window, kClosingProperty) != nullptr;
+}
+
+// Lets a click on a reminder's notification start the app when it isn't
+// running, as it is run from its folder rather than installed. The MSIX's
+// manifest declares how to start it (com:ExeServer). Run from the folder,
+// the plugin registers its class only while the app runs, and with nothing
+// to start for it, Windows drops the click once the app has closed, as it
+// has when most reminders come. Written on every start, since the folder can
+// move. COM starts the app with -Embedding, which it ignores.
+void RegisterToastActivatorServer() {
+  UINT32 length = 0;
+  if (::GetCurrentPackageFullName(&length, nullptr) !=
+      APPMODEL_ERROR_NO_PACKAGE) {
+    return;
   }
-  if (::IsIconic(window)) {
-    ::ShowWindow(window, SW_RESTORE);
+  wchar_t path[MAX_PATH];
+  const DWORD path_length = ::GetModuleFileNameW(nullptr, path, MAX_PATH);
+  if (path_length == 0 || path_length >= MAX_PATH) {
+    return;
   }
-  ::SetForegroundWindow(window);
-  return true;
+  const std::wstring command =
+      L"\"" + std::wstring(path, path_length) + L"\"";
+  HKEY key = nullptr;
+  if (::RegCreateKeyExW(HKEY_CURRENT_USER, kToastActivatorServerKey, 0,
+                        nullptr, REG_OPTION_NON_VOLATILE, KEY_SET_VALUE,
+                        nullptr, &key, nullptr) != ERROR_SUCCESS) {
+    return;
+  }
+  // The key's default value, with its terminating null.
+  ::RegSetValueExW(key, nullptr, 0, REG_SZ,
+                   reinterpret_cast<const BYTE*>(command.c_str()),
+                   static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+  ::RegCloseKey(key);
 }
 
 }  // namespace
@@ -36,20 +83,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
   HANDLE instance_mutex = ::CreateMutexW(nullptr, TRUE, kInstanceMutexName);
   if (instance_mutex != nullptr && ::GetLastError() == ERROR_ALREADY_EXISTS) {
-    if (ActivateRunningInstance()) {
+    HWND running = FindRunningWindow();
+    if (running != nullptr && !IsClosing(running)) {
+      BringToFront(running);
       ::CloseHandle(instance_mutex);
       return EXIT_SUCCESS;
     }
-    // The other instance has no window: it is starting, or closing (say,
-    // the app was closed and opened again at once). Once it has closed,
-    // this one takes over; once it has started, its window is brought up.
+    // The other instance has no window yet, as it starts, or one that is
+    // closing (say, the app was closed and opened again at once). Once it
+    // has closed, this one takes over; once it has started, or should it
+    // not close after all, its window is brought up.
     const DWORD wait = ::WaitForSingleObject(instance_mutex, kInstanceWaitMs);
     if (wait != WAIT_OBJECT_0 && wait != WAIT_ABANDONED) {
-      ActivateRunningInstance();
+      if (HWND window = FindRunningWindow()) {
+        BringToFront(window);
+      }
       ::CloseHandle(instance_mutex);
       return EXIT_SUCCESS;
     }
   }
+
+  // The instance that runs, alone, says how to start the app.
+  RegisterToastActivatorServer();
 
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.

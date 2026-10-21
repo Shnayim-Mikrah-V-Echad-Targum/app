@@ -1,7 +1,9 @@
 // Imported by the web app's service worker (sw.js, which Workbox generates
 // from workbox-config.cjs). tool/web/sw_build.cjs writes it into build/web
 // with CACHES filled in: this version's runtime caches, named after the
-// engine and the books it was built with.
+// engine and the books it was built with. It is named after its content
+// (sw_update.<hash>.js), so that a new version's worker never imports an
+// older version's copy from the browser's cache.
 //
 // The engine and the books are cached as they are used, not precached. A
 // new version's worker installs while the app is online, then waits until

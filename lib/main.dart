@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'app/start_failure.dart';
 import 'app/system_bars.dart';
 import 'data/parsha_repository.dart';
 import 'features/community/data/backend.dart';
@@ -17,6 +18,7 @@ import 'services/app_shortcuts.dart';
 import 'services/home_widget_sync.dart';
 import 'services/notifications.dart';
 import 'services/optional_fonts.dart';
+import 'services/preferences_recovery.dart';
 import 'services/recent_errors.dart';
 import 'ui/widgets/fallbacks.dart';
 
@@ -42,14 +44,29 @@ Future<void> _start() async {
   unawaited(enableEdgeToEdge());
 
   // Independent of one another, so they all start at once.
-  final (prefs, parshiyot, backend, notifications, shortcuts, homeWidget) = await (
-    _preferencesWithFonts(),
-    ParshaRepository.load(),
-    Backend.initialize(),
-    NotificationService.create(),
-    AppShortcutsService.create(),
-    HomeWidgetService.create(),
-  ).wait;
+  final (SharedPreferences, ParshaRepository, Backend, NotificationService, AppShortcutsService, HomeWidgetService)
+      services;
+  try {
+    services = await (
+      _reported(_preferencesWithFonts(), 'opening the stored preferences'),
+      _reported(ParshaRepository.load(), 'loading the parshiyot'),
+      _reported(Backend.initialize(), 'starting the community'),
+      _reported(NotificationService.create(), 'starting reminders'),
+      _reported(AppShortcutsService.create(), 'starting the shortcuts on the app icon'),
+      _reported(HomeWidgetService.create(), 'starting the home-screen widget'),
+    ).wait;
+  } on ParallelWaitError {
+    // Something the app can't open without failed, even once the
+    // preferences had their chance to recover (openPreferences): on the web,
+    // say, a first visit's data lost to a dropped connection. It says so, as
+    // a frame of its own: with no frame at all, Windows would keep the
+    // window hidden and the web its loading screen. Each error was reported
+    // as it came, for the page to copy.
+    runApp(const StartFailureApp());
+    if (kIsWeb) SemanticsBinding.instance.ensureSemantics();
+    return;
+  }
+  final (prefs, parshiyot, backend, notifications, shortcuts, homeWidget) = services;
 
   runApp(ProviderScope(
     overrides: [
@@ -68,13 +85,26 @@ Future<void> _start() async {
   if (kIsWeb) SemanticsBinding.instance.ensureSemantics();
 }
 
-/// The stored preferences, once the opt-in fonts their settings choose have
-/// loaded, so that the first frame already shows text in them. A font slow to
-/// arrive (over the web) holds the app back only so long; its text is laid
-/// out again when it comes. The fonts are a nicety: nothing about them keeps
-/// the app from starting.
+/// [future], whose error, should it fail, is reported as it comes, as one
+/// met while [doing] what it does, rather than only as one of the start-up's
+/// (a ParallelWaitError, which tells of the first alone).
+Future<T> _reported<T>(Future<T> future, String doing) => future.catchError((Object error, StackTrace stack) {
+      FlutterError.reportError(FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'start-up',
+        context: ErrorDescription('while $doing'),
+      ));
+      Error.throwWithStackTrace(error, stack);
+    });
+
+/// The stored preferences, whatever has become of them (openPreferences),
+/// once the opt-in fonts their settings choose have loaded, so that the first
+/// frame already shows text in them. A font slow to arrive (over the web)
+/// holds the app back only so long; its text is laid out again when it comes.
+/// The fonts are a nicety: nothing about them keeps the app from starting.
 Future<SharedPreferences> _preferencesWithFonts() async {
-  final prefs = await SharedPreferences.getInstance();
+  final prefs = await openPreferences();
   try {
     final settings = SettingsController.readStored(prefs);
     await OptionalFonts.ensureAll(settings.optionalFonts).timeout(const Duration(seconds: 2));
