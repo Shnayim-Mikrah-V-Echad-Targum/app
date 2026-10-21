@@ -124,6 +124,15 @@ const kDailyBeforeCandles = kCutoffBeforeCandles + kMaxDeliveryDelay + 30;
 /// minutes before it at the latest, with time left to finish.
 const kErevShabbatBeforeCandles = 180;
 
+/// The time, in minutes after midnight, from which nothing is due on the
+/// eve of Shabbat or Yom Tov: [kCutoffBeforeCandles] and
+/// [kMaxDeliveryDelay] before [candles], candle-lighting there, where it is
+/// known, and otherwise [kErevCutoffMinutes], midday. The reminders keep to
+/// it, and so does anything else the app would otherwise bring up then,
+/// such as the offer of an update (lib/services/updates/).
+int erevCutoffMinutes({int? candles}) =>
+    candles == null ? kErevCutoffMinutes : candles - kCutoffBeforeCandles - kMaxDeliveryDelay;
+
 /// With Havdalah known, the check-in comes this many minutes after it, on
 /// Motzaei Shabbat, unless that is after [kCheckInLatestMinutes].
 const kCheckInAfterHavdalah = 60;
@@ -206,10 +215,7 @@ List<PlannedReminder> planReminders({
   /// The time from which nothing is due on [d], the eve of Shabbat or Yom
   /// Tov: with candle-lighting known, early enough for a reminder delivered
   /// late to arrive before the cutoff.
-  int cutoffOn(LocalDate d) {
-    final candles = candlesOn(d);
-    return candles == null ? kErevCutoffMinutes : candles - kCutoffBeforeCandles - kMaxDeliveryDelay;
-  }
+  int cutoffOn(LocalDate d) => erevCutoffMinutes(candles: candlesOn(d));
 
   /// Whether the calendar has room for a reminder at [minutes] on [date].
   /// One [afterRest] may come on the last day of Shabbat or Yom Tov, once it
