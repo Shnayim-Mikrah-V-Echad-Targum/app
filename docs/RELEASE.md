@@ -61,7 +61,7 @@ Every build is a preview's: no community until the accounts database is ready (`
 **Cutting one**
 
 1. Bump `version:` in `pubspec.yaml` to the next version, `0.0.2+2` say, and merge it to main.
-2. Tag that commit with the version and push the tag: `git tag v0.0.2 && git push origin v0.0.2`. The workflow stops before it builds anything if the tag isn't the version name. To build a tag again, run it by hand: *Actions → Pre-release → Run workflow*, with the tag.
+2. Tag that commit with the version and push the tag: `git tag v0.0.2 && git push origin v0.0.2`. Or, without pushing a tag, run the workflow by hand on main: *Actions → Pre-release → Run workflow*, branch main, with the tag; it tags main's latest commit, once its `pubspec.yaml` has the tag's version. The workflow stops before it builds anything if the tag isn't the version name. To build a tag again, run it by hand with the tag.
 3. Wait for the run (*Actions → Pre-release*). Its summary links to the draft and gives the APK's certificate fingerprint.
 4. Test the draft. The one-liner and the app's updater see only published releases, so try the MSI with `install.ps1` pointed at the file: `$env:SM_MSI = '<path to the MSI>'`, then the one-liner. Open the site, add it to a phone's home screen, and install the APK.
    - To ship an MSI built elsewhere (the owner's Windows 11 VM, say), upload it over CI's, then the sums again, or `install.ps1` refuses it: `gh release upload v0.0.2 ShnayimMikrah-0.0.2-windows-x64.msi --clobber`, then, in a folder with the five files, `sha256sum ShnayimMikrah-0.0.2-windows-x64.msi ShnayimMikrah-0.0.2-windows-x64.zip ShnayimMikrah-0.0.2-android-webapp.apk install.ps1 > SHA256SUMS.txt` and `gh release upload v0.0.2 SHA256SUMS.txt --clobber`.
