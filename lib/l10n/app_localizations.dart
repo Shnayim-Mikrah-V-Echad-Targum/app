@@ -5906,6 +5906,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.'**
   String get sourcesSunDescription;
+
+  /// In a build without the community (COMMUNITY=off): one calm line in About, under the title page, and in the guide, after Using the app. Your data is the Settings page with the backup file (settingsData).
+  ///
+  /// In en, this message translates to:
+  /// **'The community is coming soon. Until then, your reading stays on this device; to move it, use a backup, in Settings under Your data.'**
+  String get communityComingSoon;
+
+  /// guideAppBody in a build without the community (COMMUNITY=off), where a verse can't be asked about: the same points, kept in step with it, but the fourth, which leaves out asking.
+  ///
+  /// In en, this message translates to:
+  /// **'Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy or share it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.'**
+  String get guideAppBodyNoCommunity;
+
+  /// In About, in the Windows app that looks for new versions: the heading over the version, Check now, What’s new and Check automatically.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updatesHeading;
+
+  /// In About, under Updates: the title of the row whose value is the version running, “0.0.1 (preview)”.
+  ///
+  /// In en, this message translates to:
+  /// **'This version'**
+  String get updatesThisVersion;
+
+  /// In About, under Updates: the button that looks for a new version at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Check now'**
+  String get updatesCheckNow;
+
+  /// In About, under Updates, while Check now looks for a new version; also its spinner's label for screen readers.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get updatesChecking;
+
+  /// In About, under Updates, under the version: when the app last looked for a new version. time is relative, as "3 hours ago" or a date.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked {time}'**
+  String updatesLastChecked(String time);
+
+  /// In About, under Updates, under the version, before the app has ever looked for a new version.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get updatesNotChecked;
+
+  /// In About, under Updates, on Shabbat or Yom Tov or their eve after the reminders’ cutoff, when nothing is looked for or offered, and Check now waits.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates wait until after Shabbat and Yom Tov.'**
+  String get updatesQuiet;
+
+  /// A status message once Check now has found no newer version.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the latest version.'**
+  String get updatesLatest;
+
+  /// In About, under Updates: a row that opens the release notes of the version offered, or of the releases, on GitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'What’s new'**
+  String get updatesWhatsNew;
+
+  /// Under updatesWhatsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'The release notes, on GitHub'**
+  String get updatesWhatsNewDesc;
+
+  /// In About, under Updates: the switch that lets the app look for a new version by itself. On by default.
+  ///
+  /// In en, this message translates to:
+  /// **'Check automatically'**
+  String get updatesAuto;
+
+  /// Under updatesAuto: how often the app looks.
+  ///
+  /// In en, this message translates to:
+  /// **'At most twice a day, and never on Shabbat or Yom Tov'**
+  String get updatesAutoDesc;
+
+  /// A notice at the top of Today and in About, in the Windows app, once a newer version has been found. With an Install button.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is ready to install'**
+  String updateReady(String version);
+
+  /// The button of updateReady, and of its confirmation, that installs the new version.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get updateInstall;
+
+  /// The title of the dialog that confirms installing a new version.
+  ///
+  /// In en, this message translates to:
+  /// **'Install version {version}?'**
+  String updateInstallTitle(String version);
+
+  /// The body of the dialog that confirms installing a new version: the app closes, the installer replaces it, and it opens again.
+  ///
+  /// In en, this message translates to:
+  /// **'Shnayim Mikrah will close, install the new version and open again. Your reading and settings stay as they are.'**
+  String get updateInstallBody;
+
+  /// In place of Install while the new version is downloaded and checked, until the app closes for it.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the update…'**
+  String get updatePreparing;
+
+  /// In About, under Updates, when Check now couldn’t reach the releases. With Copy details for support.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t check for updates. Please try again later.'**
+  String get updateCheckFailed;
+
+  /// In place of updateReady, on Today and in About, when Install couldn’t download or check the new version. With Copy details for support and Try again.
+  ///
+  /// In en, this message translates to:
+  /// **'The update couldn’t be prepared, and nothing was changed.'**
+  String get updateInstallFailed;
+
+  /// The version running, where it is a pre-release (every 0.x version is): “0.0.1 (preview)”, the value of updatesThisVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'{version} (preview)'**
+  String updatesPreviewVersion(String version);
+
+  /// On the web: the heading in About, and the row in Settings, of the ways to install Shnayim Mikrah on this device; also the title of the sheet that lists them.
+  ///
+  /// In en, this message translates to:
+  /// **'Install the app'**
+  String get installTitle;
+
+  /// On the web, in Settings: under installTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Shnayim Mikrah like any other app'**
+  String get installDesc;
+
+  /// On the web, on a phone whose browser offers to install the app (Chrome on Android): the row that asks it to.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to home screen'**
+  String get installHomeScreen;
+
+  /// Under installHomeScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens from your home screen, like any app'**
+  String get installHomeScreenDesc;
+
+  /// On the web, on a computer whose browser offers to install the app (Chrome, Edge): the row that asks it to.
+  ///
+  /// In en, this message translates to:
+  /// **'Install on this computer'**
+  String get installDesktop;
+
+  /// Under installDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in a window of its own, like any app'**
+  String get installDesktopDesc;
+
+  /// On the web, on an iPhone or iPad, whose browser has no button the app can press for it: the row, and the title of the sheet, with the steps to add the app to the home screen. As Safari names its menu item.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Home Screen'**
+  String get installIosTitle;
+
+  /// Under installIosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'From Safari’s Share menu'**
+  String get installIosDesc;
+
+  /// The first of the steps in the installIosTitle sheet. More is the button of Safari’s toolbar (three dots) under which Share is in some versions.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.'**
+  String get installIosStep1;
+
+  /// The second of the steps in the installIosTitle sheet, quoting the menu item as Safari names it in this language.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose “Add to Home Screen”, scrolling down if you need to.'**
+  String get installIosStep2;
+
+  /// The last of the steps in the installIosTitle sheet; “Add” is the button as Safari names it.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Add. Shnayim Mikrah is now on your home screen.'**
+  String get installIosStep3;
+
+  /// Under the steps in the installIosTitle sheet: an app added to an iPhone’s home screen keeps its own storage, apart from Safari’s.
+  ///
+  /// In en, this message translates to:
+  /// **'The app on your home screen keeps its own reading. To take what you have read here, export it first in Settings, under Your data, and import it there.'**
+  String get installIosBackup;
+
+  /// On the web, on an Android phone: the row, and the title of the sheet, of the Android app, a file (an APK) to download from the releases page.
+  ///
+  /// In en, this message translates to:
+  /// **'Android app (APK)'**
+  String get installApkTitle;
+
+  /// Under installApkTitle: the Android app is this website in an app of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens this website as an app'**
+  String get installApkDesc;
+
+  /// The text of the installApkTitle sheet, over the button to the releases page.
+  ///
+  /// In en, this message translates to:
+  /// **'An app for Android that opens this website as an app, with an icon of its own. Download the APK of the newest release and open it to install; your phone may ask you to allow installs from your browser.'**
+  String get installApkBody;
+
+  /// In the installApkTitle and installWindowsTitle sheets: the button that opens the app’s releases on GitHub.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the releases page'**
+  String get installReleases;
+
+  /// On the web, on a Windows computer: the row, and the title of the sheet, of the Windows app, installed with one line in PowerShell.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows app'**
+  String get installWindowsTitle;
+
+  /// Under installWindowsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Installs with one line in PowerShell'**
+  String get installWindowsDesc;
+
+  /// The text of the installWindowsTitle sheet, over the line to paste, which isn’t translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Open PowerShell, paste this line and press Enter. It downloads the newest release from GitHub, checks it, and installs it for you alone, with no administrator rights.'**
+  String get installWindowsBody;
+
+  /// In the installWindowsTitle sheet, under the line to paste: the other way to install, over the button to the releases page.
+  ///
+  /// In en, this message translates to:
+  /// **'Or download the installer (MSI) from the releases page.'**
+  String get installWindowsMsi;
+
+  /// A status message once the installWindowsTitle sheet’s line has been copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get installCopied;
+
+  /// On the web, on a phone: a notice at the top of Today, shown until put away, with an Install button (installAction).
+  ///
+  /// In en, this message translates to:
+  /// **'Add Shnayim Mikrah to your home screen, and open it like any app.'**
+  String get installCardText;
+
+  /// The button of installCardText.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get installAction;
 }
 
 class _AppLocalizationsDelegate

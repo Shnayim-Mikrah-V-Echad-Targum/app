@@ -3508,5 +3508,209 @@
   "sourcesSunDescription": "Worked out on the device with the formulas of the NOAA Solar Calculator (after Meeus, Astronomical Algorithms), and checked against Hebcal, whose times are the default: candles lit 18 minutes before sunset, 20 in Israel, 40 in Jerusalem and 30 in Haifa and Zikhron Ya’akov, and Shabbat ending when the sun is 8.5° below the horizon. In Settings, under Reading & customs, candles can be lit at other minutes, and Shabbat can end 42, 50 or 72 minutes after sunset, as a local luach has them.",
   "@sourcesSunDescription": {
     "description": "On the Texts & sources page, under Sunrise and sunset: how Shabbat times are worked out, their defaults, and the choices Settings offers."
+  },
+  "communityComingSoon": "The community is coming soon. Until then, your reading stays on this device; to move it, use a backup, in Settings under Your data.",
+  "@communityComingSoon": {
+    "description": "In a build without the community (COMMUNITY=off): one calm line in About, under the title page, and in the guide, after Using the app. Your data is the Settings page with the backup file (settingsData)."
+  },
+  "guideAppBodyNoCommunity": "Today shows this week’s parsha and today’s reading. The rings fill as you read: Mikrah, Mikrah again, then Targum.\nRead from a printed Chumash? Tap “I read it in a Chumash”. After Shabbat, log what you read on Shabbat.\nMissed a day? Read it with the next day’s reading and it’s made up; if not, a grace day covers it.\nPress and hold a verse to bookmark it, add a note, copy or share it.\nListen reads the text aloud for you to follow — an aid, not a substitute for reading.",
+  "@guideAppBodyNoCommunity": {
+    "description": "guideAppBody in a build without the community (COMMUNITY=off), where a verse can't be asked about: the same points, kept in step with it, but the fourth, which leaves out asking."
+  },
+  "updatesHeading": "Updates",
+  "@updatesHeading": {
+    "description": "In About, in the Windows app that looks for new versions: the heading over the version, Check now, What’s new and Check automatically."
+  },
+  "updatesThisVersion": "This version",
+  "@updatesThisVersion": {
+    "description": "In About, under Updates: the title of the row whose value is the version running, “0.0.1 (preview)”."
+  },
+  "updatesCheckNow": "Check now",
+  "@updatesCheckNow": {
+    "description": "In About, under Updates: the button that looks for a new version at once."
+  },
+  "updatesChecking": "Checking…",
+  "@updatesChecking": {
+    "description": "In About, under Updates, while Check now looks for a new version; also its spinner's label for screen readers."
+  },
+  "updatesLastChecked": "Last checked {time}",
+  "@updatesLastChecked": {
+    "description": "In About, under Updates, under the version: when the app last looked for a new version. time is relative, as \"3 hours ago\" or a date.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "3 hours ago"
+      }
+    }
+  },
+  "updatesNotChecked": "Not checked yet",
+  "@updatesNotChecked": {
+    "description": "In About, under Updates, under the version, before the app has ever looked for a new version."
+  },
+  "updatesQuiet": "Updates wait until after Shabbat and Yom Tov.",
+  "@updatesQuiet": {
+    "description": "In About, under Updates, on Shabbat or Yom Tov or their eve after the reminders’ cutoff, when nothing is looked for or offered, and Check now waits."
+  },
+  "updatesLatest": "This is the latest version.",
+  "@updatesLatest": {
+    "description": "A status message once Check now has found no newer version."
+  },
+  "updatesWhatsNew": "What’s new",
+  "@updatesWhatsNew": {
+    "description": "In About, under Updates: a row that opens the release notes of the version offered, or of the releases, on GitHub."
+  },
+  "updatesWhatsNewDesc": "The release notes, on GitHub",
+  "@updatesWhatsNewDesc": {
+    "description": "Under updatesWhatsNew."
+  },
+  "updatesAuto": "Check automatically",
+  "@updatesAuto": {
+    "description": "In About, under Updates: the switch that lets the app look for a new version by itself. On by default."
+  },
+  "updatesAutoDesc": "At most twice a day, and never on Shabbat or Yom Tov",
+  "@updatesAutoDesc": {
+    "description": "Under updatesAuto: how often the app looks."
+  },
+  "updateReady": "Version {version} is ready to install",
+  "@updateReady": {
+    "description": "A notice at the top of Today and in About, in the Windows app, once a newer version has been found. With an Install button.",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.2"
+      }
+    }
+  },
+  "updateInstall": "Install",
+  "@updateInstall": {
+    "description": "The button of updateReady, and of its confirmation, that installs the new version."
+  },
+  "updateInstallTitle": "Install version {version}?",
+  "@updateInstallTitle": {
+    "description": "The title of the dialog that confirms installing a new version.",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.2"
+      }
+    }
+  },
+  "updateInstallBody": "Shnayim Mikrah will close, install the new version and open again. Your reading and settings stay as they are.",
+  "@updateInstallBody": {
+    "description": "The body of the dialog that confirms installing a new version: the app closes, the installer replaces it, and it opens again."
+  },
+  "updatePreparing": "Preparing the update…",
+  "@updatePreparing": {
+    "description": "In place of Install while the new version is downloaded and checked, until the app closes for it."
+  },
+  "updateCheckFailed": "Couldn’t check for updates. Please try again later.",
+  "@updateCheckFailed": {
+    "description": "In About, under Updates, when Check now couldn’t reach the releases. With Copy details for support."
+  },
+  "updateInstallFailed": "The update couldn’t be prepared, and nothing was changed.",
+  "@updateInstallFailed": {
+    "description": "In place of updateReady, on Today and in About, when Install couldn’t download or check the new version. With Copy details for support and Try again."
+  },
+  "updatesPreviewVersion": "{version} (preview)",
+  "@updatesPreviewVersion": {
+    "description": "The version running, where it is a pre-release (every 0.x version is): “0.0.1 (preview)”, the value of updatesThisVersion.",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.1"
+      }
+    }
+  },
+  "installTitle": "Install the app",
+  "@installTitle": {
+    "description": "On the web: the heading in About, and the row in Settings, of the ways to install Shnayim Mikrah on this device; also the title of the sheet that lists them."
+  },
+  "installDesc": "Open Shnayim Mikrah like any other app",
+  "@installDesc": {
+    "description": "On the web, in Settings: under installTitle."
+  },
+  "installHomeScreen": "Add to home screen",
+  "@installHomeScreen": {
+    "description": "On the web, on a phone whose browser offers to install the app (Chrome on Android): the row that asks it to."
+  },
+  "installHomeScreenDesc": "Opens from your home screen, like any app",
+  "@installHomeScreenDesc": {
+    "description": "Under installHomeScreen."
+  },
+  "installDesktop": "Install on this computer",
+  "@installDesktop": {
+    "description": "On the web, on a computer whose browser offers to install the app (Chrome, Edge): the row that asks it to."
+  },
+  "installDesktopDesc": "Opens in a window of its own, like any app",
+  "@installDesktopDesc": {
+    "description": "Under installDesktop."
+  },
+  "installIosTitle": "Add to Home Screen",
+  "@installIosTitle": {
+    "description": "On the web, on an iPhone or iPad, whose browser has no button the app can press for it: the row, and the title of the sheet, with the steps to add the app to the home screen. As Safari names its menu item."
+  },
+  "installIosDesc": "From Safari’s Share menu",
+  "@installIosDesc": {
+    "description": "Under installIosTitle."
+  },
+  "installIosStep1": "Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.",
+  "@installIosStep1": {
+    "description": "The first of the steps in the installIosTitle sheet. More is the button of Safari’s toolbar (three dots) under which Share is in some versions."
+  },
+  "installIosStep2": "Choose “Add to Home Screen”, scrolling down if you need to.",
+  "@installIosStep2": {
+    "description": "The second of the steps in the installIosTitle sheet, quoting the menu item as Safari names it in this language."
+  },
+  "installIosStep3": "Tap Add. Shnayim Mikrah is now on your home screen.",
+  "@installIosStep3": {
+    "description": "The last of the steps in the installIosTitle sheet; “Add” is the button as Safari names it."
+  },
+  "installIosBackup": "The app on your home screen keeps its own reading. To take what you have read here, export it first in Settings, under Your data, and import it there.",
+  "@installIosBackup": {
+    "description": "Under the steps in the installIosTitle sheet: an app added to an iPhone’s home screen keeps its own storage, apart from Safari’s."
+  },
+  "installApkTitle": "Android app (APK)",
+  "@installApkTitle": {
+    "description": "On the web, on an Android phone: the row, and the title of the sheet, of the Android app, a file (an APK) to download from the releases page."
+  },
+  "installApkDesc": "Opens this website as an app",
+  "@installApkDesc": {
+    "description": "Under installApkTitle: the Android app is this website in an app of its own."
+  },
+  "installApkBody": "An app for Android that opens this website as an app, with an icon of its own. Download the APK of the newest release and open it to install; your phone may ask you to allow installs from your browser.",
+  "@installApkBody": {
+    "description": "The text of the installApkTitle sheet, over the button to the releases page."
+  },
+  "installReleases": "Open the releases page",
+  "@installReleases": {
+    "description": "In the installApkTitle and installWindowsTitle sheets: the button that opens the app’s releases on GitHub."
+  },
+  "installWindowsTitle": "Windows app",
+  "@installWindowsTitle": {
+    "description": "On the web, on a Windows computer: the row, and the title of the sheet, of the Windows app, installed with one line in PowerShell."
+  },
+  "installWindowsDesc": "Installs with one line in PowerShell",
+  "@installWindowsDesc": {
+    "description": "Under installWindowsTitle."
+  },
+  "installWindowsBody": "Open PowerShell, paste this line and press Enter. It downloads the newest release from GitHub, checks it, and installs it for you alone, with no administrator rights.",
+  "@installWindowsBody": {
+    "description": "The text of the installWindowsTitle sheet, over the line to paste, which isn’t translated."
+  },
+  "installWindowsMsi": "Or download the installer (MSI) from the releases page.",
+  "@installWindowsMsi": {
+    "description": "In the installWindowsTitle sheet, under the line to paste: the other way to install, over the button to the releases page."
+  },
+  "installCopied": "Copied",
+  "@installCopied": {
+    "description": "A status message once the installWindowsTitle sheet’s line has been copied."
+  },
+  "installCardText": "Add Shnayim Mikrah to your home screen, and open it like any app.",
+  "@installCardText": {
+    "description": "On the web, on a phone: a notice at the top of Today, shown until put away, with an Install button (installAction)."
+  },
+  "installAction": "Install",
+  "@installAction": {
+    "description": "The button of installCardText."
   }
 }

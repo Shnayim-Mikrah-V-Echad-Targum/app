@@ -107,6 +107,7 @@ The app is configured at build time with `--dart-define`:
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
 | `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
+| `COMMUNITY` | `off` hides the community everywhere (its tab, questions on a verse, the account and cloud backup) and sends its links to Today, as the pre-releases do until the accounts' database is ready. Absent: the community as above. |
 
 Example:
 

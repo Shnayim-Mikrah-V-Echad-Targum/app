@@ -102,6 +102,33 @@ void main() {
       expect(html, contains('@media (prefers-reduced-motion: reduce)'));
     });
 
+    // Added to an iPhone's home screen, the app opens as an app of its own,
+    // under its name and icon.
+    test('has the tags and the icon a home screen reads on iOS', () {
+      for (final tag in [
+        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        '<meta name="mobile-web-app-capable" content="yes">',
+        '<meta name="apple-mobile-web-app-capable" content="yes">',
+        '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
+        '<meta name="apple-mobile-web-app-title" content="Shnayim Mikrah">',
+        '<link rel="apple-touch-icon" href="apple-touch-icon.png">',
+        '<link rel="manifest" href="manifest.json">',
+      ]) {
+        expect(html, contains(tag));
+      }
+      expect(_pngSize('web/apple-touch-icon.png'), (180, 180));
+    });
+
+    // tool/web/web.test.mjs runs it.
+    test("keeps the browser's offer to install for the app, in window.smInstall, before the app loads", () {
+      final offer = html.indexOf("window.addEventListener('beforeinstallprompt'");
+      expect(offer, isNot(-1));
+      expect(offer, lessThan(html.indexOf('</head>')));
+      expect(html, contains("window.addEventListener('appinstalled'"));
+      expect(html, contains('window.smInstall = {'));
+      expect(html, contains("new Event('sm-install-change')"));
+    });
+
     test('points readers without JavaScript to the static pages, in both languages', () {
       final noscript = html.substring(html.indexOf('<noscript>\n'), html.indexOf('</noscript>', html.indexOf('<noscript>\n')));
       for (final page in ['privacy', 'support', 'delete-account']) {
@@ -113,6 +140,43 @@ void main() {
   });
 
   group('manifest.json', () {
+    // What Chrome asks of an app it offers to install, and what a phone's
+    // home screen shows: the app's name, its icons (maskable ones for
+    // Android's shapes), its colours, and a window of its own.
+    test('names the app, and opens it standalone in its own colours', () {
+      expect(manifest['name'], 'Shnayim Mikrah · שניים מקרא');
+      expect(manifest['short_name'], 'Shnayim Mikrah');
+      expect((manifest['short_name'] as String).length, lessThanOrEqualTo(15), reason: 'whole under a home-screen icon');
+      expect(manifest['display'], 'standalone');
+      String hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+      expect(manifest['theme_color'], hex(Palettes.light.primary));
+      expect(manifest['background_color'], hex(Palettes.light.surface));
+    });
+
+    test('has icons of 192 and 512, each also maskable, at the sizes it says', () {
+      final icons = (manifest['icons'] as List).cast<Map<String, dynamic>>();
+      final kinds = <String>{};
+      for (final icon in icons) {
+        final (w, h) = _pngSize('web/${icon['src']}');
+        expect(icon['sizes'], '${w}x$h', reason: '${icon['src']}');
+        expect(icon['type'], 'image/png');
+        kinds.add('${icon['sizes']} ${icon['purpose'] ?? 'any'}');
+      }
+      expect(kinds, containsAll(['192x192 any', '512x512 any', '192x192 maskable', '512x512 maskable']));
+    });
+
+    // Relative to the manifest, so that they are the site's root at
+    // shnayimmikrah.org/ and the app's folder wherever else it is served.
+    test('starts at the root of the site it is served from, and covers all of it', () {
+      final base = Uri.parse('https://shnayimmikrah.org/manifest.json');
+      expect(base.resolve(manifest['start_url'] as String).toString(), 'https://shnayimmikrah.org/');
+      expect(base.resolve(manifest['scope'] as String).toString(), 'https://shnayimmikrah.org/');
+      expect(base.resolve(manifest['id'] as String).toString(), 'https://shnayimmikrah.org/');
+      final elsewhere = Uri.parse('https://example.org/app/manifest.json');
+      expect(elsewhere.resolve(manifest['start_url'] as String).toString(), 'https://example.org/app/');
+      expect(elsewhere.resolve(manifest['scope'] as String).toString(), 'https://example.org/app/');
+    });
+
     test('installs one app, which opens in its existing window', () {
       expect(manifest['id'], './');
       expect(manifest['scope'], './');

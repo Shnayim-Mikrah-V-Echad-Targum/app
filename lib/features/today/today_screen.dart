@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/city_providers.dart';
+import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../core/calendar/hebrew_date.dart';
 import '../../core/calendar/jewish_holidays.dart';
@@ -13,6 +14,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../data/models/parsha.dart';
 import '../../services/feedback.dart';
+import '../../services/updates/updates.dart';
 import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -26,7 +28,9 @@ import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../../ui/widgets/update_banner.dart';
 import '../../ui/widgets/web_update_banner.dart';
+import '../about/install_app.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/parsha_heading.dart';
 import '../parsha/week_context.dart';
@@ -119,10 +123,25 @@ class TodayScreen extends ConsumerWidget {
         : null;
     // On the web, a new version of the app, until put away for the session.
     final offerUpdate = ref.watch(webUpdateReadyProvider) && !ref.watch(webUpdateDismissedProvider);
+    // In the Windows app, a new version found, never on Shabbat or Yom Tov
+    // nor on their eve after the reminders' cutoff, until put away for the
+    // session.
+    final release = ref.watch(updateControllerProvider.select((u) => u.offered));
+    final offerRelease = release != null && ref.watch(updateDismissedProvider) != release.tag;
+    // On a phone's browser, once: the app on the home screen.
+    final offerInstall = offersInstallCard(context, ref);
 
     final reading = [
       if (offerUpdate) ...[
         WebUpdateBanner(onDismiss: () => ref.read(webUpdateDismissedProvider.notifier).dismiss()),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (offerRelease) ...[
+        UpdateBanner(onDismiss: () => ref.read(updateDismissedProvider.notifier).dismiss(release.tag)),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (offerInstall) ...[
+        const InstallCard(),
         const Gap(Rhythm.cardGap),
       ],
       if (paused) ...[
@@ -159,6 +178,10 @@ class TodayScreen extends ConsumerWidget {
       const Gap(Rhythm.cardGap),
       _TodayCard(ctx: ctx, settings: settings, quietFast: quietFast),
     ];
+    final thisWeek = [
+      if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
+      if (AppConfig.communityEnabled) DiscussRow(ctx: ctx),
+    ];
     final week = [
       InfoCard(
         padding: WeekStrip.cardPadding,
@@ -193,14 +216,13 @@ class TodayScreen extends ConsumerWidget {
           onTap: () => context.go('/progress'),
         ),
       ],
-      GroupHeader(l.thisWeek),
-      PaperGroup(
-        ruleInset: PaperGroup.iconInset,
-        children: [
-          if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
-          DiscussRow(ctx: ctx),
-        ],
-      ),
+      // The week's haftarah and its discussion, where there is either: with
+      // the haftarah off and no community, neither the heading nor its
+      // group.
+      if (thisWeek.isNotEmpty) ...[
+        GroupHeader(l.thisWeek),
+        PaperGroup(ruleInset: PaperGroup.iconInset, children: thisWeek),
+      ],
     ];
     return [
       // The reading day in both calendars: on Motzaei Shabbat after
@@ -617,7 +639,8 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
         ctx.week.portion.isVezotHaberakhah ? l.weekCompleteNoteSimchatTorah : l.weekCompleteNote,
         style: SeferType.of(context).marginalia,
       ),
-      if (!widget.quietFast) ...[
+      // Without the community, the haftarah alone, where it is left.
+      if (!widget.quietFast && (haftarah || AppConfig.communityEnabled)) ...[
         const Gap(Space.lg),
         Wrap(
           alignment: WrapAlignment.center,
@@ -631,16 +654,17 @@ class _HeroState extends ConsumerState<_Hero> with SingleTickerProviderStateMixi
                 onPressed: () => context.push('/today/haftarah/${ctx.id}'),
                 child: Text(l.readTheHaftarah, textAlign: TextAlign.center),
               ),
-            WeeklyThreadOpener(
-              portion: ctx.portion,
-              hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
-              builder: (context, progress, open) => TextButton.icon(
-                style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
-                icon: progress ?? const Icon(Icons.forum_outlined),
-                label: Text(l.discussTheParsha, textAlign: TextAlign.center),
-                onPressed: open,
+            if (AppConfig.communityEnabled)
+              WeeklyThreadOpener(
+                portion: ctx.portion,
+                hebrewYear: cycleYearOf(ctx.week.portion, ctx.week.occasion),
+                builder: (context, progress, open) => TextButton.icon(
+                  style: AppButtons.roomy(context, (12, 8, 4), vertical: 8),
+                  icon: progress ?? const Icon(Icons.forum_outlined),
+                  label: Text(l.discussTheParsha, textAlign: TextAlign.center),
+                  onPressed: open,
+                ),
               ),
-            ),
           ],
         ),
       ],

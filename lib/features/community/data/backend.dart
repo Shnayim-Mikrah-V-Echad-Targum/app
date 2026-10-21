@@ -9,14 +9,17 @@ import 'demo_forum_repository.dart';
 import 'forum_repository.dart';
 import 'supabase_forum_repository.dart';
 
-/// The community backend: Supabase when configured, otherwise an on-device demo.
+/// The community backend: Supabase when configured, otherwise an on-device
+/// demo. Without the community ([AppConfig.communityEnabled]) it is the demo
+/// whatever the build configures, which nothing shows: the app reaches no
+/// server for it, and nobody can be signed in to back progress up.
 class Backend {
   const Backend(this.forums);
 
   final ForumRepository forums;
 
   static Future<Backend> initialize() async {
-    if (AppConfig.hasBackend) {
+    if (AppConfig.hasBackend && AppConfig.communityEnabled) {
       try {
         await Supabase.initialize(url: AppConfig.supabaseUrl, publishableKey: AppConfig.supabaseKey);
         return Backend(SupabaseForumRepository(Supabase.instance.client));
