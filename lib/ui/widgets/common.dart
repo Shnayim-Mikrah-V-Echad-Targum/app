@@ -665,6 +665,39 @@ class NoticeBanner extends StatelessWidget {
   /// stands 12 from its top, rather than all but in the corner.
   static const tonalActionInset = EdgeInsetsDirectional.only(end: 4, bottom: 8);
 
+  /// Whether a text button labelled [label] fits beside [text] on one line
+  /// of a banner [maxWidth] wide, at the text size in force, with a close
+  /// button where [dismissible]. Where it doesn't, as at large text, it goes
+  /// under the text ([actionBelow]) rather than squeeze the text into a
+  /// narrow column beside it.
+  static bool actionFitsBeside(
+    BuildContext context,
+    double maxWidth, {
+    required String text,
+    required String label,
+    bool dismissible = false,
+  }) {
+    final theme = Theme.of(context);
+    double width(String s, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: s, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    // Beside the sentence and the button: the banner's padding at the start,
+    // the icon and its gap, the button's own padding, and at the end the
+    // close button and its padding, or the end padding alone.
+    final around = 16 + 20 + 12 + 24 + (dismissible ? 4 + 48 : 8);
+    final buttonStyle = theme.textButtonTheme.style?.textStyle?.resolve({}) ?? theme.textTheme.labelLarge;
+    return width(text, theme.textTheme.bodyMedium) + width(label, buttonStyle) + around <= maxWidth;
+  }
+
   /// [action] in the colour of interaction where that reads clearly on the
   /// banner (WCAG AA), and otherwise, as in the high-contrast themes, in the
   /// banner's own ink, with a focus ring to match.

@@ -13,6 +13,7 @@ import '../services/feedback.dart' show StatusMessageArea;
 import '../services/home_widget_sync.dart';
 import '../services/notifications.dart';
 import '../services/optional_fonts.dart';
+import '../services/updates/updates.dart';
 import '../services/web_update.dart';
 import '../ui/theme/app_theme.dart';
 import '../ui/widgets/fonts_change_scope.dart';
@@ -86,6 +87,9 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
       if (!mounted) return;
       ref.read(appShortcutsServiceProvider).listen(_openShortcut);
       ref.read(homeWidgetServiceProvider).listen(_openWidgetLink);
+      // The Windows app looks for a new version once it is up, whatever
+      // page it opens on, where its build looks for any.
+      ref.read(updateControllerProvider);
     });
   }
 

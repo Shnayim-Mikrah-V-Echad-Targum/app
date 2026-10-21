@@ -14,6 +14,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/parsha_schedule.dart';
 import '../../data/models/parsha.dart';
 import '../../services/feedback.dart';
+import '../../services/updates/updates.dart';
 import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -27,6 +28,7 @@ import '../../ui/widgets/page_columns.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
+import '../../ui/widgets/update_banner.dart';
 import '../../ui/widgets/web_update_banner.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
@@ -118,10 +120,19 @@ class TodayScreen extends ConsumerWidget {
         : null;
     // On the web, a new version of the app, until put away for the session.
     final offerUpdate = ref.watch(webUpdateReadyProvider) && !ref.watch(webUpdateDismissedProvider);
+    // In the Windows app, a new version found, never on Shabbat or Yom Tov
+    // nor on their eve after the reminders' cutoff, until put away for the
+    // session.
+    final release = ref.watch(updateControllerProvider.select((u) => u.offered));
+    final offerRelease = release != null && ref.watch(updateDismissedProvider) != release.tag;
 
     final reading = [
       if (offerUpdate) ...[
         WebUpdateBanner(onDismiss: () => ref.read(webUpdateDismissedProvider.notifier).dismiss()),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (offerRelease) ...[
+        UpdateBanner(onDismiss: () => ref.read(updateDismissedProvider.notifier).dismiss(release.tag)),
         const Gap(Rhythm.cardGap),
       ],
       if (paused) ...[

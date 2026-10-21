@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
 import '../../l10n/app_localizations.dart';
-import '../../services/feedback.dart';
 import '../../services/recent_errors.dart';
+import '../../services/support_details.dart';
 import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -20,17 +18,7 @@ import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/web_update_banner.dart';
 import '../community/data/backend.dart';
-
-/// The app's version and build, "1.0.0 (12)", or empty where the platform
-/// doesn't say.
-final _versionProvider = FutureProvider<String>((ref) async {
-  try {
-    final info = await PackageInfo.fromPlatform();
-    return '${info.version} (${info.buildNumber})';
-  } catch (_) {
-    return '';
-  }
-});
+import 'updates_section.dart';
 
 /// An email to the maintainers about [subject] (the app's name unless
 /// given), or null when the build names no address.
@@ -101,6 +89,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
             const Gap(Space.lg),
             NoticeBanner(icon: Icons.forum_outlined, text: l.communityComingSoon),
           ],
+          // The Windows app's updates, in a build that looks for them.
+          const UpdatesSection(),
           GroupHeader(l.aboutGroupLearn),
           PaperGroup(
             children: [
@@ -161,7 +151,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
                     title: l.copySupportDetails,
                     subtitle: l.copySupportDetailsDesc,
                     chevron: false,
-                    onTap: _copySupportDetails,
+                    onTap: () => copySupportDetails(context, ref),
                   ),
               ],
             ),
@@ -169,15 +159,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
         ],
       )),
     );
-  }
-
-  /// Copies what has gone wrong, under the app's version, for a message to
-  /// us. The version is in hand already, as the header shows it: the copy
-  /// is made at once, within the tap, as a browser may require.
-  Future<void> _copySupportDetails() async {
-    final String version = ref.read(_versionProvider).value ?? await ref.read(_versionProvider.future);
-    await Clipboard.setData(ClipboardData(text: recentErrors.report(version: version)));
-    if (mounted) showStatus(context, context.l10n.supportDetailsCopied);
   }
 }
 
@@ -192,7 +173,7 @@ class _AboutHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final version = ref.watch(_versionProvider).value ?? '';
+    final version = ref.watch(appVersionLabelProvider).value ?? '';
     final l = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
