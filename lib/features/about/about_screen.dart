@@ -18,6 +18,7 @@ import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/web_update_banner.dart';
 import '../community/data/backend.dart';
+import 'install_app.dart';
 import 'updates_section.dart';
 
 /// An email to the maintainers about [subject] (the app's name unless
@@ -91,6 +92,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
           ],
           // The Windows app's updates, in a build that looks for them.
           const UpdatesSection(),
+          // On the web, the ways to install the app on this device.
+          const InstallSection(),
           GroupHeader(l.aboutGroupLearn),
           PaperGroup(
             children: [

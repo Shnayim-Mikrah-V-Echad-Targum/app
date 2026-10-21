@@ -30,6 +30,7 @@ import '../../ui/widgets/progress_widgets.dart';
 import '../../ui/widgets/read_date_sheet.dart';
 import '../../ui/widgets/update_banner.dart';
 import '../../ui/widgets/web_update_banner.dart';
+import '../about/install_app.dart';
 import '../community/ui/community_ui.dart';
 import '../parsha/week_context.dart';
 import '../parsha/week_rows.dart';
@@ -125,6 +126,8 @@ class TodayScreen extends ConsumerWidget {
     // session.
     final release = ref.watch(updateControllerProvider.select((u) => u.offered));
     final offerRelease = release != null && ref.watch(updateDismissedProvider) != release.tag;
+    // On a phone's browser, once: the app on the home screen.
+    final offerInstall = offersInstallCard(context, ref);
 
     final reading = [
       if (offerUpdate) ...[
@@ -133,6 +136,10 @@ class TodayScreen extends ConsumerWidget {
       ],
       if (offerRelease) ...[
         UpdateBanner(onDismiss: () => ref.read(updateDismissedProvider.notifier).dismiss(release.tag)),
+        const Gap(Rhythm.cardGap),
+      ],
+      if (offerInstall) ...[
+        const InstallCard(),
         const Gap(Rhythm.cardGap),
       ],
       if (paused) ...[

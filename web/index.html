@@ -27,8 +27,11 @@
   <meta property="og:locale:alternate" content="he_IL">
   <meta name="twitter:card" content="summary_large_image">
 
-  <!-- iOS meta tags -->
+  <!-- Added to the home screen, it opens as an app of its own: the
+       manifest's display says so to Chrome, and Safari before iOS 16.4
+       reads this pair (and still does where the manifest isn't read). -->
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Shnayim Mikrah">
 
@@ -81,6 +84,79 @@
         }
       }
       if (hebrew) root.lang = 'he';
+    })();
+  </script>
+  <script>
+    // The browser's offer to install the app (Chrome and Edge, on Android
+    // and on computers), kept from the moment it comes, before the app has
+    // loaded, for the app to make when the reader asks: About, Settings and
+    // Today's card read window.smInstall (lib/services/web_install_web.dart)
+    // and hear 'sm-install-change' as the offer comes or goes.
+    (function () {
+      var offer = null;
+      var installed = false;
+      var changed = function () {
+        try {
+          window.dispatchEvent(new Event('sm-install-change'));
+        } catch (e) {}
+      };
+      // Opened as an installed app (a home-screen app, an installed window,
+      // the Android app), which offers nothing more.
+      var standalone = function () {
+        var modes = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'];
+        for (var i = 0; i < modes.length; i++) {
+          if (window.matchMedia && window.matchMedia('(display-mode: ' + modes[i] + ')').matches) return true;
+        }
+        return window.navigator.standalone === true;
+      };
+      window.addEventListener('beforeinstallprompt', function (event) {
+        // The app offers it in its own words, rather than the browser's bar.
+        event.preventDefault();
+        offer = event;
+        changed();
+      });
+      window.addEventListener('appinstalled', function () {
+        offer = null;
+        installed = true;
+        changed();
+      });
+      window.smInstall = {
+        available: function () {
+          return offer !== null && !installed && !standalone();
+        },
+        installed: function () {
+          return installed;
+        },
+        standalone: standalone,
+        // Asks the browser to install, as the reader's tap asked: 'accepted',
+        // 'dismissed', or 'unavailable' where there is no offer. Each offer
+        // is made once.
+        prompt: function () {
+          var event = offer;
+          if (!event) return Promise.resolve('unavailable');
+          offer = null;
+          var shown;
+          try {
+            shown = event.prompt();
+          } catch (e) {
+            changed();
+            return Promise.resolve('unavailable');
+          }
+          changed();
+          return Promise.resolve(shown)
+            .then(function () {
+              return event.userChoice;
+            })
+            .then(
+              function (choice) {
+                return choice && choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
+              },
+              function () {
+                return 'unavailable';
+              }
+            );
+        },
+      };
     })();
   </script>
   <style>

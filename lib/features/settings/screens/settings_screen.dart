@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/config.dart';
 import '../../../app/providers.dart';
+import '../../../services/web_install.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/paper_group.dart';
+import '../../about/install_app.dart';
 import '../../community/data/community_providers.dart';
 import '../../progress/progress_screen.dart' show showPauseDialog;
 import '../app_settings.dart';
@@ -113,6 +115,8 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             page(Icons.school_outlined, l.guideTitle, null, '/settings/guide'),
             page(Icons.info_outline, l.settingsAbout, l.settingsAboutDesc, '/settings/about'),
+            // On the web, where the app can be installed on this device.
+            if (ref.watch(installOptionsProvider).isNotEmpty) const InstallAppRow(),
           ],
         ),
       ],
