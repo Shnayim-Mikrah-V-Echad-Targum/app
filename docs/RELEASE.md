@@ -252,7 +252,13 @@ The stores' text, screenshots and Google Play's feature graphic come from the ap
 
 ## Windows
 
-The app ships as an MSIX package. Its settings are `msix_config` in `pubspec.yaml`, and its icons are in `windows/msix`, written by `tool/branding/make_icon.py --post`.
+**Pre-releases: the MSI and the installer script**
+
+- [ ] Pre-releases ship a per-user MSI, `ShnayimMikrah-X.Y.Z-windows-x64.msi`, built by `tool/windows/build_msi.ps1` from the WiX source in `tool/windows/msi/` (WiX 5.0.2, installed by the script with the .NET SDK if it is missing): `powershell -ExecutionPolicy Bypass -File tool\windows\build_msi.ps1 -ReleaseDir build\windows\x64\runner\Release -Version X.Y.Z`. It installs into `%LOCALAPPDATA%\Programs\Shnayim Mikrah` with no administrator rights, adds the Start-menu shortcut that carries the notifications' app id and toast activator, a desktop shortcut unless `DESKTOPSHORTCUT=0`, and registers the toast activator's COM server. Its UpgradeCode never changes, so each release replaces the last (a downgrade is refused). Build it from a fresh `flutter build windows --release`, before `tool/windows/make_msix.sh`, whose msix tool removes the Visual C++ runtime from the folder.
+- [ ] `tool/windows/install.ps1` is what the README's one-liner runs (`irm … | iex`) and what the app's updater runs for an update. It picks the newest published release with an MSI (pre-releases included, unless `SM_TAG` names one), downloads the MSI and `SHA256SUMS.txt` from GitHub's hosts only, checks the MSI against both the sums and GitHub's digest, installs it with `msiexec /passive`, and starts the app. Its options are environment variables (the script's header lists them). To test a local build without a release: `$env:SM_MSI = '<path to the MSI>'; $env:SM_SHA256 = (Get-FileHash <path> -Algorithm SHA256).Hash; .\tool\windows\install.ps1`, and check that a wrong `SM_SHA256` installs nothing. To test the updater's handoff: start the app, then run it with `$env:SM_WAIT_PID` set to the app's process id; it waits for the app to close, upgrades it and starts it again. The steps are logged to `%LOCALAPPDATA%\Shnayim Mikrah\install.log`, and msiexec's to `msiexec.log` beside it.
+- [ ] The MSI is unsigned for now. Installed by the script, it carries no mark of the web, so SmartScreen doesn't ask; opened from a browser download, SmartScreen asks once ("More info → Run anyway"). To sign it later, sign `shnayim_mikrah.exe` and the MSI with `signtool sign /fd SHA256 /tr <timestamp URL> /td SHA256` (a certificate from a certificate authority, which also earns SmartScreen reputation) after `build_msi.ps1`.
+
+The app also ships as an MSIX package. Its settings are `msix_config` in `pubspec.yaml`, and its icons are in `windows/msix`, written by `tool/branding/make_icon.py --post`.
 
 **Version**
 
