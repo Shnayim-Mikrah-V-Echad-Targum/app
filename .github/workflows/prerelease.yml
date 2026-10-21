@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "The tag to build, v0.Y.Z, which must exist already"
+        description: "The tag to build, v0.Y.Z. Run on the default branch, a tag that doesn't exist yet is made at its latest commit."
         required: true
         type: string
 
@@ -53,6 +53,9 @@ jobs:
   preflight:
     name: Check the tag
     runs-on: ubuntu-latest
+    # To make the tag when run by hand.
+    permissions:
+      contents: write
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -62,6 +65,32 @@ jobs:
             echo "::error::$TAG is not a pre-release's tag, v0.Y.Z"
             exit 1
           fi
+      # Run by hand on the default branch for a tag that doesn't exist yet,
+      # the workflow makes it, at the branch's latest commit, once that
+      # commit's pubspec.yaml has the tag's version. (A tag made with
+      # GITHUB_TOKEN starts no other run.) Elsewhere, the tag must exist.
+      - name: The tag, made from the default branch if need be
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --silent 2>/dev/null; then
+            echo "The tag $TAG exists."
+            exit 0
+          fi
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+          if [ "$GITHUB_REF" != "refs/heads/$default" ]; then
+            echo "::error::There is no tag $TAG. Push it, or run this workflow on $default to tag its latest commit."
+            exit 1
+          fi
+          version=$(gh api "repos/$GITHUB_REPOSITORY/contents/pubspec.yaml?ref=$GITHUB_SHA" --jq .content \
+            | base64 -d | sed -n 's/^version: \([0-9.]*\).*/\1/p')
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "::error file=pubspec.yaml::$default's pubspec.yaml has the version $version, not ${TAG#v}; no tag was made"
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA" --silent
+          echo "Tagged $default's $GITHUB_SHA as $TAG."
       - uses: actions/checkout@v4
         with:
           ref: refs/tags/${{ env.TAG }}

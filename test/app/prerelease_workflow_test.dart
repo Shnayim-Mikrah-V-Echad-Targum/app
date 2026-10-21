@@ -82,6 +82,24 @@ void main() {
     expect((preflight['outputs'] as YamlMap)['version'], r'${{ steps.version.outputs.version }}');
   });
 
+  test('run by hand on the default branch, the preflight makes a missing tag from its version', () {
+    final preflight = job('preflight');
+    final make = step(preflight, 'The tag, made from the default branch if need be');
+    expect(make['if'], "github.event_name == 'workflow_dispatch'");
+    expect((make['env'] as YamlMap)['GH_TOKEN'], r'${{ github.token }}');
+    // After the tag's form is checked, before anything checks the tag out.
+    expect(index(preflight, make), 1);
+    expect(index(preflight, uses(preflight, 'actions/checkout').single), greaterThan(index(preflight, make)));
+    final script = (make['run'] as String).replaceAll(RegExp(r'\\\n\s*'), '');
+    final exists = script.indexOf(r'git/ref/tags/$TAG');
+    final branch = script.indexOf(r'[ "$GITHUB_REF" != "refs/heads/$default" ]');
+    final version = script.indexOf(r'[ "${TAG#v}" != "$version" ]');
+    final tags = script.indexOf(r'gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"');
+    expect([exists, branch, version, tags], everyElement(greaterThan(0)));
+    expect(exists < branch && branch < version && version < tags, isTrue);
+    expect(script, contains(r'contents/pubspec.yaml?ref=$GITHUB_SHA'));
+  });
+
   test('the jobs: the builds after the preflight, the site and the draft after them', () {
     expect(jobs.keys, unorderedEquals(['preflight', 'windows', 'twa', 'web', 'pages', 'pages-help', 'release']));
     expect(needs('windows'), {'preflight'});
@@ -300,6 +318,7 @@ void main() {
         if (job(name as String)['permissions'] case final YamlMap permissions) name: permissions,
     };
     expect(granted, {
+      'preflight': {'contents': 'write'},
       'pages': {'pages': 'write', 'id-token': 'write'},
       'pages-help': <String, String>{},
       'release': {'contents': 'write'},
