@@ -398,7 +398,9 @@ void main() {
     test('its notes say what the preview is, how to install it, and what to keep in mind', () {
       final notes = File('.github/prerelease_notes.md').readAsStringSync();
       expect(run('release', 'The notes'), contains('.github/prerelease_notes.md > "\$RUNNER_TEMP/notes.md"'));
-      expect(notes, startsWith('A preview of Shnayim Mikrah'));
+      // The disclosure that the preview was made with AI comes first, then the preview.
+      expect(notes, startsWith('> **Made with AI.**'));
+      expect(notes, contains('\nA preview of Shnayim Mikrah'));
       expect(notes, contains('```powershell\n$oneLiner\n```'));
       for (final file in ['windows-x64.msi', 'windows-x64.zip', 'android-webapp.apk']) {
         expect(notes, contains('ShnayimMikrah-{{VERSION}}-$file'));
