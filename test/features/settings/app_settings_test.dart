@@ -88,6 +88,29 @@ void main() {
     expect(s.copyWith(plan: ReadingPlanType.erevShabbat).divergenceDismissedFor, '5789:30');
   });
 
+  group('the last verse with Rashi alongside', () {
+    test('is kept by default, and left off its page only when Rashi is the second reading and shown alongside', () {
+      const off = AppSettings();
+      expect(off.skipLastVerseWithRashi, isFalse);
+      const on = AppSettings(skipLastVerseWithRashi: true);
+      const both = AppSettings(
+        skipLastVerseWithRashi: true,
+        secondReading: SecondReading.rashi,
+        showRashi: true,
+      );
+      expect(both.skipsRepeatedVerse, isTrue);
+      // Rashi not alongside, or not the second reading, or the setting off: the verse is shown.
+      expect(on.skipsRepeatedVerse, isFalse);
+      expect(const AppSettings(skipLastVerseWithRashi: true, secondReading: SecondReading.rashi).skipsRepeatedVerse, isFalse);
+      expect(const AppSettings(skipLastVerseWithRashi: true, showRashi: true).skipsRepeatedVerse, isFalse);
+      expect(
+        AppSettings.fromJson(both.toJson()).skipsRepeatedVerse,
+        isTrue,
+        reason: 'it is saved with the rest',
+      );
+    });
+  });
+
   group('habit anchor', () {
     test('is saved by name, so it stays chosen whatever the language', () {
       for (final a in HabitAnchor.values) {

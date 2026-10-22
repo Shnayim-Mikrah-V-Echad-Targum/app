@@ -24,6 +24,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {getLeyningForParsha, getLeyningOnDate} from '@hebcal/leyning';
 import {HDate} from '@hebcal/core';
@@ -97,16 +98,26 @@ const COMBINED = [
 // ---------------------------------------------------------------------------
 // Downloading
 
+// Every upstream file the build reads: its Sefaria address and the SHA-256 of
+// its exact bytes, so anyone can download the same file and check it. Written
+// to assets/text/SOURCES.json at the end (see writeSourcesManifest).
+const upstream = new Map();
+
 async function fetchSource(relPath) {
   const file = path.join(cacheDir, relPath.replace(/[\/ ]/g, '_'));
-  if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
   const url = `${BUCKET}/${relPath.split('/').map(encodeURIComponent).join('/')}`;
-  process.stdout.write(`  downloading ${relPath}\n`);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status} for ${url}`);
-  const text = await res.text();
-  fs.mkdirSync(cacheDir, {recursive: true});
-  fs.writeFileSync(file, text);
+  let text;
+  if (fs.existsSync(file)) {
+    text = fs.readFileSync(file, 'utf8');
+  } else {
+    process.stdout.write(`  downloading ${relPath}\n`);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${res.status} for ${url}`);
+    text = await res.text();
+    fs.mkdirSync(cacheDir, {recursive: true});
+    fs.writeFileSync(file, text);
+  }
+  upstream.set(relPath, {url, sha256: sha256(Buffer.from(text, 'utf8'))});
   return JSON.parse(text);
 }
 
@@ -477,12 +488,49 @@ function leyningEntry(key) {
 
 // ---------------------------------------------------------------------------
 
+// Every file the build writes, with its SHA-256, for SOURCES.json.
+const written = new Map();
+
+function sha256(buffer) {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
 function writeJson(rel, data) {
   const file = path.join(root, rel);
   fs.mkdirSync(path.dirname(file), {recursive: true});
-  fs.writeFileSync(file, JSON.stringify(data) + '\n');
+  const text = JSON.stringify(data) + '\n';
+  fs.writeFileSync(file, text);
+  written.set(rel, {sha256: sha256(Buffer.from(text, 'utf8')), bytes: Buffer.byteLength(text, 'utf8')});
   const kb = (fs.statSync(file).size / 1024).toFixed(0);
   process.stdout.write(`  wrote ${rel} (${kb} KB)\n`);
+}
+
+// The manifest a reader can check the app against: each file the build reads
+// from Sefaria, with its address and SHA-256, and each file it writes, with its
+// SHA-256. Nothing in it depends on the day or the machine, so building again
+// from the same sources writes the same manifest.
+function writeSourcesManifest() {
+  // The manifest is shared with build_cities.mjs, which writes its own entries:
+  // keep those, and write this build's, each tagged with the script that made it.
+  const file = path.join(root, 'assets/text/SOURCES.json');
+  const previous = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {files: {}, sources: {}};
+  const kept = (m) => Object.entries(m).filter(([, v]) => v.builtBy !== 'build_data.mjs');
+  // Map, not object: the entries of upstream and written are a Map's.
+  const tag = (m) => [...m.entries()].map(([k, v]) => [k, {...v, builtBy: 'build_data.mjs'}]);
+  const sorted = (entries) => Object.fromEntries(entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  const manifest = {
+    about:
+      'Every text in this app is built from the public sources below by tool/data/build_data.mjs and tool/data/build_cities.mjs. ' +
+      'Each source file can be downloaded from its url and checked against its sha256; each bundled file can be checked against its sha256 here.',
+    builtWith: {
+      '@hebcal/leyning': '10.1.0',
+      '@hebcal/core': '6.14.1',
+    },
+    sources: sorted([...kept(previous.sources), ...tag(upstream)]),
+    files: sorted([...kept(previous.files), ...tag(written)]),
+  };
+  fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n');
+  process.stdout.write('  wrote assets/text/SOURCES.json\n');
 }
 
 function cmp(a, b) {
@@ -676,6 +724,7 @@ async function main() {
     en: haftEn,
   });
   process.stdout.write(`Mid-verse section gaps: ${gapCheck.total}\n`);
+  writeSourcesManifest();
   process.stdout.write('Done.\n');
 }
 

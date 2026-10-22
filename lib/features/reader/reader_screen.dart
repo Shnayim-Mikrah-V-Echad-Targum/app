@@ -350,7 +350,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       hasRashi: [for (final v in verses) texts.rashi?.on(v).isNotEmpty ?? false],
       breaks: texts.mikrah.breaks,
       thirdReadingPrompts: s.thirdReadingPrompts,
-      repeatLastVerse: s.repeatLastVerse && _aliyah == kAliyot - 1,
+      repeatLastVerse: s.repeatLastVerse && !s.skipsRepeatedVerse && _aliyah == kAliyot - 1,
     );
   }
 

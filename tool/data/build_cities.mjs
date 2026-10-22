@@ -37,6 +37,22 @@ const SOURCE = {
   file: 'geonamescache-3.0.2-py3-none-any.whl',
 };
 
+// Records a file this script writes, and the sources it was built from, in
+// assets/text/SOURCES.json, beside the entries build_data.mjs keeps (see there).
+function recordInManifest(rel, text, sources) {
+  const manifestFile = path.join(root, 'assets', 'text', 'SOURCES.json');
+  const previous = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')) : {files: {}, sources: {}};
+  const sha256 = crypto.createHash('sha256').update(text).digest('hex');
+  const sorted = (m) => Object.fromEntries(Object.entries(m).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+  const sourceEntries = Object.fromEntries(Object.entries(sources).map(([k, v]) => [k, {...v, builtBy: 'build_cities.mjs'}]));
+  const manifest = {
+    ...previous,
+    files: sorted({...previous.files, [rel]: {sha256, bytes: Buffer.byteLength(text), builtBy: 'build_cities.mjs'}}),
+    sources: sorted({...previous.sources, ...sourceEntries}),
+  };
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
+}
+
 const MIN_POPULATION = 100000;
 const MIN_POPULATION_IL = 10000;
 
@@ -812,6 +828,9 @@ async function main() {
   };
   const file = path.join(root, 'assets', 'data', 'cities.json');
   fs.writeFileSync(file, `${JSON.stringify(out)}\n`);
+  recordInManifest('assets/data/cities.json', `${JSON.stringify(out)}\n`, {
+    'geonamescache 3.0.2 wheel': {url: SOURCE.url, sha256: SOURCE.sha256},
+  });
   const hebrew = cities.filter((c) => c.name_he).length;
   process.stdout.write(
     `wrote assets/data/cities.json: ${cities.length} places (${cities.filter((c) => c.cc === 'IL').length} in Israel, ` +

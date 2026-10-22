@@ -190,6 +190,7 @@ class AppSettings {
     this.repeatLastVerse = true,
     this.repeatLastVerseTouched = false,
     this.thirdReadingPrompts = true,
+    this.skipLastVerseWithRashi = false,
     this.showTranslation = false,
     this.showRashi = false,
     this.rashiScript = false,
@@ -283,6 +284,10 @@ class AppSettings {
   /// 32:3) or, when Rashi replaces the Targum, where Rashi is silent (MB
   /// 285:5).
   final bool thirdReadingPrompts;
+
+  /// With Rashi as the second reading and Rashi shown alongside, leave out the
+  /// final verse repeated at the end ([repeatLastVerse]): the reader's last page.
+  final bool skipLastVerseWithRashi;
 
   /// Show the JPS 1917 English translation as a study aid.
   final bool showTranslation;
@@ -464,6 +469,10 @@ class AppSettings {
   /// reading.
   bool get showsRashi => showRashi || usesRashi;
 
+  /// Whether the reader leaves out the final verse repeated at the end: the
+  /// setting is on, and Rashi is both the second reading and shown alongside.
+  bool get skipsRepeatedVerse => skipLastVerseWithRashi && usesRashi && showRashi;
+
   /// Whether the reading heard and the days of Yom Tov kept are those of
   /// different places, as for a visitor to or from Israel.
   bool get readingAndYomTovDiffer => (readingSchedule == ReadingSchedule.israel) != oneDayYomTov;
@@ -537,6 +546,7 @@ class AppSettings {
     bool? repeatLastVerse,
     bool? repeatLastVerseTouched,
     bool? thirdReadingPrompts,
+    bool? skipLastVerseWithRashi,
     bool? showTranslation,
     bool? showRashi,
     bool? rashiScript,
@@ -607,6 +617,7 @@ class AppSettings {
         repeatLastVerse: repeatLastVerse ?? this.repeatLastVerse,
         repeatLastVerseTouched: repeatLastVerseTouched ?? this.repeatLastVerseTouched,
         thirdReadingPrompts: thirdReadingPrompts ?? this.thirdReadingPrompts,
+        skipLastVerseWithRashi: skipLastVerseWithRashi ?? this.skipLastVerseWithRashi,
         showTranslation: showTranslation ?? this.showTranslation,
         showRashi: showRashi ?? this.showRashi,
         rashiScript: rashiScript ?? this.rashiScript,
@@ -699,6 +710,7 @@ class AppSettings {
         'repeatLastVerse': repeatLastVerse,
         'repeatLastVerseTouched': repeatLastVerseTouched,
         'thirdReadingPrompts': thirdReadingPrompts,
+        'skipLastVerseWithRashi': skipLastVerseWithRashi,
         'showTranslation': showTranslation,
         'showRashi': showRashi,
         'rashiScript': rashiScript,
@@ -797,6 +809,7 @@ class AppSettings {
       repeatLastVerse: repeatTouched ? b('repeatLastVerse', d.repeatLastVerse) : nusach != HaftarahNusach.chabad,
       repeatLastVerseTouched: repeatTouched,
       thirdReadingPrompts: b('thirdReadingPrompts', d.thirdReadingPrompts),
+      skipLastVerseWithRashi: b('skipLastVerseWithRashi', d.skipLastVerseWithRashi),
       showTranslation: b('showTranslation', d.showTranslation),
       showRashi: b('showRashi', d.showRashi),
       rashiScript: b('rashiScript', d.rashiScript),
