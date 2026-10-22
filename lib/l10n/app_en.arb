@@ -3745,7 +3745,7 @@
   "@verseCheckOnSefaria": {
     "description": "The verse options' row that opens the verse on Sefaria, where its text can be compared with the app's."
   },
-  "aiNoticeStrip": "Made with AI · Where the texts come from",
+  "aiNoticeStrip": "Made with AI · Texts & sources",
   "@aiNoticeStrip": {
     "description": "The one-line strip at the top of Today: that the app was made with AI, and that the sources are a tap away."
   }

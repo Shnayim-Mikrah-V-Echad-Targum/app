@@ -80,7 +80,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
         children: [
           _AboutHeader(nameKey: headingKey),
           const Gap(Space.lg),
-          const AiSourcesNotice(),
+          // The row for Texts & sources sits just below, so the notice does not repeat it.
+          const AiSourcesNotice(linkToSources: false),
           // On the web, a new version of the app, under the version open:
           // offered here while it waits, though put away on Today.
           if (ref.watch(webUpdateReadyProvider)) ...[

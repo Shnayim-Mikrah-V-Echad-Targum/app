@@ -25,24 +25,26 @@ class AiSourcesNotice extends StatelessWidget {
     final scheme = theme.colorScheme;
     final ink = scheme.onSecondaryContainer;
     if (compact) {
+      // One link, read by its own words: the label and the link on the node
+      // that holds the tap, with the strip's text left out of the reading.
       return Card(
         color: scheme.secondaryContainer,
         child: Semantics(
-          // The strip is one link, read by its own words.
           link: true,
           label: l.aiNoticeStrip,
-          excludeSemantics: true,
           child: SeferInkWell(
             onTap: () => context.push('/settings/about/sources'),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.xs),
-              child: Row(
-                children: [
-                  Icon(Icons.auto_awesome_outlined, size: 20, color: ink),
-                  const Gap(Space.sm),
-                  Expanded(child: Text(l.aiNoticeStrip, style: theme.textTheme.bodyMedium?.copyWith(color: ink))),
-                  Icon(Icons.chevron_right, size: 20, color: ink),
-                ],
+              child: ExcludeSemantics(
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome_outlined, size: 20, color: ink),
+                    const Gap(Space.sm),
+                    Expanded(child: Text(l.aiNoticeStrip, style: theme.textTheme.bodyMedium?.copyWith(color: ink))),
+                    Icon(Icons.chevron_right, size: 20, color: ink),
+                  ],
+                ),
               ),
             ),
           ),

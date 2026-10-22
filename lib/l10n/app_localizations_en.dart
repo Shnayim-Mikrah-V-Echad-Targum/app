@@ -4020,5 +4020,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verseCheckOnSefaria => 'Check this verse on Sefaria';
 
   @override
-  String get aiNoticeStrip => 'Made with AI · Where the texts come from';
+  String get aiNoticeStrip => 'Made with AI · Texts & sources';
 }

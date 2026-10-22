@@ -6228,7 +6228,7 @@ abstract class AppLocalizations {
   /// The one-line strip at the top of Today: that the app was made with AI, and that the sources are a tap away.
   ///
   /// In en, this message translates to:
-  /// **'Made with AI · Where the texts come from'**
+  /// **'Made with AI · Texts & sources'**
   String get aiNoticeStrip;
 }
 

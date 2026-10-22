@@ -4022,5 +4022,5 @@ class AppLocalizationsHe extends AppLocalizations {
   String get verseCheckOnSefaria => 'בדיקת הפסוק בספריא';
 
   @override
-  String get aiNoticeStrip => 'נכתב בעזרת בינה מלאכותית · מאיפה בא הנוסח';
+  String get aiNoticeStrip => 'נכתב בעזרת בינה מלאכותית · מקורות הנוסח';
 }

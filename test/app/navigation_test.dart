@@ -659,6 +659,9 @@ void main() {
 
     testWidgets('opened from Today shows the week in its place, within Today', (tester) async {
       await _pump(tester);
+      // On a phone, below the strip that says the app was made with AI.
+      await Scrollable.ensureVisible(tester.element(find.widgetWithText(FilledButton, 'Start · Rishon')), alignment: 0.1);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Start · Rishon'));
       await _loadTexts(tester);
       expect(find.byType(ReaderScreen), findsOneWidget);
@@ -700,6 +703,9 @@ void main() {
         }
       }
       await _pump(tester, progress: ProgressState(weeks: {'5787:1': week}));
+      // On a phone, below the strip that says the app was made with AI.
+      await Scrollable.ensureVisible(tester.element(find.widgetWithText(FilledButton, 'Continue · Shevi’i')), alignment: 0.1);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Continue · Shevi’i'));
       await _loadTexts(tester);
       await tester.tap(find.byTooltip('More options'));
@@ -707,6 +713,9 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
+      // On a phone, below the strip that says the app was made with AI.
+      await Scrollable.ensureVisible(tester.element(find.widgetWithText(FilledButton, 'Read the haftarah')), alignment: 0.1);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
@@ -746,6 +755,9 @@ void main() {
       await tester.tap(find.text('Mark this aliyah as read'));
       await tester.pumpAndSettle();
 
+      // On a phone, below the strip that says the app was made with AI.
+      await Scrollable.ensureVisible(tester.element(find.widgetWithText(FilledButton, 'Read the haftarah')), alignment: 0.1);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Read the haftarah'));
       await _loadTexts(tester);
       expect(find.byType(HaftarahScreen), findsOneWidget);
