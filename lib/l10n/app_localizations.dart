@@ -6176,6 +6176,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install'**
   String get installAction;
+
+  /// Heading of the notice that the app was made with AI, on Today, About and Texts & sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Made with AI'**
+  String get aiNoticeTitle;
+
+  /// The notice that the app was made with AI, with where its texts come from and how to check them.
+  ///
+  /// In en, this message translates to:
+  /// **'This app, its website and its code were vibe-coded with AI (Claude). Its texts were built by scripts from the public sources named on Texts & sources. Before you rely on any verse, check it against its source, and tell us if anything differs.'**
+  String get aiNoticeBody;
+
+  /// Heading above the explanation of how the app's texts are built from their sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Where each text comes from'**
+  String get sourcesTopTitle;
+
+  /// How the texts are built and how to check them: the editions, the repeatable build and the checksums.
+  ///
+  /// In en, this message translates to:
+  /// **'Each text is built from one named public edition, which you can open and compare with the app. The build can be repeated: a checksum (SHA-256) of every source file, and of every file the app ships, is listed in SOURCES.json, so anyone can check them.'**
+  String get sourcesTopBody;
+
+  /// Why a Torah text may differ from the Aleppo Codex edition on Wikisource, and that it does so on purpose.
+  ///
+  /// In en, this message translates to:
+  /// **'In the Torah, the text follows the Ashkenazi and Sephardi scrolls wherever they differ from the Aleppo Codex, which the Wikisource edition gives. Each such place is marked in the text, with the Codex’s reading in a note. So a comparison with the Codex shows those differences on purpose.'**
+  String get sourcesTorahDifferences;
+
+  /// The name of the card that opens SOURCES.json, the list of checksums.
+  ///
+  /// In en, this message translates to:
+  /// **'Checksums of every file'**
+  String get sourcesManifestAction;
+
+  /// What SOURCES.json holds and how to use it to check a file.
+  ///
+  /// In en, this message translates to:
+  /// **'SOURCES.json lists each source file with its Sefaria address and SHA-256, and each file the app ships with its SHA-256. Download a source, hash it, and compare.'**
+  String get sourcesManifestDescription;
+
+  /// The verse options' row that opens the verse on Sefaria, where its text can be compared with the app's.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this verse on Sefaria'**
+  String get verseCheckOnSefaria;
+
+  /// The one-line strip at the top of Today: that the app was made with AI, and that the sources are a tap away.
+  ///
+  /// In en, this message translates to:
+  /// **'Made with AI · Texts & sources'**
+  String get aiNoticeStrip;
+
+  /// The switch on the reading settings: whether the final verse is left off its own page when Rashi is alongside.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave out the last verse page with Rashi alongside'**
+  String get skipLastVerseWithRashi;
+
+  /// The description under the switch that leaves the final verse off its page, with Rashi alongside.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi as the second reading and shown alongside: the final verse, repeated at the end, is not shown on its own page. Off keeps it.'**
+  String get skipLastVerseWithRashiDesc;
 }
 
 class _AppLocalizationsDelegate

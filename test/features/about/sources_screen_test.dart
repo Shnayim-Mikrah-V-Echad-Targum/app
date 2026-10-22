@@ -18,7 +18,7 @@ void main() {
       return true;
     });
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
-    tester.view.physicalSize = const Size(412, 3000);
+    tester.view.physicalSize = const Size(412, 4400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final c = await pumpApp(tester, settings: const AppSettings(onboardingComplete: true));
@@ -31,6 +31,8 @@ void main() {
     expect(find.text('Learn more'), findsNothing);
     await tester.tap(find.text('Torat Emet edition, via Sefaria.'));
     expect(launched, ['https://www.sefaria.org/Onkelos_Genesis']);
+    // Further down the page now that the checksums and the notices come first.
+    await tester.ensureVisible(find.text('Cities for Shabbat times'));
     await tester.tap(find.text('Cities for Shabbat times'));
     expect(launched.last, 'https://www.geonames.org/');
   });

@@ -71,6 +71,7 @@
       }
     ],
     "terms": [
+      {"heading": "Made with AI", "blocks": [{"type": "para", "text": "This app, its website and its code were vibe-coded with AI (Claude). Its texts were built by scripts from the public sources named on Texts & sources. Before you rely on any verse, check it against its source, and tell us if anything differs."}]},
       {
         "heading": "",
         "blocks": [
@@ -297,6 +298,7 @@
       }
     ],
     "terms": [
+      {"heading": "נכתב בעזרת בינה מלאכותית", "blocks": [{"type": "para", "text": "אפליקציה זו, האתר שלה והקוד שלה נכתבו כולם בעזרת בינה מלאכותית, בשיטת וייב קודינג. הנוסח נבנה בתוכנות מהמקורות הציבוריים שמופיעים במקורות הנוסח. לפני שאתם נשענים על פסוק, בדקו אותו במקורו, והודיעו לנו אם משהו שונה."}]},
       {
         "heading": "",
         "blocks": [

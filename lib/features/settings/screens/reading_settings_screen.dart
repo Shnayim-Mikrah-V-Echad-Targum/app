@@ -131,6 +131,12 @@ class ReadingSettingsScreen extends ConsumerWidget {
                 value: s.thirdReadingPrompts,
                 onChanged: (v) => update((s) => s.copyWith(thirdReadingPrompts: v)),
               ),
+              SwitchRow(
+                title: l.skipLastVerseWithRashi,
+                subtitle: l.skipLastVerseWithRashiDesc,
+                value: s.skipLastVerseWithRashi,
+                onChanged: (v) => update((s) => s.copyWith(skipLastVerseWithRashi: v)),
+              ),
             ],
           ),
         ]),

@@ -178,7 +178,14 @@ void main() {
       expect(tester.takeException(), isNull);
       expectWholeWords(tester);
       final open = find.text(hebrew ? 'לפרשה' : 'Open the parsha');
-      expect(tester.getRect(open).top, greaterThan(640), reason: 'below the screen at first');
+      // The strip that says the app was made with AI and the header fill the
+      // first screen, so the title page is laid out only once the page is
+      // scrolled toward it: below the screen at first, and reached by scrolling.
+      if (open.evaluate().isNotEmpty) {
+        expect(tester.getRect(open).top, greaterThan(640), reason: 'below the screen at first');
+      }
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(open, 200, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

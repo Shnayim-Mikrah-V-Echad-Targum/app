@@ -60,3 +60,6 @@ app.*.map.json
 
 # Python bytecode from tool/ scripts
 __pycache__/
+
+# Golden-test diffs: the comparator writes the images of a failing golden here.
+/test/goldens/failures/

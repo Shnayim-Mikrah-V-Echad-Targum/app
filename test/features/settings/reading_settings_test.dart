@@ -131,7 +131,10 @@ void main() {
     expect(row, findsOneWidget);
     expect(find.descendant(of: row, matching: find.textContaining('on Tisha B')), findsOneWidget);
     expect(c.read(settingsProvider).tishaBavQuiet, isTrue);
-    await tester.tap(row);
+    // Below the switch for the reader's Rashi, which now sits above it.
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(row));
     await tester.pumpAndSettle();
     expect(c.read(settingsProvider).tishaBavQuiet, isFalse);
   });
