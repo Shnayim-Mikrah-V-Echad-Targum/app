@@ -18,6 +18,7 @@ import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/paper_group.dart';
 import '../../ui/widgets/web_update_banner.dart';
 import '../community/data/backend.dart';
+import 'ai_notice.dart';
 import 'install_app.dart';
 import 'updates_section.dart';
 
@@ -78,6 +79,8 @@ class _AboutScreenState extends ConsumerState<AboutScreen> with HeadingReveal<Ab
       body: watchHeading(PageBody(
         children: [
           _AboutHeader(nameKey: headingKey),
+          const Gap(Space.lg),
+          const AiSourcesNotice(),
           // On the web, a new version of the app, under the version open:
           // offered here while it waits, though put away on Today.
           if (ref.watch(webUpdateReadyProvider)) ...[

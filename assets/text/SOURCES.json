@@ -1,0 +1,441 @@
+{
+  "about": "Every text in this app is built from the public sources below by tool/data/build_data.mjs and tool/data/build_cities.mjs. Each source file can be downloaded from its url and checked against its sha256; each bundled file can be checked against its sha256 here.",
+  "builtWith": {
+    "@hebcal/leyning": "10.1.0",
+    "@hebcal/core": "6.14.1"
+  },
+  "sources": {
+    "Tanakh/Prophets/Amos/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Amos/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "f08bd5d576afc96b3b20bd44ce0a9337975b25f681638c5560f3953742430c6d",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Amos/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Amos/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "7fadc999c4d8eb8934ff671dc3bedeab2e7cf6e4cdd561c3d2b898227c34b1c2",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Ezekiel/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Ezekiel/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "25dc9e2c283057482d3db2446b6d61f9ed415b7f0b5c4757f8ef70626d5106f7",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Ezekiel/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Ezekiel/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "fbb337b964c1fced0d9dcc21e7d531e5460d14c33d26ed67ce8c7b367efb4ec7",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Hosea/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Hosea/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "c68878899af6ddf6388b0b88cfaf87f442b97fad2e716631f726b66b727bd9a8",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Hosea/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Hosea/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "b3c8a3b558330bf409407a0604dd5be1ec355beb45b855b5572ba9d47242f5a9",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/I Kings/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/I%20Kings/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "d0a39e12c340b1e0c95108e438238658007d625144f19a85e70d052f38ebd3e6",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/I Kings/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/I%20Kings/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "66c8c29c8fd01d19723831e97dd586a1421b6586b435186b57dcd3d922ccd8e1",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/I Samuel/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/I%20Samuel/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "e7c87db5a8c8936aeca19cdd24cb918e14a1899fa8b9b9f54fc8ec703872ea1e",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/I Samuel/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/I%20Samuel/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "1abe7514ea64d08504cbb5e3c3db1dc237d7659144511063c7697ef136823e5c",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/II Kings/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/II%20Kings/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "78f0736842a0a1a9909027aa668e26bc40e976387a3c15089fbe97bdffcc1d83",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/II Kings/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/II%20Kings/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "d5ddc87ef1dcae5459a5510b00ca75da6c11f6903e7e6894a1ed64fbd8c812a2",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/II Samuel/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/II%20Samuel/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "ace8aad164af24409f3231406690a2af654319ae39fb6d6b1b71fbf1ff0d3606",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/II Samuel/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/II%20Samuel/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "cd9c395e8c6132cf63f476f930b2cab5b3473d24a179cc028c8b0a779920a989",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Isaiah/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Isaiah/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "a01e25f1ae43c97749568ada9a5d0e69b613cd3c319610df282981912fea01df",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Isaiah/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Isaiah/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "89e36d0b853e7ab71ff57786415be6212eb43a240d733ce54acdde26eacf9125",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Jeremiah/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Jeremiah/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "6bba9f351600c2a52dbfa168319a6383e56eeae85a131873c02a190df9af368f",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Jeremiah/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Jeremiah/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "d56e597a766a6413dd22d3251fabfcdf292ed1f823ecdd2f669ef86d051ee054",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Joel/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Joel/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "5f861b18bdcc97886862184919bc22704b31f8170a944bf606b0a4f21fcf510a",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Joel/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Joel/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "ce81f6552e7f7fa904a11da697474c6e46c57a6e726e734929fe72bdb1743703",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Joshua/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Joshua/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "01286c770a1165204f6a92cd18dd374cf9e3790b7da5adce9b4e9668cc98a154",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Joshua/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Joshua/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "357131c5c106d90df2a33332859b3407ae95631125df718ee685a8f3a44a9ea1",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Judges/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Judges/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "a602a849ad72d544a2caee91c51c8df265a36119f39feac227e14383563aa38e",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Judges/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Judges/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "a68105534890cd1e80ccb4f8d5986a607cca599bc1d690e54388f7a4e1cd3433",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Malachi/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Malachi/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "e955538b7867e34d5f113c7334ab4c6a33f84e57fba58afe88b6e21b91e58557",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Malachi/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Malachi/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "f9ea377052a9aa819c6b23bdb4a6ecd86be2153262d3215bf1674dd813dea61e",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Micah/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Micah/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "30b4b656eccdffe33e2e13d06d4a57ce242c085e4f5604c18b717d52a4d75875",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Micah/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Micah/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "cbf2c02eb58cf52f14f154188aec6e8fd9b1bd7b8181511638b146dade8cf73f",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Obadiah/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Obadiah/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "1d25a940478487762fd4888f49a86e719026272af47dc886ddbb0c78686f1457",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Obadiah/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Obadiah/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "61d737e70c9876728cb4a510d43340db95d562f7b078538305048da1ad3fcccd",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Zechariah/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Zechariah/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "568bf600189f73c6ddec2d976d5dc6dec8c93609f5650bb6510b4483b9ec893d",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Prophets/Zechariah/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Prophets/Zechariah/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "916a2fd8e6ac6139c1a7719f16d77a01439dd3936d208e90acbd4d6e00b039c4",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Deuteronomy/English/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Deuteronomy/English/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "c36a97f834d87f8cc45622b4d463d6c277034b16094593186a5d2c6603fa942d",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Deuteronomy/Hebrew/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Deuteronomy/Hebrew/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "2da361007fb1d5da779f1343d35f9083a7d838a8b89668c956f1aee10d169031",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Exodus/English/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Exodus/English/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "dd47c29c785eecbfa372ed10d871e069335e9fe944255c07ce03f89d98cab1bb",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Exodus/Hebrew/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Exodus/Hebrew/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "87eb80777f73e10157b5d7adcf92cf3b76eb9d8914a3864bf2e77bfed46cbfb2",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Genesis/English/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Genesis/English/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "31b3f9b00b37bbae144cbf8841a52ff7b110e76bd6dd4ef50112559df43b3b24",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Genesis/Hebrew/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Genesis/Hebrew/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "9672f64f6713bc1b12235350750d916e1c8b681f45513afdfb13f784a1f7a59c",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Leviticus/English/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Leviticus/English/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "10cdee3fe7273e19d78e52c9c43576447524ba40cc325035c355c8c0b3e60a81",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Leviticus/Hebrew/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Leviticus/Hebrew/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "0eb026299faa291b600e51b3a4141ad71002be5561b481bfd12e6678eb666585",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Numbers/English/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann, 1929-1934.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Numbers/English/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%2C%201929-1934.json",
+      "sha256": "eb9d5dce8b8843d5efe0a6c4996605dd63a1a47bccabfb9abeda3a66a9aecc01",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Rishonim on Tanakh/Rashi/Torah/Rashi on Numbers/Hebrew/Pentateuch with Rashi's commentary by M. Rosenbaum and A.M. Silbermann -- corrected vocalization.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Rishonim%20on%20Tanakh/Rashi/Torah/Rashi%20on%20Numbers/Hebrew/Pentateuch%20with%20Rashi's%20commentary%20by%20M.%20Rosenbaum%20and%20A.M.%20Silbermann%20--%20corrected%20vocalization.json",
+      "sha256": "8811df8cec380358fbe20449f6f1be7440ff7fa8f8869f5bd59c0ec64b881271",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Targum/Onkelos/Torah/Onkelos Deuteronomy/Hebrew/Onkelos Deuteronomy.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Targum/Onkelos/Torah/Onkelos%20Deuteronomy/Hebrew/Onkelos%20Deuteronomy.json",
+      "sha256": "e45770c06acc59a5524efea298d213f81d531c5182d13b444d9995fa3dacf5e0",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Targum/Onkelos/Torah/Onkelos Exodus/Hebrew/Onkelos Exodus.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Targum/Onkelos/Torah/Onkelos%20Exodus/Hebrew/Onkelos%20Exodus.json",
+      "sha256": "58965f70188de972cc13ebde03d6fbe5b299c249471610c7c717663de279a09f",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Targum/Onkelos/Torah/Onkelos Genesis/Hebrew/Onkelos Genesis.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Targum/Onkelos/Torah/Onkelos%20Genesis/Hebrew/Onkelos%20Genesis.json",
+      "sha256": "d35c944077d33238bba5e6de40808ee68a7cffd1f64c0ca8d1f632d469ab7cf4",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Targum/Onkelos/Torah/Onkelos Leviticus/Hebrew/Onkelos Leviticus.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Targum/Onkelos/Torah/Onkelos%20Leviticus/Hebrew/Onkelos%20Leviticus.json",
+      "sha256": "47b555fa6fabbbdda8f7c452287c7f1ac51f52c6e67befa78fb9bbd085865764",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Targum/Onkelos/Torah/Onkelos Numbers/Hebrew/Onkelos Numbers.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Targum/Onkelos/Torah/Onkelos%20Numbers/Hebrew/Onkelos%20Numbers.json",
+      "sha256": "208ccd843fe8507d11e09ea1057db55875d052435bff0d1f09f73c95bc63185d",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Deuteronomy/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Deuteronomy/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "89ddae811c76468bd2d78a3f4a006a046b3e2fe3c2b4142fb0735ab1974863c5",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Deuteronomy/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Deuteronomy/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "c94249051eefadddf7bf104d1bfa8cec7fcda740c0741ed3c42e9079b7aea074",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Exodus/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Exodus/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "06f24083680cc4395af49c85c51bac81d827d2016f53bb73b8b89c5c8484cdfe",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Exodus/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Exodus/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "13854773c311d4c754003ad941863cb888076f022a71e4b097c4861d320c2667",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Genesis/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Genesis/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "ad1d64986bb4dc2bce6c8f09fc90c83dcaee9b1eaf7545cdeca4051584456543",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Genesis/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Genesis/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "9b3c8e40d5032998cb1deab8cf37a3c8f693ada3189342dd7bfeff002f4ddae2",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Leviticus/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Leviticus/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "057450f70b8c82c742d250ed64f714c35a8d315fa15c1bc19caec6f2bd7d9f5f",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Leviticus/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Leviticus/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "ddc541d86e8fa0ec647902119fc4d56e95e8af0f8a64c6c1008c5746399d52d4",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Numbers/English/The Holy Scriptures A New Translation JPS 1917.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Numbers/English/The%20Holy%20Scriptures%20A%20New%20Translation%20JPS%201917.json",
+      "sha256": "95094e170cd2b6124824c8fb9b5a4d98a8254001a3b8f680bf48413d136166e5",
+      "builtBy": "build_data.mjs"
+    },
+    "Tanakh/Torah/Numbers/Hebrew/Miqra according to the Masorah.json": {
+      "url": "https://storage.googleapis.com/sefaria-export/json/Tanakh/Torah/Numbers/Hebrew/Miqra%20according%20to%20the%20Masorah.json",
+      "sha256": "e6710e25640b3247c736492b78b538276750180f203126e6846d532ed38cf3e7",
+      "builtBy": "build_data.mjs"
+    },
+    "geonamescache 3.0.2 wheel": {
+      "url": "https://files.pythonhosted.org/packages/48/c2/52f1b29de8839b4b55cd2641dfd722a6a94953d74fa82514e26084a92318/geonamescache-3.0.2-py3-none-any.whl",
+      "sha256": "b830e8942f2d58c7e68782dcf4dff2ffe8c4104a35ee881ed1ad4023cefcdba4",
+      "builtBy": "build_cities.mjs"
+    }
+  },
+  "files": {
+    "assets/data/cities.json": {
+      "sha256": "dd975fcb40de0ce161d978ca34f4404a81a6c133d6cca39d9d82c4fee927c9dd",
+      "bytes": 829433,
+      "builtBy": "build_cities.mjs"
+    },
+    "assets/data/parshiyot.json": {
+      "sha256": "0f214983b9aab98f2a9fbb49dc82030ef55c5e4498aba85e222b8fe61ea2fa51",
+      "bytes": 32721,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/english/deuteronomy.json": {
+      "sha256": "e415f28b8c0473327699647f98eed520c08a5e63d254f30ea80a511b377ce4b5",
+      "bytes": 149722,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/english/exodus.json": {
+      "sha256": "8da190722c72107fe7fa1ba4275b4375d670d71b7732c4d49c1cbc33af82a2b5",
+      "bytes": 173758,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/english/genesis.json": {
+      "sha256": "14802ec18ed49bf0932b92961e2590888211dcd1594ab61fc9d97e090fd4a8bf",
+      "bytes": 204231,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/english/leviticus.json": {
+      "sha256": "245c46ae1ba9d97951d39be2e2fda68abae8fdd17c88f8232b3c385ea8438e4c",
+      "bytes": 128522,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/english/numbers.json": {
+      "sha256": "a26fa95812fdc1ea6bb484dcdecb624af603519379897e068dd3a48a3e350263",
+      "bytes": 179344,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/haftarot.json": {
+      "sha256": "6897c7af7edab168c2d04b7cee296bdee47446846c01ed6ccf089c5b86ad5ef1",
+      "bytes": 634217,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/mikrah/deuteronomy.json": {
+      "sha256": "eb5d8479e6b7a00321c81fc9812b5fe6c93dec91a5db6b3f9b6758fef7d9b422",
+      "bytes": 253970,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/mikrah/exodus.json": {
+      "sha256": "ba1e0125fc16bedfcac6e4c9b5146aa8b1696cc5e0d72a0cb9defe7e6b975f15",
+      "bytes": 295066,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/mikrah/genesis.json": {
+      "sha256": "70fdc05e50e0fe94597a1a1ba71d5cabb8044f3fd98986b9f1082c34e01c968c",
+      "bytes": 358211,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/mikrah/leviticus.json": {
+      "sha256": "c6c58488bf5bdf46f026e4b33b68bac079862b900ceb3ec2d4306aa53431514e",
+      "bytes": 206473,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/mikrah/numbers.json": {
+      "sha256": "d7ea296dcf893b7c3d5ec509a6e394a549174b11d74dc005cb5c7a46d472e63a",
+      "bytes": 293178,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/onkelos/deuteronomy.json": {
+      "sha256": "ac1df286a00c0fabe31cb13ca77866dfd0afd3043ff10f84725b94eba1f10579",
+      "bytes": 233330,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/onkelos/exodus.json": {
+      "sha256": "394382d22a7c09d487a9347c7a49771077514f739bd8124a993d73e990d21ec5",
+      "bytes": 270354,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/onkelos/genesis.json": {
+      "sha256": "9afe133dae114d60508a3e4c1ded149bda034c4badb23c42e8b1a97696cbaac4",
+      "bytes": 335293,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/onkelos/leviticus.json": {
+      "sha256": "a88db822239212cbbe1a268645d8851649d707955a46d8727d072d6eb70c3210",
+      "bytes": 189958,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/onkelos/numbers.json": {
+      "sha256": "3f3fc645949da25011f646660bbad43cbc39876d099063d19c71d2fa30a4ddb7",
+      "bytes": 271777,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi/deuteronomy.json": {
+      "sha256": "e4e19317ddf04fba0f1fc051f650050e98bc13d7c302b07ddb2a92f5f1cb044d",
+      "bytes": 406109,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi/exodus.json": {
+      "sha256": "fe9acd389aca73d4afe66c4ed6279f3d0345fe10f59b0850c526cb29c6b6e39e",
+      "bytes": 659932,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi/genesis.json": {
+      "sha256": "cc432ed46a86d4ab856235e5a73392436457258f057cab5c2998c7187cafe207",
+      "bytes": 635336,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi/leviticus.json": {
+      "sha256": "e658aedd08d1e585a632206a7decb4a377933dd7433309c48c06875a777794f8",
+      "bytes": 394998,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi/numbers.json": {
+      "sha256": "8cb8525a017ea864955271d007fff34b4d3ebb0325a2d22bae076e21d1750ada",
+      "bytes": 431262,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi_en/deuteronomy.json": {
+      "sha256": "c692f4cdc3a94f85eef77e9e047cdd7be3b354d955218d7fa0ebd27b9f86583c",
+      "bytes": 455126,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi_en/exodus.json": {
+      "sha256": "903ea1f84628d48d94f8dc2808f3c553e648225d0e0b8fe03c9e8399fa5f42c0",
+      "bytes": 713343,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi_en/genesis.json": {
+      "sha256": "8d1f2db3b1c12f9f110f3c5e29c20101f0edd901998619c3c5d56419387afe4a",
+      "bytes": 626497,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi_en/leviticus.json": {
+      "sha256": "9da1287a75d928925fc3d7a0524ecf27efdf707605e97cafe4aa5613e900be2b",
+      "bytes": 537750,
+      "builtBy": "build_data.mjs"
+    },
+    "assets/text/rashi_en/numbers.json": {
+      "sha256": "b8f5470481764df84c3d5497d6cb886759ffee1fbc135370eb49cbc3c3df9109",
+      "bytes": 481133,
+      "builtBy": "build_data.mjs"
+    }
+  }
+}

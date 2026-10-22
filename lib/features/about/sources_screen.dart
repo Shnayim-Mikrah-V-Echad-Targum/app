@@ -3,12 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/text/sources.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/fallbacks.dart';
 import '../../ui/widgets/ornaments.dart';
 import '../../ui/widgets/sefer_tag.dart';
+import 'ai_notice.dart';
 
 class _Source {
   const _Source(this.title, this.description, this.license, this.url);
@@ -30,6 +32,12 @@ class SourcesScreen extends StatelessWidget {
     final he = context.isHebrewUi;
     final theme = Theme.of(context);
     final sources = [
+      _Source(
+        l.sourcesManifestAction,
+        l.sourcesManifestDescription,
+        'SHA-256',
+        sourcesManifestUri.toString(),
+      ),
       _Source(
         he ? 'מקרא על פי המסורה' : 'Miqra according to the Masorah (MAM)',
         l.sourcesMamDescription,
@@ -86,6 +94,12 @@ class SourcesScreen extends StatelessWidget {
       body: PageBody(
         maxWidth: ContentWidth.longform,
         children: [
+          const AiSourcesNotice(linkToSources: false),
+          const Gap(Rhythm.sectionGap),
+          NoticeBanner(icon: Icons.menu_book_outlined, title: l.sourcesTopTitle, text: l.sourcesTopBody),
+          const Gap(Rhythm.cardGap),
+          NoticeBanner(icon: Icons.compare_arrows_outlined, text: l.sourcesTorahDifferences),
+          const Gap(Rhythm.sectionGap),
           for (final (i, source) in sources.indexed) ...[if (i > 0) const Gap(Rhythm.cardGap), _SourceCard(source)],
           const Gap(Rhythm.sectionGap),
           const SeferDivider(),
