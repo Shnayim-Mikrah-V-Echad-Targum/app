@@ -13,7 +13,7 @@ void main() {
   final notifications = File('lib/services/notifications.dart').readAsStringSync();
 
   const oneLiner = 'Set-ExecutionPolicy Bypass -Scope Process -Force; irm '
-      'https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex';
+      'https://shnayimmikrah.org/install.ps1 | iex';
 
   group('the MSI', () {
     test('keeps one UpgradeCode for every release, and installs per user', () {
@@ -62,7 +62,7 @@ void main() {
       expect(install,
           contains("\$DownloadHosts = @('github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com')"));
       final urls = RegExp(r'https://[A-Za-z0-9.-]+').allMatches(install).map((m) => m[0]!).toSet();
-      expect(urls, {'https://raw.githubusercontent.com', 'https://api.github.com', 'https://github.com'});
+      expect(urls, {'https://shnayimmikrah.org', 'https://api.github.com', 'https://github.com'});
     });
 
     test('checks the SHA-256 before it installs anything', () {

@@ -46,7 +46,7 @@ A tag `v0.Y.Z` is a preview's. `.github/workflows/prerelease.yml` builds it (the
 - `ShnayimMikrah-X.Y.Z-windows-x64.msi`: the Windows installer, from `tool/windows/build_msi.ps1`, for the reader's account alone, without administrator rights.
 - `ShnayimMikrah-X.Y.Z-windows-x64.zip`: the same app as a folder, to run without installing.
 - `ShnayimMikrah-X.Y.Z-android-webapp.apk`: the Android web app (`tool/android_twa`), which opens the site full screen, as an app of its own (`org.shnayimmikrah.web`).
-- `install.ps1`: `tool/windows/install.ps1` at the tag, which the one-liner runs from main: `Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex`. The site serves it too, at `https://shnayimmikrah.org/install.ps1`.
+- `install.ps1`: `tool/windows/install.ps1` at the tag. The one-liner runs the site's copy, `https://shnayimmikrah.org/install.ps1`, which the web job makes from this file and Cloudflare serves with the site (`Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://shnayimmikrah.org/install.ps1 | iex`). After a change to the script, deploy the site again, or the one-liner keeps the old script.
 - `SHA256SUMS.txt`: the others' SHA-256s, which `install.ps1` and the app's updater check.
 
 Every build is a preview's: no community until the accounts database is ready (`COMMUNITY=off`), and the Windows app looks for updates among this repository's releases, pre-releases included (`UPDATE_CHANNEL=prerelease`). The workflow needs no secrets or variables, though it uses CI's, such as `SUPPORT_EMAIL`, when they're set.
