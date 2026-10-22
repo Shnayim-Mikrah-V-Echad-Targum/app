@@ -229,6 +229,34 @@ void main() {
       expect(upload['name'], 'android-webapp');
       expect(upload['path'], r'ShnayimMikrah-${{ env.VERSION }}-android-webapp.apk');
     });
+
+    // apksigner's own words: build-tools 36 names an APK's v2 signer
+    // "V2 Signer" (the run of 21 October failed on that), older ones
+    // "Signer #1".
+    test("reads the certificate of each signer apksigner names, and wants one", () async {
+      final check = step(twa, 'The APK is org.shnayimmikrah.web, signed with the key')['run'] as String;
+      final parse = check.split('\n').map((line) => line.trim()).singleWhere((line) => line.startsWith(r'signed=$('));
+      const key = 'aaa5deb34dec9329cd548f1c667afaef32a0d1eaac1e8e3f327922b4a7728da1';
+      const other = 'bbb5deb34dec9329cd548f1c667afaef32a0d1eaac1e8e3f327922b4a7728da1';
+      String signer(String name, String digest) => '$name certificate DN: CN=Shnayim Mikrah, O=Shnayim Mikrah\n'
+          '$name certificate SHA-256 digest: $digest\n'
+          '$name certificate SHA-1 digest: dc86072aca38636f7974f57fda004577dc99742c\n';
+      final folder = Directory.systemTemp.createTempSync('apksigner');
+      addTearDown(() => folder.deleteSync(recursive: true));
+      Future<String> signed(String certificates) async {
+        File('${folder.path}/certificates.txt').writeAsStringSync(certificates);
+        final result = await Process.run('bash', ['-c', '$parse\nprintf %s "\$signed"'], environment: {'RUNNER_TEMP': folder.path});
+        expect(result.exitCode, 0, reason: '${result.stderr}');
+        return result.stdout as String;
+      }
+
+      expect(await signed(signer('V2 Signer:', key)), key);
+      expect(await signed(signer('Signer #1', key)), key);
+      expect(await signed(signer('V2 Signer:', key) + signer('V3 Signer:', key)), key);
+      // Two keys, or none, never equal the key's fingerprint.
+      expect(await signed(signer('V2 Signer:', key) + signer('V3 Signer:', other)), '$key\n$other');
+      expect(await signed('Verifies\n'), isEmpty);
+    }, testOn: '!windows');
   });
 
   group('the web app', () {

@@ -239,9 +239,12 @@ jobs:
             exit 1
           fi
           "$build_tools/apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certificates.txt"
-          signed=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/certificates.txt")
+          # apksigner names a signer "Signer #1", or, in an APK signed with
+          # the v2 or v3 scheme alone, "V2 Signer" or "V3 Signer". Every one
+          # must have the key's certificate: one SHA-256 among them all.
+          signed=$(sed -n 's/^.*[Ss]igner.* certificate SHA-256 digest: \([0-9a-f]\{64\}\)$/\1/p' "$RUNNER_TEMP/certificates.txt" | sort -u)
           if [ "$signed" != "$(echo "$FINGERPRINT" | tr -d ':' | tr 'A-F' 'a-f')" ]; then
-            echo "::error::The APK is signed with $signed, not with the key's certificate, $FINGERPRINT"
+            echo "::error::The APK is signed with ${signed:-no certificate apksigner names}, not with the key's certificate, $FINGERPRINT"
             exit 1
           fi
           {
@@ -423,7 +426,7 @@ jobs:
           The release doesn't need it, but the web app at https://shnayimmikrah.org/, and the Android web app's full screen, do. Once, in the repository's settings (docs/RELEASE.md, Pre-releases):
 
           1. *Settings → Pages*: set *Source* to *GitHub Actions*, and the custom domain to `shnayimmikrah.org` (with the DNS records docs/RELEASE.md lists); tick *Enforce HTTPS* once the certificate is issued.
-          2. *Settings → Environments → github-pages → Deployment branches and tags*: add the tag rule `v*`, so that a pre-release's tag may deploy.
+          2. *Settings → Environments → github-pages → Deployment branches and tags*: add the tag rule `v*`, so that the run of a pushed tag may deploy. (A run by hand on main needs no rule.)
 
           Then run the workflow again for this tag: *Re-run all jobs* here, or *Actions → Pre-release → Run workflow* with the tag. It updates the draft's files, and deploys the site with the new APK's key.
           EOF
