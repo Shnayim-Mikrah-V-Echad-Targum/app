@@ -77,11 +77,11 @@ jobs:
             exit 1
           fi
           sha256sum --check --strict SHA256SUMS.txt
-      # The one-liner runs install.ps1 from the default branch, not the release.
+      # The one-liner runs the site's copy of install.ps1, made from this file on the default branch.
       - name: The one-liner's script
         run: |
           gh api "repos/$GITHUB_REPOSITORY/contents/tool/windows/install.ps1" --silent \
-            || { echo "::error::The default branch has no tool/windows/install.ps1, which the README's one-liner runs"; exit 1; }
+            || { echo "::error::The default branch has no tool/windows/install.ps1, which the site's install.ps1 is made from"; exit 1; }
       - name: Publish it
         run: |
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease

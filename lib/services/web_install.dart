@@ -11,7 +11,7 @@ export 'updates/update_core.dart' show kReleasesPage;
 /// The line that installs the Windows app, for PowerShell
 /// (tool/windows/install.ps1). It isn't translated.
 const kWindowsInstallCommand =
-    'Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex';
+    'Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://shnayimmikrah.org/install.ps1 | iex';
 
 /// How the browser's install dialog ended.
 enum InstallOutcome { accepted, dismissed, unavailable }

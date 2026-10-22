@@ -23,7 +23,7 @@ void main() {
     'install.ps1',
   ];
   const oneLiner = 'Set-ExecutionPolicy Bypass -Scope Process -Force; irm '
-      'https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex';
+      'https://shnayimmikrah.org/install.ps1 | iex';
 
   YamlMap job(String name) => jobs[name] as YamlMap;
   Iterable<YamlMap> steps(YamlMap job) => (job['steps'] as YamlList).cast<YamlMap>();

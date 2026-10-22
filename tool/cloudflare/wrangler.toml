@@ -1,0 +1,28 @@
+# The site's Worker: the app's files (site/, staged by deploy.sh) and the
+# logging in src/worker.js. Its database and its secret are set up once,
+# as tool/cloudflare/README.md says; the address is in the account's
+# custom domain, shnayimmikrah.org.
+name = "shnayimmikrah-org"
+main = "src/worker.js"
+compatibility_date = "2026-10-06"
+
+[assets]
+directory = "./site"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Every request runs the Worker first, so every page view and every
+# security event is logged, not only those the Worker itself answers.
+run_worker_first = true
+
+[[d1_databases]]
+binding = "LOGS"
+database_name = "shnayimmikrah-logs"
+database_id = "a1b65c18-aef3-4ea6-8bbc-1411d5da5363"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[vars]
+CANONICAL_HOST = "shnayimmikrah.org"
+RETENTION_DAYS = "365"
+

@@ -259,7 +259,7 @@ void main() {
     await tester.tap(find.text('Windows app'));
     await tester.pumpAndSettle();
     const line =
-        'Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex';
+        'Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://shnayimmikrah.org/install.ps1 | iex';
     expect(kWindowsInstallCommand, line);
     expect(find.text(line), findsOneWidget);
     expect(find.textContaining('Open PowerShell, paste this line and press Enter.'), findsOneWidget);
