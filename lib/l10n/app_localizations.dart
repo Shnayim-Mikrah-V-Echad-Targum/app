@@ -6230,6 +6230,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Made with AI · Texts & sources'**
   String get aiNoticeStrip;
+
+  /// The switch on the reading settings: whether the final verse is left off its own page when Rashi is alongside.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave out the last verse page with Rashi alongside'**
+  String get skipLastVerseWithRashi;
+
+  /// The description under the switch that leaves the final verse off its page, with Rashi alongside.
+  ///
+  /// In en, this message translates to:
+  /// **'Rashi as the second reading and shown alongside: the final verse, repeated at the end, is not shown on its own page. Off keeps it.'**
+  String get skipLastVerseWithRashiDesc;
 }
 
 class _AppLocalizationsDelegate

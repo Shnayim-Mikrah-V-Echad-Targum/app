@@ -3748,5 +3748,13 @@
   "aiNoticeStrip": "Made with AI · Texts & sources",
   "@aiNoticeStrip": {
     "description": "The one-line strip at the top of Today: that the app was made with AI, and that the sources are a tap away."
+  },
+  "skipLastVerseWithRashi": "Leave out the last verse page with Rashi alongside",
+  "skipLastVerseWithRashiDesc": "Rashi as the second reading and shown alongside: the final verse, repeated at the end, is not shown on its own page. Off keeps it.",
+  "@skipLastVerseWithRashiDesc": {
+    "description": "The description under the switch that leaves the final verse off its page, with Rashi alongside."
+  },
+  "@skipLastVerseWithRashi": {
+    "description": "The switch on the reading settings: whether the final verse is left off its own page when Rashi is alongside."
   }
 }
