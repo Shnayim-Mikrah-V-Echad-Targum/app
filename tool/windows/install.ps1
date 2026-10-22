@@ -3,7 +3,7 @@
 # sums, and installs it for this Windows account alone, without
 # administrator rights. In PowerShell:
 #
-#   Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex
+#   Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://shnayimmikrah.org/install.ps1 | iex
 #
 # Run that way, through iex, it takes no parameters; its options are
 # environment variables:
@@ -19,7 +19,7 @@
 #
 # For example, to install a release that isn't the newest:
 #
-#   $env:SM_TAG = 'v0.0.1'; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex
+#   $env:SM_TAG = 'v0.0.1'; irm https://shnayimmikrah.org/install.ps1 | iex
 #
 # The app goes into %LOCALAPPDATA%\Programs\Shnayim Mikrah. The reader's
 # settings, progress and notes, in %APPDATA%\Shnayim Mikrah, are never

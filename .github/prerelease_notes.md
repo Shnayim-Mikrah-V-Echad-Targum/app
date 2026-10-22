@@ -5,7 +5,7 @@ A preview of Shnayim Mikrah, for trying the app out before its first full releas
 In PowerShell, run:
 
 ```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://raw.githubusercontent.com/Shnayim-Mikrah-V-Echad-Targum/app/main/tool/windows/install.ps1 | iex
+Set-ExecutionPolicy Bypass -Scope Process -Force; irm https://shnayimmikrah.org/install.ps1 | iex
 ```
 
 It downloads the newest release's installer, checks it against `SHA256SUMS.txt`, installs it for your Windows account (no administrator rights needed) and opens the app. The app then offers each new preview itself, under *About → Updates*.
