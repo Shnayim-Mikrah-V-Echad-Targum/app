@@ -4021,4 +4021,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiNoticeStrip => 'Made with AI · Texts & sources';
+
+  @override
+  String get skipLastVerseWithRashi =>
+      'Leave out the last verse page with Rashi alongside';
+
+  @override
+  String get skipLastVerseWithRashiDesc =>
+      'Rashi as the second reading and shown alongside: the final verse, repeated at the end, is not shown on its own page. Off keeps it.';
 }

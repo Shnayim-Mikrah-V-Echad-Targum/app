@@ -4023,4 +4023,12 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get aiNoticeStrip => 'נכתב בעזרת בינה מלאכותית · מקורות הנוסח';
+
+  @override
+  String get skipLastVerseWithRashi =>
+      'להשמיט את עמוד הפסוק האחרון כשרש״י מוצג לצדו';
+
+  @override
+  String get skipLastVerseWithRashiDesc =>
+      'כשרש״י הוא הקריאה השנייה ומוצג לצדו, הפסוק האחרון שחוזר בסוף אינו מוצג בעמוד משלו. כבוי: הוא מוצג.';
 }
