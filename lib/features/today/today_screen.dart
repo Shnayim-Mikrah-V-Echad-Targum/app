@@ -18,6 +18,7 @@ import '../../services/updates/updates.dart';
 import '../../services/web_update.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
+import '../about/ai_notice.dart';
 import '../../ui/widgets/app_icon.dart';
 import '../../ui/widgets/common.dart';
 import '../../ui/widgets/lang.dart';
@@ -76,7 +77,9 @@ class TodayScreen extends ConsumerWidget {
             : PageBody(
                 maxWidth: wide ? ContentWidth.todayWide : ContentWidth.list,
                 padding: EdgeInsets.fromLTRB(g, Space.md, g, Space.s40),
-                children: _readingDay(context, ref, wide: wide),
+                // That the app was made with AI, and where its texts come from:
+                // first on the page, above the day.
+                children: [const AiSourcesNotice(compact: true), const Gap(Space.sm), ..._readingDay(context, ref, wide: wide)],
               ),
       ),
     );
@@ -1193,6 +1196,10 @@ class _RestDay extends StatelessWidget {
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.only(top: Space.md),
+          sliver: SliverToBoxAdapter(child: column(const AiSourcesNotice(compact: true))),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.only(top: Space.sm),
           sliver: SliverToBoxAdapter(child: column(_TodayHeader(today: rest, civil: civil))),
         ),
         // As tall as the screen leaves under the header, or as the title page

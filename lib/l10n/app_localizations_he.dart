@@ -3992,4 +3992,35 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get installAction => 'התקנה';
+
+  @override
+  String get aiNoticeTitle => 'נכתב בעזרת בינה מלאכותית';
+
+  @override
+  String get aiNoticeBody =>
+      'אפליקציה זו, האתר שלה והקוד שלה נכתבו כולם בעזרת בינה מלאכותית, בשיטת וייב קודינג. הנוסח נבנה בתוכנות מהמקורות הציבוריים שמופיעים במקורות הנוסח. לפני שאתם נשענים על פסוק, בדקו אותו במקורו, והודיעו לנו אם משהו שונה.';
+
+  @override
+  String get sourcesTopTitle => 'מאיפה בא כל נוסח';
+
+  @override
+  String get sourcesTopBody =>
+      'כל נוסח נבנה ממהדורה ציבורית אחת מסוימת, שאפשר לפתוח ולהשוות לאפליקציה. אפשר גם לשחזר את הבנייה: טביעה דיגיטלית (SHA-256) של כל קובץ מקור ושל כל קובץ שהאפליקציה מכילה רשומה ב-SOURCES.json, כדי שכל אחד יוכל לבדוק.';
+
+  @override
+  String get sourcesTorahDifferences =>
+      'בתורה, הנוסח הולך אחרי ספרי התורה של אשכנז וספרד במקומות שבהם הם שונים מכתר ארם צובה, שמופיע במהדורת ויקיטקסט. כל מקום כזה מסומן בנוסח, והנוסח שבכתר מובא בהערה. לכן השוואה לכתר תראה את ההבדלים האלה בכוונה.';
+
+  @override
+  String get sourcesManifestAction => 'טביעות דיגיטליות של כל הקבצים';
+
+  @override
+  String get sourcesManifestDescription =>
+      'SOURCES.json מפרט כל קובץ מקור עם כתובתו בספריא וטביעתו הדיגיטלית, וכל קובץ שהאפליקציה מכילה עם טביעתו. הורידו מקור, חשבו את טביעתו והשוו.';
+
+  @override
+  String get verseCheckOnSefaria => 'בדיקת הפסוק בספריא';
+
+  @override
+  String get aiNoticeStrip => 'נכתב בעזרת בינה מלאכותית · מאיפה בא הנוסח';
 }

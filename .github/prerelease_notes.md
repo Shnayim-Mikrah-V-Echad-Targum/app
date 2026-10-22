@@ -1,3 +1,5 @@
+> **Made with AI.** This preview was vibe-coded with AI (Claude), its website and its code included. Its texts are built by scripts from the public sources listed in `assets/text/SOURCES.json` (each with its checksum), and the app links every verse to its source on Sefaria. Check any verse against its source before you rely on it, and tell us if anything differs.
+
 A preview of Shnayim Mikrah, for trying the app out before its first full release: reading the weekly parsha twice in Hebrew and once in Targum, on Windows, on the web and on Android. Things may still change; please tell us what you find.
 
 ## Windows 10 and 11

@@ -1,5 +1,7 @@
 # Shnayim Mikrah
 
+> **Made with AI.** This app, its website and its code were vibe-coded with AI (Claude). Its texts are built by scripts from the public sources listed in [Texts & sources](assets/text/SOURCES.json); before you rely on any verse, check it against its source, and tell us if anything differs.
+
 An app for *shnayim mikrah v'echad targum*, reading each week's Torah portion twice and the Targum once. It runs on Android, iOS, the web and Windows, in English and Hebrew.
 
 It always knows the right portion for the week, in Israel or abroad and in any year type. It guides you through the reading verse by verse, section by section or aliyah by aliyah. It tracks a daily streak and a weekly streak with forgiving, Shabbat-aware rules. It also has a community forum with a thread for every parsha.

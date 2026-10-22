@@ -3990,4 +3990,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get installAction => 'Install';
+
+  @override
+  String get aiNoticeTitle => 'Made with AI';
+
+  @override
+  String get aiNoticeBody =>
+      'This app, its website and its code were vibe-coded with AI (Claude). Its texts were built by scripts from the public sources named on Texts & sources. Before you rely on any verse, check it against its source, and tell us if anything differs.';
+
+  @override
+  String get sourcesTopTitle => 'Where each text comes from';
+
+  @override
+  String get sourcesTopBody =>
+      'Each text is built from one named public edition, which you can open and compare with the app. The build can be repeated: a checksum (SHA-256) of every source file, and of every file the app ships, is listed in SOURCES.json, so anyone can check them.';
+
+  @override
+  String get sourcesTorahDifferences =>
+      'In the Torah, the text follows the Ashkenazi and Sephardi scrolls wherever they differ from the Aleppo Codex, which the Wikisource edition gives. Each such place is marked in the text, with the Codex’s reading in a note. So a comparison with the Codex shows those differences on purpose.';
+
+  @override
+  String get sourcesManifestAction => 'Checksums of every file';
+
+  @override
+  String get sourcesManifestDescription =>
+      'SOURCES.json lists each source file with its Sefaria address and SHA-256, and each file the app ships with its SHA-256. Download a source, hash it, and compare.';
+
+  @override
+  String get verseCheckOnSefaria => 'Check this verse on Sefaria';
+
+  @override
+  String get aiNoticeStrip => 'Made with AI · Where the texts come from';
 }

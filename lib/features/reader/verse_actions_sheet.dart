@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/config.dart';
 import '../../app/providers.dart';
 import '../../core/text/hebrew_text.dart';
+import '../../core/text/sources.dart';
 import '../../data/models/parsha.dart' show kTorahBooks;
 import '../../data/models/scripture.dart';
 import '../../data/models/verse_ref.dart';
@@ -212,6 +214,12 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
     }
   }
 
+  /// Opens the verse on Sefaria, where its text can be compared with the app's.
+  void _checkOnSefaria() {
+    unawaited(launchUrl(sefariaVerseUri(widget.verse.at)));
+    Navigator.pop(context);
+  }
+
   void _ask() {
     final page = widget.page;
     Navigator.pop(context);
@@ -302,6 +310,12 @@ class _VerseActionsSheetState extends ConsumerState<_VerseActionsSheet> {
                       title: l.actionShare,
                       chevron: false,
                       onTap: _shareVerse,
+                    ),
+                    PaperRow(
+                      icon: Icons.menu_book_outlined,
+                      title: l.verseCheckOnSefaria,
+                      chevron: false,
+                      onTap: _checkOnSefaria,
                     ),
                     // Only where there is a community to ask.
                     if (AppConfig.communityEnabled)

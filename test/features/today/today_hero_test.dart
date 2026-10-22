@@ -80,6 +80,10 @@ void main() {
       expect(find.bySubtype<OutlinedButton>(), findsNothing);
       expect(find.text('2 of 7 aliyot'), findsNothing);
 
+      // Below the strip that says the app was made with AI, on a phone the
+      // button is one scroll down, clear of the bar beneath.
+      await Scrollable.ensureVisible(tester.element(button), alignment: 0.1);
+      await tester.pumpAndSettle();
       await tester.tap(button);
       await loadTexts(tester);
       expect(location(c), '/read/5787:1/2');
