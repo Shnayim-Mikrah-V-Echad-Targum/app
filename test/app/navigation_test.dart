@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shnayim_mikrah/app/config.dart';
@@ -69,11 +70,12 @@ Future<GoRouter> _pump(
   NotificationService? notifications,
   ForumRepository? forums,
   ProgressState? progress,
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final c = await pumpApp(tester, now: _now, notifications: notifications, forums: forums, progress: progress);
+  final c = await pumpApp(tester, now: _now, notifications: notifications, forums: forums, progress: progress, overrides: overrides);
   await tester.pumpAndSettle();
   return c.read(routerProvider);
 }
@@ -342,6 +344,24 @@ void main() {
         await goBack(tester);
         expect(find.byType(AboutScreen), findsOneWidget);
       }
+    });
+
+    testWidgets('each page has the address the browser shows: the page on top, with its query', (tester) async {
+      final shown = <Uri>[];
+      final router = await _pump(tester, overrides: [browserAddressProvider.overrideWithValue((uri) => shown.add(uri))]);
+      // The strip at the top of Today.
+      await tester.tap(find.textContaining('Texts & sources'));
+      await _loadTexts(tester);
+      expect(find.byType(SourcesScreen), findsOneWidget);
+      expect(shown.last.path, '/settings/about/sources');
+      // Back to Today, whose address it then shows.
+      await goBack(tester);
+      expect(shown.last.path, '/today');
+      // A page pushed with a query keeps it in its address.
+      router.push('/search?q=shalom');
+      await tester.pumpAndSettle();
+      expect(shown.last.path, '/search');
+      expect(shown.last.queryParameters['q'], 'shalom');
     });
 
     testWidgets('open from Community without leaving the Community tab', (tester) async {

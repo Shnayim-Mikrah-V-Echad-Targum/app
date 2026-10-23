@@ -42,6 +42,7 @@ import 'reader_bottom_bar.dart';
 import 'reader_flow.dart';
 import 'scripture_text.dart';
 import 'step_page.dart';
+import 'step_swipe.dart';
 import 'verse_actions_sheet.dart';
 import 'verse_anchor.dart';
 import 'whole_parsha.dart';
@@ -1789,7 +1790,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                     ),
                                   ),
                                 )
-                              : _GuidedStep(
+                              : StepSwipe(
+                                  onNext: () => _next(ctx, flow),
+                                  onBack: () => _back(flow),
+                                  child: _GuidedStep(
                                   notice: preview,
                                   flow: flow,
                                   texts: texts,
@@ -1807,6 +1811,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                   },
                                   onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
                                   marksOf: marksOf,
+                                  ),
                                 ),
                     ),
                   ],
