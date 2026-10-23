@@ -68,8 +68,11 @@ export function insertSession(db, { tokenHash, userId, now }) {
 
 export function findSession(db, tokenHash, now) {
   return db.prepare(
-    `SELECT u.id, u.email, u.email_verified_at
+    // A role counts only once the address is confirmed as the account's.
+    `SELECT u.id, u.email, u.email_verified_at, u.pw_alg, s.expires_at,
+            CASE WHEN u.email_verified_at IS NOT NULL THEN r.role END AS role
        FROM sessions s JOIN users u ON u.id = s.user_id
+       LEFT JOIN roles r ON r.email = u.email
       WHERE s.token_hash = ? AND s.expires_at > ?`,
   ).bind(tokenHash, now);
 }

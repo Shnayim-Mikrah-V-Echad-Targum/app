@@ -2,14 +2,6 @@ import 'package:flutter/foundation.dart';
 
 /// Build-time configuration, passed with `--dart-define` (see README).
 abstract final class AppConfig {
-  /// Supabase project URL for forums and sync. Empty → community features
-  /// run in an on-device demo mode.
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-
-  /// Supabase publishable (anon) key — safe to ship in the app; all access
-  /// is governed by row-level security.
-  static const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-
   /// Where users can reach the maintainers. Empty → hidden.
   static String get supportEmail => debugSupportEmail ?? _supportEmail;
   static const _supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
@@ -43,16 +35,23 @@ abstract final class AppConfig {
   @visibleForTesting
   static String? debugWebUrl;
 
-  static bool get hasBackend => supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
+  /// The site whose server the community, its accounts and the backup run
+  /// on (tool/cloudflare/src/api.js), at the root of [webUrl]'s host: on the
+  /// web, the page's own, so the site's session cookie goes with each
+  /// request. Null where the build has no [webUrl], as in the tests: the
+  /// community is then the on-device demo.
+  static Uri? get communityServer {
+    if (webUrl.isEmpty) return null;
+    return (kIsWeb ? Uri.base : Uri.parse(webUrl)).resolve('/');
+  }
 
   /// Whether the community is offered: everywhere but in a build made with
-  /// `COMMUNITY=off`, as the pre-releases are until the accounts' database
-  /// is ready. Off, the Community tab, the questions on a verse, the
+  /// `COMMUNITY=off`. Off, the Community tab, the questions on a verse, the
   /// account and its sign-in, the week's discussion and the cloud backup
   /// are nowhere to be seen, and a link to any of them opens Today; About
   /// and the guide say that the community is coming. Absent, as in CI and
-  /// the tests, the community is as it was: on Supabase where one is
-  /// configured, and otherwise the on-device demo.
+  /// the tests, the community is on the site's server where the build has
+  /// its address ([communityServer]), and otherwise the on-device demo.
   static bool get communityEnabled => debugCommunity ?? _community != 'off';
   static const _community = String.fromEnvironment('COMMUNITY');
 

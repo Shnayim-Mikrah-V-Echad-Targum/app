@@ -22,13 +22,11 @@ permissions:
 
 env:
   FLUTTER_VERSION: "3.47.7"
-  # As in CI. The preflight makes sure all but INSTALL_URL are set, so a
-  # store build never ships the on-device demo community, no backup or no
+  # As in CI. The preflight makes sure SUPPORT_EMAIL and WEB_URL are set, so
+  # a store build never ships the on-device demo community, no backup or no
   # support address, and a discussion's Copy link has the site's address.
   # INSTALL_URL is optional, as it is on the web.
   DART_DEFINES: >-
-    --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
-    --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
     --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
     --dart-define=WEB_URL=${{ vars.WEB_URL }}
@@ -44,8 +42,6 @@ jobs:
           fetch-depth: 0
       - name: Repository variables
         env:
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
           WEB_URL: ${{ vars.WEB_URL }}
           IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
@@ -53,7 +49,7 @@ jobs:
           IOS_WIDGET_PROFILE_NAME: ${{ vars.IOS_WIDGET_PROFILE_NAME }}
         run: |
           missing=0
-          for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPPORT_EMAIL WEB_URL IOS_TEAM_ID IOS_PROFILE_NAME IOS_WIDGET_PROFILE_NAME; do
+          for v in SUPPORT_EMAIL WEB_URL IOS_TEAM_ID IOS_PROFILE_NAME IOS_WIDGET_PROFILE_NAME; do
             [ -n "${!v}" ] || { echo "::error::Repository variable $v is not set"; missing=1; }
           done
           exit "$missing"

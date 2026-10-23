@@ -1,6 +1,6 @@
 import 'models.dart';
 
-/// Everything the community UI needs. Implemented by Supabase in production
+/// Everything the community UI needs. Implemented by the site's server in production
 /// and by an on-device demo when no backend is configured.
 abstract class ForumRepository {
   /// Whether this is the on-device demo (nothing leaves the device).

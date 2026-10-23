@@ -16,7 +16,7 @@ import vm from 'node:vm';
 const ROOT = new URL('../../', import.meta.url);
 const read = (path) => readFileSync(new URL(path, ROOT), 'utf8');
 const require = createRequire(import.meta.url);
-const { cacheNames, fileNavigation, missingFromPrecache, writeUpdateScript } = require('./sw_build.cjs');
+const { cacheNames, fileNavigation, missingFromPrecache, serverPage, writeUpdateScript } = require('./sw_build.cjs');
 // Glob matching as Workbox's globPatterns use it (Node 20.17 and later).
 const { matchesGlob } = require('node:path');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
@@ -1071,7 +1071,7 @@ describe('the build', () => {
   it("serves the app for any of its pages' addresses, offline too, and leaves files to the server", () => {
     const config = read('workbox-config.cjs');
     assert.match(config, /navigateFallback: 'index\.html',/);
-    assert.match(config, /navigateFallbackDenylist: \[fileNavigation\],/);
+    assert.match(config, /navigateFallbackDenylist: \[fileNavigation, serverPage\],/);
     assert.match(config, /'index\.html',/, 'which the worker precaches');
     // As Workbox tests a navigation: its address's path and query.
     for (const page of [
@@ -1096,6 +1096,13 @@ describe('the build', () => {
       '/legal/support.html',
     ]) {
       assert.equal(fileNavigation.test(file), true, file);
+    }
+    // The accounts' pages and the admin panel are the Worker's, never the app's.
+    for (const page of ['/account', '/account/sign-up', '/account/reset/complete?token=abc', '/account?lang=he', '/admin', '/admin/accounts/3']) {
+      assert.equal(serverPage.test(page), true, page);
+    }
+    for (const page of ['/accounts', '/administer', '/settings/account', '/community/account', '/today']) {
+      assert.equal(serverPage.test(page), false, page);
     }
   });
 

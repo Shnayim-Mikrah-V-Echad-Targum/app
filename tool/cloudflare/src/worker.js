@@ -6,8 +6,23 @@
 // Logging never slows or breaks the site: the writes run after the response,
 // and a failed write is reported to the Worker's logs and nothing else.
 
-import { blockedStatus, classify, clip, dayOf, firstLanguage, ipKey, isAccountPath, isPageView, refererHost } from './rules.js';
+import {
+  blockedStatus,
+  classify,
+  clip,
+  dayOf,
+  firstLanguage,
+  ipKey,
+  isAccountPath,
+  isAdminPath,
+  isAdminShortcut,
+  isApiPath,
+  isPageView,
+  refererHost,
+} from './rules.js';
 import { accountCleanup, handleAccount } from './accounts.js';
+import { handleApi } from './api.js';
+import { handleAdmin } from './admin.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -37,16 +52,24 @@ export default {
     } else if (blocked !== null) {
       const headersOut = blocked === 405 ? { Allow: 'GET, HEAD, OPTIONS' } : undefined;
       response = new Response(`${blocked}`, { status: blocked, headers: headersOut });
+    } else if (isAdminPath(url.pathname)) {
+      response = await handleAdmin(request, env, url);
+    } else if (isAdminShortcut(url.pathname)) {
+      response = Response.redirect(`https://${env.CANONICAL_HOST}/account${url.pathname}${url.search}`, 302);
     } else if (isAccountPath(url.pathname)) {
       response = await handleAccount(request, env, url);
+    } else if (isApiPath(url.pathname)) {
+      response = await handleApi(request, env, url);
     } else {
       response = await env.ASSETS.fetch(request);
     }
 
     // A visit is a page the site served to its own address; a request that
     // was refused, or for another host, is not a visitor. The accounts' pages
-    // are not visits either: each would write a row, for little use.
-    const visit = blocked === null && url.hostname === env.CANONICAL_HOST && isPageView(request) && !isAccountPath(url.pathname);
+    // are not visits either (the admin panel among them): each would write a
+    // row, for little use; nor is the app's API, which no one opens as a page.
+    const visit = blocked === null && url.hostname === env.CANONICAL_HOST && isPageView(request)
+      && !isAccountPath(url.pathname) && !isApiPath(url.pathname) && !isAdminShortcut(url.pathname);
     const day = dayOf(ts);
     const row = {
       ts,

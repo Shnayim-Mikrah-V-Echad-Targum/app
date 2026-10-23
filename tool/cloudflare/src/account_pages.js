@@ -29,9 +29,12 @@ const STRINGS = {
     resetCompleteButton: 'Save the new password',
     accountTitle: 'Your account',
     signedInAs: 'Signed in as',
+    roles: { admin: 'Role: site administrator, with every permission.', moderator: 'Role: community moderator.' },
+    adminPanel: 'Open the admin panel',
     signOut: 'Sign out',
     deleteTitle: 'Delete your account',
-    deleteLead: 'This deletes your account, its sessions and its codes. Enter your password to confirm.',
+    deleteLead: 'This deletes your account, its sessions and its codes, and everything you posted in the community. Enter your password to confirm.',
+    deleteLeadNoPassword: 'This deletes your account, its sessions and its codes, and everything you posted in the community. You made it in the app, by code, so it has no password to enter.',
     deleteButton: 'Delete my account',
     notices: {
       'check-email': 'If the address is new, we have sent it a code.',
@@ -81,9 +84,12 @@ const STRINGS = {
     resetCompleteButton: 'שמירת הסיסמה החדשה',
     accountTitle: 'החשבון שלכם',
     signedInAs: 'מחוברים בתור',
+    roles: { admin: 'תפקיד: מנהל/ת האתר, עם כל ההרשאות.', moderator: 'תפקיד: מנחה בקהילה.' },
+    adminPanel: 'פתיחת לוח הניהול',
     signOut: 'יציאה',
     deleteTitle: 'מחיקת החשבון',
-    deleteLead: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו. הזינו את הסיסמה לאישור.',
+    deleteLead: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו, וכל מה שפרסמתם בקהילה. הזינו את הסיסמה לאישור.',
+    deleteLeadNoPassword: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו, וכל מה שפרסמתם בקהילה. החשבון נוצר באפליקציה, בקוד, ולכן אין לו סיסמה להזין.',
     deleteButton: 'מחיקת החשבון שלי',
     notices: {
       'check-email': 'אם הכתובת חדשה, שלחנו אליה קוד.',
@@ -168,7 +174,7 @@ export function render(lang, { title, body, notice, error, status = 200 }) {
 <main>
 <h1>${escapeHtml(title)}</h1>
 ${message}
-${body}
+${body ?? ''}
 <p class="muted">${t.footer}</p>
 </main>
 </body>
@@ -233,17 +239,22 @@ ${turnstile(siteKey)}
 </form>`;
 }
 
-export function accountBody(lang, email, verified) {
+// The signed-in account's page. An account made in the app has no password
+// (pw_alg 'none'), so deleting it asks for none.
+export function accountBody(lang, { email, email_verified_at: verified, role, pw_alg: alg }) {
   const t = STRINGS[lang];
+  const hasPassword = alg === 'pbkdf2-sha256';
   return `<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
+${role && Object.hasOwn(t.roles, role) ? `<p>${t.roles[role]}</p>` : ''}
+${role === 'admin' ? `<p><a href="/account/admin">${t.adminPanel}</a></p>` : ''}
 ${verified ? '' : `<p>${t.unverified}</p>`}
 <form method="post" action="${link('/account/sign-out', lang)}">
 <button type="submit">${t.signOut}</button>
 </form>
 <h2>${t.deleteTitle}</h2>
-<p class="muted">${t.deleteLead}</p>
+<p class="muted">${hasPassword ? t.deleteLead : t.deleteLeadNoPassword}</p>
 <form method="post" action="${link('/account/delete', lang)}">
-${field('password', t.password, 'password', 'autocomplete="current-password" required maxlength="128"')}
+${hasPassword ? field('password', t.password, 'password', 'autocomplete="current-password" required maxlength="128"') : ''}
 <button type="submit">${t.deleteButton}</button>
 </form>`;
 }
