@@ -78,6 +78,10 @@ function writeUpdateScript(web, caches) {
 /// Tested against a URL's path and query, as Workbox's NavigationRoute does.
 const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
 
+/// A page the site's Worker answers itself, not the app: the accounts'
+/// forms at /account and below (tool/cloudflare/src/accounts.js).
+const serverPage = /^\/account(?:[/?]|$)/;
+
 /// The files of [web] that the app needs offline, and which the service
 /// worker Workbox wrote there (sw.js) leaves out of its precache: the page,
 /// the bootstrap, the app itself and its deferred parts, without which it
@@ -102,7 +106,7 @@ function missingFromPrecache(web) {
   return needed.filter((name) => !precached.has(name));
 }
 
-module.exports = { cacheNames, engineRevision, fileNavigation, missingFromPrecache, textsHash, writeUpdateScript };
+module.exports = { cacheNames, engineRevision, fileNavigation, missingFromPrecache, serverPage, textsHash, writeUpdateScript };
 
 //   node tool/web/sw_build.cjs check build/web
 if (require.main === module) {
