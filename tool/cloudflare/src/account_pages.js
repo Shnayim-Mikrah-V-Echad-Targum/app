@@ -29,6 +29,7 @@ const STRINGS = {
     resetCompleteButton: 'Save the new password',
     accountTitle: 'Your account',
     signedInAs: 'Signed in as',
+    roles: { admin: 'Role: site administrator, with every permission.', moderator: 'Role: community moderator.' },
     signOut: 'Sign out',
     deleteTitle: 'Delete your account',
     deleteLead: 'This deletes your account, its sessions and its codes. Enter your password to confirm.',
@@ -81,6 +82,7 @@ const STRINGS = {
     resetCompleteButton: 'שמירת הסיסמה החדשה',
     accountTitle: 'החשבון שלכם',
     signedInAs: 'מחוברים בתור',
+    roles: { admin: 'תפקיד: מנהל/ת האתר, עם כל ההרשאות.', moderator: 'תפקיד: מנחה בקהילה.' },
     signOut: 'יציאה',
     deleteTitle: 'מחיקת החשבון',
     deleteLead: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו. הזינו את הסיסמה לאישור.',
@@ -168,7 +170,7 @@ export function render(lang, { title, body, notice, error, status = 200 }) {
 <main>
 <h1>${escapeHtml(title)}</h1>
 ${message}
-${body}
+${body ?? ''}
 <p class="muted">${t.footer}</p>
 </main>
 </body>
@@ -233,9 +235,10 @@ ${turnstile(siteKey)}
 </form>`;
 }
 
-export function accountBody(lang, email, verified) {
+export function accountBody(lang, email, verified, role) {
   const t = STRINGS[lang];
   return `<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
+${role && Object.hasOwn(t.roles, role) ? `<p>${t.roles[role]}</p>` : ''}
 ${verified ? '' : `<p>${t.unverified}</p>`}
 <form method="post" action="${link('/account/sign-out', lang)}">
 <button type="submit">${t.signOut}</button>

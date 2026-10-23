@@ -40,13 +40,14 @@ Both tables keep **365 days** (`RETENTION_DAYS` in `wrangler.toml`). A daily job
 
 An account is optional, and the app doesn't need one. A visitor signs up at `/account/sign-up` with an email address and a password, confirms the address with a six-digit code sent by email, and then has a session in a cookie. The pages are plain HTML forms that the Worker serves (`src/account_pages.js`), in English and Hebrew. The logic is in `src/accounts.js`, the rows in `src/account_db.js`, the hashes in `src/account_crypto.js`, and the email in `src/mail.js`.
 
-**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`):
+**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`, `roles`):
 
 - `users`: the address in lower case; the password as PBKDF2-SHA256, with its own count, salt and hash; when the address was confirmed; when the account was made.
 - `sessions`: the SHA-256 of each session's token. The cookie holds the token itself.
 - `codes`: the keyed hash (HMAC-SHA256, with `ACCOUNTS_KEY`) of each sign-up code, its expiry and its wrong tries.
 - `reset_tokens`: the SHA-256 of each password reset link, its expiry, and whether it has been used.
 - `rate_limits`: a keyed hash of an address or an email, with the window it counts in.
+- `roles`: the site's staff, by email address, as `admin` (every permission) or `moderator`. A role counts only once its address is a confirmed account, and the account page shows it. Rows are added by hand, never from the site, so the addresses are not in the repo: `INSERT INTO roles (email, role, granted_at) VALUES ('name@example.com', 'admin', 0)`.
 
 Never stored: a password, a code, a token or a link as it was sent, or a visitor's address.
 
@@ -66,7 +67,7 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 | `GET /account` | the account, when signed in |
 | `POST /account/delete` | deletes the account, after the password is entered |
 
-**Protections**: Turnstile on sign-up, sign-in and both reset forms. Limits per email and per address, counted in windows: sign-up 5 an hour per email and 20 an hour per address; sign-in 10 failed tries per 15 minutes per email and 30 per address, so a sign-in that works counts nothing; the code, resend and reset limits are in `src/accounts.js`. A try refused by a limit writes nothing. A code locks after 5 wrong tries. A POST must come from the site's own origin. The cookie is `__Host-`, HttpOnly, Secure and SameSite=Lax; the pages are `no-store` and send no referrer. The answers to sign-up, sign-in and reset do not show whether an address has an account.
+**Protections**: Turnstile on sign-up, sign-in and both reset forms. Limits per email and per address, counted in windows: sign-up 5 an hour per email and 20 an hour per address; sign-in 10 failed tries per 15 minutes per email and 30 per address, so a sign-in that works counts nothing; the code, resend and reset limits are in `src/accounts.js`. A try refused by a limit writes nothing. A code locks after 5 wrong tries. A POST must come from the site's own origin. The cookie is `__Host-`, HttpOnly, Secure and SameSite=Lax; the pages are `no-store` and send a referrer only to the site itself. (Not `no-referrer`: under it a browser sends `Origin: null` with a form, so a post is also let through when the browser's `Sec-Fetch-Site` says `same-origin`.) The answers to sign-up, sign-in and reset do not show whether an address has an account.
 
 **Writes and CPU**: a page view writes a `visits` row, except on the account pages. A sign-in that works writes one session row; a failed one writes its counters. PBKDF2 runs at 100,000 iterations, the most Workers accept, and the count is stored with each hash: a sign-in with a lower count raises it. Measured in Node, 100,000 iterations take about 50 ms of CPU, while the Workers Free plan allows 10 ms per request. Check the account's Workers plan before the accounts go live.
 

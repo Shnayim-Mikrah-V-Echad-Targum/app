@@ -50,7 +50,9 @@ const LIMITS = {
 
 const SECURITY = {
   'Cache-Control': 'no-store',
-  'Referrer-Policy': 'no-referrer',
+  // Not no-referrer: under that policy a browser sends "Origin: null" with a
+  // form, and sameOrigin() would refuse every post.
+  'Referrer-Policy': 'same-origin',
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Content-Security-Policy': [
@@ -98,7 +100,7 @@ async function route(request, env, url, lang, now) {
     case `GET ${BASE}`: {
       const user = await currentUser(request, env, now);
       if (!user) return see(to(`${BASE}/sign-in`, lang));
-      return page(render(lang, { title: t.accountTitle, body: accountBody(lang, user.email, Boolean(user.email_verified_at)) }));
+      return page(render(lang, { title: t.accountTitle, body: accountBody(lang, user.email, Boolean(user.email_verified_at), user.role) }));
     }
     case `GET ${BASE}/sign-up`:
       return page(render(lang, { title: t.signUpTitle, body: signUpBody(lang, siteKey) }));
@@ -428,8 +430,11 @@ function passwordOf(value) {
   return password.length >= 10 && password.length <= 128 ? password : null;
 }
 
+// A post from the site's own pages: its Origin is the site, or the browser,
+// whose Sec-Fetch-Site a page can't set, says it is same-origin.
 function sameOrigin(request, env) {
-  return request.headers.get('origin') === `https://${env.CANONICAL_HOST}`;
+  return request.headers.get('origin') === `https://${env.CANONICAL_HOST}`
+    || request.headers.get('sec-fetch-site') === 'same-origin';
 }
 
 function readCookie(request) {

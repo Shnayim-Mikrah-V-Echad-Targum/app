@@ -94,3 +94,13 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   expires_at INTEGER NOT NULL   -- the end of its window; the daily clean-up removes it after
 );
 CREATE INDEX IF NOT EXISTS rate_limits_expires ON rate_limits (expires_at);
+
+-- The site's staff, by address, so a role can be given before the account is
+-- made. admin can do everything, moderator the community's moderation. Rows
+-- are added by hand (README, Accounts), never from the site, and the
+-- addresses live only here, not in the repo.
+CREATE TABLE IF NOT EXISTS roles (
+  email TEXT PRIMARY KEY,       -- lower case
+  role TEXT NOT NULL CHECK (role IN ('admin', 'moderator')),
+  granted_at INTEGER NOT NULL
+);

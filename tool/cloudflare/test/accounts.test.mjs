@@ -97,12 +97,13 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-async function call(state, method, path, { form, cookie, origin = SITE, ip = ADDRESS, env } = {}) {
+async function call(state, method, path, { form, cookie, origin = SITE, fetchSite, ip = ADDRESS, env } = {}) {
   const headers = { 'user-agent': 'Mozilla/5.0 Chrome/130', 'sec-fetch-dest': 'document', 'cf-connecting-ip': ip, 'accept-language': 'en' };
   const init = { method, headers };
   if (cookie) headers.cookie = cookie;
   if (method === 'POST') {
     headers.origin = origin;
+    if (fetchSite) headers['sec-fetch-site'] = fetchSite;
     headers['content-type'] = 'application/x-www-form-urlencoded';
     init.body = new URLSearchParams(form ?? {}).toString();
   }
@@ -390,10 +391,39 @@ test('a form from another origin is refused, and so is a request without the con
     origin: 'https://evil.example',
   });
   assert.equal(foreign.status, 403);
+  assert.doesNotMatch(await foreign.text(), /undefined/);
+  const hidden = await call(state, 'POST', '/account/sign-up', {
+    form: { email: 'reader@example.com', password: PASSWORD, 'cf-turnstile-response': 't' },
+    origin: 'null',
+    fetchSite: 'cross-site',
+  });
+  assert.equal(hidden.status, 403);
   assert.equal(count(state.database, 'SELECT count(*) AS n FROM users'), 0);
 
   const unset = { ...state.env, RESEND_API_KEY: '' };
   assert.equal((await call(state, 'GET', '/account/sign-in', { env: unset })).status, 503);
+});
+
+test('a form from the site itself is let through when the browser sends Origin: null', async () => {
+  const state = makeEnv();
+  const page = await call(state, 'GET', '/account/sign-up');
+  assert.equal(page.headers.get('referrer-policy'), 'same-origin');
+  const response = await call(state, 'POST', '/account/sign-up', {
+    form: { email: 'reader@example.com', password: PASSWORD, 'cf-turnstile-response': 't' },
+    origin: 'null',
+    fetchSite: 'same-origin',
+  });
+  assert.equal(response.status, 303);
+  assert.equal(count(state.database, 'SELECT count(*) AS n FROM users'), 1);
+});
+
+test('a role given to an address shows once that address is a confirmed account', async () => {
+  const state = makeEnv();
+  state.database.prepare("INSERT INTO roles (email, role, granted_at) VALUES ('staff@example.com', 'admin', 0)").run();
+  const staff = await signedUpAndVerified(state, 'staff@example.com');
+  assert.match(await (await call(state, 'GET', '/account', { cookie: staff.cookie })).text(), /site administrator/);
+  const reader = await signedUpAndVerified(state, 'reader@example.com');
+  assert.doesNotMatch(await (await call(state, 'GET', '/account', { cookie: reader.cookie })).text(), /Role:/);
 });
 
 test('the account pages are not visits; the site\'s own pages are', async () => {
