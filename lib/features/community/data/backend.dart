@@ -1,21 +1,18 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../progress/domain/progress_models.dart';
 import 'demo_forum_repository.dart';
 import 'forum_repository.dart';
-import 'supabase_forum_repository.dart';
 import 'worker_forum_repository.dart';
 
 /// The community backend: the site's own server ([WorkerForumRepository])
-/// where the build knows the site ([AppConfig.communityServer]), Supabase
-/// where one is configured instead, and otherwise an on-device demo. Without
+/// where the build knows the site ([AppConfig.communityServer]), and
+/// otherwise an on-device demo. Without
 /// the community ([AppConfig.communityEnabled]) it is the demo whatever the
 /// build configures, which nothing shows: the app reaches no server for it,
 /// and nobody can be signed in to back progress up.
@@ -28,14 +25,7 @@ class Backend {
   /// signed-in account, are open.
   static Future<Backend> initialize({required Future<SharedPreferences> preferences}) async {
     if (!AppConfig.communityEnabled) return Backend(DemoForumRepository());
-    if (AppConfig.hasBackend) {
-      try {
-        await Supabase.initialize(url: AppConfig.supabaseUrl, publishableKey: AppConfig.supabaseKey);
-        return Backend(SupabaseForumRepository(Supabase.instance.client));
-      } catch (e) {
-        debugPrint('Supabase unavailable, using demo community: $e');
-      }
-    } else if (AppConfig.communityServer case final server?) {
+    if (AppConfig.communityServer case final server?) {
       final forums = WorkerForumRepository(server: server, prefs: await preferences);
       unawaited(forums.refreshSession());
       return Backend(forums);

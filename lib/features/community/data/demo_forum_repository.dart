@@ -8,7 +8,7 @@ import '../../../core/calendar/local_date.dart';
 import 'forum_repository.dart';
 import 'models.dart';
 
-/// An on-device stand-in for the community backend, used when no Supabase
+/// An on-device stand-in for the community backend, used when no site
 /// project is configured (development, screenshots, tests). Nothing leaves
 /// the device and content resets when the app restarts. Any 6-digit code
 /// signs in.

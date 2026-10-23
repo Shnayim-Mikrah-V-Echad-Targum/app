@@ -42,8 +42,6 @@ env:
   # As in CI, with the site's address, whose server the community runs on.
   # The Windows build adds its update channel.
   DART_DEFINES: >-
-    --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
-    --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
     --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
     --dart-define=WEB_URL=https://shnayimmikrah.org/

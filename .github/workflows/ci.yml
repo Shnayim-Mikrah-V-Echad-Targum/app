@@ -15,13 +15,9 @@ env:
   # WEB_URL, the web app's public address: the community, its accounts and
   # the backup run on that site's server (tool/cloudflare/src/api.js), a
   # discussion's Copy link gives it, and the link previews below use it.
-  # Without it the app runs its on-device demo community. SUPABASE_URL and
-  # SUPABASE_PUBLISHABLE_KEY, optional, put the community on Supabase
-  # instead. INSTALL_URL, also optional, is where the web offers the
-  # installed app.
+  # Without it the app runs its on-device demo community. INSTALL_URL,
+  # optional, is where the web offers the installed app.
   DART_DEFINES: >-
-    --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
-    --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
     --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
     --dart-define=WEB_URL=${{ vars.WEB_URL }}
@@ -61,15 +57,13 @@ jobs:
           python3 tool/l10n/build_he.py
           git diff --exit-code lib/l10n/app_he.arb
       - name: Check the static policy pages, the web build's scripts and the site's Worker
-        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs tool/cloudflare/test/worker.test.mjs tool/cloudflare/test/accounts.test.mjs tool/cloudflare/test/community.test.mjs
+        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs tool/cloudflare/test/worker.test.mjs tool/cloudflare/test/accounts.test.mjs tool/cloudflare/test/community.test.mjs tool/cloudflare/test/admin.test.mjs
       - run: flutter analyze
       - run: flutter test
       # Dart's local time follows the process's time zone, UTC on the runner,
       # which never changes its clocks.
       - name: Check the day turns at 3 a.m. across Israel's changes of clocks
         run: TZ=Asia/Jerusalem flutter test test/app/rollover_test.dart
-      - name: Community database tests (PostgreSQL)
-        run: supabase/tests/run_tests.sh
 
   web:
     name: Build web
