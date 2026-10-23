@@ -64,6 +64,23 @@
         ]
       },
       {
+        "heading": "Accounts on the website",
+        "blocks": [
+          {"type": "para", "text": "An account on shnayimmikrah.org is optional; the app doesn’t need one. To make one you give an email address and a password. The address is kept in lower case, as you gave it. The password is kept only as a salted hash, which can’t be turned back into the password. We keep whether you have confirmed the address, and each sign-in you have open, as a hash of its key."},
+          {"type": "bullet", "text": "The code we email to confirm an address lasts 15 minutes, and a link to reset a password lasts an hour. Both are kept only as hashes, and are removed once used or once they expire."},
+          {"type": "bullet", "text": "A sign-in lasts 30 days, unless you sign out or reset your password. A reset signs out every session."},
+          {"type": "bullet", "text": "An address that is never confirmed is removed after 7 days."},
+          {"type": "para", "text": "We send the email through Resend. The forms are protected by Cloudflare Turnstile, which checks that a person is filling them in. To limit guessing, the tries are counted per email address and per visitor address, using a keyed hash of the visitor’s address that changes every day."},
+          {"type": "para", "text": "To delete your account, sign in, choose Delete my account and enter your password. That removes at once the address, the password hash, the sign-ins, the codes and the reset links."}
+        ]
+      },
+      {
+        "heading": "The website’s visit log",
+        "blocks": [
+          {"type": "para", "text": "The website keeps a log of the pages opened on it, to see how it is used and to keep it secure: the time; the page’s path, without any search; the country and network that Cloudflare gives; the browser’s identifier string; the host of the site a visitor came from, never its path or search; the first language the browser asks for; and a keyed hash of the visitor’s address that changes every day. The address itself is never stored. Requests that are refused, or that look like attacks, are logged on their own. Account pages are not logged as visits. The logs are kept for 365 days, and then removed."}
+        ]
+      },
+      {
         "heading": "Contact",
         "blocks": [
           {"type": "contact", "text": "Questions or requests: {contact}"}
@@ -288,6 +305,23 @@
         "heading": "מחיקת המידע",
         "blocks": [
           {"type": "para", "text": "אפשר לאפס את ההתקדמות בכל עת בהגדרות, תחת ״הנתונים שלך״; האיפוס אינו נוגע בסימניות ובהערות, שאותן מסירים אחת אחת מהאפשרויות של הפסוק. אפשר למחוק את החשבון בהגדרות, תחת ״חשבון וקהילה״; פעולה זו מוחקת את הפרופיל, ההודעות, וההתקדמות, הסימניות וההערות שגובו. נושאים שפתחת ואחרים הגיבו בהם נשארים, בלי שמך, כדי שהתגובות שלהם יישארו מובנות."}
+        ]
+      },
+      {
+        "heading": "חשבונות באתר",
+        "blocks": [
+          {"type": "para", "text": "חשבון באתר shnayimmikrah.org הוא אופציונלי; האפליקציה אינה דורשת אותו. ליצירתו תמסרו כתובת דוא״ל וסיסמה. הכתובת נשמרת באותיות קטנות, כפי שמסרתם. הסיסמה נשמרת רק כערך גיבוב מלוח, שממנו אי אפשר לשחזר את הסיסמה. אנו שומרים אם אישרתם את הכתובת, וכן כל חיבור פתוח שלכם, כערך גיבוב של המפתח שלו."},
+          {"type": "bullet", "text": "הקוד שאנו שולחים כדי לאשר כתובת תקף 15 דקות, וקישור לאיפוס סיסמה תקף שעה. שניהם נשמרים רק כערכי גיבוב, ונמחקים עם השימוש בהם או עם פקיעת התוקף."},
+          {"type": "bullet", "text": "חיבור נשאר פתוח 30 יום, אלא אם יצאתם מהחשבון או איפסתם את הסיסמה. איפוס סיסמה מנתק את כל החיבורים."},
+          {"type": "bullet", "text": "כתובת שאינה מאושרת נמחקת לאחר 7 ימים."},
+          {"type": "para", "text": "את הדוא״ל אנו שולחים דרך Resend. הטפסים מוגנים באמצעות Cloudflare Turnstile, שבודק שאדם הוא שממלא אותם. כדי להגביל ניחושים, הניסיונות נספרים לפי כתובת דוא״ל ולפי כתובת המבקר, באמצעות ערך גיבוב מפתח של כתובת המבקר, שמשתנה מדי יום."},
+          {"type": "para", "text": "למחיקת החשבון, היכנסו, בחרו ״מחיקת החשבון שלי״ והזינו את הסיסמה. הפעולה מסירה מיד את הכתובת, ערך הגיבוב של הסיסמה, החיבורים, הקודים וקישורי האיפוס."}
+        ]
+      },
+      {
+        "heading": "יומן הביקורים באתר",
+        "blocks": [
+          {"type": "para", "text": "האתר שומר יומן של הדפים שנפתחים בו, כדי לראות כיצד משתמשים בו ולשמור על אבטחתו: הזמן; נתיב הדף, בלי חיפוש; המדינה והרשת שמזהה Cloudflare; מחרוזת הזיהוי של הדפדפן; שם המארח של האתר שממנו הגיע המבקר, בלי הנתיב או החיפוש שלו; השפה הראשונה שהדפדפן מבקש; וערך גיבוב מפתח של כתובת המבקר, שמשתנה מדי יום. הכתובת עצמה אינה נשמרת לעולם. בקשות שנדחו, או שנראות כמו תקיפה, נרשמות בנפרד. דפי החשבונות אינם נרשמים כביקורים. היומן נשמר 365 יום, ואז נמחק."}
         ]
       },
       {
