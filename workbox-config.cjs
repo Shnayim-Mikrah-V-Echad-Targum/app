@@ -23,7 +23,7 @@
 // installing only with them, so the app still opens, and opens those books,
 // offline after it.
 const { join } = require('node:path');
-const { cacheNames, fileNavigation, writeUpdateScript } = require('./tool/web/sw_build.cjs');
+const { cacheNames, fileNavigation, serverPage, writeUpdateScript } = require('./tool/web/sw_build.cjs');
 
 const web = join(__dirname, 'build', 'web');
 const runtimeCaches = cacheNames(web);
@@ -70,9 +70,10 @@ module.exports = {
   maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
   // Any page of the app, such as …/community/thread/1, opened or reloaded.
   // A file, such as a policy page (legal/privacy.html), is left to the
-  // server and to the pages' cache below.
+  // server and to the pages' cache below, and so are the accounts' pages,
+  // which the site's Worker answers.
   navigateFallback: 'index.html',
-  navigateFallbackDenylist: [fileNavigation],
+  navigateFallbackDenylist: [fileNavigation, serverPage],
   ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^cachebuster$/],
   // A new version waits until every window of the old one has closed, so a
   // window never mixes the two. The app offers to restart into it instead
