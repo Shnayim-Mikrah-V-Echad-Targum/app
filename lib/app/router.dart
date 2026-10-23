@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -113,12 +114,19 @@ class HeldLocation {
 
 final heldLocationProvider = Provider<HeldLocation>((ref) => HeldLocation());
 
+/// Shows the browser the address of the page on top, which a reload opens and
+/// a shared link names. Null where there is no browser address: the app on a
+/// phone or a desktop.
+final browserAddressProvider = Provider<void Function(Uri address)?>((ref) => kIsWeb
+    ? (address) => SystemNavigator.routeInformationUpdated(uri: address, replace: true)
+    : null);
+
 final routerProvider = Provider<GoRouter>((ref) {
   final onboarded = ValueNotifier<bool>(ref.read(settingsProvider).onboardingComplete);
   ref.listen(settingsProvider.select((s) => s.onboardingComplete), (_, next) => onboarded.value = next);
   ref.onDispose(onboarded.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     // A notification that launched the app is opened over Today once it is
     // up (see openFromOutside), so it always has somewhere to go back to.
     initialLocation: '/today',
@@ -245,6 +253,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           )),
     ],
   );
+  // The state of the page on top, which a page pushed over the stack has with
+  // its own address and query (?mode=full).
+  void reportAddress() => ref.read(browserAddressProvider)?.call(router.state.uri);
+  router.routerDelegate.addListener(reportAddress);
+  ref.onDispose(() => router.routerDelegate.removeListener(reportAddress));
+  return router;
 });
 
 /// The tabs' navigators, each kept as it was left and only the chosen one
