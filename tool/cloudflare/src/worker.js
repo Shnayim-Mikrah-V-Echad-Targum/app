@@ -6,7 +6,8 @@
 // Logging never slows or breaks the site: the writes run after the response,
 // and a failed write is reported to the Worker's logs and nothing else.
 
-import { blockedStatus, classify, clip, dayOf, firstLanguage, ipKey, isPageView, refererHost } from './rules.js';
+import { blockedStatus, classify, clip, dayOf, firstLanguage, ipKey, isAccountPath, isPageView, refererHost } from './rules.js';
+import { accountCleanup, handleAccount } from './accounts.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -36,13 +37,16 @@ export default {
     } else if (blocked !== null) {
       const headersOut = blocked === 405 ? { Allow: 'GET, HEAD, OPTIONS' } : undefined;
       response = new Response(`${blocked}`, { status: blocked, headers: headersOut });
+    } else if (isAccountPath(url.pathname)) {
+      response = await handleAccount(request, env, url);
     } else {
       response = await env.ASSETS.fetch(request);
     }
 
     // A visit is a page the site served to its own address; a request that
-    // was refused, or for another host, is not a visitor.
-    const visit = blocked === null && url.hostname === env.CANONICAL_HOST && isPageView(request);
+    // was refused, or for another host, is not a visitor. The accounts' pages
+    // are not visits either: each would write a row, for little use.
+    const visit = blocked === null && url.hostname === env.CANONICAL_HOST && isPageView(request) && !isAccountPath(url.pathname);
     const day = dayOf(ts);
     const row = {
       ts,
@@ -75,7 +79,8 @@ export default {
     return response;
   },
 
-  // Once a day: the rows older than the retention period are removed.
+  // Once a day: the rows older than the retention period are removed, and the
+  // accounts' rows that have passed their time (accounts.js).
   async scheduled(controller, env, ctx) {
     const days = Number(env.RETENTION_DAYS) || 365;
     const cutoff = Date.now() - days * 86400000;
@@ -85,6 +90,7 @@ export default {
         env.LOGS.prepare('DELETE FROM security_events WHERE ts < ?').bind(cutoff),
       ]).catch((error) => console.error('retention failed', error.message)),
     );
+    ctx.waitUntil(accountCleanup(env, Date.now()).catch((error) => console.error('account clean-up failed', error.name)));
   },
 };
 

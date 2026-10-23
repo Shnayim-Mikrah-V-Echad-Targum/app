@@ -25,4 +25,8 @@ crons = ["17 3 * * *"]
 [vars]
 CANONICAL_HOST = "shnayimmikrah.org"
 RETENTION_DAYS = "365"
+# The accounts (README, Accounts). The site key is public, and stays empty until
+# its Turnstile widget exists; the sender is on a domain verified in Resend.
+TURNSTILE_SITE_KEY = ""
+ACCOUNTS_FROM = "Shnayim Mikrah <accounts@shnayimmikrah.org>"
 
