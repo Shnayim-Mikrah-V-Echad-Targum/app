@@ -31,11 +31,11 @@ export function resetMail(link) {
 }
 
 export async function sendMail(env, to, { subject, text }) {
-  if (!env.RESEND_API_KEY || !env.ACCOUNTS_FROM) throw new Error('email is not configured');
+  if (!env.RESEND_API_KEY || !env.ACCOUNTS_EMAIL_FROM) throw new Error('email is not configured');
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env.ACCOUNTS_FROM, to: [to], subject, text }),
+    body: JSON.stringify({ from: env.ACCOUNTS_EMAIL_FROM, to: [to], subject, text }),
   });
   if (!response.ok) throw new Error(`email failed with status ${response.status}`);
 }

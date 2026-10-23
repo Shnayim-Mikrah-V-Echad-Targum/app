@@ -66,7 +66,7 @@ function makeEnv() {
       TURNSTILE_SECRET_KEY: 'test-turnstile',
       TURNSTILE_SITE_KEY: 'test-site-key',
       RESEND_API_KEY: 're_test',
-      ACCOUNTS_FROM: 'Shnayim Mikrah <accounts@shnayimmikrah.org>',
+      ACCOUNTS_EMAIL_FROM: 'accounts@shnayimmikrah.org',
     },
   };
 }

@@ -29,5 +29,5 @@ RETENTION_DAYS = "365"
 # variables, so the key lives here as well as in the dashboard; the sender is on a
 # domain verified in Resend.
 TURNSTILE_SITE_KEY = "0x4AAAAAAFhznznI5mbQhSPr"
-ACCOUNTS_FROM = "Shnayim Mikrah <accounts@shnayimmikrah.org>"
+ACCOUNTS_EMAIL_FROM = "accounts@shnayimmikrah.org"
 

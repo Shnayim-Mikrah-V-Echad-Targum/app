@@ -69,7 +69,7 @@ const SECURITY = {
 function configured(env) {
   return Boolean(
     env.LOGS && env.ACCOUNTS_KEY && env.IP_SALT && env.TURNSTILE_SECRET_KEY
-      && env.TURNSTILE_SITE_KEY && env.RESEND_API_KEY && env.ACCOUNTS_FROM,
+      && env.TURNSTILE_SITE_KEY && env.RESEND_API_KEY && env.ACCOUNTS_EMAIL_FROM,
   );
 }
 
