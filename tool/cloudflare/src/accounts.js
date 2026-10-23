@@ -149,6 +149,7 @@ async function signUp(request, env, lang, now) {
   if (!password) return again('password', 400);
   if (!(await humanOk(env, form))) return again('human', 403);
   if (await limited(env, request, 'signup', email, now)) return again('limited', 429);
+  await recordTry(env, request, 'signup', email, now);
 
   // The password is hashed for every address, present or not, so the answer
   // takes the same time either way.
@@ -184,6 +185,7 @@ async function verify(request, env, lang, now) {
 
   if (!email || !/^\d{6}$/.test(code)) return again('code', 400);
   if (await limited(env, request, 'verify', email, now)) return again('limited', 429);
+  await recordTry(env, request, 'verify', email, now);
 
   const user = await db.findUserByEmail(env.LOGS, email).first();
   if (!user || user.email_verified_at) return again('code', 400);
@@ -216,6 +218,7 @@ async function resend(request, env, lang, now) {
   if (await limited(env, request, 'resend', email, now)) {
     return page(render(lang, { title: t.verifyTitle, body: verifyBody(lang, email), error: 'limited', status: 429 }));
   }
+  await recordTry(env, request, 'resend', email, now);
   const user = await db.findUserByEmail(env.LOGS, email).first();
   if (user && !user.email_verified_at) {
     try {
@@ -234,13 +237,20 @@ async function signIn(request, env, lang, now) {
   const password = String(form.get('password') ?? '');
   const again = (error, status) => page(render(lang, { title: t.signInTitle, body: signInBody(lang, env.TURNSTILE_SITE_KEY), error, status }));
 
-  if (!email || !password || password.length > 128) return again('credentials', 401);
   if (!(await humanOk(env, form))) return again('human', 403);
   if (await limited(env, request, 'signin', email, now)) return again('limited', 429);
+  if (!email || !password || password.length > 128) {
+    await recordTry(env, request, 'signin', email, now);
+    return again('credentials', 401);
+  }
 
+  // Only a failed try counts toward the limits: a sign-in that works writes nothing.
   const user = await db.findUserByEmail(env.LOGS, email).first();
   const ok = await verifyPassword(password, user ?? await dummyPasswordRow());
-  if (!user || !ok) return again('credentials', 401);
+  if (!user || !ok) {
+    await recordTry(env, request, 'signin', email, now);
+    return again('credentials', 401);
+  }
 
   if (user.pw_iter < PBKDF2_ITERATIONS) {
     await env.LOGS.batch([db.setPassword(env.LOGS, user.id, await hashPassword(password))]);
@@ -268,6 +278,7 @@ async function requestReset(request, env, lang, now) {
   if (!email) return again('email', 400);
   if (!(await humanOk(env, form))) return again('human', 403);
   if (await limited(env, request, 'reset', email, now)) return again('limited', 429);
+  await recordTry(env, request, 'reset', email, now);
 
   const user = await db.findUserByEmail(env.LOGS, email).first();
   if (user && user.email_verified_at) {
@@ -306,6 +317,7 @@ async function resetComplete(request, env, lang, now) {
   if (!password) return again('password', 400);
   if (!(await humanOk(env, form))) return again('human', 403);
   if (await limited(env, request, 'resetComplete', null, now)) return again('limited', 429);
+  await recordTry(env, request, 'resetComplete', null, now);
 
   // The link is claimed first, so that only one request can use it.
   const claimed = await db.claimResetToken(env.LOGS, await tokenHash(token), now).first();
@@ -334,7 +346,10 @@ async function deleteAccount(request, env, lang, now) {
 
   if (await limited(env, request, 'signin', user.email, now)) return again('limited', 429);
   const row = await db.findUserByEmail(env.LOGS, user.email).first();
-  if (!row || !(await verifyPassword(password, row))) return again('credentials', 401);
+  if (!row || !(await verifyPassword(password, row))) {
+    await recordTry(env, request, 'signin', user.email, now);
+    return again('credentials', 401);
+  }
   await env.LOGS.batch(db.deleteAccount(env.LOGS, user.id));
   return see(to(`${BASE}/sign-in`, lang, { notice: 'deleted' }), clearCookie());
 }
@@ -364,21 +379,37 @@ async function humanOk(env, form) {
   return result?.success === true;
 }
 
-// Counts an attempt against the email's limit and the address's. The address's
-// key is the visit log's keyed hash, so it is the same kind of value and never
-// the address itself.
-async function limited(env, request, scope, email, now) {
+// The keys a try counts against in a scope: a keyed hash of the email, and the
+// visitor's address as the visit log's keyed hash (never the address itself).
+async function limitKeys(env, request, scope, email, now) {
   const limits = LIMITS[scope];
+  const keys = [];
   if (email && limits.email) {
-    const [count, windowMs] = limits.email;
-    if (await db.overLimit(env.LOGS, await keyedHash(env.ACCOUNTS_KEY, `${scope}|${email}`), count, windowMs, now)) return true;
+    const [limit, windowMs] = limits.email;
+    keys.push({ key: await keyedHash(env.ACCOUNTS_KEY, `${scope}|${email}`), limit, windowMs });
   }
   const address = await ipKey(request.headers.get('cf-connecting-ip'), env.IP_SALT, dayOf(now));
   if (address && limits.address) {
-    const [count, windowMs] = limits.address;
-    if (await db.overLimit(env.LOGS, `${scope}|${address}`, count, windowMs, now)) return true;
+    const [limit, windowMs] = limits.address;
+    keys.push({ key: `${scope}|${address}`, limit, windowMs });
+  }
+  return keys;
+}
+
+// Whether a try is refused, because a key has used up its tries in its window.
+// Reads only, so a refused try writes nothing.
+async function limited(env, request, scope, email, now) {
+  for (const { key, limit, windowMs } of await limitKeys(env, request, scope, email, now)) {
+    if (await db.isOverLimit(env.LOGS, key, limit, windowMs, now)) return true;
   }
   return false;
+}
+
+// Counts a try against the scope's windows, per email and per address.
+async function recordTry(env, request, scope, email, now) {
+  const counts = (await limitKeys(env, request, scope, email, now))
+    .map(({ key, windowMs }) => db.countTry(env.LOGS, key, windowMs, now));
+  if (counts.length) await env.LOGS.batch(counts);
 }
 
 async function currentUser(request, env, now) {

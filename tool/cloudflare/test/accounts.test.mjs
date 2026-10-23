@@ -353,6 +353,25 @@ test('a user is limited per email: the tries past the limit are refused', async 
   assert.equal(statuses[10], 429);
 });
 
+test('a sign-in that works writes nothing toward the limits, and a refused try writes nothing', async () => {
+  const state = makeEnv();
+  await signedUpAndVerified(state);
+  const tries = () => count(state.database, 'SELECT coalesce(sum(count), 0) AS n FROM rate_limits');
+
+  const before = tries();
+  const works = await call(state, 'POST', '/account/sign-in', { form: { email: 'reader@example.com', password: PASSWORD, 'cf-turnstile-response': 't' } });
+  assert.equal(works.status, 303);
+  assert.equal(tries(), before, 'a sign-in that works counts nothing');
+
+  for (let i = 0; i < 10; i++) {
+    await call(state, 'POST', '/account/sign-in', { form: { email: 'reader@example.com', password: 'not the password', 'cf-turnstile-response': 't' } });
+  }
+  const atLimit = tries();
+  const refused = await call(state, 'POST', '/account/sign-in', { form: { email: 'reader@example.com', password: 'not the password', 'cf-turnstile-response': 't' } });
+  assert.equal(refused.status, 429);
+  assert.equal(tries(), atLimit, 'a refused try counts nothing');
+});
+
 test('a form without a passing Turnstile check creates nothing', async () => {
   const state = makeEnv();
   turnstile = { success: false };
