@@ -30,6 +30,7 @@ const STRINGS = {
     accountTitle: 'Your account',
     signedInAs: 'Signed in as',
     roles: { admin: 'Role: site administrator, with every permission.', moderator: 'Role: community moderator.' },
+    adminPanel: 'Open the admin panel',
     signOut: 'Sign out',
     deleteTitle: 'Delete your account',
     deleteLead: 'This deletes your account, its sessions and its codes, and everything you posted in the community. Enter your password to confirm.',
@@ -84,6 +85,7 @@ const STRINGS = {
     accountTitle: 'החשבון שלכם',
     signedInAs: 'מחוברים בתור',
     roles: { admin: 'תפקיד: מנהל/ת האתר, עם כל ההרשאות.', moderator: 'תפקיד: מנחה בקהילה.' },
+    adminPanel: 'פתיחת לוח הניהול',
     signOut: 'יציאה',
     deleteTitle: 'מחיקת החשבון',
     deleteLead: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו, וכל מה שפרסמתם בקהילה. הזינו את הסיסמה לאישור.',
@@ -244,6 +246,7 @@ export function accountBody(lang, { email, email_verified_at: verified, role, pw
   const hasPassword = alg === 'pbkdf2-sha256';
   return `<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
 ${role && Object.hasOwn(t.roles, role) ? `<p>${t.roles[role]}</p>` : ''}
+${role === 'admin' ? `<p><a href="/account/admin">${t.adminPanel}</a></p>` : ''}
 ${verified ? '' : `<p>${t.unverified}</p>`}
 <form method="post" action="${link('/account/sign-out', lang)}">
 <button type="submit">${t.signOut}</button>

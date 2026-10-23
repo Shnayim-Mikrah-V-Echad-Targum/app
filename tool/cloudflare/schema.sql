@@ -107,9 +107,8 @@ CREATE TABLE IF NOT EXISTS roles (
 
 -- The community: the app's forums (tool/cloudflare/README.md, Community),
 -- served as JSON by src/api.js. The rules the app relies on (who may post,
--- the limits, blocking, hiding, moderation) are kept in src/community.js,
--- as the forum's Supabase migrations kept them in triggers. Times are Unix
--- milliseconds; a user is a row of users.
+-- the limits, blocking, hiding, moderation) are kept in src/community.js.
+-- Times are Unix milliseconds; a user is a row of users.
 
 -- One per member, made the first time the account reaches the community.
 -- The name is "user_" and hex until its owner picks one; name_key is the
@@ -243,8 +242,8 @@ CREATE TABLE IF NOT EXISTS user_progress (
   updated_at INTEGER NOT NULL
 );
 
--- The forums and the parashot, as supabase/migrations/20261009000100_reference_data.sql
--- (and the migrations after it) have them. Applying this file again brings them up to date.
+-- The forums and the parashot (the names as assets/data/parshiyot.json has
+-- them). Applying this file again brings them up to date.
 INSERT INTO forums (id, slug, name_en, name_he, description_en, description_he, sort_order, locked) VALUES
   (1, 'parsha', 'Parshat HaShavua', 'פרשת השבוע', 'A discussion thread for every week’s parsha.', 'שרשור דיון לכל פרשת שבוע.', 1, 0),
   (2, 'questions', 'Questions & answers', 'שאלות ותשובות', 'Ask about a verse, a Targum or a Rashi.', 'שאלות על פסוק, תרגום או רש״י.', 2, 0),

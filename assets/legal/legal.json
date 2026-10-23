@@ -54,7 +54,7 @@
       {
         "heading": "If you create a community account",
         "blocks": [
-          {"type": "para", "text": "The community runs on this website’s own server, and a community account is an account on the website (see “Accounts on the website” below). In the app you sign in with a code we email you; an account made that way has no password until you set one with a password reset on the website. Your email address is used only to sign you in. Your display name and the posts you write are visible to other users. The thanks you give, the posts you report and the members you block are kept with your account. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
+          {"type": "para", "text": "The community runs on this website’s own server, and a community account is an account on the website (see “Accounts on the website” below). In the app you sign in with a code we email you; an account made that way has no password until you set one with a password reset on the website. Your email address is used only to sign you in. Your display name and the posts you write are visible to other users. The thanks you give, the posts you report and the members you block are kept with your account. The site’s administrators can see each account’s email address, when it was made, confirmed and last signed in, its community profile and posts, and the site’s logs, to run the community and keep it safe; every action they take on an account is logged. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
         ]
       },
       {
@@ -298,7 +298,7 @@
       {
         "heading": "אם פתחת חשבון בקהילה",
         "blocks": [
-          {"type": "para", "text": "הקהילה פועלת על השרת של האתר הזה, וחשבון בקהילה הוא חשבון באתר (ראו ״חשבונות באתר״ בהמשך). באפליקציה נכנסים בקוד שאנו שולחים לדוא״ל; לחשבון שנוצר כך אין סיסמה, עד שבוחרים סיסמה באיפוס סיסמה באתר. כתובת הדוא״ל שלך משמשת לכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. התודות שנתת, ההודעות שדיווחת עליהן והמשתמשים שחסמת נשמרים עם החשבון. אם בחרת לגבות את ההתקדמות, היא נשמרת עם החשבון, יחד עם הסימניות וההערות שכתבת על פסוקים, וכך אפשר לשחזר אותן במכשיר אחר. הן גלויות רק לך."}
+          {"type": "para", "text": "הקהילה פועלת על השרת של האתר הזה, וחשבון בקהילה הוא חשבון באתר (ראו ״חשבונות באתר״ בהמשך). באפליקציה נכנסים בקוד שאנו שולחים לדוא״ל; לחשבון שנוצר כך אין סיסמה, עד שבוחרים סיסמה באיפוס סיסמה באתר. כתובת הדוא״ל שלך משמשת לכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. התודות שנתת, ההודעות שדיווחת עליהן והמשתמשים שחסמת נשמרים עם החשבון. מנהלי האתר יכולים לראות את כתובת הדוא״ל של כל חשבון, מתי נוצר, אומת ונכנסו אליו לאחרונה, את הפרופיל וההודעות שלו בקהילה, ואת יומני האתר, כדי לנהל את הקהילה ולשמור על ביטחונה; כל פעולה שלהם על חשבון נרשמת ביומן. אם בחרת לגבות את ההתקדמות, היא נשמרת עם החשבון, יחד עם הסימניות וההערות שכתבת על פסוקים, וכך אפשר לשחזר אותן במכשיר אחר. הן גלויות רק לך."}
         ]
       },
       {

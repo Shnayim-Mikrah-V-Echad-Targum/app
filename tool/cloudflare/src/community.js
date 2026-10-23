@@ -1,8 +1,6 @@
 // The community's rules, as the app's forum keeps them (tool/cloudflare/README.md,
 // Community): who may post and how often, what a reader may see, reports,
-// blocks and moderation. They mirror the forum's Supabase migrations
-// (supabase/migrations), where triggers kept them, so the app behaves the
-// same on either. Each function takes the member (null when signed out) and
+// blocks and moderation. Each function takes the member (null when signed out) and
 // returns what api.js sends as JSON, or throws an ApiError with the code the
 // app shows a message for (lib/features/community/ui/community_ui.dart).
 
@@ -18,7 +16,10 @@ export class ApiError extends Error {
 
 const REASONS = ['spam', 'lashon_hara', 'disrespect', 'misinformation', 'off_topic', 'other'];
 const KINDS = ['discussion', 'weekly', 'question', 'announcement'];
-const PAGE_MAX = 100;
+// The most rows a page holds, as the app expects of the server: it fetches a
+// thread again 400 posts at a time, and one more to learn whether any remain
+// (ThreadPostsNotifier.refetchChunk, lib/features/community/data/community_providers.dart).
+const PAGE_MAX = 500;
 
 // Staff: an admin, who may do everything, or a moderator.
 export function isStaff(member) {
@@ -124,7 +125,7 @@ function cursor(value) {
 
 function limitOf(value, fallback) {
   const n = value == null ? fallback : Number(value);
-  return Number.isInteger(n) && n > 0 ? Math.min(n, PAGE_MAX + 1) : fallback;
+  return Number.isInteger(n) && n > 0 ? Math.min(n, PAGE_MAX) : fallback;
 }
 
 function threadJson(r) {
@@ -374,6 +375,7 @@ export async function openReports(env, member) {
 
 const USER_ACTIONS = ['silence_user', 'ban_user', 'unban_user', 'set_trust', 'grant_moderator', 'revoke_moderator'];
 const ADMIN_ACTIONS = ['grant_moderator', 'revoke_moderator'];
+const PROFILE_ACTIONS = ['silence_user', 'ban_user', 'unban_user', 'set_trust'];
 
 // A moderation action, logged. On a member: staff are acted on by an admin
 // alone, and the moderators are named by an admin alone.
@@ -392,6 +394,11 @@ export async function moderate(env, member, body, now) {
   if (action === 'set_trust' && !/^[0-4]$/.test(reason ?? '')) throw new ApiError('invalid_trust');
   const statements = cdb.moderation(env.LOGS, { action, target, actorId: member.id, reason, now });
   if (!statements) throw new ApiError('unknown_action');
+  // A ban, say, holds for an account that has not reached the community yet:
+  // it is given its profile first.
+  if (PROFILE_ACTIONS.includes(action) && !(await cdb.findProfile(env.LOGS, target).first())) {
+    await ensureProfile(env, { id: target, display_name: null }, now);
+  }
   statements.push(cdb.logModeration(env.LOGS, { actorId: member.id, action, targetType: action.split('_')[1], target, reason, now }));
   await env.LOGS.batch(statements);
   return null;

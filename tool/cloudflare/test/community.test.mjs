@@ -547,3 +547,13 @@ function passTurnstile() {
     ? new Response(JSON.stringify({ success: true }), { headers: { 'content-type': 'application/json' } })
     : resend(url, init);
 }
+
+test('a page holds as many rows as the app asks for when it fetches a thread again', async () => {
+  const state = makeEnv();
+  const token = await member(state, 'reader@example.com');
+  const thread = await newThread(state, token);
+  const insert = state.database.prepare('INSERT INTO posts (thread_id, author_id, body, created_at) VALUES (?, 1, ?, ?)');
+  for (let i = 0; i < 420; i++) insert.run(thread, `Post number ${i}`, START + i + 1);
+  assert.equal((await api(state, 'GET', `/threads/${thread}/posts?limit=401`)).body.length, 401);
+  assert.equal((await api(state, 'GET', `/threads/${thread}/posts?limit=9999`)).body.length, 421);
+});

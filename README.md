@@ -105,8 +105,6 @@ The app is configured at build time with `--dart-define`:
 | Define | Purpose |
 |---|---|
 | `WEB_URL` | The site's public address, ending in a slash. The community, its accounts and the progress backup run on that site's server, the Worker in `tool/cloudflare` ([its README](tool/cloudflare/README.md#community)), and a discussion's *Copy link* begins with it. Empty: the community is an on-device demo. |
-| `SUPABASE_URL` | Optional: a Supabase project for the community and backup, in place of the site's server ([docs/BACKEND.md](docs/BACKEND.md)). |
-| `SUPABASE_PUBLISHABLE_KEY` | The project's publishable (anon) key. It is safe to ship because row-level security protects all data. |
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
 | `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
@@ -140,7 +138,7 @@ Previews, tagged `v0.Y.Z`, come from the Pre-release workflow (`.github/workflow
 ```sh
 flutter analyze
 flutter test                     # unit, widget, data-integrity and accessibility tests
-supabase/tests/run_tests.sh      # database policies and triggers (needs PostgreSQL 15+)
+node --test tool/cloudflare/test/*.test.mjs   # the site's Worker: logs, accounts, community, admin panel
 python3 tool/l10n/build_he.py    # regenerates app_he.arb; fails if a string is untranslated
 ```
 
@@ -164,7 +162,7 @@ lib/
     parsha/       week overview and browsing
     reader/       guided and full-text reader, haftarah, display options
     progress/     streak engine, plans, milestones (domain/) and progress screen
-    community/    forum repository (the site's server, Supabase and demo), screens
+    community/    forum repository (the site's server and the demo), screens
     settings/     settings model and screens
     onboarding/   first-run flow
     about/        guide, sources, legal texts
@@ -175,13 +173,13 @@ assets/
   text/           Torah, Targum, English, Rashi and haftarot as JSON
   data/           parsha metadata, aliyot, haftarah references, cities for Shabbat times
   fonts/          bundled fonts and their licenses
-supabase/         database migrations, local config, email template, SQL tests
 tool/
   data/           scripts that generate the text assets, calendar tables and test fixtures
   l10n/           Hebrew translations and the ARB builder
   fonts/          builds static font instances from pinned google/fonts sources
   android_twa/    the Android web app, a Trusted Web Activity of the site
-docs/             design notes, research, backend and release guides
+  cloudflare/     the site's Worker: its logs, accounts, the community's API and the admin panel
+docs/             design notes, research and release guides
 android/, ios/    platform projects; the home-screen widget's native side is
                   android/app/src/main/kotlin/…/ParshaWidgetProvider.kt with
                   res/layout/widget_parsha_*.xml, and ios/ParshaWidget/
@@ -198,7 +196,6 @@ cd tool/data && npm ci
 NODE_USE_ENV_PROXY=1 node build_data.mjs      # assets/text/** and assets/data/parshiyot.json
 node build_cities.mjs                         # assets/data/cities.json (before the fixtures)
 node gen_fixtures.mjs                         # calendar tables and test fixtures
-python3 gen_supabase_reference.py             # forum categories and parashot reference data
 ```
 
 `@hebcal/core` is used only as a test oracle during generation. It is GPL-licensed and is not part of the app.
@@ -230,6 +227,5 @@ The halachic defaults follow the Shulchan Aruch and Mishnah Berurah (OC 285). Wh
 - [docs/DESIGN.md](docs/DESIGN.md): product and design decisions, and why they were made.
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): what is supported, how it is tested, and the manual test checklist.
 - [tool/cloudflare/README.md](tool/cloudflare/README.md): the site's Worker, where the community, its accounts and the backup run.
-- [docs/BACKEND.md](docs/BACKEND.md): setting up Supabase for the community and backup, in place of the site's server.
 - [docs/RELEASE.md](docs/RELEASE.md): store submission and release checklist.
 - [docs/research/](docs/research/): the underlying research on halacha, accessibility, streak UX, forums and Hebrew typography.

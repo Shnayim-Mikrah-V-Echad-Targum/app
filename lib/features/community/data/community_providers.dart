@@ -142,10 +142,10 @@ class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
   ThreadPostsNotifier(this.threadId);
   final String threadId;
 
-  /// The most posts asked for in one request when fetching again: one less
-  /// than the rows the server returns at most (max_rows in
-  /// supabase/config.toml), for the one more fetched to learn whether any
-  /// remain.
+  /// The most posts asked for in one request when fetching again: less than
+  /// the rows the server returns at most (PAGE_MAX in
+  /// tool/cloudflare/src/community.js), with the one more fetched to learn
+  /// whether any remain.
   static const refetchChunk = 400;
 
   /// The earliest post shown, and how many are.

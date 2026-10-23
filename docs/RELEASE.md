@@ -101,7 +101,6 @@ Run again for a tag whose draft exists (a re-run, or by hand), the workflow uplo
 - [ ] **Repository variables:**
   - `SUPPORT_EMAIL`: the support address.
   - `WEB_URL`: the site's public address ([Web](#web)), whose server the community, its accounts and the backup run on ([tool/cloudflare/README.md](../tool/cloudflare/README.md#community)), which the stores' support and privacy URLs are on, and which a discussion's *Copy link* begins with.
-  - `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are optional: set, they put the community on Supabase instead ([BACKEND.md](BACKEND.md)).
   - `IOS_TEAM_ID`, `IOS_PROFILE_NAME` and `IOS_WIDGET_PROFILE_NAME`: the Apple team, and the names of the App Store profiles of the app and its widget ([iOS](#ios-app-store)).
   - `INSTALL_URL` is optional, as in CI.
 - [ ] **Repository secrets:**
@@ -378,6 +377,6 @@ The app also ships as an MSIX package. Its settings are `msix_config` in `pubspe
   - in `web/manifest.json`, `"related_applications": [{"platform": "play", "url": "https://play.google.com/store/apps/details?id=org.shnayimmikrah.app", "id": "org.shnayimmikrah.app"}]`, keeping `"prefer_related_applications": false` so that browsers still offer to install the web app
 - [ ] If you use a Content-Security-Policy, allow:
   - `'wasm-unsafe-eval'` for CanvasKit
-  - your Supabase URL in `connect-src`, if the community runs there (the site's own `/api/` is `'self'`)
+  - `'self'` in `connect-src`, for the community's `/api/`
   - `fonts.gstatic.com` in `connect-src` if you want emoji fallback fonts (see [DESIGN.md §9](DESIGN.md#9-typography))
 - [ ] Check with NVDA + Chrome and VoiceOver + Safari.

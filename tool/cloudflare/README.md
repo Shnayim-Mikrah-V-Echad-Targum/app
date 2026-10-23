@@ -1,6 +1,6 @@
 # The site's Worker and its logs
 
-`shnayimmikrah.org` is served by the Cloudflare Worker `shnayimmikrah-org`. Every request passes through `src/worker.js` first: it answers the requests that aren't the site's, serves the accounts and the app's community API (below) and the app's files for the rest, and writes the logs described here. The rules are in `src/rules.js`, and `test/worker.test.mjs` checks them; the accounts are checked by `test/accounts.test.mjs`, and the community by `test/community.test.mjs`. All run in CI (`node --test tool/cloudflare/test/worker.test.mjs tool/cloudflare/test/accounts.test.mjs tool/cloudflare/test/community.test.mjs`).
+`shnayimmikrah.org` is served by the Cloudflare Worker `shnayimmikrah-org`. Every request passes through `src/worker.js` first: it answers the requests that aren't the site's, serves the accounts and the app's community API (below) and the app's files for the rest, and writes the logs described here. The rules are in `src/rules.js`, and `test/worker.test.mjs` checks them; the accounts are checked by `test/accounts.test.mjs`, the community by `test/community.test.mjs`, and the admin panel by `test/admin.test.mjs`. All run in CI (`node --test tool/cloudflare/test/*.test.mjs`).
 
 ## What is logged
 
@@ -79,7 +79,7 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 
 ## Community
 
-The app's community, its sign-in and the reading-progress backup run here too, as a JSON API under `/api/` (`src/api.js`), on the same accounts and the same D1 database. The app uses it wherever its build has the site's address (`WEB_URL`; `lib/features/community/data/worker_forum_repository.dart`). The rules are in `src/community.js` and the rows in `src/community_db.js`; they mirror the forum's Supabase migrations (`supabase/migrations`), where triggers kept them, so the app behaves the same on either.
+The app's community, its sign-in and the reading-progress backup run here too, as a JSON API under `/api/` (`src/api.js`), on the same accounts and the same D1 database. The app uses it wherever its build has the site's address (`WEB_URL`; `lib/features/community/data/worker_forum_repository.dart`). The rules are in `src/community.js` and the rows in `src/community_db.js`.
 
 **Signing in**: the app asks for a code (`POST /api/auth/code`), which makes the account the first time, without a password, and emails it; the code (`POST /api/auth/verify`) signs in and confirms the address. The answer holds the session's token, which the app sends as a bearer token, and sets the site's session cookie, which the web app, on the site's own address, sends instead. A request with the cookie alone that changes anything must come from the site itself, as the account forms must. A session in use is kept going: past half its 30 days, it runs for 30 days again.
 
@@ -92,7 +92,7 @@ The app's community, its sign-in and the reading-progress backup run here too, a
 - `reports`, `user_blocks`, `moderation_log`: reports, blocks, and what staff did.
 - `user_progress`: the backup the app sends, as JSON, up to 900 KB.
 
-**The rules**, as on Supabase:
+**The rules**:
 
 - Anyone may read. To post, a member must be signed in, have accepted the guidelines, and be neither banned nor silenced.
 - A new member (trust level 0) waits 30 seconds between posts (others 5), posts up to 10 times and starts up to 3 threads a day, and puts at most 2 links in a post. The same post twice within 5 minutes is refused. A post has 2 to 10,000 characters, a title 5 to 150.
@@ -122,7 +122,19 @@ The app's community, its sign-in and the reading-progress backup run here too, a
 
 A page's cursor (`after`, `before`) is the last row's time in milliseconds and its id, `1761000000000:42`. The API is not logged as visits.
 
-**Not ported from Supabase**: the word filter (`private.banned_terms`, empty there) and closing the forum on Shabbat (`block_posting_on_shabbat`, off there); a thread's slow mode, which nothing set.
+**Not here yet**: a word filter, closing the forum on Shabbat, and a thread's slow mode.
+
+## The admin panel
+
+`/account/admin` (`/admin` leads there), for the addresses with the role `admin` in `roles`, and no one else: anyone else gets a refusal, and a visitor who isn't signed in the sign-in page. The account page links to it for an admin. It is under `/account` so that the app's offline service worker, which leaves `/account` to the server, never answers it with the app. The pages are plain HTML in English (`src/admin.js`, its reads in `src/admin_db.js`), sent `no-store`, never framed, and not logged as visits.
+
+- **Overview**: the accounts (confirmed, new this week, signed in now), staff, bans and silences, threads and posts, hidden posts, open reports, the visits of the last 14 days and the day's security events.
+- **Accounts**: every account, searchable by address or display name, with its status, posts and last sign-in. An account's page shows its details and posts, and its moderation history, with the actions: silence for 7 days, ban, lift both, set the trust level, make or remove a moderator, sign out everywhere, and delete the account with all it posted (once "I am sure" is ticked). Another admin's account has none of them, and the panel never deletes its own account (the account page does).
+- **Reports**: the open reports with the post, its author and its thread; resolve, dismiss, hide, restore or delete the post.
+- **Security**: the security events by kind over 24 hours, 7 and 30 days; the day-hashes behind the most events; the latest 100 events, by kind; the visits of the last 30 days; and the week's top pages, countries, referring sites and languages. No address is shown, as none is stored.
+- **Log**: every moderation and account action, by whom.
+
+Each change is a form posted from the site itself (the same check as the account forms) and is written to `moderation_log`. The panel's rules are the community's (`moderate` in `src/community.js`): a ban given to an account that has not reached the community yet gives it its profile first.
 
 ## Reading the logs
 

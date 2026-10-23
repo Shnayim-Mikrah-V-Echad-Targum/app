@@ -2,10 +2,9 @@
 // account_db.js, each function returns a statement, bound and not yet run,
 // or a list of them for a batch, which D1 runs as one transaction.
 //
-// What a reader may see is decided here, in the queries, as the forum's
-// row-level security decided it on Supabase: a post that is deleted is
-// seen by no one; one hidden pending review by its author and staff; one
-// by a member the reader blocked by staff alone. The queries that read
+// What a reader may see is decided here, in the queries: a post that is
+// deleted is seen by no one; one hidden pending review by its author and
+// staff; one by a member the reader blocked by staff alone. The queries that read
 // posts take the reader's id as ?1 (0 when signed out, as no account has
 // that id) and whether the reader is staff as ?2.
 
