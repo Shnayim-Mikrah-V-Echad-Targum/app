@@ -10,6 +10,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart' hi
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:clock/clock.dart';
 
 import '../app/city_providers.dart';
 import '../app/providers.dart';
@@ -474,7 +475,7 @@ final reminderSchedulerProvider = Provider<void>((ref) {
           prefs: prefs,
           planner: planner,
           progressOf: progress.week,
-          now: DateTime.now(),
+          now: clock.now(),
           today: today,
           pauses: progress.pauses,
           zmanim: place == null ? null : reminderZmanim(place, deviceOffset: ref.watch(deviceClockProvider)),
