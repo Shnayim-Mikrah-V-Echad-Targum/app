@@ -70,7 +70,7 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 
 **Writes and CPU**: a page view writes a `visits` row, except on the account pages. A sign-in that works writes one session row; a failed one writes its counters. PBKDF2 runs at 100,000 iterations, the most Workers accept, and the count is stored with each hash: a sign-in with a lower count raises it. Measured in Node, 100,000 iterations take about 50 ms of CPU, while the Workers Free plan allows 10 ms per request. Check the account's Workers plan before the accounts go live.
 
-**Set up once**, in addition to the database and salt below: the secrets `ACCOUNTS_KEY` (`openssl rand -hex 32`), `RESEND_API_KEY` (from Resend) and `TURNSTILE_SECRET_KEY` (from the Turnstile widget), set with `npx wrangler@4 secret put NAME --config wrangler.toml`; and the variables in `wrangler.toml`, `TURNSTILE_SITE_KEY` (the widget's public site key) and `ACCOUNTS_FROM` (a sender on a domain verified in Resend). The accounts' tables are added by applying `schema.sql` again, which is safe to repeat.
+**Set up once**, in addition to the database and salt below: the secrets `ACCOUNTS_KEY` (`openssl rand -hex 32`), `RESEND_API_KEY` (from Resend) and `TURNSTILE_SECRET_KEY` (from the Turnstile widget), set with `npx wrangler@4 secret put NAME --config wrangler.toml`; and the variables in `wrangler.toml`, `TURNSTILE_SITE_KEY` (the widget's public site key) and `ACCOUNTS_EMAIL_FROM` (the sender, on a domain verified in Resend). The accounts' tables are added by applying `schema.sql` again, which is safe to repeat.
 
 **Not in this change**: a password change while signed in (only a reset changes it); the forum, which still uses Supabase.
 

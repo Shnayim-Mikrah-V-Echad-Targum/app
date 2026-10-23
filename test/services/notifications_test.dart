@@ -123,7 +123,8 @@ NotificationService _service(_FakePlugin plugin, {DateTime Function() now = _bef
 /// A service that counts how often reminders are handed to it, and keeps
 /// the last of them, how they were worded and what it scheduled.
 class _CountingService extends NotificationService {
-  _CountingService._(this.plugin) : super.forTesting(plugin, loadTimeZones: () async => tz.setLocalLocation(tz.UTC));
+  _CountingService._(this.plugin)
+      : super.forTesting(plugin, loadTimeZones: () async => tz.setLocalLocation(tz.UTC), now: _beforePlans);
   _CountingService() : this._(_FakePlugin());
 
   final _FakePlugin plugin;
@@ -532,7 +533,9 @@ void main() {
     late ProviderContainer c;
     late _CountingService service;
 
-    setUp(() async {
+    // Pinned to a Sunday, as the tests above are: the scheduler reads the clock
+    // for the day and for Shabbat, and the reminders must not depend on today.
+    setUp(() => withClock(Clock.fixed(_beforePlans()), () async {
       service = _CountingService();
       c = await container(
         AppSettings(onboardingComplete: true, dailyReminder: true, joinDate: LocalDate(2026, 9, 1)),
@@ -540,7 +543,7 @@ void main() {
       );
       c.listen(reminderSchedulerProvider, (_, _) {});
       expect(service.reschedules, 1);
-    });
+    }));
 
     void change(AppSettings Function(AppSettings s) update) {
       c.read(settingsProvider.notifier).update(update);
@@ -564,7 +567,7 @@ void main() {
       expect(service.reschedules, 2);
     });
 
-    test("names the reader's routine in the daily reminders it schedules, and leaves it out once cleared", () async {
+    test("names the reader's routine in the daily reminders it schedules, and leaves it out once cleared", () => withClock(Clock.fixed(_beforePlans()), () async {
       /// The bodies of the daily reminders scheduled at the reader's time
       /// (or, with [atTime] false, brought forward on the eve of Shabbat or
       /// Yom Tov), and of [day]'s worded as the scheduler words them,
@@ -595,7 +598,7 @@ void main() {
       final cleared = await bodies();
       expect(cleared, everyElement(isNot(contains('After dinner'))));
       expect(cleared.last, endsWith(' min'));
-    });
+    }));
 
     test('plans again when a reminder setting or the language changes', () {
       change((s) => s.copyWith(dailyReminderMinutes: 7 * 60));
