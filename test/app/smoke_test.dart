@@ -371,7 +371,8 @@ void main() {
 
   testWidgets('today screen renders', (tester) async {
     final handle = tester.ensureSemantics();
-    await pumpApp(tester);
+    // A Monday: on a Friday the title page names the eve of Shabbat instead.
+    await pumpApp(tester, now: DateTime(2026, 10, 19, 10));
     await tester.pumpAndSettle();
     // The default test window is tablet-sized, so navigation is a rail.
     expect(find.byType(NavigationRail), findsOneWidget);
