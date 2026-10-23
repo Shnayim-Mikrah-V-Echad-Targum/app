@@ -119,17 +119,22 @@ export function deleteAccount(db, userId) {
   ];
 }
 
-// Counts one attempt against a key in its time window, and says whether the
-// window's limit is now passed. The window is part of the key, so each window
-// starts a new count, and a row expires with its window.
-export async function overLimit(db, key, limit, windowMs, now) {
+// Whether a key has used up its tries in its window. Reads only, so a refused
+// try writes nothing. The window is part of the key, so each window starts a
+// new count, and a row expires with its window.
+export async function isOverLimit(db, key, limit, windowMs, now) {
   const window = Math.floor(now / windowMs);
-  const row = await db.prepare(
+  const row = await db.prepare('SELECT count FROM rate_limits WHERE key = ?').bind(`${key}|${window}`).first();
+  return (row?.count ?? 0) >= limit;
+}
+
+// One try counted against a key in its window: a statement, to run alone or in a batch.
+export function countTry(db, key, windowMs, now) {
+  const window = Math.floor(now / windowMs);
+  return db.prepare(
     `INSERT INTO rate_limits (key, count, expires_at) VALUES (?, 1, ?)
-     ON CONFLICT(key) DO UPDATE SET count = count + 1
-     RETURNING count`,
-  ).bind(`${key}|${window}`, (window + 1) * windowMs).first();
-  return row.count > limit;
+     ON CONFLICT(key) DO UPDATE SET count = count + 1`,
+  ).bind(`${key}|${window}`, (window + 1) * windowMs);
 }
 
 // The daily clean-up of the accounts' rows that have passed their time.
