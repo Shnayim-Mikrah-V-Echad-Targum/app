@@ -43,14 +43,16 @@ Future<void> _start() async {
   _registerFontLicenses();
   unawaited(enableEdgeToEdge());
 
-  // Independent of one another, so they all start at once.
+  // Independent of one another, so they all start at once; the community
+  // only waits for the preferences, where it keeps the signed-in account.
+  final preferences = openPreferences();
   final (SharedPreferences, ParshaRepository, Backend, NotificationService, AppShortcutsService, HomeWidgetService)
       services;
   try {
     services = await (
-      _reported(_preferencesWithFonts(), 'opening the stored preferences'),
+      _reported(_preferencesWithFonts(preferences), 'opening the stored preferences'),
       _reported(ParshaRepository.load(), 'loading the parshiyot'),
-      _reported(Backend.initialize(), 'starting the community'),
+      _reported(Backend.initialize(preferences: preferences), 'starting the community'),
       _reported(NotificationService.create(), 'starting reminders'),
       _reported(AppShortcutsService.create(), 'starting the shortcuts on the app icon'),
       _reported(HomeWidgetService.create(), 'starting the home-screen widget'),
@@ -98,13 +100,14 @@ Future<T> _reported<T>(Future<T> future, String doing) => future.catchError((Obj
       Error.throwWithStackTrace(error, stack);
     });
 
-/// The stored preferences, whatever has become of them (openPreferences),
-/// once the opt-in fonts their settings choose have loaded, so that the first
-/// frame already shows text in them. A font slow to arrive (over the web)
-/// holds the app back only so long; its text is laid out again when it comes.
-/// The fonts are a nicety: nothing about them keeps the app from starting.
-Future<SharedPreferences> _preferencesWithFonts() async {
-  final prefs = await openPreferences();
+/// The stored preferences, whatever has become of them ([opening], from
+/// openPreferences), once the opt-in fonts their settings choose have loaded,
+/// so that the first frame already shows text in them. A font slow to arrive
+/// (over the web) holds the app back only so long; its text is laid out
+/// again when it comes. The fonts are a nicety: nothing about them keeps the
+/// app from starting.
+Future<SharedPreferences> _preferencesWithFonts(Future<SharedPreferences> opening) async {
+  final prefs = await opening;
   try {
     final settings = SettingsController.readStored(prefs);
     await OptionalFonts.ensureAll(settings.optionalFonts).timeout(const Duration(seconds: 2));

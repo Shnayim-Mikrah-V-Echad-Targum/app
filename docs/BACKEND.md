@@ -1,8 +1,10 @@
 # Community backend (Supabase)
 
-The forums, sign-in and optional progress backup use [Supabase](https://supabase.com): Postgres, Auth and the auto-generated Data API. The app talks to the database directly with the **publishable key**. All rules are enforced in the database by row-level security, column grants, triggers and a few functions, so the client is never trusted.
+The community runs on the site's own server by default: the Worker in `tool/cloudflare`, its accounts and its D1 database ([tool/cloudflare/README.md](../tool/cloudflare/README.md#community)), wherever the build has the site's address (`WEB_URL`). Supabase is the alternative this page sets up: a build with `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` uses it instead, and the Worker's rules (`tool/cloudflare/src/community.js`) mirror these migrations, so the app behaves the same on either.
 
-Without a backend configured (no `SUPABASE_URL`), the app uses an on-device demo community, and everything else works offline.
+With Supabase, the forums, sign-in and optional progress backup use [Supabase](https://supabase.com): Postgres, Auth and the auto-generated Data API. The app talks to the database directly with the **publishable key**. All rules are enforced in the database by row-level security, column grants, triggers and a few functions, so the client is never trusted.
+
+Without either (no `SUPABASE_URL` and no `WEB_URL`), the app uses an on-device demo community, and everything else works offline.
 
 ## What's in the schema
 

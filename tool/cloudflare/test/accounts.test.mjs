@@ -8,48 +8,11 @@ import { afterEach, beforeEach, test } from 'node:test';
 
 import worker from '../src/worker.js';
 import { hashPassword } from '../src/account_crypto.js';
+import { d1 } from './d1.mjs';
 
 const SITE = 'https://shnayimmikrah.org';
 const ADDRESS = '203.0.113.9';
 const PASSWORD = 'a long password';
-
-// The D1 calls the Worker makes, over node:sqlite. A batch is one transaction.
-function d1(database) {
-  const prepare = (sql) => {
-    let values = [];
-    return {
-      sql,
-      bind(...args) {
-        values = args;
-        return this;
-      },
-      first() {
-        return database.prepare(sql).get(...values) ?? null;
-      },
-      all() {
-        return { results: database.prepare(sql).all(...values) };
-      },
-      run() {
-        database.prepare(sql).run(...values);
-        return { success: true };
-      },
-    };
-  };
-  return {
-    prepare,
-    async batch(statements) {
-      database.exec('BEGIN');
-      try {
-        const results = statements.map((statement) => statement.run());
-        database.exec('COMMIT');
-        return results;
-      } catch (error) {
-        database.exec('ROLLBACK');
-        throw error;
-      }
-    },
-  };
-}
 
 function makeEnv() {
   const database = new DatabaseSync(':memory:');

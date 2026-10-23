@@ -8,6 +8,7 @@
 import { dayOf, ipKey, isAccountPath } from './rules.js';
 import {
   PBKDF2_ITERATIONS,
+  PW_ALG,
   constantTimeEqual,
   dummyPasswordRow,
   hashPassword,
@@ -18,6 +19,7 @@ import {
   verifyPassword,
 } from './account_crypto.js';
 import * as db from './account_db.js';
+import { deleteMember } from './community_db.js';
 import { codeMail, resetMail, sendMail } from './mail.js';
 import {
   accountBody,
@@ -46,6 +48,8 @@ const LIMITS = {
   signin: { email: [10, 15 * MINUTE], address: [30, 15 * MINUTE] },
   reset: { email: [5, HOUR], address: [20, HOUR] },
   resetComplete: { address: [30, 15 * MINUTE] },
+  // The app's sign-in code (api.js), which has no Turnstile to pass.
+  appCode: { email: [5, 15 * MINUTE], address: [20, 15 * MINUTE] },
 };
 
 const SECURITY = {
@@ -68,7 +72,7 @@ const SECURITY = {
 };
 
 // The accounts run only once their secrets and their email are set up.
-function configured(env) {
+export function configured(env) {
   return Boolean(
     env.LOGS && env.ACCOUNTS_KEY && env.IP_SALT && env.TURNSTILE_SECRET_KEY
       && env.TURNSTILE_SITE_KEY && env.RESEND_API_KEY && env.ACCOUNTS_EMAIL_FROM,
@@ -100,7 +104,7 @@ async function route(request, env, url, lang, now) {
     case `GET ${BASE}`: {
       const user = await currentUser(request, env, now);
       if (!user) return see(to(`${BASE}/sign-in`, lang));
-      return page(render(lang, { title: t.accountTitle, body: accountBody(lang, user.email, Boolean(user.email_verified_at), user.role) }));
+      return page(render(lang, { title: t.accountTitle, body: accountBody(lang, user) }));
     }
     case `GET ${BASE}/sign-up`:
       return page(render(lang, { title: t.signUpTitle, body: signUpBody(lang, siteKey) }));
@@ -247,9 +251,12 @@ async function signIn(request, env, lang, now) {
   }
 
   // Only a failed try counts toward the limits: a sign-in that works writes nothing.
+  // An account made in the app has no password: it is checked against the
+  // dummy row too, so that it takes as long to refuse as any other.
   const user = await db.findUserByEmail(env.LOGS, email).first();
-  const ok = await verifyPassword(password, user ?? await dummyPasswordRow());
-  if (!user || !ok) {
+  const usable = user?.pw_alg === PW_ALG;
+  const ok = await verifyPassword(password, usable ? user : await dummyPasswordRow());
+  if (!usable || !ok) {
     await recordTry(env, request, 'signin', email, now);
     return again('credentials', 401);
   }
@@ -339,21 +346,25 @@ async function deleteAccount(request, env, lang, now) {
   if (!user) return see(to(`${BASE}/sign-in`, lang));
   const form = await request.formData();
   const password = String(form.get('password') ?? '');
-  const again = (error, status) => page(render(lang, {
-    title: t.accountTitle,
-    body: accountBody(lang, user.email, Boolean(user.email_verified_at)),
-    error,
-    status,
-  }));
+  const again = (error, status) => page(render(lang, { title: t.accountTitle, body: accountBody(lang, user), error, status }));
 
-  if (await limited(env, request, 'signin', user.email, now)) return again('limited', 429);
-  const row = await db.findUserByEmail(env.LOGS, user.email).first();
-  if (!row || !(await verifyPassword(password, row))) {
-    await recordTry(env, request, 'signin', user.email, now);
-    return again('credentials', 401);
+  // An account made in the app, by code, has no password to ask for: the
+  // session is the proof, as it is in the app.
+  if (user.pw_alg === PW_ALG) {
+    if (await limited(env, request, 'signin', user.email, now)) return again('limited', 429);
+    const row = await db.findUserByEmail(env.LOGS, user.email).first();
+    if (!row || !(await verifyPassword(password, row))) {
+      await recordTry(env, request, 'signin', user.email, now);
+      return again('credentials', 401);
+    }
   }
-  await env.LOGS.batch(db.deleteAccount(env.LOGS, user.id));
+  await deleteEverything(env, user.id);
   return see(to(`${BASE}/sign-in`, lang, { notice: 'deleted' }), clearCookie());
+}
+
+// Deletes an account with everything its owner posted in the community.
+export async function deleteEverything(env, userId) {
+  await env.LOGS.batch([...deleteMember(env.LOGS, userId), ...db.deleteAccount(env.LOGS, userId)]);
 }
 
 // The daily clean-up: the accounts' rows that have passed their time.
@@ -361,7 +372,7 @@ export async function accountCleanup(env, now) {
   await env.LOGS.batch(db.accountCleanup(env.LOGS, now));
 }
 
-async function sendCode(env, userId, email, now) {
+export async function sendCode(env, userId, email, now) {
   const code = randomCode();
   const codeHash = await keyedHash(env.ACCOUNTS_KEY, `code|${userId}|${code}`);
   await env.LOGS.batch(db.replaceCode(env.LOGS, { userId, codeHash, now }));
@@ -400,7 +411,7 @@ async function limitKeys(env, request, scope, email, now) {
 
 // Whether a try is refused, because a key has used up its tries in its window.
 // Reads only, so a refused try writes nothing.
-async function limited(env, request, scope, email, now) {
+export async function limited(env, request, scope, email, now) {
   for (const { key, limit, windowMs } of await limitKeys(env, request, scope, email, now)) {
     if (await db.isOverLimit(env.LOGS, key, limit, windowMs, now)) return true;
   }
@@ -408,7 +419,7 @@ async function limited(env, request, scope, email, now) {
 }
 
 // Counts a try against the scope's windows, per email and per address.
-async function recordTry(env, request, scope, email, now) {
+export async function recordTry(env, request, scope, email, now) {
   const counts = (await limitKeys(env, request, scope, email, now))
     .map(({ key, windowMs }) => db.countTry(env.LOGS, key, windowMs, now));
   if (counts.length) await env.LOGS.batch(counts);
@@ -420,7 +431,7 @@ async function currentUser(request, env, now) {
   return (await db.findSession(env.LOGS, await tokenHash(token), now).first()) ?? null;
 }
 
-function emailOf(value) {
+export function emailOf(value) {
   const email = String(value ?? '').trim().toLowerCase();
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
@@ -432,12 +443,12 @@ function passwordOf(value) {
 
 // A post from the site's own pages: its Origin is the site, or the browser,
 // whose Sec-Fetch-Site a page can't set, says it is same-origin.
-function sameOrigin(request, env) {
+export function sameOrigin(request, env) {
   return request.headers.get('origin') === `https://${env.CANONICAL_HOST}`
     || request.headers.get('sec-fetch-site') === 'same-origin';
 }
 
-function readCookie(request) {
+export function readCookie(request) {
   for (const part of (request.headers.get('cookie') || '').split(';')) {
     const [name, ...value] = part.trim().split('=');
     if (name === COOKIE) return value.join('=');
@@ -445,11 +456,11 @@ function readCookie(request) {
   return null;
 }
 
-function sessionCookie(token) {
+export function sessionCookie(token) {
   return `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${db.SESSION_MS / 1000}`;
 }
 
-function clearCookie() {
+export function clearCookie() {
   return `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
