@@ -114,14 +114,13 @@ void main() {
   });
 
   group('the configuration', () {
-    test("is CI's, with the site's address and without the community", () {
+    test("is CI's, with the site's address, whose server the community runs on", () {
       expect(env['FLUTTER_VERSION'], (ci['env'] as YamlMap)['FLUTTER_VERSION']);
       final ciDefines = (ci['env'] as YamlMap)['DART_DEFINES'] as String;
       expect(ciDefines, contains(r'--dart-define=WEB_URL=${{ vars.WEB_URL }}'));
       expect(
         env['DART_DEFINES'],
-        '${ciDefines.replaceFirst(r'--dart-define=WEB_URL=${{ vars.WEB_URL }}', '--dart-define=WEB_URL=https://shnayimmikrah.org/')}'
-        ' --dart-define=COMMUNITY=off',
+        ciDefines.replaceFirst(r'--dart-define=WEB_URL=${{ vars.WEB_URL }}', '--dart-define=WEB_URL=https://shnayimmikrah.org/'),
       );
     });
 

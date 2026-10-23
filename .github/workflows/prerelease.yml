@@ -11,9 +11,10 @@ name: Pre-release
 #
 # It also deploys the web app to https://shnayimmikrah.org/ on GitHub Pages,
 # with the Digital Asset Links that let the Android web app open it full
-# screen. Every build is a preview's: no community yet (COMMUNITY=off), and
-# the Windows app looks for updates among this repository's releases,
-# pre-releases included (UPDATE_CHANNEL=prerelease). Unlike the Release
+# screen. Every build is a preview's: its community runs on the site's
+# server (WEB_URL), and the Windows app looks for updates among this
+# repository's releases, pre-releases included (UPDATE_CHANNEL=prerelease).
+# Unlike the Release
 # workflow (release.yml), it needs no secrets or variables. The draft is
 # tested, then published, by hand.
 
@@ -38,16 +39,14 @@ permissions:
 env:
   FLUTTER_VERSION: "3.47.7"
   TAG: ${{ inputs.tag || github.ref_name }}
-  # As in CI, with the site's address, and without the community, which
-  # waits for the accounts database. The Windows build adds its update
-  # channel.
+  # As in CI, with the site's address, whose server the community runs on.
+  # The Windows build adds its update channel.
   DART_DEFINES: >-
     --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
     --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}
     --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }}
     --dart-define=WEB_URL=https://shnayimmikrah.org/
-    --dart-define=COMMUNITY=off
 
 jobs:
   preflight:

@@ -55,11 +55,12 @@ void main() {
     });
 
     // INSTALL_URL is optional, as on the web: without it the web offers no
-    // installed app, and the apps never offer one.
-    test('checks every variable but INSTALL_URL', () {
+    // installed app, and the apps never offer one. So is Supabase: without
+    // it the community runs on the site's server, at WEB_URL.
+    test('checks every variable but INSTALL_URL and Supabase', () {
       final variables = checked('Repository variables');
-      expect(variables, referenced('vars').difference({'INSTALL_URL'}));
-      expect(variables, containsAll(['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPPORT_EMAIL']));
+      expect(variables, referenced('vars').difference({'INSTALL_URL', 'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'}));
+      expect(variables, containsAll(['SUPPORT_EMAIL', 'WEB_URL']));
       final env = step(preflight, 'Repository variables')['env'] as YamlMap;
       for (final name in variables) {
         expect(env[name], '\${{ vars.$name }}');

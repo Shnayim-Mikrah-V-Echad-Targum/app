@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shnayim_mikrah/app/config.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/features/about/about_screen.dart';
@@ -210,7 +211,10 @@ void main() {
   });
 
   testWidgets('the backend is the demo, whatever the build configures', (tester) async {
-    final backend = await Backend.initialize();
+    AppConfig.debugWebUrl = 'https://shnayimmikrah.org/';
+    addTearDown(() => AppConfig.debugWebUrl = null);
+    SharedPreferences.setMockInitialValues({});
+    final backend = await Backend.initialize(preferences: SharedPreferences.getInstance());
     expect(backend.forums, isA<DemoForumRepository>());
   });
 }

@@ -104,18 +104,18 @@ The app is configured at build time with `--dart-define`:
 
 | Define | Purpose |
 |---|---|
-| `SUPABASE_URL` | Supabase project URL for the community and backup. Leave it empty for demo mode. |
+| `WEB_URL` | The site's public address, ending in a slash. The community, its accounts and the progress backup run on that site's server, the Worker in `tool/cloudflare` ([its README](tool/cloudflare/README.md#community)), and a discussion's *Copy link* begins with it. Empty: the community is an on-device demo. |
+| `SUPABASE_URL` | Optional: a Supabase project for the community and backup, in place of the site's server ([docs/BACKEND.md](docs/BACKEND.md)). |
 | `SUPABASE_PUBLISHABLE_KEY` | The project's publishable (anon) key. It is safe to ship because row-level security protects all data. |
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
 | `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
-| `COMMUNITY` | `off` hides the community everywhere (its tab, questions on a verse, the account and cloud backup) and sends its links to Today, as the pre-releases do until the accounts' database is ready. Absent: the community as above. |
+| `COMMUNITY` | `off` hides the community everywhere (its tab, questions on a verse, the account and cloud backup) and sends its links to Today. Absent: the community as above. |
 
-Example:
+Example, with the community on the live site:
 
 ```sh
-flutter run --dart-define=SUPABASE_URL=https://xyz.supabase.co \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+flutter run --dart-define=WEB_URL=https://shnayimmikrah.org/
 ```
 
 Setting up the backend is covered in [docs/BACKEND.md](docs/BACKEND.md).
@@ -164,7 +164,7 @@ lib/
     parsha/       week overview and browsing
     reader/       guided and full-text reader, haftarah, display options
     progress/     streak engine, plans, milestones (domain/) and progress screen
-    community/    forum repository (Supabase and demo), screens
+    community/    forum repository (the site's server, Supabase and demo), screens
     settings/     settings model and screens
     onboarding/   first-run flow
     about/        guide, sources, legal texts
@@ -229,6 +229,7 @@ The halachic defaults follow the Shulchan Aruch and Mishnah Berurah (OC 285). Wh
 
 - [docs/DESIGN.md](docs/DESIGN.md): product and design decisions, and why they were made.
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): what is supported, how it is tested, and the manual test checklist.
-- [docs/BACKEND.md](docs/BACKEND.md): setting up Supabase for the community and backup.
+- [tool/cloudflare/README.md](tool/cloudflare/README.md): the site's Worker, where the community, its accounts and the backup run.
+- [docs/BACKEND.md](docs/BACKEND.md): setting up Supabase for the community and backup, in place of the site's server.
 - [docs/RELEASE.md](docs/RELEASE.md): store submission and release checklist.
 - [docs/research/](docs/research/): the underlying research on halacha, accessibility, streak UX, forums and Hebrew typography.
