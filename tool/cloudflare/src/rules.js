@@ -26,9 +26,22 @@ const SCANNER_AGENT = /sqlmap|nikto|nmap|masscan|zgrab|acunetix|nuclei|dirbuster
 export const THREAT_SCORE_LOGGED = 20;
 
 const METHODS_OK = ['GET', 'HEAD', 'OPTIONS'];
-// The accounts' forms are the one place the site takes a POST.
+// The accounts' forms (the admin panel's among them) take a POST, and the
+// app's API (api.js) the methods a JSON API takes; nothing else on the site does.
 export function isAccountPath(pathname) {
   return pathname === '/account' || pathname.startsWith('/account/');
+}
+const API_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+export function isApiPath(pathname) {
+  return pathname === '/api' || pathname.startsWith('/api/');
+}
+// The admin panel (admin.js), among the accounts' pages, whose forms take a
+// POST as theirs do; /admin leads to it.
+export function isAdminPath(pathname) {
+  return pathname === '/account/admin' || pathname.startsWith('/account/admin/');
+}
+export function isAdminShortcut(pathname) {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
 }
 const MAX_PATH = 512;
 const MAX_QUERY = 2048;
@@ -38,7 +51,9 @@ const MAX_QUERY = 2048;
 export function classify({ method, host, canonicalHost, pathname, search = '', userAgent, threatScore }) {
   const found = [];
   if (host !== canonicalHost) found.push({ kind: 'bad_host', detail: String(host).slice(0, 253) });
-  const methodOk = METHODS_OK.includes(method) || (method === 'POST' && isAccountPath(pathname));
+  const methodOk = METHODS_OK.includes(method)
+    || (method === 'POST' && isAccountPath(pathname))
+    || (API_METHODS.includes(method) && isApiPath(pathname));
   if (!methodOk) found.push({ kind: 'bad_method', detail: String(method).slice(0, 10) });
   if (pathname.length > MAX_PATH || search.length > MAX_QUERY) found.push({ kind: 'too_long', detail: '' });
   if (SCANNER_PATH.test(pathname)) found.push({ kind: 'scanner_path', detail: '' });

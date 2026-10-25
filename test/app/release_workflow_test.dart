@@ -59,7 +59,7 @@ void main() {
     test('checks every variable but INSTALL_URL', () {
       final variables = checked('Repository variables');
       expect(variables, referenced('vars').difference({'INSTALL_URL'}));
-      expect(variables, containsAll(['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPPORT_EMAIL']));
+      expect(variables, containsAll(['SUPPORT_EMAIL', 'WEB_URL']));
       final env = step(preflight, 'Repository variables')['env'] as YamlMap;
       for (final name in variables) {
         expect(env[name], '\${{ vars.$name }}');
