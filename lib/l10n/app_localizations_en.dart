@@ -978,6 +978,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String aliyahOf(int current, int total) {
+    return 'Aliyah $current of $total';
+  }
+
+  @override
   String verseLabel(String number) {
     return 'Verse $number';
   }
@@ -1585,6 +1590,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String methodAliyahDesc(String second) {
     return 'The whole aliyah twice, then its $second';
+  }
+
+  @override
+  String get methodWhole => 'The whole parsha';
+
+  @override
+  String methodWholeDesc(String second) {
+    return 'The whole parsha once, then again, then its $second';
   }
 
   @override

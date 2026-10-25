@@ -20,6 +20,10 @@ enum ReadingMethod {
 
   /// Each aliyah twice, then its Targum.
   aliyahByAliyah,
+
+  /// The whole parsha once, then again, then its Targum (or whatever the
+  /// second reading is), aliyah after aliyah each time (ParshaOrder).
+  wholeParsha,
 }
 
 /// What is read for the "echad Targum".

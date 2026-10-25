@@ -1031,6 +1031,18 @@
       }
     }
   },
+  "aliyahOf": "Aliyah {current} of {total}",
+  "@aliyahOf": {
+    "description": "Where the guided reader is in the whole parsha, read by the whole-parsha method.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "verseLabel": "Verse {number}",
   "@verseLabel": {
     "placeholders": {
@@ -1473,6 +1485,17 @@
   "methodAliyahDesc": "The whole aliyah twice, then its {second}",
   "@methodAliyahDesc": {
     "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
+  "methodWhole": "The whole parsha",
+  "methodWholeDesc": "The whole parsha once, then again, then its {second}",
+  "@methodWholeDesc": {
+    "description": "As methodVerseDesc: the parsha is read through in Hebrew, read through again, then its second reading, aliyah after aliyah each time.",
     "placeholders": {
       "second": {
         "type": "String",
