@@ -36,7 +36,7 @@ abstract final class AppConfig {
   static String? debugWebUrl;
 
   /// The site whose server the community, its accounts and the backup run
-  /// on (tool/cloudflare/src/api.js), at the root of [webUrl]'s host: on the
+  /// on (the Worker's src/api.js), at the root of [webUrl]'s host: on the
   /// web, the page's own, so the site's session cookie goes with each
   /// request. Null where the build has no [webUrl], as in the tests: the
   /// community is then the on-device demo.

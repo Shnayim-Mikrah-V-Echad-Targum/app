@@ -55,7 +55,7 @@ void main() {
 
   test('no forum the demo seeds has a straight apostrophe or quotation mark in its English', () async {
     // The Community page and each forum's page show these as they are; the
-    // server's are in tool/cloudflare/schema.sql.
+    // server's are in the Worker's schema.sql.
     final forums = await DemoForumRepository().forums();
     expect(forums, isNotEmpty);
     expect(straight({for (final f in forums) ...{'${f.slug} name': f.nameEn, '${f.slug} description': f.descriptionEn}}), isEmpty,

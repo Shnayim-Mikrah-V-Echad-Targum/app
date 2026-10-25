@@ -37,7 +37,7 @@ class _Answered extends DemoForumRepository {
 }
 
 /// A listing as the server gave it before it knew a question about a verse
-/// (excerptOf, tool/cloudflare/src/community.js): the post's
+/// (excerptOf, the Worker's src/community.js): the post's
 /// lines run together, the verse first, cut short within it.
 class _ListedAsBefore extends DemoForumRepository {
   @override
@@ -105,7 +105,7 @@ void main() {
     });
   });
 
-  // The cases tool/cloudflare/test/community.test.mjs checks the server's excerpt with.
+  // The cases the Worker's test/community.test.mjs checks the server's excerpt with.
   group('an excerpt', () {
     test('of a question about a verse is its question, however long the verse', () {
       final long = List.filled(8, 'וַיֹּאמֶר ה׳ אֱלֹקִים הֵן הָאָדָם').join(' ');

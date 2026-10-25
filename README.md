@@ -104,7 +104,7 @@ The app is configured at build time with `--dart-define`:
 
 | Define | Purpose |
 |---|---|
-| `WEB_URL` | The site's public address, ending in a slash. The community, its accounts and the progress backup run on that site's server, the Worker in `tool/cloudflare` ([its README](tool/cloudflare/README.md#community)), and a discussion's *Copy link* begins with it. Empty: the community is an on-device demo. |
+| `WEB_URL` | The site's public address, ending in a slash. The community, its accounts and the progress backup run on that site's server, its Cloudflare Worker (kept in the private repository `Shnayim-Mikrah-V-Echad-Targum/website`), and a discussion's *Copy link* begins with it. Empty: the community is an on-device demo. |
 | `SUPPORT_EMAIL` | Contact address shown in About and in the accessibility statement. Hidden if empty. |
 | `SOURCE_URL` | Link to the source code and issue tracker. |
 | `INSTALL_URL` | Where to get the installed app, offered on the web's Reminders page, since reminders need it. Hidden if empty. |
@@ -138,7 +138,6 @@ Previews, tagged `v0.Y.Z`, come from the Pre-release workflow (`.github/workflow
 ```sh
 flutter analyze
 flutter test                     # unit, widget, data-integrity and accessibility tests
-node --test tool/cloudflare/test/*.test.mjs   # the site's Worker: logs, accounts, community, admin panel
 python3 tool/l10n/build_he.py    # regenerates app_he.arb; fails if a string is untranslated
 ```
 
@@ -226,6 +225,6 @@ The halachic defaults follow the Shulchan Aruch and Mishnah Berurah (OC 285). Wh
 
 - [docs/DESIGN.md](docs/DESIGN.md): product and design decisions, and why they were made.
 - [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): what is supported, how it is tested, and the manual test checklist.
-- [tool/cloudflare/README.md](tool/cloudflare/README.md): the site's Worker, where the community, its accounts and the backup run.
+- The site's Worker, where the community, its accounts, the backup and the admin panel run, is kept in the private repository `Shnayim-Mikrah-V-Echad-Targum/website`, which deploys this app's web build with it.
 - [docs/RELEASE.md](docs/RELEASE.md): store submission and release checklist.
 - [docs/research/](docs/research/): the underlying research on halacha, accessibility, streak UX, forums and Hebrew typography.
