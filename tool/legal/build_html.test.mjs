@@ -62,10 +62,10 @@ describe('the texts', () => {
         .flatMap((s) => s.blocks)
         .map(({ text }) => text)
         .join('\n');
-    assert.match(privacy('en'), /together with your bookmarks and the notes you write on verses/);
+    assert.match(privacy('en'), /together with your bookmarks, the notes you write on verses and the streaks the app shows you/);
     assert.match(privacy('en'), /that leaves your bookmarks and notes/);
     assert.match(privacy('en'), /backed-up progress, bookmarks and notes/);
-    assert.match(privacy('he'), /יחד עם הסימניות וההערות שכתבת על פסוקים/);
+    assert.match(privacy('he'), /יחד עם הסימניות, ההערות שכתבת על פסוקים והרצפים שהאפליקציה מציגה/);
     assert.match(privacy('he'), /האיפוס אינו נוגע בסימניות ובהערות/);
   });
 
