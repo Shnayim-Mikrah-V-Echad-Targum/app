@@ -144,7 +144,7 @@ class ThreadPostsNotifier extends AsyncNotifier<ThreadPosts> {
 
   /// The most posts asked for in one request when fetching again: less than
   /// the rows the server returns at most (PAGE_MAX in
-  /// tool/cloudflare/src/community.js), with the one more fetched to learn
+  /// the Worker's src/community.js), with the one more fetched to learn
   /// whether any remain.
   static const refetchChunk = 400;
 

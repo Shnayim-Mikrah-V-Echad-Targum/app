@@ -13,7 +13,7 @@ concurrency:
 env:
   FLUTTER_VERSION: "3.47.7"
   # WEB_URL, the web app's public address: the community, its accounts and
-  # the backup run on that site's server (tool/cloudflare/src/api.js), a
+  # the backup run on that site's server (its Worker, in the private website repository), a
   # discussion's Copy link gives it, and the link previews below use it.
   # Without it the app runs its on-device demo community. INSTALL_URL,
   # optional, is where the web offers the installed app.
@@ -57,7 +57,7 @@ jobs:
           python3 tool/l10n/build_he.py
           git diff --exit-code lib/l10n/app_he.arb
       - name: Check the static policy pages, the web build's scripts and the site's Worker
-        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs tool/cloudflare/test/*.test.mjs
+        run: node --test tool/legal/build_html.test.mjs tool/web/web.test.mjs
       - run: flutter analyze
       - run: flutter test
       # Dart's local time follows the process's time zone, UTC on the runner,

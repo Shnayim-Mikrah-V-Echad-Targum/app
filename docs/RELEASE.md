@@ -100,7 +100,7 @@ Run again for a tag whose draft exists (a re-run, or by hand), the workflow uplo
 `.github/workflows/release.yml` builds only with the production configuration. Its first job checks that everything below is set, names each setting that isn't, and stops before any build, so that no store build ships the on-device demo community, without backup or a support address. Set them under *Settings → Secrets and variables → Actions*.
 - [ ] **Repository variables:**
   - `SUPPORT_EMAIL`: the support address.
-  - `WEB_URL`: the site's public address ([Web](#web)), whose server the community, its accounts and the backup run on ([tool/cloudflare/README.md](../tool/cloudflare/README.md#community)), which the stores' support and privacy URLs are on, and which a discussion's *Copy link* begins with.
+  - `WEB_URL`: the site's public address ([Web](#web)), whose server the community, its accounts and the backup run on (its Worker, in the private repository `Shnayim-Mikrah-V-Echad-Targum/website`), which the stores' support and privacy URLs are on, and which a discussion's *Copy link* begins with.
   - `IOS_TEAM_ID`, `IOS_PROFILE_NAME` and `IOS_WIDGET_PROFILE_NAME`: the Apple team, and the names of the App Store profiles of the app and its widget ([iOS](#ios-app-store)).
   - `INSTALL_URL` is optional, as in CI.
 - [ ] **Repository secrets:**

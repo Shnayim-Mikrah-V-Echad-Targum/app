@@ -3,11 +3,11 @@ import 'package:shnayim_mikrah/features/community/data/demo_forum_repository.dar
 import 'package:shnayim_mikrah/features/community/data/models.dart';
 
 /// A forum's discussions listed with an excerpt and their thanks, and each
-/// forum with how busy it is (excerptOf, tool/cloudflare/src/community.js),
+/// forum with how busy it is (excerptOf, the Worker's src/community.js),
 /// as the demo gives them.
 void main() {
   group('an excerpt', () {
-    // The cases tool/cloudflare/test/community.test.mjs checks the server's excerpt with.
+    // The cases the Worker's test/community.test.mjs checks the server's excerpt with.
     test('runs the lines of a long post together, and cuts it after a whole word', () {
       const body = 'Is anyone reading the Targum aloud each evening?\n\nI would love a partner for the second half of the '
           'week, by phone or in person, and I am happy to go slowly through the harder verses.';
