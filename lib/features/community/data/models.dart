@@ -188,11 +188,11 @@ String withVerseQuote(String verse, String message, {required bool leftToRight})
 
 /// How a body that quotes a verse begins, up to the verse's first letter.
 /// The server's listing reads it so too
-/// (supabase/migrations/20261012010000_excerpt_after_verse.sql).
+/// (excerptOf, tool/cloudflare/src/community.js).
 final _verseQuoteStart = RegExp('\u200E?> (?=[\u0590-\u05FF])');
 
 /// The excerpt of a thread whose first post is [body], as the server's
-/// listing (supabase/migrations/20261011000000_thread_stats.sql) gives it:
+/// listing (excerptOf, tool/cloudflare/src/community.js) gives it:
 /// the post with its spaces and line breaks run together, and past
 /// [threadExcerptLength] characters cut after the last whole word that fits
 /// (or one short of the length, where that would lose more than 40, as in a

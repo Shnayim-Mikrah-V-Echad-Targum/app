@@ -54,7 +54,7 @@
       {
         "heading": "If you create a community account",
         "blocks": [
-          {"type": "para", "text": "Signing in to the community uses your email address, which is used only to sign you in. Your display name and the posts you write are visible to other users. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
+          {"type": "para", "text": "The community runs on this website’s own server, and a community account is an account on the website (see “Accounts on the website” below). In the app you sign in with a code we email you; an account made that way has no password until you set one with a password reset on the website. Your email address is used only to sign you in. Your display name and the posts you write are visible to other users. The thanks you give, the posts you report and the members you block are kept with your account. The site’s administrators can see each account’s email address, when it was made, confirmed and last signed in, its community profile and posts, and the site’s logs, to run the community and keep it safe; every action they take on an account is logged. If you choose to back up your progress, it is stored with your account, together with your bookmarks and the notes you write on verses, so you can restore them on another device. Only you can see them."}
         ]
       },
       {
@@ -66,12 +66,12 @@
       {
         "heading": "Accounts on the website",
         "blocks": [
-          {"type": "para", "text": "An account on shnayimmikrah.org is optional; the app doesn’t need one. To make one you give an email address and a password. The address is kept in lower case, as you gave it. The password is kept only as a salted hash, which can’t be turned back into the password. We keep whether you have confirmed the address, and each sign-in you have open, as a hash of its key."},
+          {"type": "para", "text": "An account on shnayimmikrah.org is optional; the app doesn’t need one. To make one on the website you give an email address and a password; in the app, an email address alone (see above). The address is kept in lower case, as you gave it. The password is kept only as a salted hash, which can’t be turned back into the password. We keep whether you have confirmed the address, and each sign-in you have open, as a hash of its key."},
           {"type": "bullet", "text": "The code we email to confirm an address lasts 15 minutes, and a link to reset a password lasts an hour. Both are kept only as hashes, and are removed once used or once they expire."},
-          {"type": "bullet", "text": "A sign-in lasts 30 days, unless you sign out or reset your password. A reset signs out every session."},
+          {"type": "bullet", "text": "A sign-in lasts 30 days, and is renewed while you keep using it, unless you sign out or reset your password. A reset signs out every session."},
           {"type": "bullet", "text": "An address that is never confirmed is removed after 7 days."},
           {"type": "para", "text": "We send the email through Resend. The forms are protected by Cloudflare Turnstile, which checks that a person is filling them in. To limit guessing, the tries are counted per email address and per visitor address, using a keyed hash of the visitor’s address that changes every day."},
-          {"type": "para", "text": "To delete your account, sign in, choose Delete my account and enter your password. That removes at once the address, the password hash, the sign-ins, the codes and the reset links."}
+          {"type": "para", "text": "To delete your account, sign in, choose Delete my account and enter your password; an account made in the app has none to enter. That removes at once the address, the password hash, the sign-ins, the codes and the reset links, and your community profile, posts and backup, as “Deleting your data” says."}
         ]
       },
       {
@@ -298,7 +298,7 @@
       {
         "heading": "אם פתחת חשבון בקהילה",
         "blocks": [
-          {"type": "para", "text": "הכניסה לקהילה משתמשת בכתובת הדוא״ל שלך לצורך הכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. אם בחרת לגבות את ההתקדמות, היא נשמרת עם החשבון, יחד עם הסימניות וההערות שכתבת על פסוקים, וכך אפשר לשחזר אותן במכשיר אחר. הן גלויות רק לך."}
+          {"type": "para", "text": "הקהילה פועלת על השרת של האתר הזה, וחשבון בקהילה הוא חשבון באתר (ראו ״חשבונות באתר״ בהמשך). באפליקציה נכנסים בקוד שאנו שולחים לדוא״ל; לחשבון שנוצר כך אין סיסמה, עד שבוחרים סיסמה באיפוס סיסמה באתר. כתובת הדוא״ל שלך משמשת לכניסה בלבד. שם התצוגה וההודעות שכתבת גלויים למשתמשים אחרים. התודות שנתת, ההודעות שדיווחת עליהן והמשתמשים שחסמת נשמרים עם החשבון. מנהלי האתר יכולים לראות את כתובת הדוא״ל של כל חשבון, מתי נוצר, אומת ונכנסו אליו לאחרונה, את הפרופיל וההודעות שלו בקהילה, ואת יומני האתר, כדי לנהל את הקהילה ולשמור על ביטחונה; כל פעולה שלהם על חשבון נרשמת ביומן. אם בחרת לגבות את ההתקדמות, היא נשמרת עם החשבון, יחד עם הסימניות וההערות שכתבת על פסוקים, וכך אפשר לשחזר אותן במכשיר אחר. הן גלויות רק לך."}
         ]
       },
       {
@@ -310,12 +310,12 @@
       {
         "heading": "חשבונות באתר",
         "blocks": [
-          {"type": "para", "text": "חשבון באתר shnayimmikrah.org הוא אופציונלי; האפליקציה אינה דורשת אותו. ליצירתו תמסרו כתובת דוא״ל וסיסמה. הכתובת נשמרת באותיות קטנות, כפי שמסרתם. הסיסמה נשמרת רק כערך גיבוב מלוח, שממנו אי אפשר לשחזר את הסיסמה. אנו שומרים אם אישרתם את הכתובת, וכן כל חיבור פתוח שלכם, כערך גיבוב של המפתח שלו."},
+          {"type": "para", "text": "חשבון באתר shnayimmikrah.org הוא אופציונלי; האפליקציה אינה דורשת אותו. ליצירתו באתר תמסרו כתובת דוא״ל וסיסמה; באפליקציה, כתובת דוא״ל בלבד (ראו לעיל). הכתובת נשמרת באותיות קטנות, כפי שמסרתם. הסיסמה נשמרת רק כערך גיבוב מלוח, שממנו אי אפשר לשחזר את הסיסמה. אנו שומרים אם אישרתם את הכתובת, וכן כל חיבור פתוח שלכם, כערך גיבוב של המפתח שלו."},
           {"type": "bullet", "text": "הקוד שאנו שולחים כדי לאשר כתובת תקף 15 דקות, וקישור לאיפוס סיסמה תקף שעה. שניהם נשמרים רק כערכי גיבוב, ונמחקים עם השימוש בהם או עם פקיעת התוקף."},
-          {"type": "bullet", "text": "חיבור נשאר פתוח 30 יום, אלא אם יצאתם מהחשבון או איפסתם את הסיסמה. איפוס סיסמה מנתק את כל החיבורים."},
+          {"type": "bullet", "text": "חיבור נשאר פתוח 30 יום, ומתחדש כל עוד משתמשים בו, אלא אם יצאתם מהחשבון או איפסתם את הסיסמה. איפוס סיסמה מנתק את כל החיבורים."},
           {"type": "bullet", "text": "כתובת שאינה מאושרת נמחקת לאחר 7 ימים."},
           {"type": "para", "text": "את הדוא״ל אנו שולחים דרך Resend. הטפסים מוגנים באמצעות Cloudflare Turnstile, שבודק שאדם הוא שממלא אותם. כדי להגביל ניחושים, הניסיונות נספרים לפי כתובת דוא״ל ולפי כתובת המבקר, באמצעות ערך גיבוב מפתח של כתובת המבקר, שמשתנה מדי יום."},
-          {"type": "para", "text": "למחיקת החשבון, היכנסו, בחרו ״מחיקת החשבון שלי״ והזינו את הסיסמה. הפעולה מסירה מיד את הכתובת, ערך הגיבוב של הסיסמה, החיבורים, הקודים וקישורי האיפוס."}
+          {"type": "para", "text": "למחיקת החשבון, היכנסו, בחרו ״מחיקת החשבון שלי״ והזינו את הסיסמה; לחשבון שנוצר באפליקציה אין סיסמה להזין. הפעולה מסירה מיד את הכתובת, ערך הגיבוב של הסיסמה, החיבורים, הקודים וקישורי האיפוס, וגם את הפרופיל בקהילה, ההודעות והגיבוי, כמתואר ב״מחיקת המידע״."}
         ]
       },
       {
