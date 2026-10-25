@@ -236,7 +236,8 @@ void main() {
         async.elapse(const Duration(minutes: 30));
       }
       expect(repo.loads, 1);
-      expect(repo.saves, 0, reason: 'the cloud already held everything');
+      expect(repo.saves, 1, reason: 'the streak alone, which the backup lacked');
+      expect(repo.remote!['streak'], isA<Map<String, dynamic>>());
       expect(repo.profileLoads, 1);
       container.dispose();
     });
@@ -289,8 +290,13 @@ void main() {
         final container = containerFor(repo);
         async.elapse(const Duration(seconds: 120));
         final (loads, saves) = (repo.loads, repo.saves);
-        // Sheni, read on the other device while this one was in the background.
-        repo.remote = syncPayload(ProgressState(weeks: {_week: remoteOf(repo).week(_week).withAliyah(1, _d2)}), _d1);
+        // Sheni, read on the other device while this one was in the background,
+        // which backed up the streak it counted then.
+        final before = {
+          ...syncPayload(ProgressState(weeks: {_week: remoteOf(repo).week(_week).withAliyah(1, _d2)}), _d1),
+          'streak': repo.remote!['streak'],
+        };
+        repo.remote = before;
 
         binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
         async.flushMicrotasks();
@@ -301,7 +307,11 @@ void main() {
         final local = container.read(progressProvider);
         expect(local.week(_week).isAliyahDone(1), isTrue, reason: 'pulled from the other device');
         expect(local, remoteOf(repo));
-        expect(repo.saves, saves, reason: 'the cloud already held everything');
+        // Saved again only if the streak this device now counts is not the one
+        // backed up.
+        final streak = syncStreak(container.read(streakSummaryProvider), container.read(todayProvider));
+        expect(repo.saves, saves + (syncPayloadHasStreak(before, streak) ? 0 : 1), reason: 'the cloud held all but the streak');
+        expect(syncPayloadHasStreak(repo.remote!, streak), isTrue);
         container.dispose();
       });
     });
@@ -367,6 +377,8 @@ void main() {
         fakeAsync((async) {
           final container = containerFor(repo);
           async.elapse(const Duration(seconds: 1));
+          // The first sync backs up the streak the backup lacked, where it can.
+          final saves = repo.saves;
           if (tooLarge) {
             // Hundreds of long notes: more than the server takes, until the
             // reader shortens them.
@@ -389,7 +401,7 @@ void main() {
             async.elapse(const Duration(seconds: 2));
           }
           expect(repo.loads, loads + 1, reason: 'one pull, then none within the minute (too large: $tooLarge)');
-          expect(repo.saves, 0, reason: 'nothing is saved over the backup');
+          expect(repo.saves, saves, reason: 'nothing is saved over the backup');
 
           async.elapse(const Duration(minutes: 1));
           leaveAndReturn();
@@ -709,8 +721,54 @@ void main() {
         expect(container.read(progressProvider), backup);
         expect(container.read(settingsProvider).joinDate, _simchatTorah);
         expect(container.read(streakSummaryProvider).parshaStreak, 5);
-        expect(repo.saves, 0, reason: 'the cloud already held everything');
+        expect(repo.saves, 1, reason: 'the streak alone, which the backup lacked');
+        expect((repo.remote!['streak'] as Map)['weeks'], 5);
+        expect(remoteOf(repo), backup);
         container.dispose();
+      });
+    });
+
+    test('the backup carries the streak shown, saved again when only the streak changes', () async {
+      final repo = _CountingRepo(user: _me, remote: syncPayload(_fiveWeeks(), _simchatTorah));
+      await joinedOn(_simchatTorah);
+      ProviderContainer on(LocalDate day) {
+        final c = ProviderContainer(overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          backendProvider.overrideWithValue(Backend(repo)),
+          todayProvider.overrideWith(() => _FixedToday(day)),
+        ]);
+        c.listen(progressSyncProvider, (_, _) {});
+        return c;
+      }
+
+      fakeAsync((async) {
+        final wednesday = on(_toldotWednesday);
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.saves, 1);
+        expect(repo.remote!['streak'], {
+          'days': wednesday.read(streakSummaryProvider).daysOnTrack,
+          'weeks': 5,
+          'longestDays': wednesday.read(streakSummaryProvider).longestDaysOnTrack,
+          'longestWeeks': 5,
+          'asOf': '2026-11-11',
+        });
+        wednesday.dispose();
+
+        // The same day, on opening again: nothing new to save.
+        final again = on(_toldotWednesday);
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.saves, 1);
+        again.dispose();
+
+        // A week on, with nothing read since: the streak is counted again,
+        // as of that day, and backed up, though nothing else changed.
+        final later = on(_toldotWednesday.addDays(7));
+        async.elapse(const Duration(seconds: 120));
+        expect(repo.saves, 2);
+        expect(repo.remote!['streak'], syncStreak(later.read(streakSummaryProvider), later.read(todayProvider)));
+        expect((repo.remote!['streak'] as Map)['asOf'], '2026-11-18');
+        expect(remoteOf(repo), later.read(progressProvider));
+        later.dispose();
       });
     });
 

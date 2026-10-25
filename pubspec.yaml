@@ -147,6 +147,9 @@ flutter:
     - assets/text/rashi/
     - assets/text/rashi_en/
     - assets/fonts/licenses/
+    # The streak's fire, and its license (assets/images/README.md).
+    - assets/images/fire.png
+    - assets/images/NotoEmoji-Apache-2.0.txt
     # The policies, shown in the app and published as static web pages
     # (tool/legal/build_html.mjs).
     - assets/legal/legal.json

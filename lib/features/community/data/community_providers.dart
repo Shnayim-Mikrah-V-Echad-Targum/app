@@ -387,11 +387,14 @@ class ProgressSync extends Notifier<DateTime?> {
         }
       }
       final joinDate = syncRef.read(settingsProvider).joinDate;
+      // Counted from the merged progress, as this device now shows it.
+      final streak = syncStreak(syncRef.read(streakSummaryProvider), syncRef.read(todayProvider));
       if (remoteJson == null ||
           merged != remote ||
           joinDate != syncPayloadJoinDate(remoteJson) ||
-          notes != remoteNotes) {
-        final payload = syncPayload(merged, joinDate, annotations: notes);
+          notes != remoteNotes ||
+          !syncPayloadHasStreak(remoteJson, streak)) {
+        final payload = syncPayload(merged, joinDate, annotations: notes, streak: streak);
         // More than the server takes: every save would fail, and the reader
         // is told why rather than only that it did.
         final tooLarge = syncPayloadTooLarge(payload);
