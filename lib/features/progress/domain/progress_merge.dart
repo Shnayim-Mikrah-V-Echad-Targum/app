@@ -7,6 +7,7 @@ import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
 import '../../notes/domain/annotations.dart';
 import 'progress_models.dart';
+import 'streak_engine.dart';
 
 export '../../../app/providers.dart' show ProgressState;
 
@@ -107,12 +108,32 @@ Map<String, dynamic> syncPayload(
   ProgressState progress,
   LocalDate? joinDate, {
   Annotations annotations = Annotations.empty,
+  Map<String, Object>? streak,
 }) =>
     {
       ...progress.toJson(),
       'joinDate': ?joinDate?.rd,
       if (annotations.entries.isNotEmpty || annotations.unknown.isNotEmpty) 'annotations': annotations.toJson(),
+      'streak': ?streak,
     };
+
+/// The streaks as the reader sees them on [today], for a backup to carry:
+/// the website's account page shows them, with the day they were counted
+/// (tool/cloudflare/src/account_methods.js, streakOf). They are only shown
+/// there, never merged or read back: each device counts its own from the
+/// merged progress.
+Map<String, Object> syncStreak(StreakSummary summary, LocalDate today) => {
+      'days': summary.daysOnTrack,
+      'weeks': summary.parshaStreak,
+      'longestDays': summary.longestDaysOnTrack,
+      'longestWeeks': summary.longestParshaStreak,
+      'asOf': today.toIso(),
+    };
+
+/// Whether a sync [payload] holds [streak] already, so that a backup is
+/// saved again only when the streak shown has changed.
+bool syncPayloadHasStreak(Map<String, dynamic> payload, Map<String, Object> streak) =>
+    const DeepCollectionEquality().equals(payload['streak'], streak);
 
 /// The most a sync payload may take, encoded as UTF-8 JSON: well under the
 /// server's bound on a backup (`pg_column_size(data) < 1000000`, measured

@@ -3,6 +3,8 @@
 // by ?lang=he or the browser's first language. The Hebrew needs a native
 // speaker's review before release.
 
+import { deviceName } from './devices.js';
+
 const STRINGS = {
   en: {
     dir: 'ltr',
@@ -29,7 +31,35 @@ const STRINGS = {
     resetCompleteButton: 'Save the new password',
     accountTitle: 'Your account',
     signedInAs: 'Signed in as',
-    roles: { admin: 'Role: site administrator, with every permission.', moderator: 'Role: community moderator.' },
+    roles: {
+      owner: 'Role: site owner (super admin), with every permission, who names the administrators.',
+      admin: 'Role: site administrator, with every permission.',
+      moderator: 'Role: community moderator.',
+    },
+    unverified: 'Your email address is not confirmed yet.',
+    streakLabel: 'Your streak',
+    streakDays: (n) => `<strong>${n}</strong> ${n === 1 ? 'day' : 'days'} on track`,
+    streakWeeks: (n) => `Parsha streak: ${n === 1 ? '1 week' : `${n} weeks`}`,
+    streakAsOf: (date) => `From the app’s backup, as of ${date}.`,
+    streakStart: 'Read today’s portion in the app to start your streak.',
+    streakNone: 'Turn on “Back up progress” in the app’s account page to see your streak here.',
+    passwordTitle: 'Password',
+    passwordIsSet: 'You have a password.',
+    passwordIsNone: 'No password yet: you sign in with an emailed code or a passkey. You can add one.',
+    currentPassword: 'Current password',
+    passwordChange: 'Change password',
+    passwordAdd: 'Add a password',
+    passwordStale: 'For your safety, a password can be added only within 15 minutes of signing in. Sign out, then sign in again with an emailed code, and add it then.',
+    passwordOthers: 'Your other devices are signed out when it changes.',
+    devicesTitle: 'Signed-in devices',
+    devicesSince: 'signed in',
+    devicesLastUsed: 'last used',
+    devicesThis: 'this device',
+    devicesSignOut: 'Sign out',
+    devicesSignOutOthers: 'Sign out every other device',
+    handoffTitle: 'Continue from the app',
+    handoffLead: (email) => `The app is signed in as <strong>${email}</strong>. Continue to sign this browser in too.`,
+    handoffButton: 'Continue',
     adminPanel: 'Open the admin panel',
     signOut: 'Sign out',
     deleteTitle: 'Delete your account',
@@ -87,6 +117,10 @@ const STRINGS = {
       'totp-off': 'The authenticator app is off.',
       'passkey-added': 'The passkey is added. You can sign in with it now.',
       'passkey-removed': 'The passkey is removed.',
+      'password-added': 'Your password is added. Your other devices are signed out.',
+      'password-changed': 'Your password is changed. Your other devices are signed out.',
+      'device-signed-out': 'That device is signed out.',
+      'devices-signed-out': 'Every other device is signed out.',
     },
     errors: {
       email: 'That address does not look right.',
@@ -101,6 +135,9 @@ const STRINGS = {
       forbidden: 'This request was refused.',
       notFound: 'This page does not exist.',
       second: 'That code is wrong, or was used already. Try again.',
+      current: 'The current password is wrong.',
+      stale: 'Sign in again first, then add the password within 15 minutes.',
+      handoff: 'This link has expired or was already used. Open it again from the app.',
     },
     footer: 'Protected by Cloudflare Turnstile.',
   },
@@ -129,7 +166,35 @@ const STRINGS = {
     resetCompleteButton: 'שמירת הסיסמה החדשה',
     accountTitle: 'החשבון שלכם',
     signedInAs: 'מחוברים בתור',
-    roles: { admin: 'תפקיד: מנהל/ת האתר, עם כל ההרשאות.', moderator: 'תפקיד: מנחה בקהילה.' },
+    roles: {
+      owner: 'תפקיד: בעלים של האתר (מנהל־על), עם כל ההרשאות, שממנה את המנהלים.',
+      admin: 'תפקיד: מנהל/ת האתר, עם כל ההרשאות.',
+      moderator: 'תפקיד: מנחה בקהילה.',
+    },
+    unverified: 'כתובת הדוא״ל עדיין לא אומתה.',
+    streakLabel: 'הרצף שלך',
+    streakDays: (n) => `<strong>${n}</strong> ${n === 1 ? 'יום' : 'ימים'} לפי התוכנית`,
+    streakWeeks: (n) => `רצף פרשות: ${n === 1 ? 'שבוע אחד' : n === 2 ? 'שבועיים' : `${n} שבועות`}`,
+    streakAsOf: (date) => `מהגיבוי של האפליקציה, נכון ל־${date}.`,
+    streakStart: 'קריאת המנה של היום באפליקציה מתחילה את הרצף.',
+    streakNone: 'כדי לראות כאן את הרצף, יש להפעיל את „גיבוי ההתקדמות” בדף החשבון באפליקציה.',
+    passwordTitle: 'סיסמה',
+    passwordIsSet: 'לחשבון יש סיסמה.',
+    passwordIsNone: 'עדיין אין סיסמה: ההתחברות היא בקוד שנשלח בדוא״ל או במפתח גישה. אפשר להוסיף סיסמה.',
+    currentPassword: 'הסיסמה הנוכחית',
+    passwordChange: 'שינוי הסיסמה',
+    passwordAdd: 'הוספת סיסמה',
+    passwordStale: 'לביטחונך, אפשר להוסיף סיסמה רק בתוך 15 דקות מההתחברות. יש להתנתק, להתחבר שוב בקוד שנשלח בדוא״ל, ואז להוסיף אותה.',
+    passwordOthers: 'כשהסיסמה משתנה, שאר המכשירים מתנתקים.',
+    devicesTitle: 'מכשירים מחוברים',
+    devicesSince: 'התחבר',
+    devicesLastUsed: 'שימוש אחרון',
+    devicesThis: 'המכשיר הזה',
+    devicesSignOut: 'ניתוק',
+    devicesSignOutOthers: 'ניתוק כל שאר המכשירים',
+    handoffTitle: 'המשך מהאפליקציה',
+    handoffLead: (email) => `האפליקציה מחוברת בתור <strong>${email}</strong>. אפשר להמשיך ולחבר גם את הדפדפן הזה.`,
+    handoffButton: 'המשך',
     adminPanel: 'פתיחת לוח הניהול',
     signOut: 'יציאה',
     deleteTitle: 'מחיקת החשבון',
@@ -187,6 +252,10 @@ const STRINGS = {
       'totp-off': 'אפליקציית האימות כובתה.',
       'passkey-added': 'מפתח הגישה נוסף. אפשר להתחבר איתו עכשיו.',
       'passkey-removed': 'מפתח הגישה הוסר.',
+      'password-added': 'הסיסמה נוספה. שאר המכשירים נותקו.',
+      'password-changed': 'הסיסמה שונתה. שאר המכשירים נותקו.',
+      'device-signed-out': 'המכשיר נותק.',
+      'devices-signed-out': 'כל שאר המכשירים נותקו.',
     },
     errors: {
       email: 'כתובת הדוא״ל אינה נראית תקינה.',
@@ -201,6 +270,9 @@ const STRINGS = {
       forbidden: 'הבקשה נדחתה.',
       notFound: 'הדף הזה אינו קיים.',
       second: 'הקוד שגוי, או שכבר נעשה בו שימוש. נסו שוב.',
+      current: 'הסיסמה הנוכחית שגויה.',
+      stale: 'יש להתחבר שוב קודם, ולהוסיף את הסיסמה בתוך 15 דקות.',
+      handoff: 'תוקף הקישור פג או שכבר נעשה בו שימוש. יש לפתוח אותו שוב מהאפליקציה.',
     },
     footer: 'מוגן באמצעות Cloudflare Turnstile.',
   },
@@ -269,6 +341,16 @@ ${script ? '<script src="/account/passkey.js" defer></script>' : ''}
   ul.keys { padding: 0; list-style: none; }
   ul.keys li { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
   ul.keys form { margin: .25rem 0; }
+  .streak { display: flex; gap: .9rem; align-items: center; padding: .9rem 1rem; margin: 0 0 1.25rem; border-radius: .6rem; background: color-mix(in srgb, #e8590c 12%, transparent); }
+  .streak .flame { font-size: 2.6rem; line-height: 1; }
+  .streak p { margin: .1rem 0; }
+  .streak .big { font-size: 1.15rem; }
+  .streak .big strong { font-size: 1.6rem; }
+  ul.devices { padding: 0; list-style: none; }
+  ul.devices li { display: flex; gap: 1rem; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); padding: .35rem 0; }
+  ul.devices form { margin: .25rem 0; }
+  ul.devices button, ul.keys button { white-space: nowrap; }
+  .date { white-space: nowrap; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -344,33 +426,60 @@ ${turnstile(siteKey)}
 </form>`;
 }
 
-// A date as the account page shows it: the day, in UTC.
+// A date as the account page shows it: the day, in UTC, kept whole and
+// apart from the words around it, which in Hebrew run the other way.
 function day(ms) {
-  return new Date(ms).toISOString().slice(0, 10);
+  return dateText(new Date(ms).toISOString().slice(0, 10));
 }
 
-// The signed-in account's page: its ways of signing in ([security]: the
-// authenticator, its recovery codes left, and the passkeys), then signing
-// out and deleting. An account made in the app has no password (pw_alg
-// 'none'), so deleting it asks for none.
+function dateText(iso) {
+  return `<bdi class="date">${escapeHtml(iso)}</bdi>`;
+}
+
+// The signed-in account's page: the streak the app backed up, then its ways
+// of signing in ([security]: the password, the passkeys, the authenticator
+// and its recovery codes left), the devices signed in, and deleting. An
+// account made in the app has no password (pw_alg 'none'), so deleting it
+// asks for none, and a password is added to it soon after signing in
+// ([security].fresh).
 export function accountBody(lang, { email, email_verified_at: verified, role, pw_alg: alg }, security = {}) {
   const t = STRINGS[lang];
   const hasPassword = alg === 'pbkdf2-sha256';
-  const { totp = false, recoveryLeft = 0, passkeys = [] } = security;
+  const { totp = false, recoveryLeft = 0, passkeys = [], sessions = [], thisSession = null, fresh = false, streak = null } = security;
   const codeField = field('code', t.totpCodeField, 'text', 'autocomplete="one-time-code" required maxlength="12"');
   const keys = passkeys.length
     ? `<ul class="keys">${passkeys.map((k) => `<li><span>${t.passkeyAdded} ${day(k.created_at)}${k.last_used_at ? `, ${t.passkeyLastUsed} ${day(k.last_used_at)}` : ''}</span>
 <form method="post" action="${link('/account/passkey/remove', lang)}"><input type="hidden" name="id" value="${escapeHtml(k.id)}"><button type="submit" class="secondary">${t.passkeyRemove}</button></form></li>`).join('\n')}</ul>`
     : `<p class="muted">${t.passkeysNone}</p>`;
-  return `<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
+  const devices = sessions.map((d) => `<li><span><bdi dir="${t.dir}">${escapeHtml(deviceName(d.device, lang))}</bdi>${d.id === thisSession ? ` (${t.devicesThis})` : ''}<br>
+<span class="muted">${t.devicesSince} ${day(d.created_at)} · ${t.devicesLastUsed} ${day(d.last_seen_at)}</span></span>
+<form method="post" action="${link('/account/devices/sign-out', lang)}"><input type="hidden" name="id" value="${d.id}"><button type="submit" class="secondary">${t.devicesSignOut}</button></form></li>`).join('\n');
+  const password = hasPassword
+    ? `<p>${t.passwordIsSet}</p>
+<form method="post" action="${link('/account/password', lang)}">
+<input type="hidden" name="username" autocomplete="username" value="${escapeHtml(email)}">
+${field('password', t.currentPassword, 'password', 'autocomplete="current-password" required maxlength="128"')}
+${field('new_password', t.newPassword, 'password', 'autocomplete="new-password" required minlength="10" maxlength="128"')}
+<button type="submit" class="secondary">${t.passwordChange}</button>
+</form>
+<p class="muted">${t.passwordOthers} <a href="${link('/account/reset', lang)}">${t.forgot}</a></p>`
+    : `<p>${t.passwordIsNone}</p>
+${fresh ? `<form method="post" action="${link('/account/password', lang)}">
+<input type="hidden" name="username" autocomplete="username" value="${escapeHtml(email)}">
+${field('new_password', t.newPassword, 'password', 'autocomplete="new-password" required minlength="10" maxlength="128"')}
+<button type="submit" class="secondary">${t.passwordAdd}</button>
+</form>` : `<p class="muted">${t.passwordStale}</p>`}`;
+  return `${streakCard(t, streak)}
+<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
 ${role && Object.hasOwn(t.roles, role) ? `<p>${t.roles[role]}</p>` : ''}
-${role === 'admin' ? `<p><a href="/account/admin">${t.adminPanel}</a></p>` : ''}
+${role === 'admin' || role === 'owner' ? `<p><a href="/account/admin">${t.adminPanel}</a></p>` : ''}
 ${verified ? '' : `<p>${t.unverified}</p>`}
 <form method="post" action="${link('/account/sign-out', lang)}">
 <button type="submit">${t.signOut}</button>
 </form>
 <h2>${t.methodsTitle}</h2>
-<p>${hasPassword ? t.passwordSet : t.passwordNone} <a href="${link('/account/reset', lang)}">${t.resetTitle}</a></p>
+<h3>${t.passwordTitle}</h3>
+${password}
 <h3>${t.passkeysTitle}</h3>
 <p class="muted">${t.passkeysLead}</p>
 ${keys}
@@ -382,11 +491,37 @@ ${totp ? `<p>${t.totpOn} ${t.recoveryLeft} ${recoveryLeft}</p>
 <form method="post" action="${link('/account/recovery/new', lang)}">${codeField}<button type="submit" class="secondary">${t.totpNewCodes}</button></form>
 <form method="post" action="${link('/account/totp/disable', lang)}">${codeField}<button type="submit" class="secondary">${t.totpOff}</button></form>`
     : `<form method="post" action="${link('/account/totp/start', lang)}"><button type="submit">${t.totpSetUp}</button></form>`}
+<h2>${t.devicesTitle}</h2>
+<ul class="devices">${devices}</ul>
+${sessions.length > 1 ? `<form method="post" action="${link('/account/devices/sign-out', lang)}"><input type="hidden" name="others" value="yes"><button type="submit" class="secondary">${t.devicesSignOutOthers}</button></form>` : ''}
 <h2>${t.deleteTitle}</h2>
 <p class="muted">${hasPassword ? t.deleteLead : t.deleteLeadNoPassword}</p>
 <form method="post" action="${link('/account/delete', lang)}">
 ${hasPassword ? field('password', t.password, 'password', 'autocomplete="current-password" required maxlength="128"') : ''}
 <button type="submit">${t.deleteButton}</button>
+</form>`;
+}
+
+// The streak, at the top of the page, with the fire: the days on track and
+// the parsha streak, as the app last counted them; or how to see them here.
+function streakCard(t, streak) {
+  const lines = streak
+    ? `<p class="big">${t.streakDays(streak.days)}</p>
+<p>${t.streakWeeks(streak.weeks)}</p>
+${streak.days === 0 && streak.weeks === 0 ? `<p class="muted">${t.streakStart}</p>` : ''}
+${streak.asOf ? `<p class="muted">${t.streakAsOf(dateText(streak.asOf))}</p>` : ''}`
+    : `<p>${t.streakNone}</p>`;
+  return `<section class="streak" aria-label="${escapeHtml(t.streakLabel)}"><span class="flame" aria-hidden="true">🔥</span><div>${lines}</div></section>`;
+}
+
+// The page a link from the app opens: who the app is signed in as, and a
+// button to sign this browser in too.
+export function handoffBody(lang, email, token) {
+  const t = STRINGS[lang];
+  return `<p>${t.handoffLead(escapeHtml(email))}</p>
+<form method="post" action="${link('/account/handoff', lang)}">
+<input type="hidden" name="token" value="${escapeHtml(token)}">
+<button type="submit">${t.handoffButton}</button>
 </form>`;
 }
 

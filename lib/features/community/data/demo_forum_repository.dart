@@ -530,6 +530,9 @@ class DemoForumRepository implements ForumRepository {
 
   @override
   Future<void> saveProgress(Map<String, dynamic> data) async => _progress[_requireUser().id] = data;
+
+  @override
+  Future<Uri?> siteLink(SitePage page) async => null;
 }
 
 /// A sample discussion of the demo: its posts in order, the first starting

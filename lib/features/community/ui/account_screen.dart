@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/retry.dart';
@@ -18,8 +19,11 @@ import '../../../ui/widgets/fallbacks.dart';
 import '../../../ui/widgets/lines.dart';
 import '../../../ui/widgets/paper_group.dart';
 import '../../../ui/widgets/sefer_tag.dart';
+import '../../../ui/widgets/streak_flame.dart';
+import '../../progress/domain/streak_engine.dart';
 import '../data/backend.dart';
 import '../data/community_providers.dart';
+import '../data/forum_repository.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
@@ -519,6 +523,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         moderator: profile?.isModerator ?? false,
         onEdit: profile == null ? null : () => _editName(profile),
       ),
+      // The streak, with the fire, first thing after signing in, unless the
+      // reader has put the streaks away (Settings, Show streaks).
+      if (settings.showStreaks) ...[
+        const Gap(Rhythm.cardGap),
+        _StreakCard(summary: ref.watch(streakSummaryProvider), onTap: () => context.go('/progress')),
+      ],
       GroupHeader(l.cloudBackupTitle),
       PaperGroup(
         children: [
@@ -566,6 +576,32 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         const Gap(Rhythm.cardGap),
         NoticeBanner(icon: Icons.cloud_off_outlined, text: l.syncTooLarge),
       ],
+      // The password, passkeys and authenticator app are set on the website,
+      // and so is the admin panel: each opens there signed in as here.
+      if (!repo.isDemo) ...[
+        GroupHeader(l.signInSecurityTitle),
+        PaperGroup(
+          children: [
+            PaperRow(
+              icon: Icons.key_outlined,
+              title: l.signInMethods,
+              subtitle: l.signInMethodsDesc,
+              trailing: const Icon(Icons.open_in_new, size: 20),
+              chevron: false,
+              onTap: _busy ? null : () => _openSite(SitePage.account),
+            ),
+            if (profile?.isAdmin ?? false)
+              PaperRow(
+                icon: Icons.admin_panel_settings_outlined,
+                title: l.adminPanel,
+                subtitle: l.adminPanelDesc,
+                trailing: const Icon(Icons.open_in_new, size: 20),
+                chevron: false,
+                onTap: _busy ? null : () => _openSite(SitePage.admin),
+              ),
+          ],
+        ),
+      ],
       GroupHeader(l.privacySafetyTitle),
       PaperGroup(
         children: [
@@ -608,6 +644,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ),
     ];
   }
+
+  /// Opens [page] of the website in the browser, signed in as here; where
+  /// nothing opens it, says so.
+  Future<void> _openSite(SitePage page) => _run(() async {
+        final link = await ref.read(forumRepositoryProvider).siteLink(page);
+        if (link == null) return;
+        bool opened;
+        try {
+          opened = await launchUrl(link);
+        } catch (_) {
+          opened = false;
+        }
+        if (!opened && mounted) showStatus(context, context.l10n.linkOpenFailed);
+      });
 
   Future<void> _syncNow() async {
     if (_syncing) return;
@@ -1046,6 +1096,49 @@ class _ProfileCard extends StatelessWidget {
           const Gap(Space.sm),
           IconButton(tooltip: l.editDisplayName, icon: const Icon(Icons.edit_outlined), onPressed: onEdit),
         ],
+      ),
+    );
+  }
+}
+
+/// The streaks, with the fire, under the member's card: the days on track
+/// and the parsha streak, as Today's ledger counts them, or, before either
+/// has begun, how to begin. It opens Progress. A screen reader reads it as
+/// one item, the fire left out.
+class _StreakCard extends StatelessWidget {
+  const _StreakCard({required this.summary, required this.onTap});
+
+  final StreakSummary summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final days = summary.daysOnTrack;
+    final weeks = summary.parshaStreak;
+    final none = days == 0 && weeks == 0;
+    return InfoCard(
+      onTap: onTap,
+      child: MergeSemantics(
+        child: Row(
+          children: [
+            const StreakFlame(),
+            const Gap(Space.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.streakFlameDays(days), style: theme.textTheme.titleMedium),
+                  Text(
+                    none ? l.streakFlameStart : l.streakFlameWeeks(l.weeksCount(weeks)),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

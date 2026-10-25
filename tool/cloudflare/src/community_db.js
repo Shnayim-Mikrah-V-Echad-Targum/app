@@ -366,6 +366,19 @@ export function moderation(db, { action, target, actorId, reason, now }) {
       return [
         db.prepare("DELETE FROM roles WHERE role = 'moderator' AND email = (SELECT email FROM users WHERE id = ?)").bind(target),
       ];
+    // A moderator named an admin is promoted; the owner's row is never touched.
+    case 'grant_admin':
+      return [
+        db.prepare(
+          `INSERT INTO roles (email, role, granted_at) SELECT email, 'admin', ? FROM users
+            WHERE id = ? AND email_verified_at IS NOT NULL
+           ON CONFLICT (email) DO UPDATE SET role = 'admin', granted_at = excluded.granted_at WHERE roles.role = 'moderator'`,
+        ).bind(now, target),
+      ];
+    case 'revoke_admin':
+      return [
+        db.prepare("DELETE FROM roles WHERE role = 'admin' AND email = (SELECT email FROM users WHERE id = ?)").bind(target),
+      ];
     default:
       return null;
   }

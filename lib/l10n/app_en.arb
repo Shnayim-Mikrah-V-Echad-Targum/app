@@ -3295,6 +3295,30 @@
   "cloudBackupTitle": "Cloud backup",
   "privacySafetyTitle": "Privacy & safety",
   "accountGroupTitle": "Account",
+  "streakFlameDays": "{count, plural, =1{1 day on track} other{{count} days on track}}",
+  "@streakFlameDays": {
+    "description": "The days-on-track streak beside the fire on the account page.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakFlameWeeks": "Parsha streak: {weeks}",
+  "@streakFlameWeeks": {
+    "description": "Under it, the parsha streak, as weeksCount says it.",
+    "placeholders": {
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "streakFlameStart": "Read today’s portion to start your streak.",
+  "signInSecurityTitle": "Sign-in & security",
+  "signInMethods": "Password, passkeys and authenticator",
+  "signInMethodsDesc": "Add or change them on the website",
+  "adminPanel": "Admin panel",
+  "adminPanelDesc": "Accounts, reports and security, on the website",
   "postingAs": "Posting as {name}",
   "@postingAs": {
     "placeholders": {

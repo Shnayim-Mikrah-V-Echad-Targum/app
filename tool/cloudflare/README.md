@@ -1,6 +1,6 @@
 # The site's Worker and its logs
 
-`shnayimmikrah.org` is served by the Cloudflare Worker `shnayimmikrah-org`. Every request passes through `src/worker.js` first: it answers the requests that aren't the site's, serves the accounts and the app's community API (below) and the app's files for the rest, and writes the logs described here. The rules are in `src/rules.js`, and `test/worker.test.mjs` checks them; the accounts are checked by `test/accounts.test.mjs`, the community by `test/community.test.mjs`, and the admin panel by `test/admin.test.mjs`. All run in CI (`node --test tool/cloudflare/test/*.test.mjs`).
+`shnayimmikrah.org` is served by the Cloudflare Worker `shnayimmikrah-org`. Every request passes through `src/worker.js` first: it answers the requests that aren't the site's, serves the accounts and the app's community API (below) and the app's files for the rest, and writes the logs described here. The rules are in `src/rules.js`, and `test/worker.test.mjs` checks them; the accounts are checked by `test/accounts.test.mjs`, the community by `test/community.test.mjs`, the admin panel by `test/admin.test.mjs`, and the account page's password, devices and streak, the links from the app and the owner by `test/suite.test.mjs`. All run in CI (`node --test tool/cloudflare/test/*.test.mjs`).
 
 ## What is logged
 
@@ -40,14 +40,15 @@ Both tables keep **365 days** (`RETENTION_DAYS` in `wrangler.toml`). A daily job
 
 An account is optional, and the app doesn't need one. A visitor signs up at `/account/sign-up` with an email address and a password, confirms the address with a six-digit code sent by email, and then has a session in a cookie. The pages are plain HTML forms that the Worker serves (`src/account_pages.js`), in English and Hebrew. The logic is in `src/accounts.js`, the rows in `src/account_db.js`, the hashes in `src/account_crypto.js`, and the email in `src/mail.js`.
 
-**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`, `roles`, and for the second step and passkeys `totp`, `recovery_codes`, `pending_signins`, `passkeys`, `webauthn_challenges`):
+**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`, `roles`, `handoffs`, and for the second step and passkeys `totp`, `recovery_codes`, `pending_signins`, `passkeys`, `webauthn_challenges`):
 
 - `users`: the address in lower case; the password as PBKDF2-SHA256, with its own count, salt and hash; when the address was confirmed; when the account was made.
-- `sessions`: the SHA-256 of each session's token. The cookie holds the token itself.
+- `sessions`: the SHA-256 of each session's token (the cookie holds the token itself); what signed in, coarsely, as a browser and its system or the app and its system (`src/devices.js`: "Chrome on Android", never the whole user agent); and when it was last used, to the hour. The account page lists them as its signed-in devices, each with a button to sign it out.
 - `codes`: the keyed hash (HMAC-SHA256, with `ACCOUNTS_KEY`) of each sign-up code, its expiry and its wrong tries.
 - `reset_tokens`: the SHA-256 of each password reset link, its expiry, and whether it has been used.
 - `rate_limits`: a keyed hash of an address or an email, with the window it counts in.
-- `roles`: the site's staff, by email address, as `admin` (every permission) or `moderator`. A role counts only once its address is a confirmed account, and the account page shows it. Rows are added by hand, never from the site, so the addresses are not in the repo: `INSERT INTO roles (email, role, granted_at) VALUES ('name@example.com', 'admin', 0)`.
+- `roles`: the site's staff, by email address: `owner` (the super admin: every permission, and the one who names and removes the admins), `admin` (every permission) or `moderator`. A role counts only once its address is a confirmed account, and the account page shows it. The owner's row is added by hand, so the addresses are not in the repo: `INSERT INTO roles (email, role, granted_at) VALUES ('name@example.com', 'owner', 0)`. From the admin panel the owner names admins, and admins name moderators. No admin acts on another admin's account but the owner, and no one on the owner's.
+- `handoffs`: the SHA-256 of each one-time link from the app to the site (below), for 5 minutes.
 
 Never stored: a password, a code, a token or a link as it was sent, or a visitor's address.
 
@@ -73,6 +74,9 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 | `POST /account/passkey/register-options`, `POST /account/passkey/register` | adds a passkey (JSON, for `/account/passkey.js`) |
 | `POST /account/passkey/signin-options`, `POST /account/passkey/signin` | signs in with a passkey (JSON) |
 | `POST /account/passkey/remove` | removes a passkey |
+| `POST /account/password` | changes the password, given the current one, or adds one to an account made by code within 15 minutes of signing in; signs the other devices out |
+| `POST /account/devices/sign-out` | signs one of the account's devices out, or every one but this |
+| `GET`, `POST /account/handoff` | a link from the app: says who the app is signed in as, and on Continue signs this browser in too, once |
 
 **Protections**: Turnstile on sign-up, sign-in and both reset forms. Limits per email and per address, counted in windows: sign-up 5 an hour per email and 20 an hour per address; sign-in 10 failed tries per 15 minutes per email and 30 per address, so a sign-in that works counts nothing; the code, resend and reset limits are in `src/accounts.js`. A try refused by a limit writes nothing. A code locks after 5 wrong tries. A POST must come from the site's own origin. The cookie is `__Host-`, HttpOnly, Secure and SameSite=Lax; the pages are `no-store` and send a referrer only to the site itself. (Not `no-referrer`: under it a browser sends `Origin: null` with a form, so a post is also let through when the browser's `Sec-Fetch-Site` says `same-origin`.) The answers to sign-up, sign-in and reset do not show whether an address has an account.
 
@@ -89,9 +93,13 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 
 The QR code is drawn by uqr (MIT), vendored in `src/vendor/uqr.mjs`.
 
-**An account made in the app** (by code, [Community](#community)) has no password (`pw_alg` `none`): it can't sign in on the site's form until a reset gives it one, and its account page deletes it without asking for one. A code confirming an address for the first time drops any password set before it was confirmed, as whoever set it never proved the address theirs.
+**An account made in the app** (by code, [Community](#community)) has no password (`pw_alg` `none`): it signs in with an emailed code or a passkey, and its account page adds a password within 15 minutes of signing in (there is no old password to ask for instead), or a reset gives it one. Its account page deletes it without asking for one. A code confirming an address for the first time drops any password set before it was confirmed, as whoever set it never proved the address theirs.
 
-**Not here**: a password change while signed in (only a reset changes it).
+**From the app**: the app's account page opens the site's account page (for the password, passkeys and the authenticator) and, for an admin, the admin panel, already signed in. It asks `POST /api/handoff` for a one-time link (5 minutes, once), and the browser opens it at `/account/handoff`, which asks before it signs the browser in, so that a link someone else made can't sign a browser in to their account unasked.
+
+**The streak**: the app backs up the streaks it shows (the days on track and the parsha streak, and the day it counted them) with the progress, and the account page shows them at its top, with a 🔥, as of that day.
+
+**A database made before 2026-10-25** needs `migrations/2026-10-25-devices.sql` run once, for the devices, the owner and the links from the app: `npx wrangler@4 d1 execute shnayimmikrah-logs --remote --file migrations/2026-10-25-devices.sql`.
 
 ## Community
 
@@ -142,10 +150,10 @@ A page's cursor (`after`, `before`) is the last row's time in milliseconds and i
 
 ## The admin panel
 
-`/account/admin` (`/admin` leads there), for the addresses with the role `admin` in `roles`, and no one else: anyone else gets a refusal, and a visitor who isn't signed in the sign-in page. The account page links to it for an admin. It is under `/account` so that the app's offline service worker, which leaves `/account` to the server, never answers it with the app. The pages are plain HTML in English (`src/admin.js`, its reads in `src/admin_db.js`), sent `no-store`, never framed, and not logged as visits.
+`/account/admin` (`/admin` leads there), for the addresses with the role `owner` or `admin` in `roles`, and no one else: anyone else gets a refusal, and a visitor who isn't signed in the sign-in page. The account page links to it for an admin, and so does the app's account page, signed in (From the app, above). It is under `/account` so that the app's offline service worker, which leaves `/account` to the server, never answers it with the app. The pages are plain HTML in English (`src/admin.js`, its reads in `src/admin_db.js`), sent `no-store`, never framed, and not logged as visits.
 
-- **Overview**: the accounts (confirmed, new this week, signed in now), staff, bans and silences, threads and posts, hidden posts, open reports, the visits of the last 14 days and the day's security events.
-- **Accounts**: every account, searchable by address or display name, with its status, posts and last sign-in. An account's page shows its details and posts, and its moderation history, with the actions: silence for 7 days, ban, lift both, set the trust level, make or remove a moderator, sign out everywhere, and delete the account with all it posted (once "I am sure" is ticked). Another admin's account has none of them, and the panel never deletes its own account (the account page does).
+- **Overview**: the accounts (confirmed, new this week, signed in now), bans and silences, threads and posts, hidden posts, open reports; the staff, by role; the newest accounts; the visits of the last 14 days and the day's security events.
+- **Accounts**: every account, searchable by address or display name, with its status, posts and last sign-in. An account's page shows its details (its sign-in methods, the streak and the date of its backup from the app), its signed-in devices, its posts and its moderation history, with the actions: silence for 7 days, ban, lift both, set the trust level, rename, make or remove a moderator, sign out one device or everywhere, remove the authenticator and passkeys, and delete the account with all it posted (once "I am sure" is ticked). The owner also makes and removes administrators (making one asks for a tick). Another admin's account has actions only for the owner, the owner's for no one else, and the panel never deletes an admin's account or its own (the account page does).
 - **Reports**: the open reports with the post, its author and its thread; resolve, dismiss, hide, restore or delete the post.
 - **Security**: the security events by kind over 24 hours, 7 and 30 days; the day-hashes behind the most events; the latest 100 events, by kind; the visits of the last 30 days; and the week's top pages, countries, referring sites and languages. No address is shown, as none is stored.
 - **Log**: every moderation and account action, by whom.

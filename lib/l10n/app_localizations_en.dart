@@ -3681,6 +3681,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountGroupTitle => 'Account';
 
   @override
+  String streakFlameDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days on track',
+      one: '1 day on track',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakFlameWeeks(String weeks) {
+    return 'Parsha streak: $weeks';
+  }
+
+  @override
+  String get streakFlameStart => 'Read today’s portion to start your streak.';
+
+  @override
+  String get signInSecurityTitle => 'Sign-in & security';
+
+  @override
+  String get signInMethods => 'Password, passkeys and authenticator';
+
+  @override
+  String get signInMethodsDesc => 'Add or change them on the website';
+
+  @override
+  String get adminPanel => 'Admin panel';
+
+  @override
+  String get adminPanelDesc => 'Accounts, reports and security, on the website';
+
+  @override
   String postingAs(String name) {
     return 'Posting as $name';
   }

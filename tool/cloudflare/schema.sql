@@ -54,11 +54,16 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- One row per signed-in browser. The cookie holds the token; this holds its SHA-256.
+-- device is what signed in, coarsely ("browser|Chrome|Android", "app||Windows"),
+-- never the whole user agent; last_seen_at moves at most once an hour.
+-- (A database made before these two columns: migrations/2026-10-25-devices.sql.)
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   created_at INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL
+  expires_at INTEGER NOT NULL,
+  device TEXT,
+  last_seen_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id);
 CREATE INDEX IF NOT EXISTS sessions_expires ON sessions (expires_at);
@@ -96,12 +101,15 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE INDEX IF NOT EXISTS rate_limits_expires ON rate_limits (expires_at);
 
 -- The site's staff, by address, so a role can be given before the account is
--- made. admin can do everything, moderator the community's moderation. Rows
--- are added by hand (README, Accounts), never from the site, and the
--- addresses live only here, not in the repo.
+-- made. owner is the site's super admin: an admin who also names and removes
+-- the other admins, and whom no one else can act on. admin can do everything
+-- else, moderator the community's moderation. The owner's row is added by
+-- hand (README, Accounts), never from the site; the owner names admins and
+-- admins name moderators from the admin panel. The addresses live only here,
+-- not in the repo. (A database made before owner: migrations/2026-10-25-devices.sql.)
 CREATE TABLE IF NOT EXISTS roles (
   email TEXT PRIMARY KEY,       -- lower case
-  role TEXT NOT NULL CHECK (role IN ('admin', 'moderator')),
+  role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'moderator')),
   granted_at INTEGER NOT NULL
 );
 
@@ -150,6 +158,15 @@ CREATE TABLE IF NOT EXISTS webauthn_challenges (
   challenge_hash TEXT PRIMARY KEY,
   user_id INTEGER,              -- the account a passkey is being added to; NULL for a sign-in
   purpose TEXT NOT NULL,        -- register, signin
+  expires_at INTEGER NOT NULL
+);
+
+-- A one-time link from the app, signed in, to a page of the site, signed in
+-- there too (README, Accounts, From the app): its SHA-256, good for a minute.
+CREATE TABLE IF NOT EXISTS handoffs (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  next TEXT NOT NULL,           -- the page, under /account
   expires_at INTEGER NOT NULL
 );
 

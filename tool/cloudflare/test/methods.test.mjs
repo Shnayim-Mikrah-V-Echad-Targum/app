@@ -156,7 +156,7 @@ test('the site signs in with an emailed code, as the app does', async () => {
   assert.ok(cookie);
   const account = await (await send(state, 'GET', '/account', { cookie })).text();
   assert.match(account, /reader@example\.com/);
-  assert.match(account, /Password: none/);
+  assert.match(account, /No password yet/);
   assert.match(account, /Set up an authenticator app/);
   assert.match(account, /Add a passkey/);
   const wrong = await send(state, 'POST', '/account/sign-in/code', { form: { email: 'reader@example.com', code: '000000' } });
@@ -337,7 +337,7 @@ test('a passkey is added on the account page, and signs in on its own', async ()
   assert.equal(state.database.prepare('SELECT count(*) AS n FROM passkeys').get().n, 1);
   // Its challenge is used up.
   assert.equal((await send(state, 'POST', '/account/passkey/register', { cookie, json: await phone.create(again) })).status, 400);
-  assert.match(await (await send(state, 'GET', '/account', { cookie })).text(), /Passkey added 2026-10-20/);
+  assert.match(await (await send(state, 'GET', '/account', { cookie })).text(), /Passkey added <bdi class="date">2026-10-20<\/bdi>/);
 
   // Signing in: a challenge for whichever passkey the browser offers.
   const userHandle = options.user.id;
