@@ -181,6 +181,63 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 
+  # The site's own web build, for shnayimmikrah.org: the app built with the
+  # site's address (so its community is the site's, not the demo), with the
+  # web job's finishing steps, published as site.zip on the rolling
+  # pre-release web-latest. The site's Worker, in its own repository, serves
+  # it: its build fetches this file when it has no build of its own.
+  site-web:
+    name: Publish the site's web build
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      SITE_URL: https://shnayimmikrah.org/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build for the site
+        run: |
+          flutter build web --release --no-web-resources-cdn --no-wasm-dry-run --base-href / \
+            --dart-define=SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }} \
+            --dart-define=INSTALL_URL=${{ vars.INSTALL_URL }} \
+            --dart-define=WEB_URL=$SITE_URL
+      - run: node tool/web/preload_fonts.mjs build/web
+      - name: Static policy, support and account-deletion pages
+        env:
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+        run: node tool/legal/build_html.mjs build/web
+      - name: Absolute link-preview URLs
+        run: |
+          url="${SITE_URL%/}/"
+          sed -i \
+            -e "s|<link rel=\"canonical\" href=\"./\">|<link rel=\"canonical\" href=\"$url\">\n  <meta property=\"og:url\" content=\"$url\">|" \
+            -e "s|<meta property=\"og:image\" content=\"og.png\">|<meta property=\"og:image\" content=\"${url}og.png\">|" \
+            build/web/index.html
+          grep -q "content=\"${url}og.png\"" build/web/index.html
+      - run: cp build/web/index.html build/web/404.html
+      - name: Offline service worker
+        run: |
+          npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
+          node tool/web/sw_build.cjs check build/web
+      - name: Publish as web-latest/site.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd build/web && zip -qr "$RUNNER_TEMP/site.zip" .)
+          if ! gh release view web-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create web-latest --repo "$GITHUB_REPOSITORY" --prerelease --latest=false \
+              --title "Web build for shnayimmikrah.org" \
+              --notes "The web app as shnayimmikrah.org serves it, rebuilt from main on every push. Not a release for download."
+          fi
+          gh release upload web-latest "$RUNNER_TEMP/site.zip" --repo "$GITHUB_REPOSITORY" --clobber
+
   android:
     name: Build Android
     needs: test

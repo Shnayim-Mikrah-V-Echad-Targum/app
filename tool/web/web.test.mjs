@@ -1107,20 +1107,25 @@ describe('the build', () => {
   });
 
   it("gives every page's address the app on GitHub Pages, as the finished index.html", () => {
-    const ci = read('.github/workflows/ci.yml');
-    const copied = ci.indexOf('cp build/web/index.html build/web/404.html');
-    assert.ok(copied >= 0, 'CI copies index.html to 404.html');
-    // After every step that changes index.html, before the worker precaches.
-    for (const step of [
-      'node tool/web/preload_fonts.mjs build/web',
-      'node tool/legal/build_html.mjs build/web',
-      'name: Absolute link-preview URLs',
-    ]) {
-      const at = ci.indexOf(step);
-      assert.ok(at >= 0 && at < copied, step);
+    // In each job that builds the web app: CI's, and the site's (site-web).
+    const jobs = read('.github/workflows/ci.yml').split(/^ {2}(?=[a-z-]+:\n)/m)
+      .filter((job) => job.includes('cp build/web/index.html build/web/404.html'));
+    assert.ok(jobs.length >= 1, 'CI copies index.html to 404.html');
+    for (const ci of jobs) {
+      const name = ci.slice(0, ci.indexOf(':'));
+      const copied = ci.indexOf('cp build/web/index.html build/web/404.html');
+      // After every step that changes index.html, before the worker precaches.
+      for (const step of [
+        'node tool/web/preload_fonts.mjs build/web',
+        'node tool/legal/build_html.mjs build/web',
+        'name: Absolute link-preview URLs',
+      ]) {
+        const at = ci.indexOf(step);
+        assert.ok(at >= 0 && at < copied, `${name}: ${step}`);
+      }
+      assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, `${name}: nothing changes it after`);
+      assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), `${name}: before the service worker`);
     }
-    assert.equal(ci.indexOf('build/web/index.html', copied + 'cp build/web/index.html'.length), -1, 'nothing changes it after');
-    assert.ok(copied < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
     assert.match(read('docs/RELEASE.md'), /`cp build\/web\/index\.html build\/web\/404\.html`/);
   });
 
