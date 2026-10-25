@@ -66,7 +66,7 @@ async function route(request, env, url, admin, now) {
 
 // --- Actions ----------------------------------------------------------------------
 
-const ACCOUNT_ACTIONS = ['sign_out_everywhere', 'delete_account'];
+const ACCOUNT_ACTIONS = ['sign_out_everywhere', 'reset_sign_in', 'delete_account'];
 
 // A change from one of the panel's forms; then back to the page it came from.
 async function act(request, env, admin, now) {
@@ -102,6 +102,10 @@ async function accountAction(env, admin, action, target, form, now) {
     if (other.id === admin.id) throw new ApiError('own_account', 403);
     if (form.get('confirm') !== 'yes') throw new ApiError('not_confirmed');
     await deleteEverything(env, other.id);
+  } else if (action === 'reset_sign_in') {
+    // For a member locked out: the authenticator, its recovery codes and the
+    // passkeys go, leaving the password and the emailed code.
+    await env.LOGS.batch(db.deleteSecondSteps(env.LOGS, other.id));
   } else {
     await db.deleteSessionsOf(env.LOGS, other.id).run();
   }
@@ -202,6 +206,9 @@ async function account(env, admin, id, now, notice) {
       : button('grant_moderator', id, back, 'Make moderator'));
   }
   if (!protectedStaff) actions.push(button('sign_out_everywhere', id, back, self ? 'Sign out everywhere (you too)' : 'Sign out everywhere'));
+  if (!protectedStaff && (a.totp_at || a.passkeys > 0)) {
+    actions.push(button('reset_sign_in', id, back, 'Remove the authenticator and passkeys', 'danger'));
+  }
   if (!protectedStaff && !self) {
     actions.push(`<form method="post" action="${BASE}/action" class="inline">${hidden('delete_account', id, back)}
 <label><input type="checkbox" name="confirm" value="yes" required> I am sure</label>
@@ -221,6 +228,8 @@ async function account(env, admin, id, now, notice) {
 <dt>Role</dt><dd>${escapeHtml(a.role ?? 'member')}</dd>
 <dt>Status</dt><dd>${escapeHtml(status(a, now))}</dd>
 <dt>Password</dt><dd>${a.pw_alg === 'none' ? 'none (made in the app, by code)' : 'set'}</dd>
+<dt>Authenticator</dt><dd>${a.totp_at ? `on since ${time(a.totp_at)}` : 'off'}</dd>
+<dt>Passkeys</dt><dd>${a.passkeys}</dd>
 <dt>Made</dt><dd>${time(a.created_at)}</dd>
 <dt>Confirmed</dt><dd>${a.email_verified_at ? time(a.email_verified_at) : 'not yet'}</dd>
 <dt>Guidelines</dt><dd>${a.accepted_terms_at ? `accepted ${time(a.accepted_terms_at)}` : 'not accepted'}</dd>

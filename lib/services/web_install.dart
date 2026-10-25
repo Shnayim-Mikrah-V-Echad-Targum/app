@@ -43,6 +43,84 @@ class WebInstall {
   /// Calls [onChange] as the offer comes or goes, or the app is installed;
   /// returns what stops listening.
   void Function() listen(void Function() onChange) => platform.listen(onChange);
+
+  /// The browser the app runs in, as far as it says ([browserFrom]), for the
+  /// guide to open at its steps.
+  InstallBrowser? get browser => browserFrom(platform.userAgent(), brave: platform.isBrave());
+}
+
+/// A browser the guide to saving the app has steps for (install_app.dart).
+/// Their names are their own, never translated.
+enum InstallBrowser {
+  safari('Safari'),
+  chrome('Chrome'),
+  samsung('Samsung Internet'),
+  firefox('Firefox'),
+  brave('Brave'),
+  duckDuckGo('DuckDuckGo'),
+  edge('Edge'),
+  opera('Opera');
+
+  const InstallBrowser(this.label);
+  final String label;
+}
+
+/// A kind of device the guide has steps for.
+enum InstallDevice { iphone, android, computer }
+
+/// The device the app runs on, as the guide groups them.
+InstallDevice installDeviceOf(TargetPlatform platform) => switch (platform) {
+      TargetPlatform.iOS => InstallDevice.iphone,
+      TargetPlatform.android => InstallDevice.android,
+      _ => InstallDevice.computer,
+    };
+
+/// The browsers there are on [device], in the order the guide offers them:
+/// the device's own first.
+List<InstallBrowser> browsersOn(InstallDevice device) => switch (device) {
+      InstallDevice.iphone => const [
+          InstallBrowser.safari,
+          InstallBrowser.chrome,
+          InstallBrowser.firefox,
+          InstallBrowser.brave,
+          InstallBrowser.duckDuckGo,
+          InstallBrowser.edge,
+          InstallBrowser.opera,
+        ],
+      InstallDevice.android => const [
+          InstallBrowser.chrome,
+          InstallBrowser.samsung,
+          InstallBrowser.firefox,
+          InstallBrowser.brave,
+          InstallBrowser.duckDuckGo,
+          InstallBrowser.edge,
+          InstallBrowser.opera,
+        ],
+      InstallDevice.computer => const [
+          InstallBrowser.chrome,
+          InstallBrowser.edge,
+          InstallBrowser.brave,
+          InstallBrowser.safari,
+          InstallBrowser.firefox,
+          InstallBrowser.opera,
+        ],
+    };
+
+/// The browser a user agent names, where it names one: each puts its own
+/// token beside those of the engine it shares (Chrome's, Safari's). Brave
+/// names none of its own, and says so by [brave] (navigator.brave); on an
+/// iPhone it can't be told from Safari. Null where it is none of these.
+InstallBrowser? browserFrom(String userAgent, {bool brave = false}) {
+  bool has(String token) => userAgent.contains(token);
+  if (has('DuckDuckGo/') || has('Ddg/')) return InstallBrowser.duckDuckGo;
+  if (has('SamsungBrowser/')) return InstallBrowser.samsung;
+  if (has('EdgiOS/') || has('EdgA/') || has('Edg/')) return InstallBrowser.edge;
+  if (has('OPiOS/') || has('OPT/') || has('OPR/')) return InstallBrowser.opera;
+  if (has('FxiOS/') || has('Firefox/')) return InstallBrowser.firefox;
+  if (brave) return InstallBrowser.brave;
+  if (has('CriOS/') || has('Chrome/') || has('Chromium/')) return InstallBrowser.chrome;
+  if (has('Safari/') || has('AppleWebKit/')) return InstallBrowser.safari;
+  return null;
 }
 
 /// The web's ways to install the app, or null off the web (and in the
@@ -56,12 +134,14 @@ enum InstallOption {
   /// this computer" on a computer.
   prompt,
 
-  /// Safari's Add to Home Screen, which only the reader can choose: a sheet
-  /// with the steps, on an iPhone or iPad.
-  homeScreenSteps,
+  /// The guide to saving the app from the browser's own menu, step by step
+  /// for each browser and device (Safari, Chrome, Firefox, Brave,
+  /// DuckDuckGo, Edge, Samsung Internet, Opera), which only the reader can
+  /// do.
+  guide,
 
   /// The Android app, an APK on the releases page, which opens this website
-  /// as an app.
+  /// as an app. Not offered while it is being made ready ([installOptionsFor]).
   apk,
 
   /// The Windows app, installed with one line in PowerShell, or with the
@@ -72,9 +152,10 @@ enum InstallOption {
 /// The ways to install the app on a device of [platform], where the app
 /// runs in a browser: none where it runs installed already ([standalone])
 /// or has just been installed ([installed]). The browser's dialog comes
-/// first where it is offered ([canPrompt]); then the device's own way: the
-/// steps on an iPhone, the APK on Android, the one line in PowerShell on
-/// Windows.
+/// first where it is offered ([canPrompt]); then the guide to saving it from
+/// the browser's menu, on every device; then on Windows the one line in
+/// PowerShell. The Android app (an APK) is left out until it is ready: the
+/// guide saves the site from any Android browser meanwhile.
 List<InstallOption> installOptionsFor(
   TargetPlatform platform, {
   required bool standalone,
@@ -84,12 +165,8 @@ List<InstallOption> installOptionsFor(
   if (standalone || installed) return const [];
   return [
     if (canPrompt && platform != TargetPlatform.iOS) InstallOption.prompt,
-    ...switch (platform) {
-      TargetPlatform.iOS => const [InstallOption.homeScreenSteps],
-      TargetPlatform.android => const [InstallOption.apk],
-      TargetPlatform.windows => const [InstallOption.windows],
-      _ => const <InstallOption>[],
-    },
+    InstallOption.guide,
+    if (platform == TargetPlatform.windows) InstallOption.windows,
   ];
 }
 

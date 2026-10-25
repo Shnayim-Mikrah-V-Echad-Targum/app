@@ -105,6 +105,54 @@ CREATE TABLE IF NOT EXISTS roles (
   granted_at INTEGER NOT NULL
 );
 
+-- Signing in with more than a password (README, Accounts, Second step and
+-- passkeys). An authenticator app's shared secret, encrypted with a key from
+-- ACCOUNTS_KEY; a sign-in asks for its code once it is confirmed.
+CREATE TABLE IF NOT EXISTS totp (
+  user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+  secret_sealed TEXT NOT NULL,  -- AES-GCM: IV and ciphertext, base64url
+  confirmed_at INTEGER,         -- NULL while being set up
+  last_step INTEGER NOT NULL DEFAULT 0,  -- the last 30-second step used, so no code works twice
+  created_at INTEGER NOT NULL
+);
+
+-- Codes that stand in for the authenticator, once each, as keyed hashes.
+CREATE TABLE IF NOT EXISTS recovery_codes (
+  user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,      -- HMAC-SHA256 of the code, with ACCOUNTS_KEY
+  used_at INTEGER,
+  PRIMARY KEY (user_id, code_hash)
+);
+
+-- A sign-in whose password, or emailed code, was right, waiting for its
+-- second step. Its cookie holds the token; this holds its SHA-256.
+CREATE TABLE IF NOT EXISTS pending_signins (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at INTEGER NOT NULL
+);
+
+-- A passkey (WebAuthn): its credential id and public key, nothing secret.
+CREATE TABLE IF NOT EXISTS passkeys (
+  id TEXT PRIMARY KEY,          -- the credential id, base64url
+  user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  public_key TEXT NOT NULL,     -- a JWK, as JSON
+  alg INTEGER NOT NULL,         -- COSE: -7 ES256, -257 RS256
+  sign_count INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  last_used_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS passkeys_user ON passkeys (user_id);
+
+-- A challenge given for a passkey to sign, as its SHA-256, good for 5 minutes.
+CREATE TABLE IF NOT EXISTS webauthn_challenges (
+  challenge_hash TEXT PRIMARY KEY,
+  user_id INTEGER,              -- the account a passkey is being added to; NULL for a sign-in
+  purpose TEXT NOT NULL,        -- register, signin
+  expires_at INTEGER NOT NULL
+);
+
 -- The community: the app's forums (tool/cloudflare/README.md, Community),
 -- served as JSON by src/api.js. The rules the app relies on (who may post,
 -- the limits, blocking, hiding, moderation) are kept in src/community.js.

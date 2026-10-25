@@ -40,7 +40,7 @@ Both tables keep **365 days** (`RETENTION_DAYS` in `wrangler.toml`). A daily job
 
 An account is optional, and the app doesn't need one. A visitor signs up at `/account/sign-up` with an email address and a password, confirms the address with a six-digit code sent by email, and then has a session in a cookie. The pages are plain HTML forms that the Worker serves (`src/account_pages.js`), in English and Hebrew. The logic is in `src/accounts.js`, the rows in `src/account_db.js`, the hashes in `src/account_crypto.js`, and the email in `src/mail.js`.
 
-**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`, `roles`):
+**What is stored**, in `schema.sql` (`users`, `sessions`, `codes`, `reset_tokens`, `rate_limits`, `roles`, and for the second step and passkeys `totp`, `recovery_codes`, `pending_signins`, `passkeys`, `webauthn_challenges`):
 
 - `users`: the address in lower case; the password as PBKDF2-SHA256, with its own count, salt and hash; when the address was confirmed; when the account was made.
 - `sessions`: the SHA-256 of each session's token. The cookie holds the token itself.
@@ -66,12 +66,28 @@ Never stored: a password, a code, a token or a link as it was sent, or a visitor
 | `GET`, `POST /account/reset/complete` | sets the new password, once per link, and signs out every session (Turnstile) |
 | `GET /account` | the account, when signed in |
 | `POST /account/delete` | deletes the account, after the password is entered |
+| `GET`, `POST /account/sign-in/email`, `GET`, `POST /account/sign-in/code` | emails a sign-in code (Turnstile); signs in with it |
+| `GET`, `POST /account/two-step` | the second step of a sign-in: the authenticator's code, or a recovery code |
+| `POST /account/totp/start`, `GET /account/totp`, `POST /account/totp/confirm` | sets up an authenticator app, and shows the recovery codes once |
+| `POST /account/totp/disable`, `POST /account/recovery/new` | turns it off; makes new recovery codes (each asks for a code) |
+| `POST /account/passkey/register-options`, `POST /account/passkey/register` | adds a passkey (JSON, for `/account/passkey.js`) |
+| `POST /account/passkey/signin-options`, `POST /account/passkey/signin` | signs in with a passkey (JSON) |
+| `POST /account/passkey/remove` | removes a passkey |
 
 **Protections**: Turnstile on sign-up, sign-in and both reset forms. Limits per email and per address, counted in windows: sign-up 5 an hour per email and 20 an hour per address; sign-in 10 failed tries per 15 minutes per email and 30 per address, so a sign-in that works counts nothing; the code, resend and reset limits are in `src/accounts.js`. A try refused by a limit writes nothing. A code locks after 5 wrong tries. A POST must come from the site's own origin. The cookie is `__Host-`, HttpOnly, Secure and SameSite=Lax; the pages are `no-store` and send a referrer only to the site itself. (Not `no-referrer`: under it a browser sends `Origin: null` with a form, so a post is also let through when the browser's `Sec-Fetch-Site` says `same-origin`.) The answers to sign-up, sign-in and reset do not show whether an address has an account.
 
 **Writes and CPU**: a page view writes a `visits` row, except on the account pages. A sign-in that works writes one session row; a failed one writes its counters. PBKDF2 runs at 100,000 iterations, the most Workers accept, and the count is stored with each hash: a sign-in with a lower count raises it. Measured in Node, 100,000 iterations take about 50 ms of CPU, while the Workers Free plan allows 10 ms per request. Check the account's Workers plan before the accounts go live.
 
 **Set up once**, in addition to the database and salt below: the secrets `ACCOUNTS_KEY` (`openssl rand -hex 32`), `RESEND_API_KEY` (from Resend) and `TURNSTILE_SECRET_KEY` (from the Turnstile widget), set with `npx wrangler@4 secret put NAME --config wrangler.toml`; and the variables in `wrangler.toml`, `TURNSTILE_SITE_KEY` (the widget's public site key) and `ACCOUNTS_EMAIL_FROM` (the sender, on a domain verified in Resend). The accounts' tables are added by applying `schema.sql` again, which is safe to repeat.
+
+**Second step and passkeys** (`src/account_methods.js`, `src/account_mfa.js`, `src/passkeys.js`), all optional, on the account page:
+
+- **An emailed code** signs in on the site as it does in the app (`/account/sign-in/email`, with Turnstile), and makes the account the first time, without a password.
+- **An authenticator app** (TOTP, RFC 6238: six digits, every 30 seconds, one step either side of now): set up from a QR code, its key in groups of four, or an `otpauth://` link, and turned on by its first code. Then every sign-in with a password or an emailed code asks for a code from it (`/account/two-step`, the pending sign-in held 10 minutes, five tries, in a `__Host-sm_pending` cookie), and so does the app's (`/api/auth/verify` answers `totp_required` until it has one). No code works twice. Ten recovery codes stand in for it, once each; new ones, or turning it off, ask for a code. The secret is kept encrypted (AES-GCM, with a key drawn from `ACCOUNTS_KEY`), the recovery codes as keyed hashes.
+- **Passkeys** (WebAuthn, no attestation): added and removed on the account page, signing in on their own from the sign-in page, without the second step, which a passkey already is. The script is the site's own (`/account/passkey.js`). The server checks the challenge it gave (once, within 5 minutes), the site's origin and relying party (its host), the user's presence, the signature (ES256, or RS256), and a signature count that only goes up. A passkey is kept as its credential id and public key, nothing secret.
+- An admin can clear a member's authenticator and passkeys from the admin panel, for one locked out; the password and the emailed code stay.
+
+The QR code is drawn by uqr (MIT), vendored in `src/vendor/uqr.mjs`.
 
 **An account made in the app** (by code, [Community](#community)) has no password (`pw_alg` `none`): it can't sign in on the site's form until a reset gives it one, and its account page deletes it without asking for one. A code confirming an address for the first time drops any password set before it was confirmed, as whoever set it never proved the address theirs.
 

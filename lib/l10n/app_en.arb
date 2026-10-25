@@ -1031,6 +1031,18 @@
       }
     }
   },
+  "aliyahOf": "Aliyah {current} of {total}",
+  "@aliyahOf": {
+    "description": "Where the guided reader is in the whole parsha, read by the whole-parsha method.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "verseLabel": "Verse {number}",
   "@verseLabel": {
     "placeholders": {
@@ -1473,6 +1485,17 @@
   "methodAliyahDesc": "The whole aliyah twice, then its {second}",
   "@methodAliyahDesc": {
     "description": "As methodVerseDesc.",
+    "placeholders": {
+      "second": {
+        "type": "String",
+        "example": "Targum"
+      }
+    }
+  },
+  "methodWhole": "The whole parsha",
+  "methodWholeDesc": "The whole parsha once, then again, then its {second}",
+  "@methodWholeDesc": {
+    "description": "As methodVerseDesc: the parsha is read through in Hebrew, read through again, then its second reading, aliyah after aliyah each time.",
     "placeholders": {
       "second": {
         "type": "String",
@@ -2179,6 +2202,13 @@
   },
   "codeLabel": "6-digit code",
   "verifyAction": "Sign in",
+  "secondStepTitle": "Your authenticator code",
+  "secondStepBody": "This account asks for a code from its authenticator app. Enter the six-digit code it shows, or one of your recovery codes.",
+  "secondStepField": "Code",
+  "secondStepWrong": "That code is wrong, or was used already.",
+  "@secondStepBody": {
+    "description": "In a dialog over the sign-in code, for an account that has turned on an authenticator app on the website."
+  },
   "useDifferentEmail": "Use a different email",
   "demoCodeHint": "Demo mode: any 6 digits will work.",
   "displayNameLabel": "Display name",
@@ -3645,26 +3675,6 @@
   "@installDesktopDesc": {
     "description": "Under installDesktop."
   },
-  "installIosTitle": "Add to Home Screen",
-  "@installIosTitle": {
-    "description": "On the web, on an iPhone or iPad, whose browser has no button the app can press for it: the row, and the title of the sheet, with the steps to add the app to the home screen. As Safari names its menu item."
-  },
-  "installIosDesc": "From Safari’s Share menu",
-  "@installIosDesc": {
-    "description": "Under installIosTitle."
-  },
-  "installIosStep1": "Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.",
-  "@installIosStep1": {
-    "description": "The first of the steps in the installIosTitle sheet. More is the button of Safari’s toolbar (three dots) under which Share is in some versions."
-  },
-  "installIosStep2": "Choose “Add to Home Screen”, scrolling down if you need to.",
-  "@installIosStep2": {
-    "description": "The second of the steps in the installIosTitle sheet, quoting the menu item as Safari names it in this language."
-  },
-  "installIosStep3": "Tap Add. Shnayim Mikrah is now on your home screen.",
-  "@installIosStep3": {
-    "description": "The last of the steps in the installIosTitle sheet; “Add” is the button as Safari names it."
-  },
   "installIosBackup": "The app on your home screen keeps its own reading. To take what you have read here, export it first in Settings, under Your data, and import it there.",
   "@installIosBackup": {
     "description": "Under the steps in the installIosTitle sheet: an app added to an iPhone’s home screen keeps its own storage, apart from Safari’s."
@@ -3712,6 +3722,96 @@
   "installAction": "Install",
   "@installAction": {
     "description": "The button of installCardText."
+  },
+  "installGuideTitle": "Save Shnayim Mikrah as an app",
+  "installGuideLead": "Keep it on your home screen or your computer, and open it like any app.",
+  "installGuideDevices": "Your device",
+  "installGuideBrowsers": "Your browser",
+  "installDeviceIphone": "iPhone / iPad",
+  "installDeviceAndroid": "Android",
+  "installDeviceComputer": "Computer",
+  "installGuideRow": "Save as an app",
+  "installGuideRowDesc": "Step by step, in the browser you use",
+  "installGuideDone": "Done — don’t show again",
+  "installGuideOptional": "Saving it is up to you: these directions install nothing by themselves.",
+  "installNoteIphoneOthers": "Browsers other than Safari can do this on iOS 16.4 or later.",
+  "installNoteAndroidShortcut": "Where only a shortcut is offered, it may open in the browser rather than in a window of its own.",
+  "installFirefoxComputer": "Firefox on a computer doesn’t save sites as apps. Open this site in Chrome, Edge, Brave or Safari to save it.",
+  "installStepsIphoneSafari": "Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.",
+  "@installStepsIphoneSafari": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneChrome": "Tap Share (the square with an arrow) in the address bar.\nChoose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneChrome": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneFirefox": "Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneFirefox": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneBrave": "Tap the menu (three dots) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneBrave": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneDuckDuckGo": "Tap the menu (three dots).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneDuckDuckGo": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneEdge": "Tap the menu (three dots) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneEdge": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsIphoneOpera": "Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "@installStepsIphoneOpera": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidChrome": "Tap More (three dots) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
+  "@installStepsAndroidChrome": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidSamsung": "Tap the menu (three lines) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.",
+  "@installStepsAndroidSamsung": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidFirefox": "Tap More (three dots).\nTap “Add app to Home screen” (or “Install”).\nTap Add.",
+  "@installStepsAndroidFirefox": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidBrave": "Tap More (three dots).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
+  "@installStepsAndroidBrave": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidDuckDuckGo": "Tap More (three dots) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.",
+  "@installStepsAndroidDuckDuckGo": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidEdge": "Tap the menu (three dots) at the bottom.\nTap “Add to phone”.\nTap Install.",
+  "@installStepsAndroidEdge": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsAndroidOpera": "Tap More (three dots).\nTap “Add to…”, then “Home screen”.\nTap Add.",
+  "@installStepsAndroidOpera": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsComputerChrome": "Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (three dots), then “Cast, save and share”, then “Install page as app”.\nClick Install.",
+  "@installStepsComputerChrome": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsComputerEdge": "Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (three dots), then Apps, then “Install this site as an app”.\nClick Install.",
+  "@installStepsComputerEdge": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsComputerBrave": "Click Install at the right of the address bar.\nIf it isn’t there, open the menu (three lines), then “Save and share”, then “Install page as app”.\nClick Install.",
+  "@installStepsComputerBrave": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsComputerSafari": "On a Mac, choose File, then “Add to Dock” (macOS Sonoma or later).\nClick Add.",
+  "@installStepsComputerSafari": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
+  },
+  "installStepsComputerOpera": "Click Install at the right of the address bar.\nClick Install.",
+  "@installStepsComputerOpera": {
+    "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
   "aiNoticeTitle": "Made with AI",
   "@aiNoticeTitle": {
