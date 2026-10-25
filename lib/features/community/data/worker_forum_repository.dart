@@ -9,9 +9,9 @@ import 'forum_repository.dart';
 import 'models.dart';
 
 /// The community on the site's own server: the Worker's API under /api/
-/// (tool/cloudflare/src/api.js), its accounts and its D1 database. Every rule
+/// (the Worker's src/api.js), its accounts and its D1 database. Every rule
 /// that matters (who may post, the limits, blocking, moderation) is kept
-/// there (tool/cloudflare/src/community.js), not here.
+/// there (the Worker's src/community.js), not here.
 ///
 /// The app signs in with a code sent by email, and keeps the session's token
 /// to send with each request. On the web, which runs on the site's own
@@ -105,7 +105,7 @@ class WorkerForumRepository implements ForumRepository {
     request.headers['Accept'] = 'application/json';
     if (_token case final token?) request.headers['Authorization'] = 'Bearer $token';
     // What the account page's list of signed-in devices calls this one
-    // (tool/cloudflare/src/devices.js). A browser says for itself.
+    // (the Worker's src/devices.js). A browser says for itself.
     if (_keepsToken) request.headers['X-App-Platform'] = defaultTargetPlatform.name;
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';

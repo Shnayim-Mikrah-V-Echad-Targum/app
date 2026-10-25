@@ -79,8 +79,8 @@ function writeUpdateScript(web, caches) {
 const fileNavigation = /^[^?]*\/[^/?]*\.[^/?]*(?:\?|$)/;
 
 /// A page the site's Worker answers itself, not the app: the accounts'
-/// forms at /account and below (tool/cloudflare/src/accounts.js), the admin
-/// panel among them, and /admin, which leads to it (tool/cloudflare/src/admin.js).
+/// forms at /account and below (the Worker's src/accounts.js), the admin
+/// panel among them, and /admin, which leads to it (the Worker's src/admin.js).
 const serverPage = /^\/(?:account|admin)(?:[/?]|$)/;
 
 /// The files of [web] that the app needs offline, and which the service

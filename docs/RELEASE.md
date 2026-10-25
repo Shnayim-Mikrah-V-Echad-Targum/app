@@ -100,7 +100,7 @@ Run again for a tag whose draft exists (a re-run, or by hand), the workflow uplo
 `.github/workflows/release.yml` builds only with the production configuration. Its first job checks that everything below is set, names each setting that isn't, and stops before any build, so that no store build ships the on-device demo community, without backup or a support address. Set them under *Settings → Secrets and variables → Actions*.
 - [ ] **Repository variables:**
   - `SUPPORT_EMAIL`: the support address.
-  - `WEB_URL`: the site's public address ([Web](#web)), whose server the community, its accounts and the backup run on ([tool/cloudflare/README.md](../tool/cloudflare/README.md#community)), which the stores' support and privacy URLs are on, and which a discussion's *Copy link* begins with.
+  - `WEB_URL`: the site's public address ([Web](#web)), whose server the community, its accounts and the backup run on (its Worker, in the private repository `Shnayim-Mikrah-V-Echad-Targum/website`), which the stores' support and privacy URLs are on, and which a discussion's *Copy link* begins with.
   - `IOS_TEAM_ID`, `IOS_PROFILE_NAME` and `IOS_WIDGET_PROFILE_NAME`: the Apple team, and the names of the App Store profiles of the app and its widget ([iOS](#ios-app-store)).
   - `INSTALL_URL` is optional, as in CI.
 - [ ] **Repository secrets:**
@@ -357,6 +357,8 @@ The app also ships as an MSIX package. Its settings are `msix_config` in `pubspe
 - [ ] The support contact: the support address, or `<web address>/legal/support.html`.
 
 ## Web
+
+**The site's build.** On every push to `main`, CI's *Publish the site's web build* job builds the web app for `https://shnayimmikrah.org/`, so its community is the site's and not the demo. It finishes the build as the *Build web* job does, and publishes it as `site.zip` on the rolling pre-release `web-latest`. The site's server, in its own private repository, serves that build: its deploy fetches the file when it has no build of its own.
 
 - [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /` (the site is at the domain's root), then `node tool/web/preload_fonts.mjs build/web` to preload every start-up font from `index.html`, `node tool/legal/build_html.mjs build/web` for the static pages, `cp build/web/index.html build/web/404.html` so that every page's address opens the app and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`), then `node tool/web/sw_build.cjs check build/web`, which fails if the worker leaves out a file the app needs to open offline (Workbox only warns). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
 - [ ] The first load is within its budget. CI's *Build web* job fails when `main.dart.js`, gzipped, is larger than the repository variable `BUDGET_MAIN_JS_GZIP` (in bytes), or without it `1527297` bytes: the size measured once the time-zone database was deferred to its own part (1454568 bytes, built with Flutter 3.47.7 and the backend configured; some 35 KB less without it), plus 5%. The job's summary gives the size, with the deferred parts and the start-up fonts. Raise the budget only for a change worth what it adds to every first visit: set the variable, or change the number here and in `ci.yml` together (the web tests check that they agree).

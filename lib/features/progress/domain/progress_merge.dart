@@ -119,7 +119,7 @@ Map<String, dynamic> syncPayload(
 
 /// The streaks as the reader sees them on [today], for a backup to carry:
 /// the website's account page shows them, with the day they were counted
-/// (tool/cloudflare/src/account_methods.js, streakOf). They are only shown
+/// (the Worker's src/account_methods.js, streakOf). They are only shown
 /// there, never merged or read back: each device counts its own from the
 /// merged progress.
 Map<String, Object> syncStreak(StreakSummary summary, LocalDate today) => {
