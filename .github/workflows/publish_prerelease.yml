@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     env:
       TAG: ${{ inputs.tag }}
       GH_TOKEN: ${{ github.token }}
@@ -87,3 +88,7 @@ jobs:
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease
           url=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .html_url)
           echo "### Published: $url" >> "$GITHUB_STEP_SUMMARY"
+      # The site vouches for the new APK's key once it is rebuilt (ci.yml,
+      # site-web, which CI runs on main).
+      - name: Rebuild the site
+        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref main

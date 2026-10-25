@@ -2,10 +2,13 @@
 // the scripts in web/index.html (an older link's redirect and the loading
 // screen), web/flutter_bootstrap.js, the service worker's update script and
 // configuration (tool/web/sw_update.js, sw_build.cjs and
-// workbox-config.cjs), and the fonts' preloads (tool/web/preload_fonts.mjs).
+// workbox-config.cjs), the fonts' preloads (tool/web/preload_fonts.mjs), and
+// the site's robots.txt, sitemap and asset links (tool/web/site_files.mjs and
+// asset_links.mjs).
 //
 //   node --test tool/web/web.test.mjs
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -20,6 +23,9 @@ const { cacheNames, fileNavigation, missingFromPrecache, serverPage, writeUpdate
 // Glob matching as Workbox's globPatterns use it (Node 20.17 and later).
 const { matchesGlob } = require('node:path');
 const { fontAssets, preloadFonts, withPreloads } = await import('./preload_fonts.mjs');
+const { isSiteUrl, robots, sitemap } = await import('./site_files.mjs');
+const { PACKAGE, assetLinks, certificateFingerprints } = await import('./asset_links.mjs');
+const { DOCS, LANGS } = await import('../legal/build_html.mjs');
 
 const dirs = [];
 after(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
@@ -1269,5 +1275,112 @@ describe("the fonts' preloads", () => {
     assert.ok(built >= 0 && preloaded > built, 'after flutter build web');
     assert.ok(preloaded < ci.indexOf('generateSW workbox-config.cjs'), 'before the service worker');
     assert.match(read('docs/RELEASE.md'), /node tool\/web\/preload_fonts\.mjs build\/web/);
+  });
+});
+
+// An APK as far as its signature goes: entries, a signing block with one
+// signer of [certificate] under scheme [id] (v2 by default), and the end of
+// the central directory that points just past it.
+function fakeApk(certificate, id = 0x7109871a) {
+  const u32 = (n) => {
+    const b = Buffer.alloc(4);
+    b.writeUInt32LE(n);
+    return b;
+  };
+  const u64 = (n) => {
+    const b = Buffer.alloc(8);
+    b.writeBigUInt64LE(BigInt(n));
+    return b;
+  };
+  const prefixed = (...parts) => {
+    const body = Buffer.concat(parts);
+    return Buffer.concat([u32(body.length), body]);
+  };
+  // Signed data: no digests, then the certificates.
+  const signedData = Buffer.concat([prefixed(), prefixed(prefixed(certificate))]);
+  // A signer: its signed data, signatures and public key.
+  const signer = Buffer.concat([prefixed(signedData), prefixed(), prefixed()]);
+  const value = prefixed(prefixed(signer));
+  const pair = Buffer.concat([u64(4 + value.length), u32(id), value]);
+  const size = pair.length + 8 + 16;
+  const block = Buffer.concat([u64(size), pair, u64(size), Buffer.from('APK Sig Block 42', 'latin1')]);
+  const entries = Buffer.from('the entries');
+  const end = Buffer.alloc(22);
+  end.write('PK\x05\x06', 0, 'latin1');
+  end.writeUInt32LE(entries.length + block.length, 16);
+  return Buffer.concat([entries, block, end]);
+}
+
+describe("the site's own files", () => {
+  const SITE = 'https://shnayimmikrah.org/';
+
+  it('points crawlers at the sitemap, away from the accounts and the API', () => {
+    const text = robots(SITE);
+    assert.match(text, /^User-agent: \*$/m);
+    assert.match(text, /^Disallow: \/account$/m);
+    assert.match(text, /^Disallow: \/api\/$/m);
+    assert.match(text, /^Sitemap: https:\/\/shnayimmikrah\.org\/sitemap\.xml$/m);
+  });
+
+  it("lists the start and every static page in both languages, at the addresses the site serves", () => {
+    const xml = sitemap(SITE, { privacy: '2026-10' });
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    assert.equal(locs.length, 1 + DOCS.length * LANGS.length);
+    assert.equal(locs[0], SITE);
+    assert.ok(locs.includes(`${SITE}legal/privacy`));
+    assert.ok(locs.includes(`${SITE}legal/delete-account.he`));
+    // The site redirects x.html to x.
+    assert.ok(locs.every((loc) => !loc.endsWith('.html')), 'no .html');
+    // Each page names itself and its other language.
+    const privacy = xml.slice(xml.indexOf(`<loc>${SITE}legal/privacy</loc>`));
+    const entry = privacy.slice(0, privacy.indexOf('</url>'));
+    assert.match(entry, /<lastmod>2026-10<\/lastmod>/);
+    assert.match(entry, /hreflang="he" href="https:\/\/shnayimmikrah\.org\/legal\/privacy\.he"/);
+    assert.match(entry, /hreflang="en" href="https:\/\/shnayimmikrah\.org\/legal\/privacy"/);
+    assert.doesNotMatch(xml.slice(xml.indexOf(`<loc>${SITE}legal/terms</loc>`)).split('</url>')[0], /lastmod/);
+  });
+
+  it("takes only a site's root address", () => {
+    assert.equal(isSiteUrl(SITE), true);
+    for (const url of ['http://shnayimmikrah.org/', 'https://shnayimmikrah.org', 'https://example.github.io/app/', '', undefined]) {
+      assert.equal(isSiteUrl(url), false, String(url));
+    }
+  });
+
+  it("vouches for an APK by its signing certificate's SHA-256", () => {
+    const certificate = Buffer.from('a certificate');
+    const hex = createHash('sha256').update(certificate).digest('hex').toUpperCase();
+    const fingerprint = hex.match(/../g).join(':');
+    assert.deepEqual(certificateFingerprints(fakeApk(certificate)), [fingerprint]);
+    assert.deepEqual(certificateFingerprints(fakeApk(certificate, 0xf05368c0)), [fingerprint], 'v3');
+    assert.throws(() => certificateFingerprints(fakeApk(certificate, 0x42726577)), /no v2 or v3 signer/);
+    assert.throws(() => certificateFingerprints(Buffer.from('not a zip')), /not an APK/);
+    const end = Buffer.alloc(22);
+    end.write('PK\x05\x06', 0, 'latin1');
+    assert.throws(() => certificateFingerprints(Buffer.concat([Buffer.alloc(40), end])), /no v2 or v3 signature block/);
+
+    const [link] = assetLinks([fingerprint, 'AB']);
+    assert.deepEqual(link.relation, ['delegate_permission/common.handle_all_urls']);
+    assert.deepEqual(link.target, { namespace: 'android_app', package_name: PACKAGE, sha256_cert_fingerprints: [fingerprint, 'AB'] });
+    // The package the Android web app is built as.
+    assert.match(read('.github/workflows/prerelease.yml'), new RegExp(`package_name: "${PACKAGE.replaceAll('.', '\\.')}"`));
+  });
+
+  it('are in the build the site serves, before its service worker', () => {
+    const ci = read('.github/workflows/ci.yml').split(/^ {2}(?=[a-z-]+:\n)/m).find((job) => job.startsWith('site-web:'));
+    assert.ok(ci, 'the site-web job');
+    // Run by hand on main too, which Publish pre-release does for a new APK's key.
+    assert.match(ci, /if: github\.ref == 'refs\/heads\/main' && github\.event_name != 'pull_request'/);
+    const worker = ci.indexOf('generateSW workbox-config.cjs');
+    for (const step of [
+      'cp tool/windows/install.ps1 build/web/install.ps1',
+      'node tool/web/asset_links.mjs build/web',
+      'node tool/web/site_files.mjs build/web',
+    ]) {
+      const at = ci.indexOf(step);
+      assert.ok(at >= 0 && at < worker, step);
+    }
+    assert.ok(ci.indexOf('node tool/legal/build_html.mjs build/web') < ci.indexOf('node tool/web/site_files.mjs'), 'after the static pages');
+    assert.match(read('.github/workflows/publish_prerelease.yml'), /gh workflow run ci\.yml --repo "\$GITHUB_REPOSITORY" --ref main/);
   });
 });

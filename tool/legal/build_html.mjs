@@ -121,7 +121,8 @@ export function issuesUrl(env = process.env, root = ROOT) {
 const escape = (text) =>
   text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-const pageFile = (doc, lang) => `${doc}${lang === 'en' ? '' : `.${lang}`}.html`;
+/// The page's file name in legal/: privacy.html, privacy.he.html.
+export const pageFile = (doc, lang) => `${doc}${lang === 'en' ? '' : `.${lang}`}.html`;
 
 /// Whether a section or block with [when] is shown.
 function shown(item, email) {

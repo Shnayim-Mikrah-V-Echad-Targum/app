@@ -71,7 +71,7 @@ Run again for a tag whose draft exists (a re-run, or by hand), the workflow uplo
 
 **The Android web app's key**
 
-- [ ] Without the secrets below, each run signs the APK with a key made for that run alone, as decided for v0.0.1, and writes its certificate's fingerprint into the site's `/.well-known/assetlinks.json`. So a later APK won't install over an earlier one: readers export a backup, uninstall, and install the new one, as the notes say. And once a later run has deployed the site, an earlier APK opens it with a URL bar, as the asset links name only the newest key.
+- [ ] Without the secrets below, each run signs the APK with a key made for that run alone, as decided for v0.0.1, and writes its certificate's fingerprint into its own build's `/.well-known/assetlinks.json`. So a later APK won't install over an earlier one: readers export a backup, uninstall, and install the new one, as the notes say. The site itself vouches for every published release's APK, whatever its key (see *The site's build*), so an earlier APK still opens it full screen.
 - [ ] To sign with a permanent key instead, make one once, and keep it, and its password, somewhere safe: losing it means another reinstall for everyone.
 
   ```sh
@@ -79,7 +79,7 @@ Run again for a tag whose draft exists (a re-run, or by hand), the workflow uplo
   ```
 
   Then add the repository secrets `ANDROID_TWA_KEYSTORE_BASE64` (the output of `base64 -w0 twa.keystore`), `ANDROID_TWA_KEYSTORE_PASSWORD`, `ANDROID_TWA_KEY_ALIAS` (`twa`) and `ANDROID_TWA_KEY_PASSWORD` (a PKCS12 keystore's key has the keystore's password). The workflow signs with it from then on, and the notes say instead that later APKs install over it. The first APK with it still needs the reinstall.
-- If the web app goes to Google Play, which signs apps with a key of its own, add Play's certificate fingerprint to the asset links too (the web job's *Digital Asset Links* step), and so too the native app's, for App Links.
+- If the web app goes to Google Play, which signs apps with a key of its own, add Play's certificate fingerprint to the asset links too (the *Digital Asset Links* steps of the pre-release's web job and of CI's site job), and so too the native app's, for App Links.
 - By hand: `gradle -p tool/android_twa assembleRelease -PversionName=X.Y.Z -PversionCode=N`, with Gradle and the Android Gradle Plugin at `android/`'s versions, and `TWA_KEYSTORE` (the keystore's path), `TWA_KEYSTORE_PASSWORD`, `TWA_KEY_ALIAS` and `TWA_KEY_PASSWORD` in the environment. Without them it writes `app-release-unsigned.apk`.
 
 **The MSI is unsigned**
@@ -358,7 +358,12 @@ The app also ships as an MSIX package. Its settings are `msix_config` in `pubspe
 
 ## Web
 
-**The site's build.** On every push to `main`, CI's *Publish the site's web build* job builds the web app for `https://shnayimmikrah.org/`, so its community is the site's and not the demo. It finishes the build as the *Build web* job does, and publishes it as `site.zip` on the rolling pre-release `web-latest`. The site's server, in its own private repository, serves that build: its deploy fetches the file when it has no build of its own.
+**The site's build.** On every push to `main`, CI's *Publish the site's web build* job builds the web app for `https://shnayimmikrah.org/`, so its community is the site's and not the demo. It finishes the build as the *Build web* job does, and adds the site's own files:
+- `install.ps1`, which the one-liner runs, from `tool/windows/install.ps1`;
+- `/.well-known/assetlinks.json`, naming the certificate of every published release's Android APK (`tool/web/asset_links.mjs`);
+- `robots.txt` and `sitemap.xml` (`tool/web/site_files.mjs`).
+
+It publishes the result as `site.zip` on the rolling pre-release `web-latest`. *Publish pre-release* runs it again once it has published a release, so the site vouches for the new APK's key. The site's server, in its own private repository, serves that build: its deploy fetches the file when it has no build of its own.
 
 - [ ] Run `flutter build web --release --no-web-resources-cdn --base-href /` (the site is at the domain's root), then `node tool/web/preload_fonts.mjs build/web` to preload every start-up font from `index.html`, `node tool/legal/build_html.mjs build/web` for the static pages, `cp build/web/index.html build/web/404.html` so that every page's address opens the app and, last, `npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs` for the offline service worker (`sw.js`), then `node tool/web/sw_build.cjs check build/web`, which fails if the worker leaves out a file the app needs to open offline (Workbox only warns). The CI job does the same, and can deploy to GitHub Pages when `DEPLOY_WEB=true`.
 - [ ] The first load is within its budget. CI's *Build web* job fails when `main.dart.js`, gzipped, is larger than the repository variable `BUDGET_MAIN_JS_GZIP` (in bytes), or without it `1527297` bytes: the size measured once the time-zone database was deferred to its own part (1454568 bytes, built with Flutter 3.47.7 and the backend configured; some 35 KB less without it), plus 5%. The job's summary gives the size, with the deferred parts and the start-up fonts. Raise the budget only for a change worth what it adds to every first visit: set the variable, or change the number here and in `ci.yml` together (the web tests check that they agree).

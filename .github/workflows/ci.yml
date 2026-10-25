@@ -189,7 +189,9 @@ jobs:
   site-web:
     name: Publish the site's web build
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # On every push to main, and when run by hand on main: Publish
+    # pre-release runs it, so the site vouches for the new APK's key.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -222,6 +224,28 @@ jobs:
             build/web/index.html
           grep -q "content=\"${url}og.png\"" build/web/index.html
       - run: cp build/web/index.html build/web/404.html
+      # At https://shnayimmikrah.org/install.ps1, which the README's and the
+      # releases' one-liner runs.
+      - name: The Windows install script
+        run: cp tool/windows/install.ps1 build/web/install.ps1
+      # The site vouches for every published Android web app, whatever key
+      # signed it, so each may open it full screen.
+      - name: Digital Asset Links for the published Android web apps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/apks"
+          tags=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 100 --json tagName --jq '.[].tagName')
+          for tag in $tags; do
+            assets=$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+            if grep -q -- '-android-webapp\.apk$' <<< "$assets"; then
+              gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*-android-webapp.apk' --dir "$RUNNER_TEMP/apks/$tag"
+            fi
+          done
+          mapfile -t apks < <(find "$RUNNER_TEMP/apks" -name '*.apk')
+          node tool/web/asset_links.mjs build/web "${apks[@]}"
+      - name: robots.txt and the sitemap
+        run: node tool/web/site_files.mjs build/web
       - name: Offline service worker
         run: |
           npx --yes workbox-cli@7.4.1 generateSW workbox-config.cjs
