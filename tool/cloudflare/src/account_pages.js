@@ -349,6 +349,8 @@ ${script ? '<script src="/account/passkey.js" defer></script>' : ''}
   ul.devices { padding: 0; list-style: none; }
   ul.devices li { display: flex; gap: 1rem; align-items: center; justify-content: space-between; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); padding: .35rem 0; }
   ul.devices form { margin: .25rem 0; }
+  ul.devices button, ul.keys button { white-space: nowrap; }
+  .date { white-space: nowrap; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -424,9 +426,14 @@ ${turnstile(siteKey)}
 </form>`;
 }
 
-// A date as the account page shows it: the day, in UTC.
+// A date as the account page shows it: the day, in UTC, kept whole and
+// apart from the words around it, which in Hebrew run the other way.
 function day(ms) {
-  return new Date(ms).toISOString().slice(0, 10);
+  return dateText(new Date(ms).toISOString().slice(0, 10));
+}
+
+function dateText(iso) {
+  return `<bdi class="date">${escapeHtml(iso)}</bdi>`;
 }
 
 // The signed-in account's page: the streak the app backed up, then its ways
@@ -444,7 +451,7 @@ export function accountBody(lang, { email, email_verified_at: verified, role, pw
     ? `<ul class="keys">${passkeys.map((k) => `<li><span>${t.passkeyAdded} ${day(k.created_at)}${k.last_used_at ? `, ${t.passkeyLastUsed} ${day(k.last_used_at)}` : ''}</span>
 <form method="post" action="${link('/account/passkey/remove', lang)}"><input type="hidden" name="id" value="${escapeHtml(k.id)}"><button type="submit" class="secondary">${t.passkeyRemove}</button></form></li>`).join('\n')}</ul>`
     : `<p class="muted">${t.passkeysNone}</p>`;
-  const devices = sessions.map((d) => `<li><span>${escapeHtml(deviceName(d.device, lang))}${d.id === thisSession ? ` (${t.devicesThis})` : ''}<br>
+  const devices = sessions.map((d) => `<li><span><bdi dir="${t.dir}">${escapeHtml(deviceName(d.device, lang))}</bdi>${d.id === thisSession ? ` (${t.devicesThis})` : ''}<br>
 <span class="muted">${t.devicesSince} ${day(d.created_at)} · ${t.devicesLastUsed} ${day(d.last_seen_at)}</span></span>
 <form method="post" action="${link('/account/devices/sign-out', lang)}"><input type="hidden" name="id" value="${d.id}"><button type="submit" class="secondary">${t.devicesSignOut}</button></form></li>`).join('\n');
   const password = hasPassword
@@ -502,7 +509,7 @@ function streakCard(t, streak) {
     ? `<p class="big">${t.streakDays(streak.days)}</p>
 <p>${t.streakWeeks(streak.weeks)}</p>
 ${streak.days === 0 && streak.weeks === 0 ? `<p class="muted">${t.streakStart}</p>` : ''}
-${streak.asOf ? `<p class="muted">${t.streakAsOf(streak.asOf)}</p>` : ''}`
+${streak.asOf ? `<p class="muted">${t.streakAsOf(dateText(streak.asOf))}</p>` : ''}`
     : `<p>${t.streakNone}</p>`;
   return `<section class="streak" aria-label="${escapeHtml(t.streakLabel)}"><span class="flame" aria-hidden="true">🔥</span><div>${lines}</div></section>`;
 }

@@ -337,7 +337,7 @@ test('a passkey is added on the account page, and signs in on its own', async ()
   assert.equal(state.database.prepare('SELECT count(*) AS n FROM passkeys').get().n, 1);
   // Its challenge is used up.
   assert.equal((await send(state, 'POST', '/account/passkey/register', { cookie, json: await phone.create(again) })).status, 400);
-  assert.match(await (await send(state, 'GET', '/account', { cookie })).text(), /Passkey added 2026-10-20/);
+  assert.match(await (await send(state, 'GET', '/account', { cookie })).text(), /Passkey added <bdi class="date">2026-10-20<\/bdi>/);
 
   // Signing in: a challenge for whichever passkey the browser offers.
   const userHandle = options.user.id;

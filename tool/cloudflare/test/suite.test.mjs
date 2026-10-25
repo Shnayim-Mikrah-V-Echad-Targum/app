@@ -144,9 +144,9 @@ test('the account page lists the devices signed in, and signs one, or all the ot
 
   const page = await (await send(state, 'GET', '/account', { cookie: laptop, ua: FIREFOX_WINDOWS })).text();
   assert.match(page, /Signed-in devices/);
-  assert.match(page, /Chrome on Android/);
-  assert.match(page, /Firefox on Windows \(this device\)/);
-  assert.match(page, /The app on iOS/);
+  assert.match(page, /<bdi dir="ltr">Chrome on Android<\/bdi>/);
+  assert.match(page, /<bdi dir="ltr">Firefox on Windows<\/bdi> \(this device\)/);
+  assert.match(page, /<bdi dir="ltr">The app on iOS<\/bdi>/);
   assert.doesNotMatch(page, /Pixel 8/);
 
   const phoneId = state.database.prepare("SELECT rowid AS id FROM sessions WHERE device = 'browser|Chrome|Android'").get().id;
@@ -225,7 +225,7 @@ test('the account page shows the streak the app backed up, with the fire', async
   assert.match(page, /<span class="flame" aria-hidden="true">🔥<\/span>/);
   assert.match(page, /<strong>12<\/strong> days on track/);
   assert.match(page, /Parsha streak: 3 weeks/);
-  assert.match(page, /as of 2026-10-25/);
+  assert.match(page, /as of <bdi class="date">2026-10-25<\/bdi>\./);
   const he = await (await send(state, 'GET', '/account?lang=he', { cookie })).text();
   assert.match(he, /<strong>12<\/strong> ימים לפי התוכנית/);
   assert.match(he, /רצף פרשות: 3 שבועות/);

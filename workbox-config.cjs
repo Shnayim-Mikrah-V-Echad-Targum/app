@@ -57,6 +57,8 @@ module.exports = {
     // first use, so that a policy never opened online still opens offline.
     'assets/assets/legal/*',
     'assets/assets/branding/*',
+    // The streak's fire, at each density the browser may ask for.
+    'assets/assets/images/**',
     'assets/shaders/*',
     'assets/packages/**',
   ],
