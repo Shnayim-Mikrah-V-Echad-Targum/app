@@ -6276,7 +6276,7 @@ abstract class AppLocalizations {
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap Share in Safari’s toolbar, or in its More menu (⋯) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.'**
+  /// **'Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.'**
   String get installStepsIphoneSafari;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
@@ -6288,91 +6288,91 @@ abstract class AppLocalizations {
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
   String get installStepsIphoneFirefox;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (⋯) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap the menu (three dots) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
   String get installStepsIphoneBrave;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (⋯).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap the menu (three dots).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
   String get installStepsIphoneDuckDuckGo;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (⋯) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap the menu (three dots) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
   String get installStepsIphoneEdge;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
   String get installStepsIphoneOpera;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap More (⋮) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
+  /// **'Tap More (three dots) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
   String get installStepsAndroidChrome;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (☰) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.'**
+  /// **'Tap the menu (three lines) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.'**
   String get installStepsAndroidSamsung;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap More (⋮).\nTap “Add app to Home screen” (or “Install”).\nTap Add.'**
+  /// **'Tap More (three dots).\nTap “Add app to Home screen” (or “Install”).\nTap Add.'**
   String get installStepsAndroidFirefox;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap More (⋮).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
+  /// **'Tap More (three dots).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
   String get installStepsAndroidBrave;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap More (⋮) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.'**
+  /// **'Tap More (three dots) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.'**
   String get installStepsAndroidDuckDuckGo;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap the menu (⋯) at the bottom.\nTap “Add to phone”.\nTap Install.'**
+  /// **'Tap the menu (three dots) at the bottom.\nTap “Add to phone”.\nTap Install.'**
   String get installStepsAndroidEdge;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Tap More (⋮).\nTap “Add to…”, then “Home screen”.\nTap Add.'**
+  /// **'Tap More (three dots).\nTap “Add to…”, then “Home screen”.\nTap Add.'**
   String get installStepsAndroidOpera;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (⋮), then “Cast, save and share”, then “Install page as app”.\nClick Install.'**
+  /// **'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (three dots), then “Cast, save and share”, then “Install page as app”.\nClick Install.'**
   String get installStepsComputerChrome;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (⋯), then Apps, then “Install this site as an app”.\nClick Install.'**
+  /// **'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (three dots), then Apps, then “Install this site as an app”.\nClick Install.'**
   String get installStepsComputerEdge;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
   ///
   /// In en, this message translates to:
-  /// **'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (☰), then “Save and share”, then “Install page as app”.\nClick Install.'**
+  /// **'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (three lines), then “Save and share”, then “Install page as app”.\nClick Install.'**
   String get installStepsComputerBrave;
 
   /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
