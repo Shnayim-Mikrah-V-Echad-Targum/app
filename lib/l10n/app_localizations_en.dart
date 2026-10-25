@@ -2515,6 +2515,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verifyAction => 'Sign in';
 
   @override
+  String get secondStepTitle => 'Your authenticator code';
+
+  @override
+  String get secondStepBody =>
+      'This account asks for a code from its authenticator app. Enter the six-digit code it shows, or one of your recovery codes.';
+
+  @override
+  String get secondStepField => 'Code';
+
+  @override
+  String get secondStepWrong => 'That code is wrong, or was used already.';
+
+  @override
   String get useDifferentEmail => 'Use a different email';
 
   @override

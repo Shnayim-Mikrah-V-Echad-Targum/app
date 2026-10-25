@@ -4089,6 +4089,30 @@ abstract class AppLocalizations {
   /// **'Sign in'**
   String get verifyAction;
 
+  /// No description provided for @secondStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your authenticator code'**
+  String get secondStepTitle;
+
+  /// In a dialog over the sign-in code, for an account that has turned on an authenticator app on the website.
+  ///
+  /// In en, this message translates to:
+  /// **'This account asks for a code from its authenticator app. Enter the six-digit code it shows, or one of your recovery codes.'**
+  String get secondStepBody;
+
+  /// No description provided for @secondStepField.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get secondStepField;
+
+  /// No description provided for @secondStepWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is wrong, or was used already.'**
+  String get secondStepWrong;
+
   /// No description provided for @useDifferentEmail.
   ///
   /// In en, this message translates to:

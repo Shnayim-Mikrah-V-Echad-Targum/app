@@ -274,9 +274,23 @@ class _CheckedCodes extends DemoForumRepository {
   final checked = <String>[];
 
   @override
-  Future<void> verifyCode(String email, String code) async {
+  Future<void> verifyCode(String email, String code, {String? secondStep}) async {
     checked.add(code);
     if (refuses) throw const CommunityException('invalid_code');
+    return super.verifyCode(email, code);
+  }
+}
+
+/// An account with an authenticator app: the emailed code alone is not
+/// enough, and of its codes only 424242 is right ([seconds], those given).
+class _SecondStep extends DemoForumRepository {
+  final seconds = <String>[];
+
+  @override
+  Future<void> verifyCode(String email, String code, {String? secondStep}) async {
+    if (secondStep == null) throw const CommunityException('totp_required');
+    seconds.add(secondStep);
+    if (secondStep != '424242') throw const CommunityException('invalid_totp');
     return super.verifyCode(email, code);
   }
 }
@@ -3560,6 +3574,39 @@ void main() {
       await tester.pumpAndSettle();
       expect(forums.currentUser, isNotNull);
       expect(find.widgetWithText(FilledButton, 'Save name'), findsOneWidget);
+    });
+
+    testWidgets('asks for the authenticator’s code where the account has one, again while it is wrong', (tester) async {
+      final forums = _SecondStep();
+      await account(tester, forums: forums);
+      await sendCode(tester);
+      await tester.enterText(codeField.first, '123456');
+      await tester.pumpAndSettle();
+      expect(find.text('Your authenticator code'), findsOneWidget);
+      expect(forums.currentUser, isNull);
+      final field = find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField));
+      await tester.enterText(field, '000000');
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('That code is wrong, or was used already.'), findsOneWidget);
+      await tester.enterText(field, '424242');
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(forums.currentUser, isNotNull);
+      expect(forums.seconds, ['000000', '424242']);
+    });
+
+    testWidgets('cancelled, the authenticator’s question signs no one in', (tester) async {
+      final forums = _SecondStep();
+      await account(tester, forums: forums);
+      await sendCode(tester);
+      await tester.enterText(codeField.first, '123456');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(forums.currentUser, isNull);
     });
 
     testWidgets('is one field for screen readers, named for the code', (tester) async {
