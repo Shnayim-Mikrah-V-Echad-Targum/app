@@ -978,6 +978,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String aliyahOf(int current, int total) {
+    return 'Aliyah $current of $total';
+  }
+
+  @override
   String verseLabel(String number) {
     return 'Verse $number';
   }
@@ -1585,6 +1590,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String methodAliyahDesc(String second) {
     return 'The whole aliyah twice, then its $second';
+  }
+
+  @override
+  String get methodWhole => 'The whole parsha';
+
+  @override
+  String methodWholeDesc(String second) {
+    return 'The whole parsha once, then again, then its $second';
   }
 
   @override
@@ -2500,6 +2513,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verifyAction => 'Sign in';
+
+  @override
+  String get secondStepTitle => 'Your authenticator code';
+
+  @override
+  String get secondStepBody =>
+      'This account asks for a code from its authenticator app. Enter the six-digit code it shows, or one of your recovery codes.';
+
+  @override
+  String get secondStepField => 'Code';
+
+  @override
+  String get secondStepWrong => 'That code is wrong, or was used already.';
 
   @override
   String get useDifferentEmail => 'Use a different email';
@@ -3933,24 +3959,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installDesktopDesc => 'Opens in a window of its own, like any app';
 
   @override
-  String get installIosTitle => 'Add to Home Screen';
-
-  @override
-  String get installIosDesc => 'From Safari’s Share menu';
-
-  @override
-  String get installIosStep1 =>
-      'Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.';
-
-  @override
-  String get installIosStep2 =>
-      'Choose “Add to Home Screen”, scrolling down if you need to.';
-
-  @override
-  String get installIosStep3 =>
-      'Tap Add. Shnayim Mikrah is now on your home screen.';
-
-  @override
   String get installIosBackup =>
       'The app on your home screen keeps its own reading. To take what you have read here, export it first in Settings, under Your data, and import it there.';
 
@@ -3990,6 +3998,129 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get installAction => 'Install';
+
+  @override
+  String get installGuideTitle => 'Save Shnayim Mikrah as an app';
+
+  @override
+  String get installGuideLead =>
+      'Keep it on your home screen or your computer, and open it like any app.';
+
+  @override
+  String get installGuideDevices => 'Your device';
+
+  @override
+  String get installGuideBrowsers => 'Your browser';
+
+  @override
+  String get installDeviceIphone => 'iPhone / iPad';
+
+  @override
+  String get installDeviceAndroid => 'Android';
+
+  @override
+  String get installDeviceComputer => 'Computer';
+
+  @override
+  String get installGuideRow => 'Save as an app';
+
+  @override
+  String get installGuideRowDesc => 'Step by step, in the browser you use';
+
+  @override
+  String get installGuideDone => 'Done — don’t show again';
+
+  @override
+  String get installGuideOptional =>
+      'Saving it is up to you: these directions install nothing by themselves.';
+
+  @override
+  String get installNoteIphoneOthers =>
+      'Browsers other than Safari can do this on iOS 16.4 or later.';
+
+  @override
+  String get installNoteAndroidShortcut =>
+      'Where only a shortcut is offered, it may open in the browser rather than in a window of its own.';
+
+  @override
+  String get installFirefoxComputer =>
+      'Firefox on a computer doesn’t save sites as apps. Open this site in Chrome, Edge, Brave or Safari to save it.';
+
+  @override
+  String get installStepsIphoneSafari =>
+      'Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.';
+
+  @override
+  String get installStepsIphoneChrome =>
+      'Tap Share (the square with an arrow) in the address bar.\nChoose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsIphoneFirefox =>
+      'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsIphoneBrave =>
+      'Tap the menu (three dots) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsIphoneDuckDuckGo =>
+      'Tap the menu (three dots).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsIphoneEdge =>
+      'Tap the menu (three dots) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsIphoneOpera =>
+      'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsAndroidChrome =>
+      'Tap More (three dots) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
+
+  @override
+  String get installStepsAndroidSamsung =>
+      'Tap the menu (three lines) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.';
+
+  @override
+  String get installStepsAndroidFirefox =>
+      'Tap More (three dots).\nTap “Add app to Home screen” (or “Install”).\nTap Add.';
+
+  @override
+  String get installStepsAndroidBrave =>
+      'Tap More (three dots).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
+
+  @override
+  String get installStepsAndroidDuckDuckGo =>
+      'Tap More (three dots) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.';
+
+  @override
+  String get installStepsAndroidEdge =>
+      'Tap the menu (three dots) at the bottom.\nTap “Add to phone”.\nTap Install.';
+
+  @override
+  String get installStepsAndroidOpera =>
+      'Tap More (three dots).\nTap “Add to…”, then “Home screen”.\nTap Add.';
+
+  @override
+  String get installStepsComputerChrome =>
+      'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (three dots), then “Cast, save and share”, then “Install page as app”.\nClick Install.';
+
+  @override
+  String get installStepsComputerEdge =>
+      'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (three dots), then Apps, then “Install this site as an app”.\nClick Install.';
+
+  @override
+  String get installStepsComputerBrave =>
+      'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (three lines), then “Save and share”, then “Install page as app”.\nClick Install.';
+
+  @override
+  String get installStepsComputerSafari =>
+      'On a Mac, choose File, then “Add to Dock” (macOS Sonoma or later).\nClick Add.';
+
+  @override
+  String get installStepsComputerOpera =>
+      'Click Install at the right of the address bar.\nClick Install.';
 
   @override
   String get aiNoticeTitle => 'Made with AI';

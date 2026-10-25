@@ -89,7 +89,9 @@ class ReaderFlow {
     switch (method) {
       case ReadingMethod.verseByVerse:
         return [for (var i = 0; i < verses.length; i++) Chunk(i, i + 1)];
-      case ReadingMethod.aliyahByAliyah:
+      // The whole parsha: each aliyah is one chunk, read a round at a time
+      // across the parsha ([ParshaOrder]).
+      case ReadingMethod.aliyahByAliyah || ReadingMethod.wholeParsha:
         return [Chunk(0, verses.length)];
       case ReadingMethod.sectionBySection:
         // Only breaks between verses count: a pasuk is never split, so a
@@ -216,4 +218,75 @@ class ReaderFlow {
   }
 
   int get totalSteps => [for (var i = 0; i < chunks.length; i++) stepsFor(i).length].fold(0, (a, b) => a + b);
+}
+
+/// The order of the whole parsha ([ReadingMethod.wholeParsha]): the Hebrew
+/// of every aliyah, then the Hebrew of every aliyah again, then the second
+/// reading of every aliyah, as the settings choose it (the Targum, Rashi, or
+/// both), and the last verse once more where the reader repeats it. Each
+/// aliyah keeps its own [ReaderFlow] and its own position counts, so its
+/// progress is saved as by any other method, and survives switching between
+/// them: this only says which step of which aliyah comes next.
+class ParshaOrder {
+  /// [steps] holds each aliyah's steps in order, as its flow gives them
+  /// ([ReaderFlow.stepsFor] of its one chunk): the two readings of the
+  /// Hebrew first, then its second reading.
+  ParshaOrder(this.steps) : sequence = _sequence(steps);
+
+  final List<List<StepKind>> steps;
+
+  /// Every step of the parsha, as (aliyah, step), in the order read.
+  final List<(int, int)> sequence;
+
+  static List<(int, int)> _sequence(List<List<StepKind>> steps) => [
+        for (final kind in [StepKind.mikrah1, StepKind.mikrah2])
+          for (var a = 0; a < steps.length; a++)
+            if (steps[a].indexOf(kind) case final i when i >= 0) (a, i),
+        for (var a = 0; a < steps.length; a++)
+          for (var i = 0; i < steps[a].length; i++)
+            if (steps[a][i] != StepKind.mikrah1 && steps[a][i] != StepKind.mikrah2) (a, i),
+      ];
+
+  /// Where step [step] of aliyah [aliyah] is in [sequence], or -1.
+  int indexOf(int aliyah, int step) => sequence.indexOf((aliyah, step));
+
+  /// The step after [step] of aliyah [aliyah], or null after the last.
+  (int, int)? next(int aliyah, int step) {
+    final i = indexOf(aliyah, step);
+    return i < 0 || i + 1 >= sequence.length ? null : sequence[i + 1];
+  }
+
+  /// The step before [step] of aliyah [aliyah], or null at the first.
+  (int, int)? back(int aliyah, int step) {
+    final i = indexOf(aliyah, step);
+    return i <= 0 ? null : sequence[i - 1];
+  }
+
+  /// Where the parsha resumes, given each aliyah's saved position counts
+  /// ([WeekProgress.savedPositions]) and its verse count: at the first
+  /// aliyah not yet read in the earliest round not yet finished, or at the
+  /// beginning once the parsha is read.
+  (int, int) resume(List<List<int>> positions, List<int> verseCounts) {
+    for (final pass in ReadingPass.values) {
+      for (var a = 0; a < steps.length; a++) {
+        if (positions[a][pass.index] < verseCounts[a]) return (a, roundStep(a, pass));
+      }
+    }
+    return sequence.first;
+  }
+
+  /// The step of aliyah [aliyah] at which [pass] begins: its first reading
+  /// of the Hebrew, its second, or the first step of its second reading.
+  int roundStep(int aliyah, ReadingPass pass) => switch (pass) {
+        ReadingPass.mikrah1 => math.max(0, steps[aliyah].indexOf(StepKind.mikrah1)),
+        ReadingPass.mikrah2 => math.max(0, steps[aliyah].indexOf(StepKind.mikrah2)),
+        ReadingPass.targum => math.min(2, steps[aliyah].length - 1),
+      };
+
+  /// The pass whose round [step] of aliyah [aliyah] belongs to.
+  ReadingPass passOf(int aliyah, int step) => switch (steps[aliyah][step]) {
+        StepKind.mikrah1 => ReadingPass.mikrah1,
+        StepKind.mikrah2 => ReadingPass.mikrah2,
+        _ => ReadingPass.targum,
+      };
 }

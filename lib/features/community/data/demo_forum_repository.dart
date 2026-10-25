@@ -185,7 +185,7 @@ class DemoForumRepository implements ForumRepository {
   }
 
   @override
-  Future<void> verifyCode(String email, String code) async {
+  Future<void> verifyCode(String email, String code, {String? secondStep}) async {
     if (!RegExp(r'^\d{6}$').hasMatch(code.trim())) throw const CommunityException('invalid_code');
     _user = CommunityUser(id: 'me', email: email);
     _profile = Profile(id: 'me', displayName: 'user_${email.hashCode.toUnsigned(32).toRadixString(16).padLeft(8, '0')}', isModerator: true);

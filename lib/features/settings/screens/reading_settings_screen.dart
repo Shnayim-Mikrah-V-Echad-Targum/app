@@ -99,6 +99,7 @@ class ReadingSettingsScreen extends ConsumerWidget {
               Choice(ReadingMethod.verseByVerse, l.methodVerse, subtitle: l.methodVerseDesc(second)),
               Choice(ReadingMethod.sectionBySection, l.methodSection, subtitle: l.methodSectionDesc(second)),
               Choice(ReadingMethod.aliyahByAliyah, l.methodAliyah, subtitle: l.methodAliyahDesc(second)),
+              Choice(ReadingMethod.wholeParsha, l.methodWhole, subtitle: l.methodWholeDesc(second)),
             ],
             onChanged: (v) => update((s) => s.copyWith(method: v)),
           ),

@@ -171,6 +171,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   int _celebrationsAtFinish = 0;
   bool _positioned = false;
 
+  /// In the whole parsha ([ReadingMethod.wholeParsha]), the order of every
+  /// aliyah's steps, as last built; null by any other method.
+  ParshaOrder? _order;
+
+  /// Whether the aliyah shown was chosen in the reader (from its ribbon, or
+  /// as the whole parsha's text came to it), rather than opened: in the
+  /// whole parsha, a chosen aliyah opens at the round the parsha is in, and
+  /// an opened one at the parsha's place.
+  bool _chosenAliyah = false;
+
   /// The aliyah's position counts when it was opened (null if it was read):
   /// a chunk starts past the readings already done through it
   /// ([ReaderFlow.entryStep]), and Back from there returns to the chunk
@@ -340,9 +350,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     return null;
   }
 
-  ReaderFlow _flowFor(WeekContext ctx, ReaderTexts texts, AppSettings s) {
+  ReaderFlow _flowFor(WeekContext ctx, ReaderTexts texts, AppSettings s, {int? aliyah}) {
+    final a = aliyah ?? _aliyah;
     final repo = ref.read(parshaRepositoryProvider);
-    final verses = repo.aliyahVerses(ctx.portion, _aliyah);
+    final verses = repo.aliyahVerses(ctx.portion, a);
     return ReaderFlow(
       book: ctx.portion.book,
       verses: verses,
@@ -351,8 +362,46 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       hasRashi: [for (final v in verses) texts.rashi?.on(v).isNotEmpty ?? false],
       breaks: texts.mikrah.breaks,
       thirdReadingPrompts: s.thirdReadingPrompts,
-      repeatLastVerse: s.repeatLastVerse && !s.skipsRepeatedVerse && _aliyah == kAliyot - 1,
+      repeatLastVerse: s.repeatLastVerse && !s.skipsRepeatedVerse && a == kAliyot - 1,
     );
+  }
+
+  /// The order of the whole parsha's steps, by the whole-parsha method; null
+  /// by any other.
+  ParshaOrder? _orderFor(WeekContext ctx, ReaderTexts texts, AppSettings s) {
+    if (s.method != ReadingMethod.wholeParsha) return null;
+    return ParshaOrder([for (var a = 0; a < kAliyot; a++) _flowFor(ctx, texts, s, aliyah: a).stepsFor(0)]);
+  }
+
+  /// Where the whole parsha resumes ([ParshaOrder.resume]).
+  (int, int) _parshaResume(WeekContext ctx, ParshaOrder order) {
+    final repo = ref.read(parshaRepositoryProvider);
+    final counts = [for (var a = 0; a < kAliyot; a++) repo.aliyahVerses(ctx.portion, a).length];
+    return order.resume([for (var a = 0; a < kAliyot; a++) ctx.progress.savedPositions(a, counts[a])], counts);
+  }
+
+  /// In the whole parsha, on to [to], a step of this aliyah or of another,
+  /// the next in its order or the one before: the place held in the aliyah
+  /// left is let go, as choosing another aliyah lets it go. Called within
+  /// setState.
+  void _stepInParsha((int, int) to) {
+    final (a, step) = to;
+    if (a != _aliyah) {
+      _aliyah = a;
+      _focusedVerse = null;
+      _quietFocus = null;
+      _targetVerse = null;
+    }
+    _chunk = 0;
+    _step = step;
+  }
+
+  /// Whether the reader is at the first step there is: of the aliyah, or in
+  /// the whole parsha, of the parsha.
+  bool get _atFirstStep {
+    final order = _order;
+    if (order != null) return order.indexOf(_aliyah, _step) <= 0;
+    return _chunk == 0 && _step == 0;
   }
 
   void _goToAliyah(int a) {
@@ -361,6 +410,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (_panelFocus.hasFocus) _focusAfterFrame(_nextFocus);
     setState(() {
       _aliyah = a;
+      _chosenAliyah = true;
       _positioned = false;
       _placeText = true;
       _announceWhenPositioned = true;
@@ -403,6 +453,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _followAliyah(int a) {
     if (a == _aliyah) return;
     _aliyah = a;
+    _chosenAliyah = true;
     _positioned = false;
     _finished = false;
     _completedOnVisit = false;
@@ -647,9 +698,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
     _record(ctx, flow, _chunk, _step);
     if (!wasComplete && ref.read(progressProvider).week(ctx.id).isComplete) _completedOnVisit = true;
+    final order = _order;
+    final inParsha = order?.next(_aliyah, _step);
     setState(() {
       _quietStep = listening;
-      if (_step + 1 < steps.length) {
+      if (order != null) {
+        if (inParsha != null) {
+          _stepInParsha(inParsha);
+        } else {
+          _finished = true;
+          _justCompleted = _completedOnVisit && !_celebrated;
+          _celebrationsAtFinish = celebrationsPlayed;
+        }
+      } else if (_step + 1 < steps.length) {
         _step++;
       } else if (_chunk + 1 < flow.chunks.length) {
         _chunk++;
@@ -674,21 +735,32 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       if (!offer) _focusAfterFrame(_finishFocus);
       _onFinished(ctx, offerReminders: offer);
     } else if (!listening) {
-      _announceStep(flow);
+      _announceStep(_order == null ? flow : _shownFlow(ctx, flow));
     }
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
+  /// The flow of the aliyah now shown, which in the whole parsha may be
+  /// another than [flow], the one shown before a step.
+  ReaderFlow _shownFlow(WeekContext ctx, ReaderFlow flow) {
+    final shown = _shown;
+    if (shown == null) return flow;
+    return _flowFor(ctx, shown.$2, ref.read(settingsProvider));
+  }
+
   void _back(ReaderFlow flow) {
     // Page Up or Alt+↑ at the first step: nothing to go back to, or to say.
-    if (!_finished && _chunk == 0 && _step == 0) return;
+    if (!_finished && _atFirstStep) return;
     _stopListening();
     final fromPanel = _finished && _panelFocus.hasFocus;
     final fromBack = _backFocus.hasFocus;
+    final order = _order;
     setState(() {
       _quietStep = false;
       if (_finished) {
         _finished = false;
+      } else if (order != null) {
+        if (order.back(_aliyah, _step) case final to?) _stepInParsha(to);
       } else if (_step > 0 && (_chunk == 0 || _step != flow.entryStep(_chunk, _doneAtOpen))) {
         _step--;
       } else if (_chunk > 0) {
@@ -698,8 +770,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     });
     // Back from the finished panel, or to the first step, where Back is
     // disabled: the control with the focus goes, and Next takes it.
-    if (fromPanel || (fromBack && _chunk == 0 && _step == 0)) _focusAfterFrame(_nextFocus);
-    _announceStep(flow);
+    if (fromPanel || (fromBack && _atFirstStep)) _focusAfterFrame(_nextFocus);
+    final shown = _shown;
+    _announceStep(_order == null || shown == null ? flow : _shownFlow(shown.$1, flow));
     // Each step opens at its top, as Next opens it.
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
@@ -914,9 +987,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final names = Names(context);
     final steps = flow.stepsFor(_chunk);
     final c = flow.chunks[_chunk];
-    final where = flow.method == ReadingMethod.verseByVerse
-        ? l.verseOf(c.start + 1, flow.verses.length)
-        : l.sectionOf(_chunk + 1, flow.chunks.length);
+    final where = switch (flow.method) {
+      ReadingMethod.verseByVerse => l.verseOf(c.start + 1, flow.verses.length),
+      ReadingMethod.wholeParsha => l.aliyahOf(_aliyah + 1, kAliyot),
+      _ => l.sectionOf(_chunk + 1, flow.chunks.length),
+    };
     final shown = flow.stepVerses(_chunk, steps[_step]);
     final (first, last) = (shown.first, shown.last);
     final verses = first == last
@@ -1081,6 +1156,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _listensOn() {
     final flow = _shown?.$3;
     if (flow == null || _fullText || _finished || !ref.read(settingsProvider).listenAlong) return false;
+    if (_order case final order?) return order.next(_aliyah, _step) != null;
     return _chunk < flow.chunks.length - 1 || _step < flow.stepsFor(_chunk).length - 1;
   }
 
@@ -1095,7 +1171,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (!_listensOn()) return _stopListening();
     final (ctx, texts, flow) = shown;
     _next(ctx, flow, listening: true);
-    _startListening(texts, flow, checkVoice: false);
+    // In the whole parsha, the next reading may be another aliyah's.
+    _startListening(texts, _order == null ? flow : _flowFor(ctx, texts, ref.read(settingsProvider)), checkVoice: false);
   }
 
   /// Play or pause, from the player and the keyboard: Listen starts, or
@@ -1305,8 +1382,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           ),
         ),
         data: (texts) {
-          final flow = _flowFor(ctx, texts, s);
+          var flow = _flowFor(ctx, texts, s);
           final parsha = _parshaFor(ctx);
+          final order = _order = _orderFor(ctx, texts, s);
+          if (!_positioned && order != null) {
+            // The whole parsha: opened, at the parsha's place (in the full
+            // text, at the aliyah opened); an aliyah chosen, at the round
+            // the parsha is in.
+            final (a, st) = _parshaResume(ctx, order);
+            if (!_chosenAliyah && !_fullText && _targetVerse == null && a != _aliyah) {
+              _aliyah = a;
+              flow = _flowFor(ctx, texts, s);
+            }
+            _doneAtOpen = null;
+            _chunk = 0;
+            _step = _aliyah == a ? st : order.roundStep(_aliyah, order.passOf(a, st));
+            _positioned = true;
+            if (_announceWhenPositioned && !_fullText) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _announceStep(flow));
+            }
+            _announceWhenPositioned = false;
+            if (_placeText) {
+              _placeText = false;
+              _placeFullText(flow, s);
+            }
+          }
           if (!_positioned) {
             final saved = ctx.progress.isAliyahDone(_aliyah) ? null : _savedPositions(ctx.progress, flow);
             _doneAtOpen = saved;
@@ -1867,7 +1967,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 flow: flow,
                 chunk: _chunk,
                 step: _step,
-                onBack: _chunk == 0 && _step == 0 ? null : () => _back(flow),
+                aliyah: _aliyah,
+                order: _order,
+                onBack: _atFirstStep ? null : () => _back(flow),
                 onNext: () => _next(ctx, flow),
                 backFocus: _backFocus,
                 nextFocus: _nextFocus,

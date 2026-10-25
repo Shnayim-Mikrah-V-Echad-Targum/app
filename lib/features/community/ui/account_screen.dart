@@ -381,7 +381,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _codeError = null;
     });
     try {
-      await ref.read(forumRepositoryProvider).verifyCode(email, _code.text.trim());
+      // An account with an authenticator app asks for its code too, and
+      // again while the one given is wrong; cancelled, nothing is signed in.
+      String? secondStep;
+      while (true) {
+        try {
+          await ref.read(forumRepositoryProvider).verifyCode(email, _code.text.trim(), secondStep: secondStep);
+          break;
+        } on CommunityException catch (e) {
+          if (e.code != 'totp_required' && !(e.code == 'invalid_totp' && secondStep != null)) rethrow;
+          if (!mounted) return;
+          secondStep = await _askSecondStep(wrong: e.code == 'invalid_totp');
+          if (secondStep == null || !mounted) return;
+        }
+      }
       ref.invalidate(myProfileProvider);
       // Whether it has a name decides what follows. Should the profile not
       // come, the caller asks for it again (see ensureSignedIn).
@@ -415,6 +428,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       }
     }
   }
+
+  /// The account's authenticator code, or one of its recovery codes, asked
+  /// for in a dialog ([wrong] after one that was refused); null if cancelled.
+  Future<String?> _askSecondStep({required bool wrong}) => showAppDialog<String>(
+        context: context,
+        builder: (context) => _SecondStepDialog(wrong: wrong),
+      );
 
   /// Says [message], and goes back to what the page was opened for, if it
   /// was, with nothing over it.
@@ -1157,6 +1177,65 @@ class _BlockedMembersSheetState extends ConsumerState<_BlockedMembersSheet> with
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Asks for the code of the account's authenticator app, or a recovery code:
+/// one field, which takes either, and Continue.
+class _SecondStepDialog extends StatefulWidget {
+  const _SecondStepDialog({required this.wrong});
+
+  final bool wrong;
+
+  @override
+  State<_SecondStepDialog> createState() => _SecondStepDialogState();
+}
+
+class _SecondStepDialogState extends State<_SecondStepDialog> {
+  final _field = TextEditingController();
+
+  @override
+  void dispose() {
+    _field.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _field.text.trim();
+    if (text.isNotEmpty) Navigator.of(context).pop(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return AlertDialog(
+      title: Text(l.secondStepTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.secondStepBody),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _field,
+            autofocus: true,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            textInputAction: TextInputAction.done,
+            maxLength: 12,
+            decoration: InputDecoration(
+              labelText: l.secondStepField,
+              errorText: widget.wrong ? l.secondStepWrong : null,
+              counterText: '',
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(l.actionCancel)),
+        FilledButton(onPressed: _submit, child: Text(l.actionContinue)),
+      ],
     );
   }
 }

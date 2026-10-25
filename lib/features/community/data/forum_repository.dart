@@ -12,7 +12,11 @@ abstract class ForumRepository {
 
   /// Emails a 6-digit sign-in code (no deep links needed on any platform).
   Future<void> sendCode(String email);
-  Future<void> verifyCode(String email, String code);
+  /// Signs in with the emailed [code]. An account with an authenticator app
+  /// asks for its code too ([secondStep], or one of its recovery codes): without
+  /// it, this fails with `totp_required`, and the emailed code stays good to
+  /// send again with it; a wrong one fails with `invalid_totp`.
+  Future<void> verifyCode(String email, String code, {String? secondStep});
   Future<void> signOut();
 
   /// Permanently deletes the account and everything the user posted.

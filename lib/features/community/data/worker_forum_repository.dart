@@ -127,8 +127,12 @@ class WorkerForumRepository implements ForumRepository {
   Future<void> sendCode(String email) => _send('POST', 'auth/code', body: {'email': email.trim()});
 
   @override
-  Future<void> verifyCode(String email, String code) async {
-    final body = await _send('POST', 'auth/verify', body: {'email': email.trim(), 'code': code.trim()}) as Map<String, dynamic>;
+  Future<void> verifyCode(String email, String code, {String? secondStep}) async {
+    final body = await _send('POST', 'auth/verify', body: {
+      'email': email.trim(),
+      'code': code.trim(),
+      'totp': ?secondStep?.trim(),
+    }) as Map<String, dynamic>;
     final u = body['user'] as Map<String, dynamic>;
     await _signedIn(CommunityUser(id: u['id'] as String, email: u['email'] as String?), body['token'] as String?);
   }

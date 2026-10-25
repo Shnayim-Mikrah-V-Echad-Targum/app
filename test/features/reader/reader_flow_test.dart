@@ -207,4 +207,72 @@ void main() {
     final f = flow(method: ReadingMethod.sectionBySection);
     expect(f.resumeFrom([3, 3, 3]), (1, 0), reason: 'restart the section containing the next verse');
   });
+
+  group('the whole parsha', () {
+    // Seven aliyot of two verses; the last repeats its final verse.
+    List<ReaderFlow> aliyot({SecondReading second = SecondReading.onkelos, List<bool> rashiIn = const [true, true, true, true, true, true, true]}) => [
+          for (var a = 0; a < 7; a++)
+            flow(
+              method: ReadingMethod.wholeParsha,
+              second: second,
+              refs: [VerseRef(a + 1, 1), VerseRef(a + 1, 2)],
+              rashi: [rashiIn[a], false],
+              repeatLast: a == 6,
+            ),
+        ];
+    ParshaOrder order(List<ReaderFlow> flows) => ParshaOrder([for (final f in flows) f.stepsFor(0)]);
+
+    test('each aliyah is one chunk, read as aliyah by aliyah reads it', () {
+      final flows = aliyot();
+      expect(flows.first.chunks.single.length, 2);
+      expect(flows.first.stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum]);
+      expect(flows.last.stepsFor(0), [StepKind.mikrah1, StepKind.mikrah2, StepKind.targum, StepKind.repeatLast]);
+    });
+
+    test('the Hebrew of every aliyah, again, then every second reading, then the last verse', () {
+      final o = order(aliyot());
+      expect(o.sequence, [
+        for (var a = 0; a < 7; a++) (a, 0),
+        for (var a = 0; a < 7; a++) (a, 1),
+        for (var a = 0; a < 7; a++) (a, 2),
+        (6, 3),
+      ]);
+      expect(o.next(6, 0), (0, 1));
+      expect(o.next(6, 1), (0, 2));
+      expect(o.next(6, 2), (6, 3));
+      expect(o.next(6, 3), isNull);
+      expect(o.back(0, 1), (6, 0));
+      expect(o.back(0, 0), isNull);
+    });
+
+    test('Onkelos and Rashi: each aliyah\'s Targum, then its Rashi where he comments on it', () {
+      final rashiIn = [true, false, true, true, true, true, true];
+      final o = order(aliyot(second: SecondReading.onkelosAndRashi, rashiIn: rashiIn));
+      final third = o.sequence.skip(14).toList();
+      expect(third, [(0, 2), (0, 3), (1, 2), (2, 2), (2, 3), (3, 2), (3, 3), (4, 2), (4, 3), (5, 2), (5, 3), (6, 2), (6, 3), (6, 4)]);
+    });
+
+    test('it resumes at the first aliyah not yet read in the earliest round not finished', () {
+      final flows = aliyot();
+      final o = order(flows);
+      final counts = [for (final _ in flows) 2];
+      List<List<int>> positions(List<int> Function(int a) of) => [for (var a = 0; a < 7; a++) of(a)];
+      expect(o.resume(positions((_) => [0, 0, 0]), counts), (0, 0));
+      expect(o.resume(positions((a) => a < 3 ? [2, 0, 0] : [0, 0, 0]), counts), (3, 0));
+      expect(o.resume(positions((a) => a < 5 ? [2, 2, 0] : [2, 0, 0]), counts), (5, 1));
+      expect(o.resume(positions((a) => a == 0 ? [2, 2, 2] : [2, 2, 0]), counts), (1, 2));
+      // Read in full: from the beginning again.
+      expect(o.resume(positions((_) => [2, 2, 2]), counts), (0, 0));
+      // An aliyah read by another method earlier counts as read.
+      expect(o.resume(positions((a) => a == 0 ? [2, 2, 2] : [0, 0, 0]), counts), (1, 0));
+    });
+
+    test('a step\'s pass, and where each round starts in an aliyah', () {
+      final o = order(aliyot());
+      expect(o.passOf(6, 3), ReadingPass.targum);
+      expect(o.passOf(2, 1), ReadingPass.mikrah2);
+      expect(o.roundStep(4, ReadingPass.targum), 2);
+      expect(o.roundStep(4, ReadingPass.mikrah1), 0);
+    });
+  });
 }

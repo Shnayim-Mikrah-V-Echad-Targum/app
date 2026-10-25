@@ -58,6 +58,27 @@ Future<String> prompt() async {
   }
 }
 
+/// The browser's user agent, for the guide to open at its steps.
+String userAgent() {
+  try {
+    return web.window.navigator.userAgent;
+  } catch (_) {
+    return '';
+  }
+}
+
+@JS('navigator.brave')
+external JSAny? get _brave;
+
+/// Whether the browser is Brave, which says so by navigator.brave alone.
+bool isBrave() {
+  try {
+    return _brave != null;
+  } catch (_) {
+    return false;
+  }
+}
+
 void Function() listen(void Function() onChange) {
   final listener = ((web.Event _) => onChange()).toJS;
   web.window.addEventListener(_changeEvent, listener);

@@ -64,6 +64,7 @@ void main() {
     await repo.sendCode(' reader@example.com ');
     expect(jsonDecode(server.requests.last.body), {'email': 'reader@example.com'});
     await repo.verifyCode('reader@example.com', '123456');
+    expect(jsonDecode(server.requests.last.body), {'email': 'reader@example.com', 'code': '123456'});
     expect(repo.currentUser, const CommunityUser(id: '4', email: 'reader@example.com'));
     await pumpEventQueue();
     expect(changes, [const CommunityUser(id: '4', email: 'reader@example.com')]);
@@ -77,6 +78,13 @@ void main() {
     expect(again.currentUser?.id, '4');
     await again.myProfile();
     expect(server.requests.last.headers['Authorization'], 'Bearer secret-token');
+  });
+
+  test('the authenticator\'s code goes with the emailed one, where the account asks for it', () async {
+    final server = _Server((_) => (200, {'token': 't', 'user': {'id': '4', 'email': 'reader@example.com'}}));
+    final repo = await _repo(server);
+    await repo.verifyCode('reader@example.com', '123456', secondStep: ' 424242 ');
+    expect(jsonDecode(server.requests.single.body), {'email': 'reader@example.com', 'code': '123456', 'totp': '424242'});
   });
 
   test('on the web the session is the site\'s cookie: no token is kept or sent', () async {
