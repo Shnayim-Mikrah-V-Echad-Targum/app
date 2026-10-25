@@ -210,7 +210,7 @@ void main() {
     // On Android, in Chrome, as the browser says it is.
     expect(chip(tester, 'Android').selected, isTrue);
     expect(chip(tester, 'Chrome').selected, isTrue);
-    expect(find.text('Tap More (⋮) beside the address bar.'), findsOneWidget);
+    expect(find.text('Tap More (three dots) beside the address bar.'), findsOneWidget);
     expect(find.textContaining('Where only a shortcut is offered'), findsOneWidget);
     expect(kReleasesPage, Uri.parse('https://github.com/Shnayim-Mikrah-V-Echad-Targum/app/releases'));
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
@@ -232,7 +232,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Samsung Internet'), findsNothing);
     expect(chip(tester, 'Firefox').selected, isTrue, reason: 'Firefox is there too');
-    expect(find.text('Tap the menu (☰).'), findsOneWidget);
+    expect(find.text('Tap the menu (three lines).'), findsOneWidget);
     expect(find.textContaining('iOS 16.4 or later'), findsOneWidget);
     expect(find.textContaining('keeps its own reading'), findsOneWidget);
 
@@ -282,7 +282,7 @@ void main() {
     expect(chip(tester, 'iPhone / iPad').selected, isTrue);
     expect(chip(tester, 'Safari').selected, isTrue);
     for (final step in [
-      'Tap Share in Safari’s toolbar, or in its More menu (⋯) if it isn’t there.',
+      'Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.',
       'Choose “Add to Home Screen”, scrolling down if you need to.',
       'Tap Add. Shnayim Mikrah is now on your home screen.',
     ]) {

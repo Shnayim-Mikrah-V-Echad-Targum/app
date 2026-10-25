@@ -3737,7 +3737,7 @@
   "installNoteIphoneOthers": "Browsers other than Safari can do this on iOS 16.4 or later.",
   "installNoteAndroidShortcut": "Where only a shortcut is offered, it may open in the browser rather than in a window of its own.",
   "installFirefoxComputer": "Firefox on a computer doesn’t save sites as apps. Open this site in Chrome, Edge, Brave or Safari to save it.",
-  "installStepsIphoneSafari": "Tap Share in Safari’s toolbar, or in its More menu (⋯) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.",
+  "installStepsIphoneSafari": "Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.",
   "@installStepsIphoneSafari": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
@@ -3745,63 +3745,63 @@
   "@installStepsIphoneChrome": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsIphoneFirefox": "Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "installStepsIphoneFirefox": "Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
   "@installStepsIphoneFirefox": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsIphoneBrave": "Tap the menu (⋯) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "installStepsIphoneBrave": "Tap the menu (three dots) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
   "@installStepsIphoneBrave": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsIphoneDuckDuckGo": "Tap the menu (⋯).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "installStepsIphoneDuckDuckGo": "Tap the menu (three dots).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
   "@installStepsIphoneDuckDuckGo": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsIphoneEdge": "Tap the menu (⋯) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "installStepsIphoneEdge": "Tap the menu (three dots) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
   "@installStepsIphoneEdge": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsIphoneOpera": "Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
+  "installStepsIphoneOpera": "Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.",
   "@installStepsIphoneOpera": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidChrome": "Tap More (⋮) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
+  "installStepsAndroidChrome": "Tap More (three dots) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
   "@installStepsAndroidChrome": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidSamsung": "Tap the menu (☰) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.",
+  "installStepsAndroidSamsung": "Tap the menu (three lines) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.",
   "@installStepsAndroidSamsung": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidFirefox": "Tap More (⋮).\nTap “Add app to Home screen” (or “Install”).\nTap Add.",
+  "installStepsAndroidFirefox": "Tap More (three dots).\nTap “Add app to Home screen” (or “Install”).\nTap Add.",
   "@installStepsAndroidFirefox": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidBrave": "Tap More (⋮).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
+  "installStepsAndroidBrave": "Tap More (three dots).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.",
   "@installStepsAndroidBrave": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidDuckDuckGo": "Tap More (⋮) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.",
+  "installStepsAndroidDuckDuckGo": "Tap More (three dots) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.",
   "@installStepsAndroidDuckDuckGo": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidEdge": "Tap the menu (⋯) at the bottom.\nTap “Add to phone”.\nTap Install.",
+  "installStepsAndroidEdge": "Tap the menu (three dots) at the bottom.\nTap “Add to phone”.\nTap Install.",
   "@installStepsAndroidEdge": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsAndroidOpera": "Tap More (⋮).\nTap “Add to…”, then “Home screen”.\nTap Add.",
+  "installStepsAndroidOpera": "Tap More (three dots).\nTap “Add to…”, then “Home screen”.\nTap Add.",
   "@installStepsAndroidOpera": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsComputerChrome": "Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (⋮), then “Cast, save and share”, then “Install page as app”.\nClick Install.",
+  "installStepsComputerChrome": "Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (three dots), then “Cast, save and share”, then “Install page as app”.\nClick Install.",
   "@installStepsComputerChrome": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsComputerEdge": "Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (⋯), then Apps, then “Install this site as an app”.\nClick Install.",
+  "installStepsComputerEdge": "Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (three dots), then Apps, then “Install this site as an app”.\nClick Install.",
   "@installStepsComputerEdge": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },
-  "installStepsComputerBrave": "Click Install at the right of the address bar.\nIf it isn’t there, open the menu (☰), then “Save and share”, then “Install page as app”.\nClick Install.",
+  "installStepsComputerBrave": "Click Install at the right of the address bar.\nIf it isn’t there, open the menu (three lines), then “Save and share”, then “Install page as app”.\nClick Install.",
   "@installStepsComputerBrave": {
     "description": "The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them."
   },

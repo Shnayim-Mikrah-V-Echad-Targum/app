@@ -4048,7 +4048,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get installStepsIphoneSafari =>
-      'Tap Share in Safari’s toolbar, or in its More menu (⋯) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.';
+      'Tap Share in Safari’s toolbar, or in its More menu (three dots) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.';
 
   @override
   String get installStepsIphoneChrome =>
@@ -4056,63 +4056,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get installStepsIphoneFirefox =>
-      'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+      'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsIphoneBrave =>
-      'Tap the menu (⋯) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+      'Tap the menu (three dots) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsIphoneDuckDuckGo =>
-      'Tap the menu (⋯).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+      'Tap the menu (three dots).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsIphoneEdge =>
-      'Tap the menu (⋯) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+      'Tap the menu (three dots) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsIphoneOpera =>
-      'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
+      'Tap the menu (three lines).\nTap Share, then choose “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsAndroidChrome =>
-      'Tap More (⋮) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
+      'Tap More (three dots) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
 
   @override
   String get installStepsAndroidSamsung =>
-      'Tap the menu (☰) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.';
+      'Tap the menu (three lines) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.';
 
   @override
   String get installStepsAndroidFirefox =>
-      'Tap More (⋮).\nTap “Add app to Home screen” (or “Install”).\nTap Add.';
+      'Tap More (three dots).\nTap “Add app to Home screen” (or “Install”).\nTap Add.';
 
   @override
   String get installStepsAndroidBrave =>
-      'Tap More (⋮).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
+      'Tap More (three dots).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.';
 
   @override
   String get installStepsAndroidDuckDuckGo =>
-      'Tap More (⋮) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.';
+      'Tap More (three dots) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.';
 
   @override
   String get installStepsAndroidEdge =>
-      'Tap the menu (⋯) at the bottom.\nTap “Add to phone”.\nTap Install.';
+      'Tap the menu (three dots) at the bottom.\nTap “Add to phone”.\nTap Install.';
 
   @override
   String get installStepsAndroidOpera =>
-      'Tap More (⋮).\nTap “Add to…”, then “Home screen”.\nTap Add.';
+      'Tap More (three dots).\nTap “Add to…”, then “Home screen”.\nTap Add.';
 
   @override
   String get installStepsComputerChrome =>
-      'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (⋮), then “Cast, save and share”, then “Install page as app”.\nClick Install.';
+      'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (three dots), then “Cast, save and share”, then “Install page as app”.\nClick Install.';
 
   @override
   String get installStepsComputerEdge =>
-      'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (⋯), then Apps, then “Install this site as an app”.\nClick Install.';
+      'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (three dots), then Apps, then “Install this site as an app”.\nClick Install.';
 
   @override
   String get installStepsComputerBrave =>
-      'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (☰), then “Save and share”, then “Install page as app”.\nClick Install.';
+      'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (three lines), then “Save and share”, then “Install page as app”.\nClick Install.';
 
   @override
   String get installStepsComputerSafari =>
