@@ -3949,24 +3949,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get installDesktopDesc => 'נפתחת בחלון משלה, כמו כל אפליקציה';
 
   @override
-  String get installIosTitle => 'הוספה למסך הבית';
-
-  @override
-  String get installIosDesc => 'מתפריט השיתוף של Safari';
-
-  @override
-  String get installIosStep1 =>
-      'להקיש על ״שיתוף״ בסרגל הכלים של Safari, או בתפריט ״עוד״ שלו אם הוא לא שם.';
-
-  @override
-  String get installIosStep2 =>
-      'לבחור ״הוספה למסך הבית״, ואם צריך, לגלול אליו למטה.';
-
-  @override
-  String get installIosStep3 =>
-      'להקיש על ״הוספה״. שניים מקרא נמצאת עכשיו במסך הבית.';
-
-  @override
   String get installIosBackup =>
       'האפליקציה שבמסך הבית שומרת את הקריאה בנפרד. כדי להעביר אליה את מה שקראת כאן, אפשר לייצא אותו קודם בהגדרות, תחת ״הנתונים שלך״, ולייבא אותו שם.';
 
@@ -4005,6 +3987,129 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get installAction => 'התקנה';
+
+  @override
+  String get installGuideTitle => 'שמירת שניים מקרא כאפליקציה';
+
+  @override
+  String get installGuideLead =>
+      'אפשר לשמור אותה במסך הבית או במחשב, ולפתוח אותה כמו כל אפליקציה.';
+
+  @override
+  String get installGuideDevices => 'המכשיר שלך';
+
+  @override
+  String get installGuideBrowsers => 'הדפדפן שלך';
+
+  @override
+  String get installDeviceIphone => 'iPhone / iPad';
+
+  @override
+  String get installDeviceAndroid => 'Android';
+
+  @override
+  String get installDeviceComputer => 'מחשב';
+
+  @override
+  String get installGuideRow => 'שמירה כאפליקציה';
+
+  @override
+  String get installGuideRowDesc => 'שלב אחר שלב, בדפדפן שבו משתמשים';
+
+  @override
+  String get installGuideDone => 'סיום — לא להציג שוב';
+
+  @override
+  String get installGuideOptional =>
+      'השמירה לבחירתך: ההוראות האלה לא מתקינות דבר בעצמן.';
+
+  @override
+  String get installNoteIphoneOthers =>
+      'דפדפנים אחרים מלבד Safari יכולים לעשות זאת ב־iOS 16.4 ואילך.';
+
+  @override
+  String get installNoteAndroidShortcut =>
+      'כשמוצע רק קיצור דרך, ייתכן שהוא ייפתח בדפדפן ולא בחלון משלו.';
+
+  @override
+  String get installFirefoxComputer =>
+      'Firefox במחשב לא שומר אתרים כאפליקציות. כדי לשמור את האתר, אפשר לפתוח אותו ב־Chrome, ב־Edge, ב־Brave או ב־Safari.';
+
+  @override
+  String get installStepsIphoneSafari =>
+      'להקיש על ״שיתוף״ בסרגל הכלים של Safari, או בתפריט ״עוד״ (⋯) שלו אם הוא לא שם.\nלבחור ״הוספה למסך הבית״, ואם צריך, לגלול אליו למטה.\nלהקיש על ״הוספה״. שניים מקרא נמצאת עכשיו במסך הבית.';
+
+  @override
+  String get installStepsIphoneChrome =>
+      'להקיש על ״שיתוף״ (הריבוע עם החץ) בשורת הכתובת.\nלבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsIphoneFirefox =>
+      'להקיש על התפריט (☰).\nלהקיש על ״שיתוף״, ואז לבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsIphoneBrave =>
+      'להקיש על התפריט (⋯) ליד שורת הכתובת.\nלהקיש על ״שיתוף״, ואז לבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsIphoneDuckDuckGo =>
+      'להקיש על התפריט (⋯).\nלהקיש על ״שיתוף״, ואז לבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsIphoneEdge =>
+      'להקיש על התפריט (⋯) למטה.\nלהקיש על ״שיתוף״, ואז לבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsIphoneOpera =>
+      'להקיש על התפריט (☰).\nלהקיש על ״שיתוף״, ואז לבחור ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsAndroidChrome =>
+      'להקיש על ״עוד״ (⋮) ליד שורת הכתובת.\nלהקיש על ״הוספה למסך הבית״ (או ״התקנת האפליקציה״).\nלהקיש על ״התקנה״ או ״הוספה״.';
+
+  @override
+  String get installStepsAndroidSamsung =>
+      'להקיש על התפריט (☰) למטה.\nלהקיש על ״הוסף דף אל״, ואז ״מסך הבית״.\nלהקיש על ״הוסף״.';
+
+  @override
+  String get installStepsAndroidFirefox =>
+      'להקיש על ״עוד״ (⋮).\nלהקיש על ״הוספת אפליקציה למסך הבית״ (או ״התקנה״).\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsAndroidBrave =>
+      'להקיש על ״עוד״ (⋮).\nלהקיש על ״הוספה למסך הבית״ (או ״התקנת האפליקציה״).\nלהקיש על ״התקנה״ או ״הוספה״.';
+
+  @override
+  String get installStepsAndroidDuckDuckGo =>
+      'להקיש על ״עוד״ (⋮) ליד שורת הכתובת.\nלהקיש על ״הוספה למסך הבית״.\nלהקיש על ״הוספה״.';
+
+  @override
+  String get installStepsAndroidEdge =>
+      'להקיש על התפריט (⋯) למטה.\nלהקיש על ״הוספה לטלפון״.\nלהקיש על ״התקנה״.';
+
+  @override
+  String get installStepsAndroidOpera =>
+      'להקיש על ״עוד״ (⋮).\nלהקיש על ״הוסף אל…״, ואז ״מסך הבית״.\nלהקיש על ״הוסף״.';
+
+  @override
+  String get installStepsComputerChrome =>
+      'ללחוץ על ״התקנה״ (המסך עם החץ) בצד שורת הכתובת.\nאם הוא לא שם, לפתוח את ״עוד״ (⋮), אחר כך ״העברה, שמירה ושיתוף״, ואז ״התקנת הדף כאפליקציה״.\nללחוץ על ״התקנה״.';
+
+  @override
+  String get installStepsComputerEdge =>
+      'ללחוץ על ״אפליקציה זמינה״ (ריבועים עם סימן פלוס) בשורת הכתובת.\nאם הוא לא שם, לפתוח את התפריט (⋯), אחר כך ״אפליקציות״, ואז ״התקנת אתר זה כאפליקציה״.\nללחוץ על ״התקנה״.';
+
+  @override
+  String get installStepsComputerBrave =>
+      'ללחוץ על ״התקנה״ בצד שורת הכתובת.\nאם הוא לא שם, לפתוח את התפריט (☰), אחר כך ״שמירה ושיתוף״, ואז ״התקנת הדף כאפליקציה״.\nללחוץ על ״התקנה״.';
+
+  @override
+  String get installStepsComputerSafari =>
+      'ב־Mac, לבחור ״קובץ״ ואז ״הוספה ל־Dock״ (macOS Sonoma ואילך).\nללחוץ על ״הוספה״.';
+
+  @override
+  String get installStepsComputerOpera =>
+      'ללחוץ על ״התקנה״ בצד שורת הכתובת.\nללחוץ על ״התקנה״.';
 
   @override
   String get aiNoticeTitle => 'נכתב בעזרת בינה מלאכותית';

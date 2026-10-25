@@ -9,3 +9,7 @@ bool runningStandalone() => true;
 Future<String> prompt() async => 'unavailable';
 
 void Function() listen(void Function() onChange) => () {};
+
+String userAgent() => '';
+
+bool isBrave() => false;

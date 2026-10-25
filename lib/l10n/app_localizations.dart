@@ -6093,36 +6093,6 @@ abstract class AppLocalizations {
   /// **'Opens in a window of its own, like any app'**
   String get installDesktopDesc;
 
-  /// On the web, on an iPhone or iPad, whose browser has no button the app can press for it: the row, and the title of the sheet, with the steps to add the app to the home screen. As Safari names its menu item.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to Home Screen'**
-  String get installIosTitle;
-
-  /// Under installIosTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'From Safari’s Share menu'**
-  String get installIosDesc;
-
-  /// The first of the steps in the installIosTitle sheet. More is the button of Safari’s toolbar (three dots) under which Share is in some versions.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap Share in Safari’s toolbar, or in its More menu if it isn’t there.'**
-  String get installIosStep1;
-
-  /// The second of the steps in the installIosTitle sheet, quoting the menu item as Safari names it in this language.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose “Add to Home Screen”, scrolling down if you need to.'**
-  String get installIosStep2;
-
-  /// The last of the steps in the installIosTitle sheet; “Add” is the button as Safari names it.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap Add. Shnayim Mikrah is now on your home screen.'**
-  String get installIosStep3;
-
   /// Under the steps in the installIosTitle sheet: an app added to an iPhone’s home screen keeps its own storage, apart from Safari’s.
   ///
   /// In en, this message translates to:
@@ -6194,6 +6164,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Install'**
   String get installAction;
+
+  /// No description provided for @installGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Shnayim Mikrah as an app'**
+  String get installGuideTitle;
+
+  /// No description provided for @installGuideLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it on your home screen or your computer, and open it like any app.'**
+  String get installGuideLead;
+
+  /// No description provided for @installGuideDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device'**
+  String get installGuideDevices;
+
+  /// No description provided for @installGuideBrowsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Your browser'**
+  String get installGuideBrowsers;
+
+  /// No description provided for @installDeviceIphone.
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone / iPad'**
+  String get installDeviceIphone;
+
+  /// No description provided for @installDeviceAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Android'**
+  String get installDeviceAndroid;
+
+  /// No description provided for @installDeviceComputer.
+  ///
+  /// In en, this message translates to:
+  /// **'Computer'**
+  String get installDeviceComputer;
+
+  /// No description provided for @installGuideRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as an app'**
+  String get installGuideRow;
+
+  /// No description provided for @installGuideRowDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Step by step, in the browser you use'**
+  String get installGuideRowDesc;
+
+  /// No description provided for @installGuideDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done — don’t show again'**
+  String get installGuideDone;
+
+  /// No description provided for @installGuideOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving it is up to you: these directions install nothing by themselves.'**
+  String get installGuideOptional;
+
+  /// No description provided for @installNoteIphoneOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Browsers other than Safari can do this on iOS 16.4 or later.'**
+  String get installNoteIphoneOthers;
+
+  /// No description provided for @installNoteAndroidShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Where only a shortcut is offered, it may open in the browser rather than in a window of its own.'**
+  String get installNoteAndroidShortcut;
+
+  /// No description provided for @installFirefoxComputer.
+  ///
+  /// In en, this message translates to:
+  /// **'Firefox on a computer doesn’t save sites as apps. Open this site in Chrome, Edge, Brave or Safari to save it.'**
+  String get installFirefoxComputer;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Share in Safari’s toolbar, or in its More menu (⋯) if it isn’t there.\nChoose “Add to Home Screen”, scrolling down if you need to.\nTap Add. Shnayim Mikrah is now on your home screen.'**
+  String get installStepsIphoneSafari;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Share (the square with an arrow) in the address bar.\nChoose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneChrome;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneFirefox;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (⋯) beside the address bar.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneBrave;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (⋯).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneDuckDuckGo;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (⋯) at the bottom.\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneEdge;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (☰).\nTap Share, then choose “Add to Home Screen”.\nTap Add.'**
+  String get installStepsIphoneOpera;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap More (⋮) beside the address bar.\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
+  String get installStepsAndroidChrome;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (☰) at the bottom.\nTap “Add page to”, then “Home screen”.\nTap Add.'**
+  String get installStepsAndroidSamsung;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap More (⋮).\nTap “Add app to Home screen” (or “Install”).\nTap Add.'**
+  String get installStepsAndroidFirefox;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap More (⋮).\nTap “Add to home screen” (or “Install app”).\nTap Install, or Add.'**
+  String get installStepsAndroidBrave;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap More (⋮) beside the address bar.\nTap “Add to Home Screen”.\nTap Add.'**
+  String get installStepsAndroidDuckDuckGo;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the menu (⋯) at the bottom.\nTap “Add to phone”.\nTap Install.'**
+  String get installStepsAndroidEdge;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap More (⋮).\nTap “Add to…”, then “Home screen”.\nTap Add.'**
+  String get installStepsAndroidOpera;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Click Install (the screen with an arrow) at the right of the address bar.\nIf it isn’t there, open More (⋮), then “Cast, save and share”, then “Install page as app”.\nClick Install.'**
+  String get installStepsComputerChrome;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Click “App available” (squares with a plus) in the address bar.\nIf it isn’t there, open the menu (⋯), then Apps, then “Install this site as an app”.\nClick Install.'**
+  String get installStepsComputerEdge;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Click Install at the right of the address bar.\nIf it isn’t there, open the menu (☰), then “Save and share”, then “Install page as app”.\nClick Install.'**
+  String get installStepsComputerBrave;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'On a Mac, choose File, then “Add to Dock” (macOS Sonoma or later).\nClick Add.'**
+  String get installStepsComputerSafari;
+
+  /// The steps of the installGuideTitle sheet for this device and browser, one to a line. The browser’s own words for its menus are quoted as it shows them.
+  ///
+  /// In en, this message translates to:
+  /// **'Click Install at the right of the address bar.\nClick Install.'**
+  String get installStepsComputerOpera;
 
   /// Heading of the notice that the app was made with AI, on Today, About and Texts & sources.
   ///
