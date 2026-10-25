@@ -96,4 +96,21 @@ abstract class ForumRepository {
   // --- Progress sync ---------------------------------------------------------
   Future<Map<String, dynamic>?> loadProgress();
   Future<void> saveProgress(Map<String, dynamic> data);
+
+  // --- The website -------------------------------------------------------------
+
+  /// A link that opens [page] of the website signed in as the app is, or null
+  /// where there is no website (the demo).
+  Future<Uri?> siteLink(SitePage page);
+}
+
+/// The website's pages the account page opens: the account's own (its
+/// password, passkeys and authenticator app), and for an admin the admin
+/// panel.
+enum SitePage {
+  account('/account'),
+  admin('/account/admin');
+
+  const SitePage(this.path);
+  final String path;
 }

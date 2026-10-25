@@ -5697,6 +5697,54 @@ abstract class AppLocalizations {
   /// **'Account'**
   String get accountGroupTitle;
 
+  /// The days-on-track streak beside the fire on the account page.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day on track} other{{count} days on track}}'**
+  String streakFlameDays(int count);
+
+  /// Under it, the parsha streak, as weeksCount says it.
+  ///
+  /// In en, this message translates to:
+  /// **'Parsha streak: {weeks}'**
+  String streakFlameWeeks(String weeks);
+
+  /// No description provided for @streakFlameStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Read today’s portion to start your streak.'**
+  String get streakFlameStart;
+
+  /// No description provided for @signInSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in & security'**
+  String get signInSecurityTitle;
+
+  /// No description provided for @signInMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'Password, passkeys and authenticator'**
+  String get signInMethods;
+
+  /// No description provided for @signInMethodsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or change them on the website'**
+  String get signInMethodsDesc;
+
+  /// No description provided for @adminPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin panel'**
+  String get adminPanel;
+
+  /// No description provided for @adminPanelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts, reports and security, on the website'**
+  String get adminPanelDesc;
+
   /// No description provided for @postingAs.
   ///
   /// In en, this message translates to:

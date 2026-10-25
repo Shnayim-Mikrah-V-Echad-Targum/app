@@ -258,6 +258,36 @@ void main() {
     expect(repo.currentUser, isNull);
   });
 
+  test('the website opens signed in: by a one-time link in the app, by the cookie it has on the web', () async {
+    SharedPreferences.setMockInitialValues({
+      WorkerForumRepository.sessionKey: jsonEncode({'id': '4', 'email': 'admin@example.com', 'token': 'secret-token'}),
+    });
+    final server = _Server((r) => (200, {'url': 'https://shnayimmikrah.org/account/handoff?t=one-time'}));
+    final repo = await _repo(server);
+    expect(await repo.siteLink(SitePage.admin), Uri.parse('https://shnayimmikrah.org/account/handoff?t=one-time'));
+    final asked = server.requests.single;
+    expect((asked.method, asked.url.path), ('POST', '/api/handoff'));
+    expect(jsonDecode(asked.body), {'next': '/account/admin'});
+    expect(asked.headers['Authorization'], 'Bearer secret-token');
+    // The account page's list of devices names this one.
+    expect(asked.headers['X-App-Platform'], isNotEmpty);
+
+    final web = await _repo(_Server((r) => (500, null)), keepsToken: false);
+    expect(await web.siteLink(SitePage.account), Uri.parse('https://shnayimmikrah.org/account'));
+    expect(await web.siteLink(SitePage.admin), Uri.parse('https://shnayimmikrah.org/account/admin'));
+  });
+
+  test('an owner or an admin has the admin panel; a moderator has the reports', () async {
+    for (final (role, admin, moderator) in [('owner', true, true), ('admin', true, true), ('moderator', false, true), (null, false, false)]) {
+      final server = _Server((r) => (200, {'id': '4', 'display_name': 'Rivka', 'is_moderator': moderator, 'role': role}));
+      SharedPreferences.setMockInitialValues({
+        WorkerForumRepository.sessionKey: jsonEncode({'id': '4', 'email': 'reader@example.com', 'token': 't'}),
+      });
+      final profile = await (await _repo(server)).myProfile();
+      expect((profile?.isAdmin, profile?.isModerator), (admin, moderator), reason: role);
+    }
+  });
+
   test("the community's server is the root of the site's address, and none without one", () {
     addTearDown(() => AppConfig.debugWebUrl = null);
     AppConfig.debugWebUrl = '';

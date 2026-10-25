@@ -20,12 +20,17 @@ class Profile {
     required this.id,
     required this.displayName,
     this.isModerator = false,
+    this.isAdmin = false,
     this.acceptedTerms = false,
   });
 
   final String id;
   final String displayName;
   final bool isModerator;
+
+  /// The site's owner or one of its administrators, who have the website's
+  /// admin panel.
+  final bool isAdmin;
   final bool acceptedTerms;
 
   /// Auto-generated names look like "user_1a2b3c4d" until the user picks one.

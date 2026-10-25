@@ -31,6 +31,7 @@ import 'package:shnayim_mikrah/ui/widgets/fallbacks.dart';
 import 'package:shnayim_mikrah/ui/widgets/lang.dart';
 import 'package:shnayim_mikrah/ui/widgets/paper_group.dart';
 import 'package:shnayim_mikrah/ui/widgets/sefer_tag.dart';
+import 'package:shnayim_mikrah/ui/widgets/streak_flame.dart';
 
 import '../helpers.dart';
 
@@ -77,6 +78,30 @@ class _Member extends DemoForumRepository {
     await gate?.future;
     if (failTodah) throw Exception('offline');
     return super.setTodah(postId, on);
+  }
+}
+
+/// The community on the site, signed in as a member who is an admin or not,
+/// recording the website's pages asked for.
+class _Site extends DemoForumRepository {
+  _Site({required this.admin});
+
+  final bool admin;
+  final asked = <SitePage>[];
+
+  @override
+  bool get isDemo => false;
+
+  @override
+  Future<Profile?> myProfile() async {
+    final p = await super.myProfile();
+    return p == null ? null : Profile(id: p.id, displayName: p.displayName, isModerator: admin, isAdmin: admin, acceptedTerms: p.acceptedTerms);
+  }
+
+  @override
+  Future<Uri?> siteLink(SitePage page) async {
+    asked.add(page);
+    return Uri.parse('https://shnayimmikrah.org/account/handoff?t=one-time');
   }
 }
 
@@ -3890,6 +3915,80 @@ void main() {
       final confirm = find.descendant(of: find.byType(AlertDialog), matching: find.widgetWithText(FilledButton, 'Delete my account'));
       final style = tester.widget<FilledButton>(confirm).style!;
       expect(style.backgroundColor?.resolve({}), scheme.error);
+    });
+
+    testWidgets('signed in, shows the streak with the fire, which opens Progress, unless streaks are put away', (tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      final c = await account(tester, forums: forums);
+      final streak = find.ancestor(of: find.byType(StreakFlame), matching: find.byType(InfoCard));
+      expect(streak, findsOneWidget);
+      expect(find.descendant(of: streak, matching: find.text('0 days on track')), findsOneWidget);
+      expect(find.descendant(of: streak, matching: find.text('Read today’s portion to start your streak.')), findsOneWidget);
+      // The fire is Noto's, as an image, the same everywhere; a screen reader
+      // passes over it, to the streak said in words.
+      final image = tester.widget<Image>(find.descendant(of: find.byType(StreakFlame), matching: find.byType(Image)));
+      expect((image.image as AssetImage).assetName, 'assets/images/fire.png');
+      expect(image.excludeFromSemantics, isTrue);
+      // Under the member's card, before the backup.
+      expect(tester.getTopLeft(streak).dy, greaterThan(tester.getBottomLeft(find.byType(InfoCard).first).dy));
+      expect(tester.getTopLeft(streak).dy, lessThan(tester.getTopLeft(find.text('Cloud backup')).dy));
+
+      await tester.tap(streak);
+      await tester.pumpAndSettle();
+      expect(c.read(routerProvider).state.uri.path, '/progress');
+
+      c.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: false));
+      c.read(routerProvider).go('/community/account');
+      await tester.pumpAndSettle();
+      expect(find.byType(StreakFlame), findsNothing);
+    });
+
+    testWidgets('opens the website signed in, for the password, passkeys and authenticator, and an admin the admin panel', (tester) async {
+      // The browser: what it is asked to open, which it opens but for the
+      // first.
+      final opened = <String>[];
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method != 'launch') return true;
+        opened.add((call.arguments as Map)['url'] as String);
+        return opened.length > 1;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      for (final admin in [false, true]) {
+        final forums = _Site(admin: admin);
+        await forums.verifyCode('reader@example.org', '123456');
+        await forums.updateDisplayName('Rivka');
+        await account(tester, forums: forums);
+        expect(find.descendant(of: find.byType(GroupHeader), matching: find.text('Sign-in & security')), findsOneWidget);
+        expect(find.text('Password, passkeys and authenticator'), findsOneWidget);
+        expect(find.text('Admin panel'), admin ? findsOneWidget : findsNothing, reason: 'admin: $admin');
+
+        await tester.ensureVisible(find.text('Password, passkeys and authenticator'));
+        await tester.tap(find.text('Password, passkeys and authenticator'));
+        await tester.pumpAndSettle();
+        expect(forums.asked, [SitePage.account]);
+        expect(opened.last, 'https://shnayimmikrah.org/account/handoff?t=one-time');
+        // Where the browser didn't open it, it says so.
+        expect(find.text('The link couldn’t be opened here.'), admin ? findsNothing : findsOneWidget);
+        ScaffoldMessenger.of(tester.element(find.text('Password, passkeys and authenticator'))).clearSnackBars();
+        await tester.pumpAndSettle();
+        if (admin) {
+          await tester.ensureVisible(find.text('Admin panel'));
+          await tester.tap(find.text('Admin panel'));
+          await tester.pumpAndSettle();
+          expect(forums.asked, [SitePage.account, SitePage.admin]);
+          expect(opened, hasLength(3));
+        }
+      }
+    });
+
+    testWidgets('in the demo, has no website to open', (tester) async {
+      final forums = DemoForumRepository();
+      await forums.verifyCode('reader@example.org', '123456');
+      await account(tester, forums: forums);
+      expect(find.text('Sign-in & security'), findsNothing);
+      expect(find.text('Admin panel'), findsNothing);
     });
 
     testWidgets('says that deleting the account takes its backup too, and offers a backup file first', (tester) async {
