@@ -642,7 +642,7 @@ const _screens = {
   'about_install': '/settings/about',
   'sheet_install': '/settings',
   'sheet_install_ios': '/settings/about',
-  'sheet_install_apk': '/settings/about',
+  'sheet_install_guide': '/settings/about',
   'sheet_install_windows': '/settings/about',
   'today_install': '/today',
   'sources': '/settings/about/sources',
@@ -990,7 +990,7 @@ final _screenOverrides = <String, List<Override>>{
     ],
   for (final screen in ['about_install', 'sheet_install', 'sheet_install_windows'])
     screen: [webInstallProvider.overrideWithValue(const _WebInstallOffered(canPrompt: true))],
-  for (final screen in ['sheet_install_ios', 'sheet_install_apk', 'today_install'])
+  for (final screen in ['sheet_install_ios', 'sheet_install_guide', 'today_install'])
     screen: [webInstallProvider.overrideWithValue(const _WebInstallOffered(canPrompt: false))],
 };
 
@@ -2312,7 +2312,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
   'kit_error': (tester) => _showGallery(tester, const ErrorPanelGallery()),
   'sheet_install': (tester) => _tapRow(tester, Icons.install_mobile),
   'sheet_install_ios': (tester) => _tapRow(tester, Icons.ios_share),
-  'sheet_install_apk': (tester) => _tapRow(tester, Icons.android),
+  'sheet_install_guide': (tester) => _tapRow(tester, Icons.format_list_numbered),
   'sheet_install_windows': (tester) => _tapRow(tester, Icons.desktop_windows_outlined),
   // Something has gone wrong: the row that copies the details for support,
   // last among the ways to reach us.
