@@ -2509,6 +2509,19 @@ class AppLocalizationsHe extends AppLocalizations {
   String get verifyAction => 'כניסה';
 
   @override
+  String get secondStepTitle => 'קוד מאפליקציית האימות';
+
+  @override
+  String get secondStepBody =>
+      'החשבון הזה מבקש קוד מאפליקציית האימות שלו. הזינו את הקוד בן שש הספרות שהיא מציגה, או אחד מקודי השחזור שלכם.';
+
+  @override
+  String get secondStepField => 'קוד';
+
+  @override
+  String get secondStepWrong => 'הקוד שגוי, או שכבר נעשה בו שימוש.';
+
+  @override
   String get useDifferentEmail => 'שימוש בכתובת אחרת';
 
   @override

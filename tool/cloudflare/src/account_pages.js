@@ -36,6 +36,46 @@ const STRINGS = {
     deleteLead: 'This deletes your account, its sessions and its codes, and everything you posted in the community. Enter your password to confirm.',
     deleteLeadNoPassword: 'This deletes your account, its sessions and its codes, and everything you posted in the community. You made it in the app, by code, so it has no password to enter.',
     deleteButton: 'Delete my account',
+    signInPasskey: 'Sign in with a passkey',
+    signInEmailCode: 'Email me a sign-in code instead',
+    passkeyFailed: 'That didn’t work. Try again, or sign in another way.',
+    emailCodeTitle: 'Sign in with a code',
+    emailCodeLead: 'We will email you a six-digit code. It works for 15 minutes. If the address has no account yet, this makes one.',
+    emailCodeSend: 'Email me a code',
+    emailCodeEnterLead: 'Enter the six-digit code we sent to your email.',
+    twoStepTitle: 'Two-step sign-in',
+    twoStepLead: 'Enter the six-digit code from your authenticator app, or one of your recovery codes.',
+    twoStepField: 'Code',
+    continueButton: 'Continue',
+    methodsTitle: 'Ways to sign in',
+    passwordSet: 'Password: set. A password reset changes it.',
+    passwordNone: 'Password: none. A password reset gives the account one.',
+    passkeysTitle: 'Passkeys',
+    passkeysLead: 'Sign in with your face, your fingerprint or your device’s PIN instead of a password. A passkey stays on your device, or in your password manager, and works only on this site.',
+    passkeysNone: 'No passkeys yet.',
+    passkeyAdded: 'Passkey added',
+    passkeyLastUsed: 'last used',
+    passkeyAdd: 'Add a passkey',
+    passkeyRemove: 'Remove',
+    passkeyUnsupported: 'This browser can’t make passkeys.',
+    totpTitle: 'Authenticator app',
+    totpLead: 'Ask for a code from an authenticator app, such as Google Authenticator, Microsoft Authenticator, 1Password or Authy, each time you sign in with a password or an emailed code.',
+    totpOn: 'On.',
+    recoveryLeft: 'Recovery codes left:',
+    totpSetUp: 'Set up an authenticator app',
+    totpOff: 'Turn it off',
+    totpNewCodes: 'Make new recovery codes',
+    totpCodeField: 'A code from your authenticator app, or a recovery code',
+    totpSetupTitle: 'Set up your authenticator app',
+    totpSetupScan: 'Scan this code with your authenticator app, or type the key below into it.',
+    totpSetupQr: 'QR code of the key, for an authenticator app',
+    totpSetupKey: 'Key',
+    totpSetupOpen: 'Open in an authenticator app on this device',
+    totpSetupConfirm: 'Then enter the six-digit code the app shows, to turn it on.',
+    totpConfirmButton: 'Turn on',
+    recoveryTitle: 'Your recovery codes',
+    recoveryLead: 'Keep these somewhere safe, such as a password manager, or on paper. Each signs you in once if you lose your authenticator. They won’t be shown again.',
+    recoveryDone: 'I’ve saved them',
     notices: {
       'check-email': 'If the address is new, we have sent it a code.',
       'reset-sent': 'If an account exists for this address, we have sent it a link.',
@@ -43,6 +83,10 @@ const STRINGS = {
       'reset-done': 'Your password is changed. Sign in with the new one.',
       deleted: 'Your account is deleted.',
       unverified: 'Confirm your email first. We have sent a new code.',
+      'totp-on': 'The authenticator app is on.',
+      'totp-off': 'The authenticator app is off.',
+      'passkey-added': 'The passkey is added. You can sign in with it now.',
+      'passkey-removed': 'The passkey is removed.',
     },
     errors: {
       email: 'That address does not look right.',
@@ -56,12 +100,13 @@ const STRINGS = {
       email_send: 'We could not send the email. Try again later.',
       forbidden: 'This request was refused.',
       notFound: 'This page does not exist.',
+      second: 'That code is wrong, or was used already. Try again.',
     },
     footer: 'Protected by Cloudflare Turnstile.',
   },
   he: {
     dir: 'rtl',
-    site: 'שמע מקרא · חשבון',
+    site: 'שניים מקרא · חשבון',
     email: 'כתובת דוא״ל',
     password: 'סיסמה (לפחות 10 תווים)',
     newPassword: 'סיסמה חדשה (לפחות 10 תווים)',
@@ -91,6 +136,46 @@ const STRINGS = {
     deleteLead: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו, וכל מה שפרסמתם בקהילה. הזינו את הסיסמה לאישור.',
     deleteLeadNoPassword: 'הפעולה מוחקת את החשבון, החיבורים והקודים שלו, וכל מה שפרסמתם בקהילה. החשבון נוצר באפליקציה, בקוד, ולכן אין לו סיסמה להזין.',
     deleteButton: 'מחיקת החשבון שלי',
+    signInPasskey: 'התחברות עם מפתח גישה',
+    signInEmailCode: 'שליחת קוד התחברות בדוא״ל במקום',
+    passkeyFailed: 'זה לא הצליח. נסו שוב, או התחברו בדרך אחרת.',
+    emailCodeTitle: 'התחברות עם קוד',
+    emailCodeLead: 'נשלח אליכם בדוא״ל קוד בן שש ספרות, תקף 15 דקות. אם לכתובת עוד אין חשבון, ייווצר חשבון.',
+    emailCodeSend: 'שליחת קוד בדוא״ל',
+    emailCodeEnterLead: 'הזינו את הקוד בן שש הספרות ששלחנו לדוא״ל שלכם.',
+    twoStepTitle: 'התחברות בשני שלבים',
+    twoStepLead: 'הזינו את הקוד בן שש הספרות מאפליקציית האימות, או אחד מקודי השחזור שלכם.',
+    twoStepField: 'קוד',
+    continueButton: 'המשך',
+    methodsTitle: 'דרכי התחברות',
+    passwordSet: 'סיסמה: מוגדרת. איפוס סיסמה משנה אותה.',
+    passwordNone: 'סיסמה: אין. איפוס סיסמה נותן לחשבון סיסמה.',
+    passkeysTitle: 'מפתחות גישה',
+    passkeysLead: 'התחברות בזיהוי פנים, בטביעת אצבע או בקוד המכשיר, במקום סיסמה. מפתח הגישה נשמר במכשיר או במנהל הסיסמאות, ופועל רק באתר הזה.',
+    passkeysNone: 'עוד אין מפתחות גישה.',
+    passkeyAdded: 'מפתח גישה נוסף',
+    passkeyLastUsed: 'שימוש אחרון',
+    passkeyAdd: 'הוספת מפתח גישה',
+    passkeyRemove: 'הסרה',
+    passkeyUnsupported: 'הדפדפן הזה לא יכול ליצור מפתחות גישה.',
+    totpTitle: 'אפליקציית אימות',
+    totpLead: 'בקשת קוד מאפליקציית אימות, כמו Google Authenticator,‏ Microsoft Authenticator,‏ 1Password או Authy, בכל התחברות בסיסמה או בקוד שנשלח בדוא״ל.',
+    totpOn: 'פועלת.',
+    recoveryLeft: 'קודי שחזור שנותרו:',
+    totpSetUp: 'הגדרת אפליקציית אימות',
+    totpOff: 'כיבוי',
+    totpNewCodes: 'יצירת קודי שחזור חדשים',
+    totpCodeField: 'קוד מאפליקציית האימות, או קוד שחזור',
+    totpSetupTitle: 'הגדרת אפליקציית האימות',
+    totpSetupScan: 'סרקו את הקוד הזה באפליקציית האימות, או הקלידו בה את המפתח שלמטה.',
+    totpSetupQr: 'קוד QR של המפתח, לאפליקציית אימות',
+    totpSetupKey: 'מפתח',
+    totpSetupOpen: 'פתיחה באפליקציית אימות במכשיר הזה',
+    totpSetupConfirm: 'אחר כך הזינו את הקוד בן שש הספרות שהאפליקציה מציגה, כדי להפעיל.',
+    totpConfirmButton: 'הפעלה',
+    recoveryTitle: 'קודי השחזור שלכם',
+    recoveryLead: 'שמרו אותם במקום בטוח, כמו מנהל סיסמאות, או על נייר. כל אחד מהם מחבר אתכם פעם אחת אם תאבדו את אפליקציית האימות. הם לא יוצגו שוב.',
+    recoveryDone: 'שמרתי אותם',
     notices: {
       'check-email': 'אם הכתובת חדשה, שלחנו אליה קוד.',
       'reset-sent': 'אם יש חשבון לכתובת הזאת, שלחנו אליה קישור.',
@@ -98,6 +183,10 @@ const STRINGS = {
       'reset-done': 'הסיסמה שונתה. התחברו עם הסיסמה החדשה.',
       deleted: 'החשבון נמחק.',
       unverified: 'יש לאמת את הדוא״ל לפני ההתחברות. שלחנו קוד חדש.',
+      'totp-on': 'אפליקציית האימות פועלת.',
+      'totp-off': 'אפליקציית האימות כובתה.',
+      'passkey-added': 'מפתח הגישה נוסף. אפשר להתחבר איתו עכשיו.',
+      'passkey-removed': 'מפתח הגישה הוסר.',
     },
     errors: {
       email: 'כתובת הדוא״ל אינה נראית תקינה.',
@@ -111,6 +200,7 @@ const STRINGS = {
       email_send: 'לא הצלחנו לשלוח דוא״ל. נסו שוב מאוחר יותר.',
       forbidden: 'הבקשה נדחתה.',
       notFound: 'הדף הזה אינו קיים.',
+      second: 'הקוד שגוי, או שכבר נעשה בו שימוש. נסו שוב.',
     },
     footer: 'מוגן באמצעות Cloudflare Turnstile.',
   },
@@ -142,10 +232,11 @@ function field(name, label, type, extra = '') {
 }
 
 // A page with its notice or error, and its body.
-export function render(lang, { title, body, notice, error, status = 200 }) {
+// With [script], the page loads the passkey script (account_methods.js).
+export function render(lang, { title, body, notice, error, status = 200, script = false }) {
   const t = STRINGS[lang];
   const known = notice && Object.hasOwn(t.notices, notice);
-  const message = error ? `<p class="error" role="alert">${t.errors[error]}</p>`
+  const message = error && Object.hasOwn(t.errors, error) ? `<p class="error" role="alert">${t.errors[error]}</p>`
     : known ? `<p class="notice" role="status">${t.notices[notice]}</p>` : '';
   const html = `<!doctype html>
 <html lang="${lang}" dir="${t.dir}">
@@ -154,6 +245,7 @@ export function render(lang, { title, body, notice, error, status = 200 }) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>${escapeHtml(title)} · ${t.site}</title>
+${script ? '<script src="/account/passkey.js" defer></script>' : ''}
 <style>
   :root { color-scheme: light dark; --fg: #1d1b18; --bg: #fbf9f4; --accent: #2e5c4a; --err: #9b2c1f; }
   @media (prefers-color-scheme: dark) { :root { --fg: #efeae0; --bg: #1a1916; --accent: #8fc2a8; --err: #f0a090; } }
@@ -168,6 +260,16 @@ export function render(lang, { title, body, notice, error, status = 200 }) {
   .error { color: var(--err); font-weight: 600; }
   .notice { font-weight: 600; }
   .muted { font-size: .875rem; opacity: .8; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 .25rem; }
+  .secondary { background: transparent; color: var(--accent); border: 1px solid currentColor; }
+  .qr { display: block; width: 12rem; max-width: 100%; margin: 1rem 0; }
+  .key { font-family: ui-monospace, monospace; font-size: 1.05rem; letter-spacing: .05em; direction: ltr; unicode-bidi: isolate; }
+  .codes { font-family: ui-monospace, monospace; font-size: 1.1rem; direction: ltr; display: grid; grid-template-columns: repeat(2, max-content); gap: .4rem 2rem; padding: 0; list-style: none; }
+  ul.keys { padding: 0; list-style: none; }
+  ul.keys li { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+  ul.keys form { margin: .25rem 0; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -201,6 +303,9 @@ ${field('password', t.password, 'password', 'autocomplete="current-password" req
 ${turnstile(siteKey)}
 <button type="submit">${t.signInButton}</button>
 </form>
+<p data-passkey hidden><button type="button" id="passkey-signin" class="secondary" data-failed="${escapeHtml(t.passkeyFailed)}" data-next="${link('/account', lang)}">${t.signInPasskey}</button></p>
+<p id="passkey-status" role="status"></p>
+<p><a href="${link('/account/sign-in/email', lang)}">${t.signInEmailCode}</a></p>
 <p><a href="${link('/account/reset', lang)}">${t.forgot}</a></p>
 <p><a href="${link('/account/sign-up', lang)}">${t.signUpSwitch}</a></p>`;
 }
@@ -239,11 +344,24 @@ ${turnstile(siteKey)}
 </form>`;
 }
 
-// The signed-in account's page. An account made in the app has no password
-// (pw_alg 'none'), so deleting it asks for none.
-export function accountBody(lang, { email, email_verified_at: verified, role, pw_alg: alg }) {
+// A date as the account page shows it: the day, in UTC.
+function day(ms) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+// The signed-in account's page: its ways of signing in ([security]: the
+// authenticator, its recovery codes left, and the passkeys), then signing
+// out and deleting. An account made in the app has no password (pw_alg
+// 'none'), so deleting it asks for none.
+export function accountBody(lang, { email, email_verified_at: verified, role, pw_alg: alg }, security = {}) {
   const t = STRINGS[lang];
   const hasPassword = alg === 'pbkdf2-sha256';
+  const { totp = false, recoveryLeft = 0, passkeys = [] } = security;
+  const codeField = field('code', t.totpCodeField, 'text', 'autocomplete="one-time-code" required maxlength="12"');
+  const keys = passkeys.length
+    ? `<ul class="keys">${passkeys.map((k) => `<li><span>${t.passkeyAdded} ${day(k.created_at)}${k.last_used_at ? `, ${t.passkeyLastUsed} ${day(k.last_used_at)}` : ''}</span>
+<form method="post" action="${link('/account/passkey/remove', lang)}"><input type="hidden" name="id" value="${escapeHtml(k.id)}"><button type="submit" class="secondary">${t.passkeyRemove}</button></form></li>`).join('\n')}</ul>`
+    : `<p class="muted">${t.passkeysNone}</p>`;
   return `<p>${t.signedInAs} <strong>${escapeHtml(email)}</strong></p>
 ${role && Object.hasOwn(t.roles, role) ? `<p>${t.roles[role]}</p>` : ''}
 ${role === 'admin' ? `<p><a href="/account/admin">${t.adminPanel}</a></p>` : ''}
@@ -251,6 +369,19 @@ ${verified ? '' : `<p>${t.unverified}</p>`}
 <form method="post" action="${link('/account/sign-out', lang)}">
 <button type="submit">${t.signOut}</button>
 </form>
+<h2>${t.methodsTitle}</h2>
+<p>${hasPassword ? t.passwordSet : t.passwordNone} <a href="${link('/account/reset', lang)}">${t.resetTitle}</a></p>
+<h3>${t.passkeysTitle}</h3>
+<p class="muted">${t.passkeysLead}</p>
+${keys}
+<p data-passkey hidden><button type="button" id="passkey-add" data-done="${link('/account', lang)}${lang === 'he' ? '&amp;' : '?'}notice=passkey-added" data-failed="${escapeHtml(t.passkeyFailed)}">${t.passkeyAdd}</button></p>
+<p id="passkey-status" role="status"></p>
+<h3>${t.totpTitle}</h3>
+<p class="muted">${t.totpLead}</p>
+${totp ? `<p>${t.totpOn} ${t.recoveryLeft} ${recoveryLeft}</p>
+<form method="post" action="${link('/account/recovery/new', lang)}">${codeField}<button type="submit" class="secondary">${t.totpNewCodes}</button></form>
+<form method="post" action="${link('/account/totp/disable', lang)}">${codeField}<button type="submit" class="secondary">${t.totpOff}</button></form>`
+    : `<form method="post" action="${link('/account/totp/start', lang)}"><button type="submit">${t.totpSetUp}</button></form>`}
 <h2>${t.deleteTitle}</h2>
 <p class="muted">${hasPassword ? t.deleteLead : t.deleteLeadNoPassword}</p>
 <form method="post" action="${link('/account/delete', lang)}">
@@ -261,4 +392,57 @@ ${hasPassword ? field('password', t.password, 'password', 'autocomplete="current
 
 export function strings(lang) {
   return STRINGS[lang];
+}
+
+export function emailCodeBody(lang, siteKey) {
+  const t = STRINGS[lang];
+  return `<p>${t.emailCodeLead}</p>
+<form method="post" action="${link('/account/sign-in/email', lang)}">
+${field('email', t.email, 'email', 'autocomplete="email" required maxlength="254"')}
+${turnstile(siteKey)}
+<button type="submit">${t.emailCodeSend}</button>
+</form>
+<p><a href="${link('/account/sign-in', lang)}">${t.signInTitle}</a></p>`;
+}
+
+export function emailCodeEnterBody(lang, email) {
+  const t = STRINGS[lang];
+  return `<p>${t.emailCodeEnterLead}</p>
+<form method="post" action="${link('/account/sign-in/code', lang)}">
+${field('email', t.email, 'email', `autocomplete="email" required maxlength="254" value="${escapeHtml(email)}"`)}
+${field('code', t.code, 'text', 'inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6}" maxlength="6"')}
+<button type="submit">${t.signInButton}</button>
+</form>
+<p><a href="${link('/account/sign-in/email', lang)}">${t.resendButton}</a></p>`;
+}
+
+export function twoStepBody(lang) {
+  const t = STRINGS[lang];
+  return `<p>${t.twoStepLead}</p>
+<form method="post" action="${link('/account/two-step', lang)}">
+${field('code', t.twoStepField, 'text', 'autocomplete="one-time-code" required maxlength="12" autofocus')}
+<button type="submit">${t.continueButton}</button>
+</form>`;
+}
+
+// The authenticator's set-up: the key as a QR code ([qr], an SVG made here),
+// as text in groups of four, and as a link for an app on the same device.
+export function totpSetupBody(lang, { qr, key, uri }) {
+  const t = STRINGS[lang];
+  return `<p>${t.totpSetupScan}</p>
+<div class="qr" role="img" aria-label="${escapeHtml(t.totpSetupQr)}">${qr}</div>
+<p>${t.totpSetupKey}: <span class="key">${escapeHtml(key)}</span></p>
+<p><a href="${escapeHtml(uri)}">${t.totpSetupOpen}</a></p>
+<p>${t.totpSetupConfirm}</p>
+<form method="post" action="${link('/account/totp/confirm', lang)}">
+${field('code', t.code, 'text', 'inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9 ]{6,7}" maxlength="7"')}
+<button type="submit">${t.totpConfirmButton}</button>
+</form>`;
+}
+
+export function recoveryBody(lang, codes) {
+  const t = STRINGS[lang];
+  return `<p>${t.recoveryLead}</p>
+<ul class="codes">${codes.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
+<p><a href="${link('/account', lang)}">${t.recoveryDone}</a></p>`;
 }

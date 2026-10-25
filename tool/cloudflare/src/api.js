@@ -44,10 +44,10 @@ import {
   readCookie,
   recordTry,
   sameOrigin,
-  sendCode,
   sessionCookie,
 } from './accounts.js';
-import { constantTimeEqual, keyedHash, randomToken, tokenHash } from './account_crypto.js';
+import { checkCode, confirmedByCode, hasSecondStep, secondStepOk, sendSignInCode } from './account_methods.js';
+import { randomToken, tokenHash } from './account_crypto.js';
 import * as db from './account_db.js';
 import * as cdb from './community_db.js';
 
@@ -58,8 +58,6 @@ const MAX_BODY = 16 * 1024;
 // The progress backup holds the reader's notes too.
 const MAX_PROGRESS = 900 * 1024;
 const UNSAFE = ['POST', 'PUT', 'PATCH', 'DELETE'];
-// An account made by the app's code has no password to sign in with.
-const NO_PASSWORD = { pw_alg: 'none', pw_iter: 0, pw_salt: '', pw_hash: '' };
 
 const HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -193,10 +191,8 @@ async function requestCode(request, env, now) {
   if (!email) throw new ApiError('invalid_email');
   if (await limited(env, request, 'appCode', email, now)) throw new ApiError('rate_limited', 429);
   await recordTry(env, request, 'appCode', email, now);
-  let user = await db.findUserByEmail(env.LOGS, email).first();
-  user ??= await db.insertUser(env.LOGS, { email, password: NO_PASSWORD, now }).first();
   try {
-    await sendCode(env, user.id, email, now);
+    await sendSignInCode(env, email, now);
   } catch (error) {
     console.error('app code email failed', error.name);
     throw new ApiError('email_failed', 503);
@@ -205,8 +201,9 @@ async function requestCode(request, env, now) {
 }
 
 // Checks the code and signs in: the token for the app, and the cookie for
-// the site. An address confirmed here for the first time loses any password
-// set before it was confirmed, which whoever set it could not prove theirs.
+// the site. An account with an authenticator app asks for its code too
+// ([totp], or a recovery code): without it the answer is totp_required, and
+// the emailed code stays good, to be sent again with it.
 async function verifyCode(request, env, now) {
   const body = await readJson(request, MAX_BODY);
   const email = emailOf(body?.email);
@@ -215,30 +212,21 @@ async function verifyCode(request, env, now) {
   if (await limited(env, request, 'verify', email, now)) throw new ApiError('rate_limited', 429);
   await recordTry(env, request, 'verify', email, now);
 
-  const user = await db.findUserByEmail(env.LOGS, email).first();
-  const row = user && await db.findCode(env.LOGS, user.id).first();
-  if (!row || row.expires_at <= now || row.attempts >= db.CODE_TRIES) {
-    if (row) await db.deleteCode(env.LOGS, row.id).run();
-    throw new ApiError('invalid_code');
+  const user = await checkCode(env, email, code, now);
+  if (!user) throw new ApiError('invalid_code');
+  if (await hasSecondStep(env, user.id)) {
+    if (body?.totp == null || body.totp === '') throw new ApiError('totp_required', 401);
+    if (await limited(env, request, 'secondStep', email, now)) throw new ApiError('rate_limited', 429);
+    if (!(await secondStepOk(env, user.id, body.totp, now))) {
+      await recordTry(env, request, 'secondStep', email, now);
+      throw new ApiError('invalid_totp', 401);
+    }
   }
-  const expected = await keyedHash(env.ACCOUNTS_KEY, `code|${user.id}|${code}`);
-  if (!constantTimeEqual(expected, row.code_hash)) {
-    const tries = await db.countCodeTry(env.LOGS, row.id).first();
-    if (tries.attempts >= db.CODE_TRIES) await db.deleteCode(env.LOGS, row.id).run();
-    throw new ApiError('invalid_code');
-  }
-
   const token = randomToken();
-  const statements = [];
-  if (!user.email_verified_at) {
-    statements.push(db.setPassword(env.LOGS, user.id, NO_PASSWORD), db.deleteSessionsOf(env.LOGS, user.id));
-  }
-  statements.push(
-    db.markVerified(env.LOGS, user.id, now),
-    db.deleteCodesOf(env.LOGS, user.id),
+  await env.LOGS.batch([
+    ...confirmedByCode(user, now, env.LOGS),
     db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now }),
-  );
-  await env.LOGS.batch(statements);
+  ]);
   const response = json({ token, user: { id: String(user.id), email } });
   response.headers.append('Set-Cookie', sessionCookie(token));
   return response;

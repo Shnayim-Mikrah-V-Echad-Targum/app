@@ -64,7 +64,9 @@ const ACCOUNT_COLUMNS = `u.id, u.email, u.email_verified_at, u.created_at, u.pw_
   p.display_name, p.trust_level, p.accepted_terms_at, p.banned_at, p.silenced_until,
   (SELECT count(*) FROM posts WHERE author_id = u.id AND deleted_at IS NULL) AS posts,
   (SELECT max(created_at) FROM sessions WHERE user_id = u.id) AS last_sign_in,
-  (SELECT count(*) FROM sessions WHERE user_id = u.id AND expires_at > ?1) AS sessions`;
+  (SELECT count(*) FROM sessions WHERE user_id = u.id AND expires_at > ?1) AS sessions,
+  (SELECT confirmed_at FROM totp WHERE user_id = u.id) AS totp_at,
+  (SELECT count(*) FROM passkeys WHERE user_id = u.id) AS passkeys`;
 
 // A page of accounts, newest first, whose address or display name holds [query].
 export function accounts(db, { query, now, limit, offset }) {

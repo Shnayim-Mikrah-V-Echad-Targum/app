@@ -21,8 +21,8 @@ import {
 import * as db from './account_db.js';
 import { deleteMember } from './community_db.js';
 import { codeMail, resetMail, sendMail } from './mail.js';
+import * as methods from './account_methods.js';
 import {
-  accountBody,
   langOf,
   render,
   resetBody,
@@ -36,7 +36,8 @@ import {
 const BASE = '/account';
 const COOKIE = '__Host-sm_session';
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-const MAX_BODY = 4096;
+// A passkey's registration is the largest post the pages make.
+const MAX_BODY = 8192;
 const MINUTE = 60000;
 const HOUR = 60 * MINUTE;
 
@@ -48,8 +49,13 @@ const LIMITS = {
   signin: { email: [10, 15 * MINUTE], address: [30, 15 * MINUTE] },
   reset: { email: [5, HOUR], address: [20, HOUR] },
   resetComplete: { address: [30, 15 * MINUTE] },
-  // The app's sign-in code (api.js), which has no Turnstile to pass.
+  // The app's sign-in code (api.js), which has no Turnstile to pass, and
+  // the site's (account_methods.js).
   appCode: { email: [5, 15 * MINUTE], address: [20, 15 * MINUTE] },
+  // Wrong codes at the second step, per account and per address.
+  secondStep: { email: [10, 15 * MINUTE], address: [30, 15 * MINUTE] },
+  // Passkey sign-ins begun, and failed, per address.
+  passkey: { address: [60, 15 * MINUTE] },
 };
 
 const SECURITY = {
@@ -61,10 +67,11 @@ const SECURITY = {
   'X-Content-Type-Options': 'nosniff',
   'Content-Security-Policy': [
     "default-src 'none'",
-    'script-src https://challenges.cloudflare.com',
+    // The site's own passkey script (account_methods.js), and Turnstile's.
+    "script-src 'self' https://challenges.cloudflare.com",
     "style-src 'unsafe-inline'",
     'frame-src https://challenges.cloudflare.com',
-    'connect-src https://challenges.cloudflare.com',
+    "connect-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'none'",
     "frame-ancestors 'none'",
@@ -104,14 +111,48 @@ async function route(request, env, url, lang, now) {
     case `GET ${BASE}`: {
       const user = await currentUser(request, env, now);
       if (!user) return see(to(`${BASE}/sign-in`, lang));
-      return page(render(lang, { title: t.accountTitle, body: accountBody(lang, user) }));
+      return methods.accountPage(env, user, lang, { notice: url.searchParams.get('notice'), error: url.searchParams.get('error') });
     }
+    case `GET ${BASE}/sign-in/email`:
+      return methods.emailCodeForm(env, lang);
+    case `POST ${BASE}/sign-in/email`:
+      return methods.requestSignInCode(request, env, lang, now);
+    case `GET ${BASE}/sign-in/code`:
+      return methods.enterCodeForm(lang, url.searchParams.get('email') || '');
+    case `POST ${BASE}/sign-in/code`:
+      return methods.signInWithCode(request, env, lang, now);
+    case `GET ${BASE}/two-step`:
+      return methods.twoStepForm(request, env, lang, now);
+    case `POST ${BASE}/two-step`:
+      return methods.twoStep(request, env, lang, now);
+    case `POST ${BASE}/totp/start`:
+      return methods.startTotp(request, env, lang, now);
+    case `GET ${BASE}/totp`:
+      return methods.totpSetup(request, env, lang, now);
+    case `POST ${BASE}/totp/confirm`:
+      return methods.confirmTotp(request, env, lang, now);
+    case `POST ${BASE}/totp/disable`:
+      return methods.disableTotp(request, env, lang, now);
+    case `POST ${BASE}/recovery/new`:
+      return methods.newRecovery(request, env, lang, now);
+    case `GET ${BASE}/passkey.js`:
+      return methods.passkeyScript();
+    case `POST ${BASE}/passkey/register-options`:
+      return methods.registerOptions(request, env, now);
+    case `POST ${BASE}/passkey/register`:
+      return methods.register(request, env, now);
+    case `POST ${BASE}/passkey/signin-options`:
+      return methods.signInOptions(request, env, now);
+    case `POST ${BASE}/passkey/signin`:
+      return methods.signInWithPasskey(request, env, now);
+    case `POST ${BASE}/passkey/remove`:
+      return methods.removePasskey(request, env, lang, now);
     case `GET ${BASE}/sign-up`:
       return page(render(lang, { title: t.signUpTitle, body: signUpBody(lang, siteKey) }));
     case `POST ${BASE}/sign-up`:
       return signUp(request, env, lang, now);
     case `GET ${BASE}/sign-in`:
-      return page(render(lang, { title: t.signInTitle, body: signInBody(lang, siteKey), notice: url.searchParams.get('notice') }));
+      return page(render(lang, { title: t.signInTitle, body: signInBody(lang, siteKey), notice: url.searchParams.get('notice'), script: true }));
     case `POST ${BASE}/sign-in`:
       return signIn(request, env, lang, now);
     case `POST ${BASE}/sign-out`: {
@@ -273,9 +314,7 @@ async function signIn(request, env, lang, now) {
     return see(to(`${BASE}/verify`, lang, { notice: 'unverified', email }));
   }
 
-  const token = randomToken();
-  await env.LOGS.batch([db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now })]);
-  return see(BASE, sessionCookie(token));
+  return methods.finishSignIn(env, user.id, lang, now);
 }
 
 async function requestReset(request, env, lang, now) {
@@ -346,7 +385,7 @@ async function deleteAccount(request, env, lang, now) {
   if (!user) return see(to(`${BASE}/sign-in`, lang));
   const form = await request.formData();
   const password = String(form.get('password') ?? '');
-  const again = (error, status) => page(render(lang, { title: t.accountTitle, body: accountBody(lang, user), error, status }));
+  const again = (error, status) => methods.accountPage(env, user, lang, { error, status });
 
   // An account made in the app, by code, has no password to ask for: the
   // session is the proof, as it is in the app.
@@ -380,7 +419,7 @@ export async function sendCode(env, userId, email, now) {
 }
 
 // The Turnstile check on a form. A form without the widget's answer fails.
-async function humanOk(env, form) {
+export async function humanOk(env, form) {
   const token = form.get('cf-turnstile-response');
   if (!token) return false;
   const response = await fetch(VERIFY_URL, {
@@ -425,6 +464,11 @@ export async function recordTry(env, request, scope, email, now) {
   if (counts.length) await env.LOGS.batch(counts);
 }
 
+// The account signed in, from the session cookie, or null.
+export async function sessionUser(request, env, now) {
+  return currentUser(request, env, now);
+}
+
 async function currentUser(request, env, now) {
   const token = readCookie(request);
   if (!token) return null;
@@ -448,10 +492,10 @@ export function sameOrigin(request, env) {
     || request.headers.get('sec-fetch-site') === 'same-origin';
 }
 
-export function readCookie(request) {
+export function readCookie(request, cookie = COOKIE) {
   for (const part of (request.headers.get('cookie') || '').split(';')) {
     const [name, ...value] = part.trim().split('=');
-    if (name === COOKIE) return value.join('=');
+    if (name === cookie) return value.join('=');
   }
   return null;
 }
@@ -464,23 +508,24 @@ export function clearCookie() {
   return `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
-// A path with the language and a notice, or an email, for the next page.
-function to(path, lang, { notice, email } = {}) {
+// A path with the language and a notice, an error, or an email, for the next page.
+export function to(path, lang, { notice, error, email } = {}) {
   const query = new URLSearchParams();
   if (lang === 'he') query.set('lang', 'he');
   if (notice) query.set('notice', notice);
+  if (error) query.set('error', error);
   if (email) query.set('email', email);
   const text = query.toString();
   return text ? `${path}?${text}` : path;
 }
 
-function page({ html, status }, cookie) {
+export function page({ html, status }, cookie) {
   const headers = new Headers({ ...SECURITY, 'Content-Type': 'text/html; charset=utf-8' });
   if (cookie) headers.append('Set-Cookie', cookie);
   return new Response(html, { status, headers });
 }
 
-function see(location, cookie) {
+export function see(location, cookie) {
   const headers = new Headers({ ...SECURITY, Location: location });
   if (cookie) headers.append('Set-Cookie', cookie);
   return new Response(null, { status: 303, headers });

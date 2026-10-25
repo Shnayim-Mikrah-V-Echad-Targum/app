@@ -70,7 +70,7 @@
           {"type": "bullet", "text": "The code we email to confirm an address lasts 15 minutes, and a link to reset a password lasts an hour. Both are kept only as hashes, and are removed once used or once they expire."},
           {"type": "bullet", "text": "A sign-in lasts 30 days, and is renewed while you keep using it, unless you sign out or reset your password. A reset signs out every session."},
           {"type": "bullet", "text": "An address that is never confirmed is removed after 7 days."},
-          {"type": "para", "text": "We send the email through Resend. The forms are protected by Cloudflare Turnstile, which checks that a person is filling them in. To limit guessing, the tries are counted per email address and per visitor address, using a keyed hash of the visitor’s address that changes every day."},
+          {"type": "para", "text": "You can also sign in with a code we email you, add a passkey, or turn on an authenticator app as a second step. For a passkey we keep only its public key and its identifier, never anything secret: the private key stays on your device or in your password manager. For an authenticator app we keep its shared key, encrypted, and the recovery codes only as hashes. We send the email through Resend. The forms are protected by Cloudflare Turnstile, which checks that a person is filling them in. To limit guessing, the tries are counted per email address and per visitor address, using a keyed hash of the visitor’s address that changes every day."},
           {"type": "para", "text": "To delete your account, sign in, choose Delete my account and enter your password; an account made in the app has none to enter. That removes at once the address, the password hash, the sign-ins, the codes and the reset links, and your community profile, posts and backup, as “Deleting your data” says."}
         ]
       },
@@ -314,7 +314,7 @@
           {"type": "bullet", "text": "הקוד שאנו שולחים כדי לאשר כתובת תקף 15 דקות, וקישור לאיפוס סיסמה תקף שעה. שניהם נשמרים רק כערכי גיבוב, ונמחקים עם השימוש בהם או עם פקיעת התוקף."},
           {"type": "bullet", "text": "חיבור נשאר פתוח 30 יום, ומתחדש כל עוד משתמשים בו, אלא אם יצאתם מהחשבון או איפסתם את הסיסמה. איפוס סיסמה מנתק את כל החיבורים."},
           {"type": "bullet", "text": "כתובת שאינה מאושרת נמחקת לאחר 7 ימים."},
-          {"type": "para", "text": "את הדוא״ל אנו שולחים דרך Resend. הטפסים מוגנים באמצעות Cloudflare Turnstile, שבודק שאדם הוא שממלא אותם. כדי להגביל ניחושים, הניסיונות נספרים לפי כתובת דוא״ל ולפי כתובת המבקר, באמצעות ערך גיבוב מפתח של כתובת המבקר, שמשתנה מדי יום."},
+          {"type": "para", "text": "אפשר גם להתחבר בקוד שנשלח אליכם בדוא״ל, להוסיף מפתח גישה, או להפעיל אפליקציית אימות כשלב שני. ממפתח גישה אנו שומרים רק את המפתח הציבורי ואת המזהה שלו, ולעולם לא דבר סודי: המפתח הפרטי נשאר במכשיר או במנהל הסיסמאות שלכם. מאפליקציית אימות אנו שומרים את המפתח המשותף, מוצפן, ואת קודי השחזור רק כערכי גיבוב. את הדוא״ל אנו שולחים דרך Resend. הטפסים מוגנים באמצעות Cloudflare Turnstile, שבודק שאדם הוא שממלא אותם. כדי להגביל ניחושים, הניסיונות נספרים לפי כתובת דוא״ל ולפי כתובת המבקר, באמצעות ערך גיבוב מפתח של כתובת המבקר, שמשתנה מדי יום."},
           {"type": "para", "text": "למחיקת החשבון, היכנסו, בחרו ״מחיקת החשבון שלי״ והזינו את הסיסמה; לחשבון שנוצר באפליקציה אין סיסמה להזין. הפעולה מסירה מיד את הכתובת, ערך הגיבוב של הסיסמה, החיבורים, הקודים וקישורי האיפוס, וגם את הפרופיל בקהילה, ההודעות והגיבוי, כמתואר ב״מחיקת המידע״."}
         ]
       },

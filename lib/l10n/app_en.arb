@@ -2202,6 +2202,13 @@
   },
   "codeLabel": "6-digit code",
   "verifyAction": "Sign in",
+  "secondStepTitle": "Your authenticator code",
+  "secondStepBody": "This account asks for a code from its authenticator app. Enter the six-digit code it shows, or one of your recovery codes.",
+  "secondStepField": "Code",
+  "secondStepWrong": "That code is wrong, or was used already.",
+  "@secondStepBody": {
+    "description": "In a dialog over the sign-in code, for an account that has turned on an authenticator app on the website."
+  },
   "useDifferentEmail": "Use a different email",
   "demoCodeHint": "Demo mode: any 6 digits will work.",
   "displayNameLabel": "Display name",
