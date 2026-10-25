@@ -21,9 +21,15 @@ const KINDS = ['discussion', 'weekly', 'question', 'announcement'];
 // (ThreadPostsNotifier.refetchChunk, lib/features/community/data/community_providers.dart).
 const PAGE_MAX = 500;
 
-// Staff: an admin, who may do everything, or a moderator.
+// An admin may do everything; the owner (the super admin) is an admin who
+// also names and removes the other admins.
+export function isAdmin(member) {
+  return member?.role === 'owner' || member?.role === 'admin';
+}
+
+// Staff: an admin, or a moderator.
 export function isStaff(member) {
-  return member?.role === 'admin' || member?.role === 'moderator';
+  return isAdmin(member) || member?.role === 'moderator';
 }
 
 function signedIn(member) {
@@ -373,23 +379,38 @@ export async function openReports(env, member) {
   }));
 }
 
-const USER_ACTIONS = ['silence_user', 'ban_user', 'unban_user', 'set_trust', 'grant_moderator', 'revoke_moderator'];
+const USER_ACTIONS = [
+  'silence_user', 'ban_user', 'unban_user', 'set_trust', 'grant_moderator', 'revoke_moderator', 'grant_admin', 'revoke_admin',
+];
 const ADMIN_ACTIONS = ['grant_moderator', 'revoke_moderator'];
+const OWNER_ACTIONS = ['grant_admin', 'revoke_admin'];
 const PROFILE_ACTIONS = ['silence_user', 'ban_user', 'unban_user', 'set_trust'];
 
-// A moderation action, logged. On a member: staff are acted on by an admin
-// alone, and the moderators are named by an admin alone.
+// Whether [member] may act on [other] at all: staff are acted on by an admin
+// alone, an admin by the owner alone, and the owner by no one else.
+export function mayActOn(member, other) {
+  if (other.role === 'owner') return member.id === other.id;
+  if (other.role === 'admin') return member.role === 'owner' || member.id === other.id;
+  if (other.role === 'moderator') return isAdmin(member);
+  return isStaff(member);
+}
+
+// A moderation action, logged. On a member: as mayActOn allows; the
+// moderators are named by an admin, and the admins by the owner.
 export async function moderate(env, member, body, now) {
   if (!isStaff(signedIn(member))) throw new ApiError('forbidden', 403);
   const action = String(body?.action ?? '');
   const target = id(body?.target_id);
   const reason = body?.reason == null ? null : String(body.reason).slice(0, 500);
-  if (ADMIN_ACTIONS.includes(action) && member.role !== 'admin') throw new ApiError('forbidden', 403);
+  if (ADMIN_ACTIONS.includes(action) && !isAdmin(member)) throw new ApiError('forbidden', 403);
+  if (OWNER_ACTIONS.includes(action) && member.role !== 'owner') throw new ApiError('forbidden', 403);
   if (USER_ACTIONS.includes(action)) {
     const other = await cdb.findUserRole(env.LOGS, target).first();
     if (!other) throw new ApiError('not_found', 404);
-    if (isStaff(other) && member.role !== 'admin') throw new ApiError('forbidden', 403);
-    if (other.role === 'admin' && action !== 'set_trust') throw new ApiError('forbidden', 403);
+    if (!mayActOn(member, other)) throw new ApiError('forbidden', 403);
+    // An admin's own account is still an admin's: only its trust level changes.
+    if (isAdmin(other) && !['set_trust', 'revoke_admin'].includes(action)) throw new ApiError('forbidden', 403);
+    if (other.id === member.id && action === 'revoke_admin') throw new ApiError('forbidden', 403);
   }
   if (action === 'set_trust' && !/^[0-4]$/.test(reason ?? '')) throw new ApiError('invalid_trust');
   const statements = cdb.moderation(env.LOGS, { action, target, actorId: member.id, reason, now });

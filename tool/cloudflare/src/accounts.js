@@ -20,6 +20,7 @@ import {
 } from './account_crypto.js';
 import * as db from './account_db.js';
 import { deleteMember } from './community_db.js';
+import { deviceOf } from './devices.js';
 import { codeMail, resetMail, sendMail } from './mail.js';
 import * as methods from './account_methods.js';
 import {
@@ -111,8 +112,17 @@ async function route(request, env, url, lang, now) {
     case `GET ${BASE}`: {
       const user = await currentUser(request, env, now);
       if (!user) return see(to(`${BASE}/sign-in`, lang));
-      return methods.accountPage(env, user, lang, { notice: url.searchParams.get('notice'), error: url.searchParams.get('error') });
+      await db.touchSession(env.LOGS, await tokenHash(readCookie(request)), now).run();
+      return methods.accountPage(env, user, lang, { notice: url.searchParams.get('notice'), error: url.searchParams.get('error') }, now);
     }
+    case `POST ${BASE}/password`:
+      return setPassword(request, env, lang, now);
+    case `POST ${BASE}/devices/sign-out`:
+      return signOutDevices(request, env, lang, now);
+    case `GET ${BASE}/handoff`:
+      return methods.handoffForm(env, url, lang, now);
+    case `POST ${BASE}/handoff`:
+      return methods.handoff(request, env, lang, now);
     case `GET ${BASE}/sign-in/email`:
       return methods.emailCodeForm(env, lang);
     case `POST ${BASE}/sign-in/email`:
@@ -252,7 +262,7 @@ async function verify(request, env, lang, now) {
   await env.LOGS.batch([
     db.markVerified(env.LOGS, user.id, now),
     db.deleteCodesOf(env.LOGS, user.id),
-    db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now }),
+    db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now, device: deviceOf(request) }),
   ]);
   return see(BASE, sessionCookie(token));
 }
@@ -314,7 +324,7 @@ async function signIn(request, env, lang, now) {
     return see(to(`${BASE}/verify`, lang, { notice: 'unverified', email }));
   }
 
-  return methods.finishSignIn(env, user.id, lang, now);
+  return methods.finishSignIn(env, request, user.id, lang, now);
 }
 
 async function requestReset(request, env, lang, now) {
@@ -379,13 +389,62 @@ async function resetComplete(request, env, lang, now) {
   return see(to(`${BASE}/sign-in`, lang, { notice: 'reset-done' }));
 }
 
+// How recent a sign-in must be to give a password to an account that has
+// none (made by code): there is no password to ask for instead.
+export const FRESH_MS = 15 * MINUTE;
+
+// Changes the password, given the current one; or gives an account made by
+// code its first, from a session begun in the last 15 minutes. Either way the
+// account's other sessions are signed out, and this one stays.
+async function setPassword(request, env, lang, now) {
+  const user = await currentUser(request, env, now);
+  if (!user) return see(to(`${BASE}/sign-in`, lang));
+  const form = await request.formData();
+  const again = (error, status) => methods.accountPage(env, user, lang, { error, status }, now);
+  const password = passwordOf(form.get('new_password'));
+  if (!password) return again('password', 400);
+  if (user.pw_alg === PW_ALG) {
+    if (await limited(env, request, 'signin', user.email, now)) return again('limited', 429);
+    const row = await db.findUserByEmail(env.LOGS, user.email).first();
+    if (!row || !(await verifyPassword(String(form.get('password') ?? ''), row))) {
+      await recordTry(env, request, 'signin', user.email, now);
+      return again('current', 401);
+    }
+  } else if (now - user.session_at > FRESH_MS) {
+    return again('stale', 403);
+  }
+  await env.LOGS.batch([
+    db.setPassword(env.LOGS, user.id, await hashPassword(password)),
+    db.deleteOtherSessions(env.LOGS, user.id, await tokenHash(readCookie(request))),
+  ]);
+  return see(to(BASE, lang, { notice: user.pw_alg === PW_ALG ? 'password-changed' : 'password-added' }));
+}
+
+// Signs one of the account's devices out ([id], from its list), or every
+// one but this ([others]).
+async function signOutDevices(request, env, lang, now) {
+  const user = await currentUser(request, env, now);
+  if (!user) return see(to(`${BASE}/sign-in`, lang));
+  const form = await request.formData();
+  if (form.get('others') === 'yes') {
+    await db.deleteOtherSessions(env.LOGS, user.id, await tokenHash(readCookie(request))).run();
+    return see(to(BASE, lang, { notice: 'devices-signed-out' }));
+  }
+  const id = Number(form.get('id'));
+  if (!Number.isSafeInteger(id) || id <= 0) return see(to(BASE, lang));
+  await db.deleteSessionById(env.LOGS, user.id, id).run();
+  // This device, from its own list: signed out here too.
+  if (id === user.session_id) return see(to(`${BASE}/sign-in`, lang, { notice: 'signed-out' }), clearCookie());
+  return see(to(BASE, lang, { notice: 'device-signed-out' }));
+}
+
 async function deleteAccount(request, env, lang, now) {
   const t = strings(lang);
   const user = await currentUser(request, env, now);
   if (!user) return see(to(`${BASE}/sign-in`, lang));
   const form = await request.formData();
   const password = String(form.get('password') ?? '');
-  const again = (error, status) => methods.accountPage(env, user, lang, { error, status });
+  const again = (error, status) => methods.accountPage(env, user, lang, { error, status }, now);
 
   // An account made in the app, by code, has no password to ask for: the
   // session is the proof, as it is in the app.

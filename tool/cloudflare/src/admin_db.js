@@ -87,6 +87,15 @@ export function account(db, id, now) {
   ).bind(now, id);
 }
 
+// The staff, by role, with their accounts where they have one.
+export function staff(db) {
+  return db.prepare(
+    `SELECT r.email, r.role, r.granted_at, u.id, p.display_name
+       FROM roles r LEFT JOIN users u ON u.email = r.email LEFT JOIN profiles p ON p.user_id = u.id
+      ORDER BY CASE r.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, r.granted_at`,
+  );
+}
+
 export function postsBy(db, userId, limit = 20) {
   return db.prepare(
     `SELECT p.id, p.thread_id, p.body, p.created_at, p.hidden_at, p.deleted_at, t.title
@@ -114,7 +123,7 @@ export function moderationLog(db, { target, limit }) {
   return db.prepare(
     `SELECT m.created_at, m.action, m.target_type, m.target_id, m.reason, u.email AS actor
        FROM moderation_log m LEFT JOIN users u ON u.id = m.actor_id
-      WHERE ?1 IS NULL OR (m.target_type IN ('user', 'moderator', 'trust', 'account') AND m.target_id = ?1)
+      WHERE ?1 IS NULL OR (m.target_type IN ('user', 'moderator', 'admin', 'trust', 'account') AND m.target_id = ?1)
       ORDER BY m.created_at DESC, m.id DESC LIMIT ?2`,
   ).bind(target ?? null, limit);
 }

@@ -50,6 +50,7 @@ import { checkCode, confirmedByCode, hasSecondStep, secondStepOk, sendSignInCode
 import { randomToken, tokenHash } from './account_crypto.js';
 import * as db from './account_db.js';
 import * as cdb from './community_db.js';
+import { deviceOf } from './devices.js';
 
 export { isApiPath } from './rules.js';
 
@@ -132,6 +133,8 @@ async function route(request, env, url, now) {
       return answer(await loadProgress(env, member));
     case 'PUT /progress':
       return answer(await saveProgress(env, member, body, now));
+    case 'POST /handoff':
+      return answer(await handoff(env, member, body, url, now));
     default:
       break;
   }
@@ -168,6 +171,7 @@ async function sessionOf(request, env, now) {
   const row = await cdb.findMember(env.LOGS, hash, now).first();
   if (!row) return { ...none, token };
   const member = await ensureProfile(env, row, now);
+  await db.touchSession(env.LOGS, hash, now).run();
   let refreshed = false;
   if (row.expires_at - now < db.SESSION_MS / 2) {
     await cdb.extendSession(env.LOGS, hash, now + db.SESSION_MS).run();
@@ -225,11 +229,23 @@ async function verifyCode(request, env, now) {
   const token = randomToken();
   await env.LOGS.batch([
     ...confirmedByCode(user, now, env.LOGS),
-    db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now }),
+    db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId: user.id, now, device: deviceOf(request) }),
   ]);
   const response = json({ token, user: { id: String(user.id), email } });
   response.headers.append('Set-Cookie', sessionCookie(token));
   return response;
+}
+
+// A one-time link, good for 5 minutes, that opens a page of the site (the
+// account page, or the admin panel) signed in as the app is, once its owner
+// says to continue there (account_methods.js, handoff).
+async function handoff(env, member, body, url, now) {
+  if (!member) throw new ApiError('not_signed_in', 401);
+  const next = String(body?.next ?? '/account');
+  if (!/^\/account(\/admin)?$/.test(next)) throw new ApiError('invalid_next');
+  const token = randomToken();
+  await db.insertHandoff(env.LOGS, { tokenHash: await tokenHash(token), userId: member.id, next, now }).run();
+  return { url: `${url.origin}/account/handoff?t=${token}` };
 }
 
 async function readJson(request, limit) {

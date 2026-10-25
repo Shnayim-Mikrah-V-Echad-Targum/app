@@ -144,5 +144,9 @@ void _registerFontLicenses() {
       ['Taamey Frank CLM'],
       await rootBundle.loadString('assets/fonts/licenses/GPL-2.0.txt'),
     );
+    yield LicenseEntryWithLineBreaks(
+      ['Noto Emoji'],
+      await rootBundle.loadString('assets/images/NotoEmoji-Apache-2.0.txt'),
+    );
   });
 }

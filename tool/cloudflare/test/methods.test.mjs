@@ -156,7 +156,7 @@ test('the site signs in with an emailed code, as the app does', async () => {
   assert.ok(cookie);
   const account = await (await send(state, 'GET', '/account', { cookie })).text();
   assert.match(account, /reader@example\.com/);
-  assert.match(account, /Password: none/);
+  assert.match(account, /No password yet/);
   assert.match(account, /Set up an authenticator app/);
   assert.match(account, /Add a passkey/);
   const wrong = await send(state, 'POST', '/account/sign-in/code', { form: { email: 'reader@example.com', code: '000000' } });

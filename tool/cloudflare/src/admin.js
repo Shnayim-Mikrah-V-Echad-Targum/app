@@ -11,7 +11,9 @@ import { tokenHash } from './account_crypto.js';
 import * as db from './account_db.js';
 import * as adb from './admin_db.js';
 import * as cdb from './community_db.js';
-import { ApiError, deletePost, excerptOf, moderate } from './community.js';
+import { ApiError, deletePost, ensureProfile, excerptOf, isAdmin, mayActOn, moderate, updateName } from './community.js';
+import { streakOf } from './account_methods.js';
+import { deviceName } from './devices.js';
 
 // Under /account, which the app's offline service worker already leaves to
 // the server (tool/web/sw_build.cjs), even in a browser with an older one.
@@ -34,7 +36,7 @@ export async function handleAdmin(request, env, url, now = Date.now()) {
   const token = readCookie(request);
   const admin = token ? await db.findSession(env.LOGS, await tokenHash(token), now).first() : null;
   if (!admin) return see('/account/sign-in');
-  if (admin.role !== 'admin') {
+  if (!isAdmin(admin)) {
     return page('Admin', '<p class="error">This page is for the site’s administrators.</p>', { status: 403, admin: null });
   }
   try {
@@ -66,7 +68,7 @@ async function route(request, env, url, admin, now) {
 
 // --- Actions ----------------------------------------------------------------------
 
-const ACCOUNT_ACTIONS = ['sign_out_everywhere', 'reset_sign_in', 'delete_account'];
+const ACCOUNT_ACTIONS = ['sign_out_everywhere', 'end_session', 'reset_sign_in', 'rename_user', 'delete_account'];
 
 // A change from one of the panel's forms; then back to the page it came from.
 async function act(request, env, admin, now) {
@@ -81,6 +83,8 @@ async function act(request, env, admin, now) {
       await accountAction(env, admin, action, Number(target), form, now);
     } else if (action === 'delete_post') {
       await deletePost(env, admin, target, now);
+    } else if (action === 'grant_admin' && form.get('confirm') !== 'yes') {
+      throw new ApiError('not_confirmed');
     } else {
       await moderate(env, admin, { action, target_id: target, reason }, now);
     }
@@ -92,16 +96,30 @@ async function act(request, env, admin, now) {
   return see(`${action === 'delete_account' ? `${BASE}/accounts` : to}?done=${encodeURIComponent(action)}`);
 }
 
-// Signing an account out everywhere, or deleting it with all it posted: never
-// another admin's, and never the panel's own account deleted from here.
+// Signing an account out, on one device or everywhere, clearing its second
+// steps, renaming it, or deleting it with all it posted: on another admin's
+// account, only the owner, and never the owner's but by the owner; an
+// admin's account is never deleted from here (the owner removes the role
+// first), nor the panel's own.
 async function accountAction(env, admin, action, target, form, now) {
   const other = await cdb.findUserRole(env.LOGS, target).first();
   if (!other) throw new ApiError('not_found', 404);
-  if (other.role === 'admin' && other.id !== admin.id) throw new ApiError('forbidden', 403);
+  if (!mayActOn(admin, other)) throw new ApiError('forbidden', 403);
+  let reason = null;
   if (action === 'delete_account') {
     if (other.id === admin.id) throw new ApiError('own_account', 403);
+    if (isAdmin(other)) throw new ApiError('forbidden', 403);
     if (form.get('confirm') !== 'yes') throw new ApiError('not_confirmed');
     await deleteEverything(env, other.id);
+  } else if (action === 'rename_user') {
+    const name = String(form.get('name') ?? '').trim();
+    if (!(await cdb.findProfile(env.LOGS, other.id).first())) await ensureProfile(env, { id: other.id, display_name: null }, now);
+    await updateName(env, { id: other.id }, { display_name: name });
+    reason = name;
+  } else if (action === 'end_session') {
+    const session = Number(form.get('session'));
+    if (!Number.isSafeInteger(session) || session <= 0) throw new ApiError('not_found', 404);
+    await db.deleteSessionById(env.LOGS, other.id, session).run();
   } else if (action === 'reset_sign_in') {
     // For a member locked out: the authenticator, its recovery codes and the
     // passkeys go, leaving the password and the emailed code.
@@ -109,17 +127,20 @@ async function accountAction(env, admin, action, target, form, now) {
   } else {
     await db.deleteSessionsOf(env.LOGS, other.id).run();
   }
-  await cdb.logModeration(env.LOGS, { actorId: admin.id, action, targetType: 'account', target: other.id, now }).run();
+  await cdb.logModeration(env.LOGS, { actorId: admin.id, action, targetType: 'account', target: other.id, reason, now }).run();
 }
 
 // --- Pages --------------------------------------------------------------------------
 
 async function overview(env, admin, now, notice) {
-  const [counts, days, kinds] = await Promise.all([
+  const [counts, days, kinds, staff, newest] = await Promise.all([
     adb.overview(env.LOGS, now).first(),
     adb.visitsByDay(env.LOGS, now, 14).all(),
     adb.eventsByKind(env.LOGS, now - DAY).all(),
+    adb.staff(env.LOGS).all(),
+    adb.accounts(env.LOGS, { query: '', now, limit: 10, offset: 0 }).all(),
   ]);
+  const accountLink = (a) => (a.id ? `<a href="${BASE}/accounts/${a.id}">${escapeHtml(a.email)}</a>` : escapeHtml(a.email));
   const card = (label, value, href) => `<a class="card" href="${href}"><span class="n">${value}</span><span>${label}</span></a>`;
   const body = `${notice}
 <div class="cards">
@@ -136,6 +157,10 @@ ${card('banned', counts.banned, `${BASE}/accounts`)}
 ${card('silenced', counts.silenced, `${BASE}/accounts`)}
 ${card('security events today', counts.events_day, `${BASE}/security`)}
 </div>
+<h2>Staff</h2>
+${table(['Email', 'Name', 'Role', 'Since'], staff.results.map((r) => [accountLink(r), escapeHtml(r.display_name ?? (r.id ? '—' : 'no account yet')), escapeHtml(roleName(r.role)), time(r.granted_at)]), 'No staff.')}
+<h2>Newest accounts</h2>
+${table(['Email', 'Name', 'Status', 'Made'], newest.results.map((a) => [accountLink(a), escapeHtml(a.display_name ?? '—'), escapeHtml(status(a, now)), time(a.created_at)]), 'No accounts yet.')}
 <h2>Visits, last 14 days</h2>
 ${table(['Day (UTC)', 'Visits', 'Visitors'], days.results.map((d) => [d.day, d.visits, d.visitors]), 'No visits yet.')}
 <h2>Security events, last 24 hours</h2>
@@ -151,7 +176,7 @@ async function accounts(env, admin, url, now, notice) {
   const rows = results.slice(0, PAGE).map((a) => [
     `<a href="${BASE}/accounts/${a.id}">${escapeHtml(a.email)}</a>`,
     escapeHtml(a.display_name ?? '—'),
-    escapeHtml(a.role ?? ''),
+    escapeHtml(a.role ? roleName(a.role) : ''),
     escapeHtml(status(a, now)),
     a.posts,
     time(a.created_at),
@@ -184,32 +209,51 @@ function status(a, now) {
 async function account(env, admin, id, now, notice) {
   const a = await adb.account(env.LOGS, id, now).first();
   if (!a) return page('Not found', '<p>There is no such account.</p>', { status: 404, admin });
-  const [posts, history] = await Promise.all([
+  const [posts, history, sessions, backup] = await Promise.all([
     adb.postsBy(env.LOGS, id).all(),
     adb.moderationLog(env.LOGS, { target: String(id), limit: 50 }).all(),
+    db.sessionsOf(env.LOGS, id, now).all(),
+    db.backedUpStreak(env.LOGS, id).first(),
   ]);
   const back = `${BASE}/accounts/${id}`;
   const self = a.id === admin.id;
-  const protectedStaff = a.role === 'admin' && !self;
+  const owner = admin.role === 'owner';
+  // Whether this admin may act on the account at all (mayActOn): any
+  // member's; a moderator's, as an admin; an admin's, as the owner.
+  const may = mayActOn(admin, { id: a.id, role: a.email_verified_at ? a.role : null });
+  const staffAdmin = a.role === 'admin' || a.role === 'owner';
   const actions = [];
-  if (!protectedStaff) {
+  if (may && !staffAdmin) {
     actions.push(a.banned_at || a.silenced_until > now
       ? button('unban_user', id, back, 'Lift ban and silence')
       : `${button('silence_user', id, back, 'Silence for 7 days')} ${button('ban_user', id, back, 'Ban', 'danger')}`);
+  }
+  if (may) {
     actions.push(`<form method="post" action="${BASE}/action" class="inline">${hidden('set_trust', id, back)}
 <label>Trust <select name="reason">${[0, 1, 2, 3, 4].map((n) => `<option${n === a.trust_level ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
 <button type="submit">Set</button></form>`);
+    actions.push(`<form method="post" action="${BASE}/action" class="inline">${hidden('rename_user', id, back)}
+<label>Display name <input name="name" value="${escapeHtml(a.display_name ?? '')}" minlength="2" maxlength="40" required></label>
+<button type="submit">Rename</button></form>`);
   }
-  if (!protectedStaff && a.email_verified_at && a.role !== 'admin') {
+  if (may && a.email_verified_at && !staffAdmin) {
     actions.push(a.role === 'moderator'
       ? button('revoke_moderator', id, back, 'Remove moderator')
       : button('grant_moderator', id, back, 'Make moderator'));
   }
-  if (!protectedStaff) actions.push(button('sign_out_everywhere', id, back, self ? 'Sign out everywhere (you too)' : 'Sign out everywhere'));
-  if (!protectedStaff && (a.totp_at || a.passkeys > 0)) {
+  // The owner names and removes the admins.
+  if (owner && !self && a.email_verified_at && a.role !== 'owner') {
+    actions.push(a.role === 'admin'
+      ? button('revoke_admin', id, back, 'Remove administrator', 'danger')
+      : `<form method="post" action="${BASE}/action" class="inline">${hidden('grant_admin', id, back)}
+<label><input type="checkbox" name="confirm" value="yes" required> Every permission</label>
+<button type="submit" class="danger">Make administrator</button></form>`);
+  }
+  if (may) actions.push(button('sign_out_everywhere', id, back, self ? 'Sign out everywhere (you too)' : 'Sign out everywhere'));
+  if (may && (a.totp_at || a.passkeys > 0)) {
     actions.push(button('reset_sign_in', id, back, 'Remove the authenticator and passkeys', 'danger'));
   }
-  if (!protectedStaff && !self) {
+  if (may && !self && !staffAdmin) {
     actions.push(`<form method="post" action="${BASE}/action" class="inline">${hidden('delete_account', id, back)}
 <label><input type="checkbox" name="confirm" value="yes" required> I am sure</label>
 <button type="submit" class="danger">Delete account and all it posted</button></form>`);
@@ -221,27 +265,40 @@ async function account(env, admin, id, now, notice) {
     p.deleted_at ? 'deleted' : p.hidden_at ? 'hidden' : '',
     p.deleted_at ? '' : postActions(p, back),
   ]);
+  const deviceRows = sessions.results.map((d) => {
+    const end = may ? `<form method="post" action="${BASE}/action" class="inline">${hidden('end_session', id, back)}<input type="hidden" name="session" value="${d.id}"><button type="submit">Sign out</button></form>` : '';
+    return [escapeHtml(deviceName(d.device, 'en')), time(d.created_at), time(d.last_seen_at), end];
+  });
+  const streak = streakOf(backup);
   const body = `${notice}
 <dl>
 <dt>Email</dt><dd>${escapeHtml(a.email)}</dd>
 <dt>Display name</dt><dd>${escapeHtml(a.display_name ?? 'no profile yet')}</dd>
-<dt>Role</dt><dd>${escapeHtml(a.role ?? 'member')}</dd>
+<dt>Role</dt><dd>${escapeHtml(roleName(a.role))}</dd>
 <dt>Status</dt><dd>${escapeHtml(status(a, now))}</dd>
-<dt>Password</dt><dd>${a.pw_alg === 'none' ? 'none (made in the app, by code)' : 'set'}</dd>
+<dt>Password</dt><dd>${a.pw_alg === 'none' ? 'none (signs in by code)' : 'set'}</dd>
 <dt>Authenticator</dt><dd>${a.totp_at ? `on since ${time(a.totp_at)}` : 'off'}</dd>
 <dt>Passkeys</dt><dd>${a.passkeys}</dd>
+<dt>Streak</dt><dd>${streak ? `🔥 ${streak.days} day${streak.days === 1 ? '' : 's'} on track, parsha streak ${streak.weeks} week${streak.weeks === 1 ? '' : 's'}${streak.asOf ? ` (as of ${escapeHtml(streak.asOf)})` : ''}` : 'no backup from the app'}</dd>
+<dt>Backup</dt><dd>${backup ? `last saved ${time(backup.updated_at)}` : 'none'}</dd>
 <dt>Made</dt><dd>${time(a.created_at)}</dd>
 <dt>Confirmed</dt><dd>${a.email_verified_at ? time(a.email_verified_at) : 'not yet'}</dd>
 <dt>Guidelines</dt><dd>${a.accepted_terms_at ? `accepted ${time(a.accepted_terms_at)}` : 'not accepted'}</dd>
 <dt>Trust level</dt><dd>${a.trust_level ?? '—'}</dd>
 <dt>Last sign-in</dt><dd>${a.last_sign_in ? time(a.last_sign_in) : '—'}</dd>
 </dl>
-${actions.length ? `<h2>Actions</h2><div class="actions">${actions.join('\n')}</div>` : '<p class="muted">Another administrator’s account: no actions here.</p>'}
+${actions.length ? `<h2>Actions</h2><div class="actions">${actions.join('\n')}</div>` : `<p class="muted">${a.role === 'owner' ? 'The owner’s account: no actions here.' : 'Another administrator’s account: only the owner acts on it.'}</p>`}
+<h2>Signed-in devices</h2>
+${table(['Device', 'Signed in', 'Last used', ''], deviceRows, 'Signed in nowhere.')}
 <h2>Posts</h2>
 ${table(['When', 'Thread', 'Post', '', ''], postRows, 'No posts.')}
 <h2>Moderation</h2>
 ${table(['When', 'Action', 'By', 'Reason'], history.results.map((m) => [time(m.created_at), escapeHtml(m.action), escapeHtml(m.actor ?? '—'), escapeHtml(m.reason ?? '')]), 'Nothing yet.')}`;
   return page(a.email, body, { admin });
+}
+
+function roleName(role) {
+  return { owner: 'owner (super admin)', admin: 'administrator', moderator: 'moderator' }[role] ?? 'member';
 }
 
 function postActions(p, back) {
@@ -317,7 +374,7 @@ ${table(['Day (UTC)', 'Visits', 'Visitors'], visits.results.map((d) => [d.day, d
 
 async function log(env, admin) {
   const { results } = await adb.moderationLog(env.LOGS, { target: null, limit: 200 }).all();
-  const target = (m) => (['user', 'moderator', 'trust', 'account'].includes(m.target_type)
+  const target = (m) => (['user', 'moderator', 'admin', 'trust', 'account'].includes(m.target_type)
     ? `<a href="${BASE}/accounts/${escapeHtml(m.target_id)}">account ${escapeHtml(m.target_id)}</a>`
     : `${escapeHtml(m.target_type)} ${escapeHtml(m.target_id)}`);
   const rows = results.map((m) => [time(m.created_at), escapeHtml(m.action), target(m), escapeHtml(m.actor ?? '—'), escapeHtml(m.reason ?? '')]);
@@ -329,9 +386,11 @@ async function log(env, admin) {
 const MESSAGES = {
   forbidden: 'That is not allowed on this account.',
   own_account: 'Delete your own account from your account page.',
-  not_confirmed: 'Tick “I am sure” to delete an account.',
+  not_confirmed: 'Tick the box to confirm it.',
   not_found: 'It is not there any more.',
   invalid_trust: 'Choose a trust level from 0 to 4.',
+  invalid_name: 'A display name is 2 to 40 characters.',
+  name_taken: 'Another member has that name.',
   unknown_action: 'There is no such action.',
 };
 

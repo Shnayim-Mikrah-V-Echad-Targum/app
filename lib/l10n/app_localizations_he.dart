@@ -3686,6 +3686,41 @@ class AppLocalizationsHe extends AppLocalizations {
   String get accountGroupTitle => 'חשבון';
 
   @override
+  String streakFlameDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ימים לפי התוכנית',
+      two: 'יומיים לפי התוכנית',
+      one: 'יום אחד לפי התוכנית',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakFlameWeeks(String weeks) {
+    return 'רצף פרשות: $weeks';
+  }
+
+  @override
+  String get streakFlameStart => 'קריאת המנה של היום מתחילה את הרצף.';
+
+  @override
+  String get signInSecurityTitle => 'התחברות ואבטחה';
+
+  @override
+  String get signInMethods => 'סיסמה, מפתחות גישה ואפליקציית אימות';
+
+  @override
+  String get signInMethodsDesc => 'הוספה ושינוי באתר';
+
+  @override
+  String get adminPanel => 'לוח הניהול';
+
+  @override
+  String get adminPanelDesc => 'חשבונות, דיווחים ואבטחה, באתר';
+
+  @override
   String postingAs(String name) {
     return 'פרסום בשם $name';
   }

@@ -144,7 +144,7 @@ test('the accounts are listed, searched and shown, with what members wrote escap
   assert.doesNotMatch(await (await send(state, 'GET', '/account/admin/accounts?q=%25', { cookie: admin.cookie })).text(), /reader@example\.com/);
 
   const one = await (await send(state, 'GET', `/account/admin/accounts/${reader.id}`, { cookie: admin.cookie })).text();
-  assert.match(one, /none \(made in the app, by code\)/);
+  assert.match(one, /none \(signs in by code\)/);
   assert.match(one, /Make moderator/);
   assert.match(one, /Delete account and all it posted/);
   assert.equal((await send(state, 'GET', '/account/admin/accounts/999', { cookie: admin.cookie })).status, 404);

@@ -6,6 +6,7 @@
 // browser's WebAuthn, which /account/passkey.js calls.
 
 import {
+  FRESH_MS,
   emailOf,
   humanOk,
   limited,
@@ -33,6 +34,7 @@ import {
 } from './account_mfa.js';
 import {
   accountBody,
+  handoffBody,
   emailCodeBody,
   emailCodeEnterBody,
   recoveryBody,
@@ -43,6 +45,7 @@ import {
 } from './account_pages.js';
 import { PasskeyError, assertionChallenge, b64u, verifyAssertion, verifyRegistration } from './passkeys.js';
 import { renderSVG } from './vendor/uqr.mjs';
+import { deviceOf } from './devices.js';
 
 const BASE = '/account';
 const PENDING_COOKIE = '__Host-sm_pending';
@@ -50,9 +53,9 @@ const NO_PASSWORD = { pw_alg: 'none', pw_iter: 0, pw_salt: '', pw_hash: '' };
 
 // --- Sessions -------------------------------------------------------------------
 
-export async function startSession(env, userId, now) {
+export async function startSession(env, request, userId, now) {
   const token = randomToken();
-  await env.LOGS.batch([db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId, now })]);
+  await env.LOGS.batch([db.insertSession(env.LOGS, { tokenHash: await tokenHash(token), userId, now, device: deviceOf(request) })]);
   return token;
 }
 
@@ -73,13 +76,13 @@ export async function hasSecondStep(env, userId) {
 
 // The first step of a sign-in is right (the password, or an emailed code):
 // the session, or where the account asks for one, the second step first.
-export async function finishSignIn(env, userId, lang, now) {
+export async function finishSignIn(env, request, userId, lang, now) {
   if (await hasSecondStep(env, userId)) {
     const token = randomToken();
     await db.insertPending(env.LOGS, { tokenHash: await tokenHash(token), userId, now }).run();
     return see(to(`${BASE}/two-step`, lang), pendingCookie(token));
   }
-  return see(BASE, sessionCookie(await startSession(env, userId, now)));
+  return see(BASE, sessionCookie(await startSession(env, request, userId, now)));
 }
 
 // Whether [input] is the account's second step: a code from its
@@ -171,7 +174,7 @@ export async function signInWithCode(request, env, lang, now) {
   const user = await checkCode(env, email, code, now);
   if (!user) return enterCodeForm(lang, email, 'code', 400);
   await env.LOGS.batch(confirmedByCode(user, now, env.LOGS));
-  return finishSignIn(env, user.id, lang, now);
+  return finishSignIn(env, request, user.id, lang, now);
 }
 
 // --- The second step ------------------------------------------------------------------
@@ -204,7 +207,7 @@ export async function twoStep(request, env, lang, now) {
     return again('second', 401);
   }
   await db.deletePending(env.LOGS, pending.hash).run();
-  const response = see(BASE, sessionCookie(await startSession(env, pending.user_id, now)));
+  const response = see(BASE, sessionCookie(await startSession(env, request, pending.user_id, now)));
   response.headers.append('Set-Cookie', clearPendingCookie());
   return response;
 }
@@ -290,14 +293,66 @@ export function newRecovery(request, env, lang, now) {
 }
 
 // The account page, with its ways of signing in.
-export async function accountPage(env, user, lang, { notice, error, status = 200 } = {}) {
-  const [totp, left, keys] = await Promise.all([
+export async function accountPage(env, user, lang, { notice, error, status = 200 } = {}, now = Date.now()) {
+  const [totp, left, keys, sessions, backup] = await Promise.all([
     db.findTotp(env.LOGS, user.id).first(),
     db.recoveryLeft(env.LOGS, user.id).first(),
     db.passkeysOf(env.LOGS, user.id).all(),
+    db.sessionsOf(env.LOGS, user.id, now).all(),
+    db.backedUpStreak(env.LOGS, user.id).first(),
   ]);
-  const security = { totp: Boolean(totp?.confirmed_at), recoveryLeft: left?.n ?? 0, passkeys: keys.results, recoveryCount: RECOVERY_COUNT };
+  const security = {
+    totp: Boolean(totp?.confirmed_at),
+    recoveryLeft: left?.n ?? 0,
+    passkeys: keys.results,
+    recoveryCount: RECOVERY_COUNT,
+    sessions: sessions.results,
+    thisSession: user.session_id,
+    // An account with no password may be given one soon after signing in.
+    fresh: now - (user.session_at ?? 0) <= FRESH_MS,
+    streak: streakOf(backup),
+  };
   return page(render(lang, { title: strings(lang).accountTitle, body: accountBody(lang, user, security), notice, error, status, script: true }));
+}
+
+// The streak in the app's backup, if it holds one this can read: the days
+// on track, the parsha streak in weeks, and the day the app counted them.
+export function streakOf(backup) {
+  let streak = null;
+  try {
+    streak = backup?.streak ? JSON.parse(backup.streak) : null;
+  } catch {
+    return null;
+  }
+  const count = (n) => (Number.isSafeInteger(n) && n >= 0 && n < 100000 ? n : null);
+  const days = count(streak?.days);
+  const weeks = count(streak?.weeks);
+  if (days == null || weeks == null) return null;
+  const asOf = typeof streak.asOf === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(streak.asOf) ? streak.asOf : null;
+  return { days, weeks, asOf };
+}
+
+// --- From the app ---------------------------------------------------------------------
+
+// A link from the app, signed in, to a page of the site (api.js, handoff):
+// it asks before signing this browser in, so that a link someone else sent
+// can't sign it in to their account unasked.
+export async function handoffForm(env, url, lang, now) {
+  const t = strings(lang);
+  const token = url.searchParams.get('t') || '';
+  const row = /^[A-Za-z0-9_-]{20,100}$/.test(token) ? await db.findHandoff(env.LOGS, await tokenHash(token), now).first() : null;
+  if (!row) return page(render(lang, { title: t.handoffTitle, error: 'handoff', status: 410 }));
+  return page(render(lang, { title: t.handoffTitle, body: handoffBody(lang, row.email, token) }));
+}
+
+export async function handoff(request, env, lang, now) {
+  const t = strings(lang);
+  const form = await request.formData();
+  const token = String(form.get('token') ?? '');
+  const row = /^[A-Za-z0-9_-]{20,100}$/.test(token) ? await db.claimHandoff(env.LOGS, await tokenHash(token), now).first() : null;
+  const user = row && await db.findUserById(env.LOGS, row.user_id).first();
+  if (!user?.email_verified_at) return page(render(lang, { title: t.handoffTitle, error: 'handoff', status: 410 }));
+  return see(to(/^\/account(\/admin)?$/.test(row.next) ? row.next : BASE, lang), sessionCookie(await startSession(env, request, user.id, now)));
 }
 
 // --- Passkeys ------------------------------------------------------------------------
@@ -400,7 +455,7 @@ export async function signInWithPasskey(request, env, now) {
     if (body.userHandle && body.userHandle !== b64u(new TextEncoder().encode(String(key.user_id)))) return refused('unknown');
     const signCount = await verifyAssertion(body, { rpId: relyingParty(env).rpId, jwk: JSON.parse(key.public_key), alg: key.alg, signCount: key.sign_count });
     await db.usePasskey(env.LOGS, { id: key.id, signCount, now }).run();
-    return json({ ok: true, next: BASE }, 200, sessionCookie(await startSession(env, key.user_id, now)));
+    return json({ ok: true, next: BASE }, 200, sessionCookie(await startSession(env, request, key.user_id, now)));
   } catch (error) {
     if (error instanceof PasskeyError) return refused(error.message);
     throw error;

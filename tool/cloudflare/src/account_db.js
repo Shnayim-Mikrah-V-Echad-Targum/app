@@ -18,6 +18,10 @@ export function findUserByEmail(db, email) {
   ).bind(email);
 }
 
+export function findUserById(db, id) {
+  return db.prepare('SELECT id, email, email_verified_at FROM users WHERE id = ?').bind(id);
+}
+
 export function insertUser(db, { email, password, now }) {
   return db.prepare(
     'INSERT INTO users (email, pw_alg, pw_iter, pw_salt, pw_hash, created_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
@@ -63,16 +67,16 @@ export function deleteCodesOf(db, userId) {
   return db.prepare('DELETE FROM codes WHERE user_id = ?').bind(userId);
 }
 
-export function insertSession(db, { tokenHash, userId, now }) {
+export function insertSession(db, { tokenHash, userId, now, device = null }) {
   return db.prepare(
-    'INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)',
-  ).bind(tokenHash, userId, now, now + SESSION_MS);
+    'INSERT INTO sessions (token_hash, user_id, created_at, expires_at, device, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)',
+  ).bind(tokenHash, userId, now, now + SESSION_MS, device, now);
 }
 
 export function findSession(db, tokenHash, now) {
   return db.prepare(
     // A role counts only once the address is confirmed as the account's.
-    `SELECT u.id, u.email, u.email_verified_at, u.pw_alg, s.expires_at,
+    `SELECT u.id, u.email, u.email_verified_at, u.pw_alg, s.expires_at, s.created_at AS session_at, s.rowid AS session_id,
             CASE WHEN u.email_verified_at IS NOT NULL THEN r.role END AS role
        FROM sessions s JOIN users u ON u.id = s.user_id
        LEFT JOIN roles r ON r.email = u.email
@@ -86,6 +90,57 @@ export function deleteSession(db, tokenHash) {
 
 export function deleteSessionsOf(db, userId) {
   return db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId);
+}
+
+// Every session of the account but one (the one a password is changed from).
+export function deleteOtherSessions(db, userId, tokenHash) {
+  return db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?').bind(userId, tokenHash);
+}
+
+// When a session was last used, moved at most once an hour.
+export function touchSession(db, tokenHash, now) {
+  return db.prepare(
+    'UPDATE sessions SET last_seen_at = ?1 WHERE token_hash = ?2 AND (last_seen_at IS NULL OR last_seen_at < ?1 - 3600000)',
+  ).bind(now, tokenHash);
+}
+
+// An account's signed-in devices, the latest used first.
+export function sessionsOf(db, userId, now) {
+  return db.prepare(
+    `SELECT rowid AS id, device, created_at, coalesce(last_seen_at, created_at) AS last_seen_at FROM sessions
+      WHERE user_id = ? AND expires_at > ? ORDER BY coalesce(last_seen_at, created_at) DESC`,
+  ).bind(userId, now);
+}
+
+// Signs one of an account's devices out.
+export function deleteSessionById(db, userId, id) {
+  return db.prepare('DELETE FROM sessions WHERE user_id = ? AND rowid = ?').bind(userId, id);
+}
+
+// The streak the app last backed up with the account's progress
+// (syncPayload, lib/features/progress/domain/progress_merge.dart), as JSON.
+export function backedUpStreak(db, userId) {
+  return db.prepare("SELECT json_extract(data, '$.streak') AS streak, updated_at FROM user_progress WHERE user_id = ?").bind(userId);
+}
+
+// A one-time link from the app to a page of the site (handoffs).
+export const HANDOFF_MS = 5 * 60000;
+
+export function insertHandoff(db, { tokenHash, userId, next, now }) {
+  return db.prepare('INSERT INTO handoffs (token_hash, user_id, next, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(tokenHash, userId, next, now + HANDOFF_MS);
+}
+
+export function findHandoff(db, tokenHash, now) {
+  return db.prepare(
+    `SELECT h.next, u.email FROM handoffs h JOIN users u ON u.id = h.user_id
+      WHERE h.token_hash = ? AND h.expires_at > ? AND u.email_verified_at IS NOT NULL`,
+  ).bind(tokenHash, now);
+}
+
+// Takes a link, once: only the first claim returns its row.
+export function claimHandoff(db, tokenHash, now) {
+  return db.prepare('DELETE FROM handoffs WHERE token_hash = ? AND expires_at > ? RETURNING user_id, next').bind(tokenHash, now);
 }
 
 // A new reset link replaces the unused ones sent before it.
@@ -124,6 +179,7 @@ export function deleteAccount(db, userId) {
     ...deleteSecondSteps(db, userId),
     db.prepare('DELETE FROM pending_signins WHERE user_id = ?').bind(userId),
     db.prepare('DELETE FROM webauthn_challenges WHERE user_id = ?').bind(userId),
+    db.prepare('DELETE FROM handoffs WHERE user_id = ?').bind(userId),
     db.prepare('DELETE FROM users WHERE id = ?').bind(userId),
   ];
 }
@@ -155,6 +211,7 @@ export function accountCleanup(db, now) {
     db.prepare('DELETE FROM rate_limits WHERE expires_at <= ?').bind(now),
     db.prepare('DELETE FROM pending_signins WHERE expires_at <= ?').bind(now),
     db.prepare('DELETE FROM webauthn_challenges WHERE expires_at <= ?').bind(now),
+    db.prepare('DELETE FROM handoffs WHERE expires_at <= ?').bind(now),
     db.prepare('DELETE FROM totp WHERE confirmed_at IS NULL AND created_at <= ?').bind(now - 86400000),
     db.prepare(
       'DELETE FROM codes WHERE user_id IN (SELECT id FROM users WHERE email_verified_at IS NULL AND created_at <= ?)',

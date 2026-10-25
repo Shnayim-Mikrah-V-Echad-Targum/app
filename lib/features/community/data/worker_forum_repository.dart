@@ -24,11 +24,13 @@ class WorkerForumRepository implements ForumRepository {
     required this._prefs,
     http.Client? client,
     this._keepsToken = !kIsWeb,
-  })  : _api = server.resolve('api/'),
+  })  : _server = server,
+        _api = server.resolve('api/'),
         _client = client ?? http.Client() {
     _restore();
   }
 
+  final Uri _server;
   final Uri _api;
   final SharedPreferences _prefs;
   final http.Client _client;
@@ -102,6 +104,9 @@ class WorkerForumRepository implements ForumRepository {
     final request = http.Request(method, _api.resolve(path).replace(queryParameters: query));
     request.headers['Accept'] = 'application/json';
     if (_token case final token?) request.headers['Authorization'] = 'Bearer $token';
+    // What the account page's list of signed-in devices calls this one
+    // (tool/cloudflare/src/devices.js). A browser says for itself.
+    if (_keepsToken) request.headers['X-App-Platform'] = defaultTargetPlatform.name;
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
@@ -164,6 +169,7 @@ class WorkerForumRepository implements ForumRepository {
       id: r['id'] as String,
       displayName: r['display_name'] as String,
       isModerator: r['is_moderator'] as bool? ?? false,
+      isAdmin: const {'admin', 'owner'}.contains(r['role']),
       acceptedTerms: r['accepted_terms'] as bool? ?? false,
     );
   }
@@ -376,4 +382,16 @@ class WorkerForumRepository implements ForumRepository {
 
   @override
   Future<void> saveProgress(Map<String, dynamic> data) => _send('PUT', 'progress', body: {'data': data});
+
+  // --- The website -------------------------------------------------------------
+
+  /// On the web, on the site's own address, the page's cookie is the site's
+  /// session already. Elsewhere the server makes a one-time link, which the
+  /// site asks about before it signs the browser in (api.js, handoff).
+  @override
+  Future<Uri?> siteLink(SitePage page) async {
+    if (!_keepsToken) return _server.resolve(page.path.substring(1));
+    final body = await _send('POST', 'handoff', body: {'next': page.path}) as Map<String, dynamic>;
+    return Uri.parse(body['url'] as String);
+  }
 }
