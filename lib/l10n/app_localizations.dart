@@ -1419,6 +1419,12 @@ abstract class AppLocalizations {
   /// **'Section {current} of {total}'**
   String sectionOf(int current, int total);
 
+  /// Where the guided reader is in the whole parsha, read by the whole-parsha method.
+  ///
+  /// In en, this message translates to:
+  /// **'Aliyah {current} of {total}'**
+  String aliyahOf(int current, int total);
+
   /// No description provided for @verseLabel.
   ///
   /// In en, this message translates to:
@@ -2438,6 +2444,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The whole aliyah twice, then its {second}'**
   String methodAliyahDesc(String second);
+
+  /// No description provided for @methodWhole.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole parsha'**
+  String get methodWhole;
+
+  /// As methodVerseDesc: the parsha is read through in Hebrew, read through again, then its second reading, aliyah after aliyah each time.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole parsha once, then again, then its {second}'**
+  String methodWholeDesc(String second);
 
   /// No description provided for @secondLabel.
   ///

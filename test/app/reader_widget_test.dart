@@ -92,6 +92,64 @@ void main() {
     expect(find.textContaining('Rishon is complete'), findsWidgets);
   });
 
+  testWidgets('the whole parsha: the Hebrew of every aliyah, again, then every Targum, resumed where it was left', (tester) async {
+    tester.view.physicalSize = const Size(412, 915);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final c = await pumpApp(
+      tester,
+      settings: const AppSettings(onboardingComplete: true, notificationPromptShown: true, method: ReadingMethod.wholeParsha),
+      now: monday,
+    );
+    WeekProgress week() => c.read(progressProvider).week('5787:2');
+
+    c.read(routerProvider).go('/read/5787:2/0');
+    await loadTexts(tester);
+    expect(find.text('Read the Hebrew'), findsOneWidget);
+    expect(find.text('Aliyah 1 of 7'), findsOneWidget);
+    // Next goes on to the next aliyah's Hebrew, not to this one's again.
+    await tester.tap(forward);
+    await tester.pumpAndSettle();
+    expect(find.text('Read the Hebrew'), findsOneWidget);
+    expect(find.text('Aliyah 2 of 7'), findsOneWidget);
+    expect(titled('Sheni'), findsOneWidget);
+    expect(week().isUnitDone(0, ReadingPass.mikrah1), isTrue);
+    expect(week().isUnitDone(0, ReadingPass.mikrah2), isFalse);
+    // Back returns to the first aliyah, and is off there.
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Aliyah 1 of 7'), findsOneWidget);
+    for (var i = 0; i < 7; i++) {
+      await tester.tap(forward);
+      await tester.pumpAndSettle();
+    }
+    // Every aliyah read once: the second round begins at the first.
+    expect(find.text('Read the Hebrew again'), findsOneWidget);
+    expect(find.text('Aliyah 1 of 7'), findsOneWidget);
+    expect([for (var a = 0; a < kAliyot; a++) week().isUnitDone(a, ReadingPass.mikrah1)], everyElement(isTrue));
+    await tester.tap(forward);
+    await tester.pumpAndSettle();
+
+    // Left and opened again, at another aliyah, it resumes at the parsha's place.
+    c.read(routerProvider).go('/week/5787:2');
+    await tester.pumpAndSettle();
+    c.read(routerProvider).go('/read/5787:2/5');
+    await loadTexts(tester);
+    expect(find.text('Read the Hebrew again'), findsOneWidget);
+    expect(find.text('Aliyah 2 of 7'), findsOneWidget);
+    for (var i = 0; i < 6; i++) {
+      await tester.tap(forward);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Read the Targum'), findsOneWidget);
+    expect(find.text('Aliyah 1 of 7'), findsOneWidget);
+    for (var i = 0; i < 40 && !week().isComplete; i++) {
+      await tester.tap(forward);
+      await tester.pumpAndSettle();
+    }
+    expect(week().isComplete, isTrue);
+  });
+
   for (final method in [ReadingMethod.verseByVerse, ReadingMethod.aliyahByAliyah]) {
     testWidgets('after Mark as not read, the aliyah starts over (${method.name})', (tester) async {
       tester.view.physicalSize = const Size(412, 915);

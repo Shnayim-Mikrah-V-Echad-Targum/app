@@ -984,6 +984,11 @@ class AppLocalizationsHe extends AppLocalizations {
   }
 
   @override
+  String aliyahOf(int current, int total) {
+    return 'עלייה $current מתוך $total';
+  }
+
+  @override
   String verseLabel(String number) {
     return 'פסוק $number';
   }
@@ -1587,6 +1592,14 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String methodAliyahDesc(String second) {
     return 'כל העלייה פעמיים, ואז $second';
+  }
+
+  @override
+  String get methodWhole => 'כל הפרשה';
+
+  @override
+  String methodWholeDesc(String second) {
+    return 'כל הפרשה פעם אחת, ושוב, ואז $second';
   }
 
   @override

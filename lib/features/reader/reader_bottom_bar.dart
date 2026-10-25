@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/lines.dart';
+import '../progress/domain/progress_models.dart' show kAliyot;
 import '../settings/app_settings.dart';
 import 'reader_flow.dart';
 
@@ -19,6 +22,8 @@ class ReaderBottomBar extends StatelessWidget {
     required this.flow,
     required this.chunk,
     required this.step,
+    this.aliyah = 0,
+    this.order,
     required this.onBack,
     required this.onNext,
     required this.backFocus,
@@ -29,6 +34,12 @@ class ReaderBottomBar extends StatelessWidget {
   final ReaderFlow flow;
   final int chunk;
   final int step;
+
+  /// The aliyah shown, and in the whole parsha the order of its steps
+  /// ([ReadingMethod.wholeParsha]): the bar then tells of the parsha, not of
+  /// the aliyah alone.
+  final int aliyah;
+  final ParshaOrder? order;
 
   /// Null at the first step, where there is nothing to go back to.
   final VoidCallback? onBack;
@@ -54,17 +65,28 @@ class ReaderBottomBar extends StatelessWidget {
     final sefer = SeferColors.of(context);
     final motion = Motion.of(context);
     final c = flow.chunks[chunk];
-    final position = flow.method == ReadingMethod.verseByVerse
-        ? l.verseOf(c.start + 1, flow.verses.length)
-        : l.sectionOf(chunk + 1, flow.chunks.length);
-    // Progress through the whole aliyah, in steps.
-    var done = 0;
-    for (var i = 0; i < chunk; i++) {
-      done += flow.stepsFor(i).length;
+    final position = switch (flow.method) {
+      ReadingMethod.verseByVerse => l.verseOf(c.start + 1, flow.verses.length),
+      ReadingMethod.wholeParsha => l.aliyahOf(aliyah + 1, kAliyot),
+      _ => l.sectionOf(chunk + 1, flow.chunks.length),
+    };
+    final double fraction;
+    final bool last;
+    if (order case final order?) {
+      // Progress through the whole parsha, in steps.
+      final at = math.max(0, order.indexOf(aliyah, step));
+      fraction = at / order.sequence.length;
+      last = at == order.sequence.length - 1;
+    } else {
+      // Progress through the whole aliyah, in steps.
+      var done = 0;
+      for (var i = 0; i < chunk; i++) {
+        done += flow.stepsFor(i).length;
+      }
+      done += step;
+      fraction = done / flow.totalSteps;
+      last = chunk == flow.chunks.length - 1 && step == flow.stepsFor(chunk).length - 1;
     }
-    done += step;
-    final fraction = done / flow.totalSteps;
-    final last = chunk == flow.chunks.length - 1 && step == flow.stepsFor(chunk).length - 1;
 
     final progress = Semantics(
       label: position,
