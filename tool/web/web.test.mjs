@@ -1148,8 +1148,12 @@ describe('the build', () => {
       assert.ok(precached(path), path);
     }
     // The books, the fonts loaded on demand: cached as they are read, as the
-    // update script keeps them.
-    for (const path of assets.filter((p) => /^assets\/assets\/(text|fonts\/(optional|rashi))\//.test(p))) {
+    // update script keeps them. The default scripture font is loaded at
+    // start-up, so precached.
+    const defaultScripture = 'assets/assets/fonts/optional/TaameyFrankCLM-Medium.ttf';
+    assert.ok(assets.includes(defaultScripture) && precached(defaultScripture), defaultScripture);
+    assert.match(read('lib/features/settings/app_settings.dart'), /this\.scriptureFont = ScriptureFont\.taameyFrank,/);
+    for (const path of assets.filter((p) => /^assets\/assets\/(text|fonts\/(optional|rashi))\//.test(p) && p !== defaultScripture)) {
       assert.ok(!precached(path) && cachedOnUse(path), path);
     }
   });

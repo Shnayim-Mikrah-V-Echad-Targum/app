@@ -59,7 +59,10 @@ Future<void> loadBundledFonts() => _fonts ??= () async {
           await loader.load();
         }
       }
-      // Through OptionalFonts, so that the app finds them already loaded.
+      // Through OptionalFonts, so that the app finds them already loaded;
+      // afresh, as a load an earlier test began (the default scripture font,
+      // at start-up) may wait on that test's fake clock, and never finish.
+      OptionalFonts.reset();
       for (final family in OptionalFonts.families) {
         await OptionalFonts.ensure(family);
       }

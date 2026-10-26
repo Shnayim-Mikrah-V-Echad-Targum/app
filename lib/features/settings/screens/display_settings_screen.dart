@@ -191,8 +191,8 @@ class _DisplaySettingsScreenState extends ConsumerState<DisplaySettingsScreen> {
           value: s.scriptureFont,
           choices: [
             for (final (font, name) in [
-              (ScriptureFont.notoSerif, l.fontNotoSerif),
               (ScriptureFont.taameyFrank, l.fontTaamey),
+              (ScriptureFont.notoSerif, l.fontNotoSerif),
               (ScriptureFont.ezra, l.fontEzra),
               (ScriptureFont.notoSans, l.fontNotoSans),
             ])

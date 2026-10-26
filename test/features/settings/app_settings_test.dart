@@ -240,11 +240,26 @@ void main() {
   });
 
   test('the fonts to load are the chosen ones, and the Rashi script only while Rashi is shown in it', () {
-    expect(const AppSettings().optionalFonts, [null, 'NotoSerifHebrew']);
-    const chosen = AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank, rashiScript: true);
-    expect(chosen.optionalFonts, ['Lexend', 'TaameyFrank'], reason: 'no Rashi is shown');
-    expect(chosen.copyWith(showRashi: true).optionalFonts, ['Lexend', 'TaameyFrank', kRashiScriptFamily]);
+    expect(const AppSettings().optionalFonts, [null, 'TaameyFrank']);
+    const chosen = AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.ezra, rashiScript: true);
+    expect(chosen.optionalFonts, ['Lexend', 'EzraSIL'], reason: 'no Rashi is shown');
+    expect(chosen.copyWith(showRashi: true).optionalFonts, ['Lexend', 'EzraSIL', kRashiScriptFamily]);
     expect(chosen.copyWith(secondReading: SecondReading.rashi).optionalFonts, contains(kRashiScriptFamily));
+  });
+
+  // Noto Serif Hebrew, the default before, sets a meteg under its vowel and a
+  // final kaf's qamats over its dagesh.
+  test('Taamey Frank is the default, and settings saved with the old default move to it', () {
+    expect(const AppSettings().scriptureFont, ScriptureFont.taameyFrank);
+    expect(AppSettings.fromJson({}).scriptureFont, ScriptureFont.taameyFrank);
+    // Saved before 'scriptureTypeface': Noto Serif Hebrew was only the default.
+    expect(AppSettings.fromJson({'scriptureFont': 'notoSerif'}).scriptureFont, ScriptureFont.taameyFrank);
+    expect(AppSettings.fromJson({'scriptureFont': 'ezra'}).scriptureFont, ScriptureFont.ezra);
+    // Chosen since, it stays, and older versions still read it.
+    final noto = const AppSettings(scriptureFont: ScriptureFont.notoSerif).toJson();
+    expect(noto['scriptureFont'], 'notoSerif');
+    expect(AppSettings.fromJson(noto).scriptureFont, ScriptureFont.notoSerif);
+    expect(AppSettings.fromJson({'scriptureTypeface': 'nonsense'}).scriptureFont, ScriptureFont.taameyFrank);
   });
 
   test('line spacing is never under 1.6, so that lower marks are never clipped', () {
@@ -461,18 +476,18 @@ void main() {
     expect(AppSettings.fromJson({}).rashiScript, isFalse);
     const on = AppSettings(rashiScript: true, showRashi: true);
     expect(AppSettings.fromJson(on.toJson()).rashiScript, isTrue);
-    expect(const AppSettings().optionalFonts, [null, 'NotoSerifHebrew']);
-    expect(on.optionalFonts, [null, 'NotoSerifHebrew', 'NotoRashiHebrew']);
+    expect(const AppSettings().optionalFonts, [null, 'TaameyFrank']);
+    expect(on.optionalFonts, [null, 'TaameyFrank', 'NotoRashiHebrew']);
     expect(
       const AppSettings(rashiScript: true, secondReading: SecondReading.rashi).optionalFonts,
-      [null, 'NotoSerifHebrew', 'NotoRashiHebrew'],
+      [null, 'TaameyFrank', 'NotoRashiHebrew'],
       reason: 'Rashi read as the second reading',
     );
     // Chosen, but with Rashi shown nowhere: nothing to load it for.
-    expect(const AppSettings(rashiScript: true).optionalFonts, [null, 'NotoSerifHebrew']);
+    expect(const AppSettings(rashiScript: true).optionalFonts, [null, 'TaameyFrank']);
     expect(
-      const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.taameyFrank).optionalFonts,
-      ['Lexend', 'TaameyFrank'],
+      const AppSettings(uiFont: UiFont.lexend, scriptureFont: ScriptureFont.ezra).optionalFonts,
+      ['Lexend', 'EzraSIL'],
     );
   });
 

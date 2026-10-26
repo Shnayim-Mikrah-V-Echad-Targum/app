@@ -277,6 +277,21 @@ void main() {
     expect(await web.siteLink(SitePage.admin), Uri.parse('https://shnayimmikrah.org/account/admin'));
   });
 
+  test("the website opens in the app's language", () async {
+    SharedPreferences.setMockInitialValues({
+      WorkerForumRepository.sessionKey: jsonEncode({'id': '4', 'email': 'reader@example.com', 'token': 'secret-token'}),
+    });
+    final server = _Server((r) => (200, {'url': 'https://shnayimmikrah.org/account/handoff?t=one-time&lang=he'}));
+    final repo = await _repo(server);
+    await repo.siteLink(SitePage.account, lang: 'he');
+    expect(jsonDecode(server.requests.single.body), {'next': '/account', 'lang': 'he'});
+    await repo.siteLink(SitePage.account, lang: 'fr');
+    expect(jsonDecode(server.requests.last.body), {'next': '/account'}, reason: 'a language the site lacks is left out');
+
+    final web = await _repo(_Server((r) => (500, null)), keepsToken: false);
+    expect(await web.siteLink(SitePage.account, lang: 'he'), Uri.parse('https://shnayimmikrah.org/account?lang=he'));
+  });
+
   test('an owner or an admin has the admin panel; a moderator has the reports', () async {
     for (final (role, admin, moderator) in [('owner', true, true), ('admin', true, true), ('moderator', false, true), (null, false, false)]) {
       final server = _Server((r) => (200, {'id': '4', 'display_name': 'Rivka', 'is_moderator': moderator, 'role': role}));

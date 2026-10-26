@@ -139,9 +139,12 @@ class _ShnayimMikrahAppState extends ConsumerState<ShnayimMikrahApp> with Widget
   /// builds the theme in the interface font once it has.
   void _loadFonts() {
     final settings = ref.read(settingsProvider);
-    OptionalFonts.ensureAll(settings.optionalFonts).then((_) {
+    OptionalFonts.ensureAll(settings.optionalFonts);
+    // The theme waits for the interface font alone, not for the scripture
+    // font loading beside it. One that fails is tried again on resume.
+    OptionalFonts.ensure(settings.uiFont.family).then((_) {
       if (mounted && OptionalFonts.isLoaded(ref.read(settingsProvider).uiFont.family)) setState(() {});
-    });
+    }, onError: (Object _) {});
   }
 
   /// Whether the device asks for less motion: Android's Remove animations

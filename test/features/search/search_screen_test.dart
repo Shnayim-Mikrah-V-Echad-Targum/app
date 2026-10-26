@@ -425,10 +425,10 @@ void main() {
   });
 
   testWidgets('parts words joined by a maqaf only where they are too wide together for a line', (tester) async {
-    await open(tester, size: const Size(320, 640), textScale: 3);
+    await open(tester, size: const Size(280, 640), textScale: 3);
     await tester.pumpAndSettle();
     // Genesis 1:7, the first verse found, has אֶת־הָרָקִיעַ, too wide for
-    // a line at this size.
+    // a line at this size in the default font, Taamey Frank.
     await search(tester, 'הרקיע');
     expect(tester.takeException(), isNull);
     final box = tester.renderObject<RenderMarkedText>(find.byType(MarkedText).first);

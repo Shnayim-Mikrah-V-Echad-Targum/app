@@ -51,6 +51,10 @@ module.exports = {
     // The fonts declared in pubspec.yaml, which the engine loads at start-up;
     // the rashi/ and optional/ folders load on demand.
     'assets/assets/fonts/*.{ttf,otf}',
+    // Except the default scripture font (ScriptureFont.taameyFrank), which the
+    // app loads before its first frame: precached, as it is fetched on the
+    // first visit before the worker is there to keep it.
+    'assets/assets/fonts/optional/TaameyFrankCLM-Medium.ttf',
     'assets/assets/data/**',
     // The policies, which the app shows at /legal/privacy and the like
     // (lib/features/about/legal_texts.dart): precached rather than cached on

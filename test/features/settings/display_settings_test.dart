@@ -310,9 +310,10 @@ void main() {
     OptionalFonts.reset();
     addTearDown(OptionalFonts.reset);
     await open(tester);
-    for (final family in ['Lexend', 'AtkinsonHyperlegibleNext', 'OpenDyslexic', 'TaameyFrank', 'EzraSIL']) {
+    for (final family in ['Lexend', 'AtkinsonHyperlegibleNext', 'OpenDyslexic', 'EzraSIL']) {
       expect(OptionalFonts.isSampled(family), isTrue, reason: family);
       expect(OptionalFonts.isRequested(family), isFalse, reason: '$family: not in full');
     }
+    expect(OptionalFonts.isRequested('TaameyFrank'), isTrue, reason: 'the scripture font chosen, by default');
   });
 }

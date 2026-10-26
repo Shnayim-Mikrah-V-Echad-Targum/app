@@ -168,7 +168,7 @@ void main() {
     testWidgets('a strut keeps every line of a verse at its pitch', (tester) async {
       await pumpVerse(tester, serpent, settings: const AppSettings(lineHeight: 2.2, readingScale: 1.5));
       final strut = tester.widget<RichText>(find.byType(RichText)).strutStyle!;
-      expect(strut.fontFamily, 'NotoSerifHebrew');
+      expect(strut.fontFamily, 'TaameyFrank');
       expect(strut.fontSize, closeTo(26 * 1.5, 0.001));
       expect(strut.height, 2.2);
       expect(strut.leadingDistribution, TextLeadingDistribution.even);

@@ -84,8 +84,8 @@ class _DisplaySheet extends ConsumerWidget {
             child: _FontChips(
               value: s.scriptureFont,
               names: {
-                ScriptureFont.notoSerif: l.fontNotoSerif,
                 ScriptureFont.taameyFrank: l.fontTaamey,
+                ScriptureFont.notoSerif: l.fontNotoSerif,
                 ScriptureFont.ezra: l.fontEzra,
                 ScriptureFont.notoSans: l.fontNotoSans,
               },

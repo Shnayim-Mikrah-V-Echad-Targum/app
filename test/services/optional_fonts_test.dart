@@ -129,17 +129,18 @@ void main() {
 
   testWidgets('the app loads an opt-in font as soon as it is chosen', (tester) async {
     final c = await pumpApp(tester);
+    expect(OptionalFonts.isRequested('TaameyFrank'), isTrue, reason: 'the default scripture font');
     expect(OptionalFonts.isRequested('Lexend'), isFalse);
-    expect(OptionalFonts.isRequested('TaameyFrank'), isFalse);
+    expect(OptionalFonts.isRequested('EzraSIL'), isFalse);
 
     c.read(settingsProvider.notifier).update((s) => s.copyWith(uiFont: UiFont.lexend));
     await tester.pump();
     expect(OptionalFonts.isRequested('Lexend'), isTrue);
 
-    c.read(settingsProvider.notifier).update((s) => s.copyWith(scriptureFont: ScriptureFont.taameyFrank));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(scriptureFont: ScriptureFont.ezra));
     await tester.pump();
-    expect(OptionalFonts.isRequested('TaameyFrank'), isTrue);
-    expect(OptionalFonts.isRequested('EzraSIL'), isFalse, reason: 'only what is chosen');
+    expect(OptionalFonts.isRequested('EzraSIL'), isTrue);
+    expect(OptionalFonts.isRequested('OpenDyslexic'), isFalse, reason: 'only what is chosen');
   });
 
   testWidgets('the Rashi script loads once, on demand, and text already shown picks it up', (tester) async {
