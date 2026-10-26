@@ -58,8 +58,15 @@ enum ScreenReaderText {
   allMarks,
 }
 
+/// The font of the Torah and the Targum. Persisted by name.
 enum ScriptureFont {
+  /// Bundled, and the only one with a bold weight, but it sets a meteg under
+  /// the vowel beside it, not to its left, and a final kaf's qamats over its
+  /// dagesh (אַרְאֶֽךָּ).
   notoSerif('NotoSerifHebrew'),
+
+  /// The default, as on Sefaria: it sets every mark where a printed Chumash
+  /// does. Loaded on demand (OptionalFonts), in its Medium weight alone.
   taameyFrank('TaameyFrank'),
   ezra('EzraSIL'),
   notoSans('NotoSansHebrew');
@@ -211,7 +218,7 @@ class AppSettings {
     this.copyDivineNameAsHashem = true,
     this.justifyMode = JustifyMode.auto,
     this.lineWidth = LineWidth.medium,
-    this.scriptureFont = ScriptureFont.notoSerif,
+    this.scriptureFont = ScriptureFont.taameyFrank,
     this.uiFont = UiFont.standard,
     this.boldText = false,
     this.focusMode = false,
@@ -733,6 +740,9 @@ class AppSettings {
         // For versions from before Auto, which read a switch.
         'justify': justifyMode == JustifyMode.always,
         'lineWidth': lineWidth.name,
+        'scriptureTypeface': scriptureFont.name,
+        // For versions from before Taamey Frank was the default, which read
+        // this one.
         'scriptureFont': scriptureFont.name,
         'uiFont': uiFont.name,
         'boldText': boldText,
@@ -833,7 +843,14 @@ class AppSettings {
       // reader's choice, and off only the default, which Auto now is.
       justifyMode: e(JustifyMode.values, j['justifyMode'], j['justify'] == true ? JustifyMode.always : d.justifyMode),
       lineWidth: e(LineWidth.values, j['lineWidth'], d.lineWidth),
-      scriptureFont: e(ScriptureFont.values, j['scriptureFont'], d.scriptureFont),
+      // Settings saved before 'scriptureTypeface' have Noto Serif Hebrew only
+      // because it was the default then: they move to Taamey Frank, which
+      // sets the meteg and a final kaf's marks correctly.
+      scriptureFont: j.containsKey('scriptureTypeface')
+          ? e(ScriptureFont.values, j['scriptureTypeface'], d.scriptureFont)
+          : j['scriptureFont'] == ScriptureFont.notoSerif.name
+              ? d.scriptureFont
+              : e(ScriptureFont.values, j['scriptureFont'], d.scriptureFont),
       uiFont: e(UiFont.values, j['uiFont'], d.uiFont),
       boldText: b('boldText', d.boldText),
       focusMode: b('focusMode', d.focusMode),
