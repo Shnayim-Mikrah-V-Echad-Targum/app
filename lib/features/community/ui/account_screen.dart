@@ -648,7 +648,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// Opens [page] of the website in the browser, signed in as here; where
   /// nothing opens it, says so.
   Future<void> _openSite(SitePage page) => _run(() async {
-        final link = await ref.read(forumRepositoryProvider).siteLink(page);
+        final lang = Localizations.localeOf(context).languageCode;
+        final link = await ref.read(forumRepositoryProvider).siteLink(page, lang: lang);
         if (link == null) return;
         bool opened;
         try {

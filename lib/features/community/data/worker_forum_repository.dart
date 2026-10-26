@@ -389,9 +389,13 @@ class WorkerForumRepository implements ForumRepository {
   /// session already. Elsewhere the server makes a one-time link, which the
   /// site asks about before it signs the browser in (api.js, handoff).
   @override
-  Future<Uri?> siteLink(SitePage page) async {
-    if (!_keepsToken) return _server.resolve(page.path.substring(1));
-    final body = await _send('POST', 'handoff', body: {'next': page.path}) as Map<String, dynamic>;
+  Future<Uri?> siteLink(SitePage page, {String? lang}) async {
+    final language = lang == 'he' || lang == 'en' ? lang : null;
+    if (!_keepsToken) {
+      final link = _server.resolve(page.path.substring(1));
+      return language == null ? link : link.replace(queryParameters: {'lang': language});
+    }
+    final body = await _send('POST', 'handoff', body: {'next': page.path, 'lang': ?language}) as Map<String, dynamic>;
     return Uri.parse(body['url'] as String);
   }
 }

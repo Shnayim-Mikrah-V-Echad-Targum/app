@@ -99,7 +99,7 @@ class _Site extends DemoForumRepository {
   }
 
   @override
-  Future<Uri?> siteLink(SitePage page) async {
+  Future<Uri?> siteLink(SitePage page, {String? lang}) async {
     asked.add(page);
     return Uri.parse('https://shnayimmikrah.org/account/handoff?t=one-time');
   }

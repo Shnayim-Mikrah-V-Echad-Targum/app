@@ -100,8 +100,10 @@ abstract class ForumRepository {
   // --- The website -------------------------------------------------------------
 
   /// A link that opens [page] of the website signed in as the app is, or null
-  /// where there is no website (the demo).
-  Future<Uri?> siteLink(SitePage page);
+  /// where there is no website (the demo). In [lang] ('en' or 'he'), the
+  /// app's language, which the site's pages keep; without it they follow the
+  /// browser's.
+  Future<Uri?> siteLink(SitePage page, {String? lang});
 }
 
 /// The website's pages the account page opens: the account's own (its
