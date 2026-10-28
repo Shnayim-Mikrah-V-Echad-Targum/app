@@ -87,6 +87,29 @@ void main() {
     expect(jsonDecode(server.requests.single.body), {'email': 'reader@example.com', 'code': '123456', 'totp': '424242'});
   });
 
+  test('signing in with the password sends it as typed, and keeps the account and its token', () async {
+    final server = _Server((r) => switch (r.url.path) {
+          '/api/auth/password' => (200, {'token': 'secret-token', 'user': {'id': '4', 'email': 'reader@example.com'}}),
+          _ => (200, {'id': '4', 'display_name': 'Rivka', 'accepted_terms': true, 'is_moderator': false}),
+        });
+    final repo = await _repo(server);
+    await repo.signInWithPassword(' reader@example.com ', ' a long password ', secondStep: ' 123456 ');
+    final sent = server.requests.firstWhere((r) => r.url.path == '/api/auth/password');
+    expect(sent.method, 'POST');
+    expect(jsonDecode(sent.body), {'email': 'reader@example.com', 'password': ' a long password ', 'totp': '123456'});
+    expect(repo.currentUser, const CommunityUser(id: '4', email: 'reader@example.com'));
+    await repo.myProfile();
+    expect(server.requests.last.headers['Authorization'], 'Bearer secret-token');
+
+    SharedPreferences.setMockInitialValues({});
+    final refused = await _repo(_Server((r) => (401, {'error': 'invalid_credentials'})));
+    await expectLater(
+      refused.signInWithPassword('reader@example.com', 'wrong'),
+      throwsA(isA<CommunityException>().having((e) => e.code, 'code', 'invalid_credentials')),
+    );
+    expect(refused.currentUser, isNull);
+  });
+
   test('on the web the session is the site\'s cookie: no token is kept or sent', () async {
     final server = _Server((r) => switch (r.url.path) {
           '/api/auth/verify' => (200, {'token': 'secret-token', 'user': {'id': '4', 'email': 'reader@example.com'}}),
@@ -273,8 +296,22 @@ void main() {
     expect(asked.headers['X-App-Platform'], isNotEmpty);
 
     final web = await _repo(_Server((r) => (500, null)), keepsToken: false);
-    expect(await web.siteLink(SitePage.account), Uri.parse('https://shnayimmikrah.org/account'));
+    // The site's account page; /account is the app's own Account tab.
+    expect(await web.siteLink(SitePage.account), Uri.parse('https://shnayimmikrah.org/account/security'));
     expect(await web.siteLink(SitePage.admin), Uri.parse('https://shnayimmikrah.org/account/admin'));
+  });
+
+  test("on the web, the app signs in on the site's page, which comes back to it", () async {
+    SharedPreferences.setMockInitialValues({});
+    final web = await _repo(_Server((r) => (500, null)), keepsToken: false);
+    expect(
+      web.signInPage(next: '/community/account', lang: 'he'),
+      Uri.parse('https://shnayimmikrah.org/account/sign-in?next=%2Fcommunity%2Faccount&lang=he'),
+    );
+    expect(web.signInPage(next: '/settings/account', lang: 'fr'), Uri.parse('https://shnayimmikrah.org/account/sign-in?next=%2Fsettings%2Faccount'));
+    // In the apps, which sign in themselves, none.
+    final app = await _repo(_Server((r) => (500, null)));
+    expect(app.signInPage(next: '/community/account'), isNull);
   });
 
   test("the website opens in the app's language", () async {
@@ -284,12 +321,12 @@ void main() {
     final server = _Server((r) => (200, {'url': 'https://shnayimmikrah.org/account/handoff?t=one-time&lang=he'}));
     final repo = await _repo(server);
     await repo.siteLink(SitePage.account, lang: 'he');
-    expect(jsonDecode(server.requests.single.body), {'next': '/account', 'lang': 'he'});
+    expect(jsonDecode(server.requests.single.body), {'next': '/account/security', 'lang': 'he'});
     await repo.siteLink(SitePage.account, lang: 'fr');
-    expect(jsonDecode(server.requests.last.body), {'next': '/account'}, reason: 'a language the site lacks is left out');
+    expect(jsonDecode(server.requests.last.body), {'next': '/account/security'}, reason: 'a language the site lacks is left out');
 
     final web = await _repo(_Server((r) => (500, null)), keepsToken: false);
-    expect(await web.siteLink(SitePage.account, lang: 'he'), Uri.parse('https://shnayimmikrah.org/account?lang=he'));
+    expect(await web.siteLink(SitePage.account, lang: 'he'), Uri.parse('https://shnayimmikrah.org/account/security?lang=he'));
   });
 
   test('an owner or an admin has the admin panel; a moderator has the reports', () async {

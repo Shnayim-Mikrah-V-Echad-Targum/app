@@ -364,9 +364,9 @@ void main() {
       expect(shown.last.queryParameters['q'], 'shalom');
     });
 
-    testWidgets('open from Community without leaving the Community tab', (tester) async {
+    testWidgets('open from signing in in Community without leaving the Community tab', (tester) async {
       final router = await _pump(tester);
-      router.go('/community/account');
+      router.go('/community/sign-in');
       await tester.pumpAndSettle();
       // The link in the sentence under the sign-in button.
       final privacy = find.text('Privacy');
@@ -375,8 +375,8 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      // Under the account, as the page beneath it is.
-      expect(router.state.matchedLocation, '/community/account/legal/privacy');
+      // Community's own.
+      expect(router.state.matchedLocation, '/community/legal/privacy');
       expect(selectedTab(tester), 3);
 
       await goBack(tester);
@@ -384,9 +384,9 @@ void main() {
       expect(selectedTab(tester), 3);
     });
 
-    testWidgets('open from the account in Settings without leaving the Settings tab', (tester) async {
+    testWidgets('open from the Account tab without leaving it', (tester) async {
       final router = await _pump(tester);
-      router.go('/settings/account');
+      router.go('/account');
       await tester.pumpAndSettle();
       final privacy = find.text('Privacy');
       await tester.ensureVisible(privacy);
@@ -394,8 +394,8 @@ void main() {
       await tester.tap(privacy);
       await tester.pumpAndSettle();
       expect(find.byType(LegalScreen), findsOneWidget);
-      // Under the account, not About: a reload puts back the account beneath.
-      expect(router.state.matchedLocation, '/settings/account/legal/privacy');
+      // Under the account: a reload puts back the account beneath.
+      expect(router.state.matchedLocation, '/account/legal/privacy');
       expect(selectedTab(tester), 4);
 
       await goBack(tester);
@@ -403,9 +403,9 @@ void main() {
       expect(selectedTab(tester), 4);
     });
 
-    testWidgets('open on their own from the account shown over the tabs', (tester) async {
+    testWidgets('open on their own from signing in over the tabs', (tester) async {
       final router = await _pump(tester);
-      router.push('/account?then=back');
+      router.push('/sign-in');
       await tester.pumpAndSettle();
       final privacy = find.text('Privacy');
       await tester.ensureVisible(privacy);
@@ -839,9 +839,33 @@ void main() {
     expect(accept, findsOneWidget);
   });
 
-  group('in Settings', () {
-    testWidgets('the account opens within the Settings tab', (tester) async {
+  group('in Settings and the Account tab', () {
+    testWidgets('the account is a tab of its own in the rail, and its old addresses lead to it', (tester) async {
       final router = await _pump(tester);
+      tester.view.physicalSize = const Size(1280, 800);
+      await tester.pumpAndSettle();
+      final rail = find.byType(NavigationRail);
+      await tester.tap(find.descendant(of: rail, matching: find.text('Account')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountScreen), findsOneWidget);
+      expect(router.state.matchedLocation, '/account');
+      expect(tester.widget<NavigationRail>(rail).selectedIndex, 4);
+      expect(find.byType(BackButton), findsNothing, reason: "a tab's own page");
+      for (final old in ['/settings/account', '/community/account']) {
+        router.go(old);
+        await tester.pumpAndSettle();
+        expect(router.state.matchedLocation, '/account', reason: old);
+        expect(tester.widget<NavigationRail>(rail).selectedIndex, 4);
+      }
+      // Settings has no row for it beside the rail.
+      router.go('/settings');
+      await tester.pumpAndSettle();
+      expect(find.text('Account & community'), findsNothing);
+    });
+
+    testWidgets("on a phone, whose bar has no room for it, the account opens from Settings, above it", (tester) async {
+      final router = await _pump(tester);
+      expect(find.descendant(of: find.byType(NavigationBar), matching: find.text('Account')), findsNothing);
       router.go('/settings');
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Account & community'));
@@ -849,9 +873,18 @@ void main() {
       await tester.tap(find.text('Account & community'));
       await tester.pumpAndSettle();
       expect(find.byType(AccountScreen), findsOneWidget);
+      expect(router.state.uri.path, '/account');
       expect(selectedTab(tester), 4);
 
       await goBack(tester);
+      expect(find.byType(SettingsScreen), findsOneWidget);
+      // Its own address, from a link or a reload, shows Settings chosen.
+      router.go('/account');
+      await tester.pumpAndSettle();
+      expect(find.byType(AccountScreen), findsOneWidget);
+      expect(selectedTab(tester), 4);
+      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Settings')));
+      await tester.pumpAndSettle();
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
 
@@ -859,7 +892,7 @@ void main() {
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');
       final router = await _pump(tester, forums: forums);
-      router.go('/settings/account');
+      router.go('/account');
       await tester.pumpAndSettle();
       final reports = find.text('Reports to review');
       await tester.ensureVisible(reports);

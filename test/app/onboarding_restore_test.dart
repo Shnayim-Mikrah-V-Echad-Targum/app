@@ -68,7 +68,7 @@ void main() {
   Future<void> signIn(WidgetTester tester) async {
     await tester.tap(find.text('Sign in to restore'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), email);
+    await tester.enterText(find.widgetWithText(TextField, 'Email address'), email);
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '123456');
@@ -322,7 +322,7 @@ void main() {
     expect(c.read(streakSummaryProvider).parshaStreak, 5);
   });
 
-  testWidgets('Your data has a row for the cloud backup, which opens the account page', (tester) async {
+  testWidgets('Your data has a row for the cloud backup, which opens the Account tab', (tester) async {
     tester.view.physicalSize = const Size(412, 915);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -331,7 +331,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cloud backup'));
     await tester.pumpAndSettle();
-    expect(location(c), '/settings/account');
+    expect(location(c), '/account');
     expect(find.byType(AccountScreen), findsOneWidget);
   });
 }

@@ -125,10 +125,10 @@ void main() {
     }
 
     testWidgets("on a desktop, a narrow column's title shows, starting where its content does", (tester) async {
-      await openRoute(tester, '/community/account', size: const Size(1366, 860));
+      await openRoute(tester, '/account', size: const Size(1366, 860));
       final title = _title(_en.settingsAccount);
       expect(title, findsOneWidget);
-      final field = tester.getRect(find.byType(TextField));
+      final field = tester.getRect(find.byType(TextField).first);
       expect(field.left, 257 + (1109 - ContentWidth.account) / 2 + 32);
       expect(tester.getTopLeft(title).dx, field.left);
       expect(tester.getSize(title).width, greaterThan(100), reason: 'room for the title, not squeezed out');

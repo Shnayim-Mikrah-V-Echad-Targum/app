@@ -26,15 +26,17 @@ String haftarahPath(BuildContext context, String weekId) {
 ///
 /// Within a tab, the address names the page beneath, as the stack has it, so
 /// that a reload or a shared link puts back the same page under the policy:
-/// [fromAccount], the account's own ('/settings/account/legal/privacy', or
-/// '/community/account/…' in Community and the tabs that show its pages);
-/// otherwise Community's (a new discussion), or About's in Settings.
-String policyPath(BuildContext context, String doc, {bool fromAccount = false}) {
+/// the account's own in the Account tab ('/account/legal/privacy'), About's
+/// in Settings, and otherwise Community's (a new discussion, or signing in
+/// before one).
+String policyPath(BuildContext context, String doc) {
   final shell = StatefulNavigationShell.maybeOf(context);
   if (shell == null) return '/legal/$doc';
-  final settings = shell.route.branches[shell.currentIndex].defaultRoute?.path == '/settings';
-  if (fromAccount) return '${settings ? '/settings' : '/community'}/account/legal/$doc';
-  return settings ? '/settings/about/legal/$doc' : '/community/legal/$doc';
+  return switch (shell.route.branches[shell.currentIndex].defaultRoute?.path) {
+    '/account' => '/account/legal/$doc',
+    '/settings' => '/settings/about/legal/$doc',
+    _ => '/community/legal/$doc',
+  };
 }
 
 /// Opens [location], a page within a tab, from [context]: pushed within the

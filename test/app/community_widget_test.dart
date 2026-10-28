@@ -105,6 +105,41 @@ class _Site extends DemoForumRepository {
   }
 }
 
+/// The web app at the site's own address, which signs in on the site's page.
+class _OnSite extends DemoForumRepository {
+  final asked = <(String, String?)>[];
+
+  @override
+  bool get isDemo => false;
+
+  @override
+  Uri? signInPage({required String next, String? lang}) {
+    asked.add((next, lang));
+    return Uri.parse('https://shnayimmikrah.org/account/sign-in').replace(queryParameters: {'next': next, 'lang': ?lang});
+  }
+}
+
+/// Accounts with a password, [password], which ask for an authenticator's
+/// code ([secondStep]), or are not yet confirmed ([unverified]); each try
+/// kept in [tries].
+class _Passwords extends DemoForumRepository {
+  _Passwords({this.secondStep = false});
+
+  static const password = 'a long password';
+  final bool secondStep;
+  bool unverified = false;
+  final tries = <(String, String, String?)>[];
+
+  @override
+  Future<void> signInWithPassword(String email, String password, {String? secondStep}) async {
+    tries.add((email, password, secondStep));
+    if (password != _Passwords.password) throw const CommunityException('invalid_credentials');
+    if (unverified) throw const CommunityException('unverified');
+    if (this.secondStep && secondStep == null) throw const CommunityException('totp_required');
+    await verifyCode(email, '123456');
+  }
+}
+
 /// A community whose threads' posts fail to load while [offline].
 class _Flaky extends DemoForumRepository {
   bool offline = false;
@@ -460,7 +495,7 @@ String _location(ProviderContainer c) => c.read(routerProvider).state.uri.toStri
 /// the last is typed, and gives a new account the [name] it asks for.
 Future<void> _signInWithCode(WidgetTester tester, {String name = 'Reader'}) async {
   expect(find.byType(AccountScreen), findsOneWidget);
-  await tester.enterText(find.byType(TextField), 'reader@example.org');
+  await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
   await tester.tap(find.text('Email me a code'));
   await tester.pumpAndSettle();
   await tester.enterText(find.byType(TextField), '123456');
@@ -542,9 +577,9 @@ void main() {
   testWidgets('demo community: sign in with a code, accept guidelines, reply', (tester) async {
     final c = await _pump(tester, now: DateTime(2026, 10, 12, 10));
 
-    c.read(routerProvider).go('/community/account');
+    c.read(routerProvider).go('/account');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
     // Said on the page, and not again in a status message.
@@ -953,10 +988,11 @@ void main() {
 
   testWidgets('in the Hebrew UI, the address a code went to keeps its own order', (tester) async {
     final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
-    c.read(routerProvider).go('/community/account');
+    c.read(routerProvider).go('/account');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '1reader@example.org');
-    await tester.tap(find.byType(FilledButton));
+    await tester.enterText(find.byType(TextField).first, '1reader@example.org');
+    // Email me a code, under the password's Sign in.
+    await tester.tap(find.byType(OutlinedButton));
     await tester.pumpAndSettle();
     final sent = find.textContaining(ltr('1reader@example.org'));
     expect(find.descendant(of: find.byType(PageBody), matching: sent), findsOneWidget);
@@ -1050,7 +1086,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Reply'));
     await tester.pumpAndSettle();
     expect(find.byType(AccountScreen), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '123456');
@@ -1071,10 +1107,11 @@ void main() {
 
   testWidgets('in Hebrew, signing in says that it worked, and the page then names the account', (tester) async {
     final c = await _pump(tester, settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew));
-    c.read(routerProvider).go('/community/account');
+    c.read(routerProvider).go('/account');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'reader@example.org');
-    await tester.tap(find.byType(FilledButton));
+    await tester.enterText(find.byType(TextField).first, 'reader@example.org');
+    // Email me a code, under the password's Sign in.
+    await tester.tap(find.byType(OutlinedButton));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 10));
     await tester.pumpAndSettle();
@@ -1099,15 +1136,15 @@ void main() {
 
   testWidgets('"Use a different email" gives the email field the focus', (tester) async {
     final c = await _pump(tester);
-    c.read(routerProvider).go('/community/account');
+    c.read(routerProvider).go('/account');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
     await tester.tap(find.text('Email me a code'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Use a different email'));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextField>(find.byType(TextField)).decoration?.labelText, 'Email address');
-    expect(tester.widget<EditableText>(find.byType(EditableText)).focusNode.hasFocus, isTrue);
+    expect(tester.widget<TextField>(find.byType(TextField).first).decoration?.labelText, 'Email address');
+    expect(tester.widget<EditableText>(find.byType(EditableText).first).focusNode.hasFocus, isTrue);
   });
 
   group('the weekly discussion', () {
@@ -2391,7 +2428,7 @@ void main() {
       forums: forums,
       settings: const AppSettings(onboardingComplete: true, language: AppLanguage.hebrew),
     );
-    c.read(routerProvider).go('/community/account');
+    c.read(routerProvider).go('/account');
     await tester.pumpAndSettle();
     // The name is edited in a dialog, from the account's card.
     await tester.tap(find.byIcon(Icons.edit_outlined));
@@ -2631,7 +2668,7 @@ void main() {
 
     testWidgets('on a community server says nothing of a demo', (tester) async {
       final c = await _pump(tester, forums: _Server());
-      for (final page in ['/community', '/community/forum/questions', '/community/thread/1', '/community/account']) {
+      for (final page in ['/community', '/community/forum/questions', '/community/thread/1', '/account']) {
         c.read(routerProvider).go(page);
         await tester.pumpAndSettle();
         expect(find.text(demoMode), findsNothing, reason: page);
@@ -2641,7 +2678,7 @@ void main() {
   });
 
   group('the Demo tag', () {
-    for (final page in ['/community/forum/questions', '/community/thread/1', '/community/new?forum=questions', '/community/account']) {
+    for (final page in ['/community/forum/questions', '/community/thread/1', '/community/new?forum=questions', '/account']) {
       testWidgets('on $page is a button that explains the demo', (tester) async {
         final semantics = tester.ensureSemantics();
         final c = await _pump(tester);
@@ -3306,7 +3343,7 @@ void main() {
       // Once the status message that says so has gone.
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
-      c.read(routerProvider).go('/community/account');
+      c.read(routerProvider).go('/account');
       await tester.pumpAndSettle();
       await tester.tap(find.text('Blocked members (1)'));
       await tester.pumpAndSettle();
@@ -3464,7 +3501,7 @@ void main() {
         await _goBack(tester);
         expect(tester.widget<Text>(detailOf('Divrei Torah')).data, startsWith('3\u00a0discussions'));
 
-        c.read(routerProvider).push('/community/account');
+        c.read(routerProvider).go('/account');
         await tester.pumpAndSettle();
         final delete = find.text('Delete my account');
         await tester.scrollUntilVisible(delete, 200, scrollable: find.byType(Scrollable).first);
@@ -3539,13 +3576,13 @@ void main() {
   group('the account page', () {
     Future<ProviderContainer> account(WidgetTester tester, {DemoForumRepository? forums, AppSettings? settings}) async {
       final c = await _pump(tester, forums: forums, settings: settings ?? const AppSettings(onboardingComplete: true));
-      c.read(routerProvider).go('/community/account');
+      c.read(routerProvider).go('/account');
       await tester.pumpAndSettle();
       return c;
     }
 
     Future<void> sendCode(WidgetTester tester) async {
-      await tester.enterText(find.byType(TextField), 'reader@example.org');
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
       await tester.tap(find.text('Email me a code'));
       await tester.pumpAndSettle();
     }
@@ -3553,30 +3590,92 @@ void main() {
     final codeField = find.byType(TextField);
     bool codeFocused(WidgetTester tester) => tester.widget<TextField>(codeField).focusNode!.hasFocus;
 
-    testWidgets('signed out, names the app, the code it will send, and what the email is for', (tester) async {
+    testWidgets('signed out, names the app, the password or the code, and what the email is for', (tester) async {
       await account(tester);
       expect(find.descendant(of: find.byType(AppBar), matching: find.text('Account & community')), findsOneWidget);
       expect(find.byType(AppMark), findsOneWidget);
       expect(tester.getSize(find.byType(AppMark)), const Size(56, 56));
-      expect(find.text('Sign in'), findsOneWidget);
-      expect(find.text('We’ll email you a 6-digit code — no password needed.'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Email me a code'), findsOneWidget);
+      expect(find.bySemanticsLabel('Sign in'), findsWidgets);
+      expect(find.text('Sign in with your password, or get a 6-digit code by email.'), findsOneWidget);
+      // The password right under the email, both for the password manager.
+      final fields = tester.widgetList<TextField>(find.descendant(of: find.byType(AutofillGroup), matching: find.byType(TextField))).toList();
+      expect([for (final f in fields) f.decoration?.labelText], ['Email address', 'Password']);
+      expect(fields.first.autofillHints, [AutofillHints.username, AutofillHints.email]);
+      expect(fields.last.autofillHints, [AutofillHints.password]);
+      expect(fields.last.obscureText, isTrue);
+      expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Email me a code'), findsOneWidget);
       expect(find.textContaining('We use your email only to sign you in.'), findsOneWidget);
       // In a column of 440 at most.
       tester.view.physicalSize = const Size(1366, 860);
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.widgetWithText(FilledButton, 'Email me a code')).width, 440 - 2 * 32);
+      expect(tester.getSize(find.widgetWithText(FilledButton, 'Sign in')).width, 440 - 2 * 32);
+    });
+
+    testWidgets('signs in with the password, and says under it when it is wrong or missing', (tester) async {
+      final forums = _Passwords();
+      await account(tester, forums: forums);
+      final password = find.widgetWithText(TextField, 'Password');
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(find.text('Enter your password, or email yourself a code.'), findsOneWidget);
+      expect(forums.tries, isEmpty, reason: 'said without asking the server');
+
+      await tester.enterText(password, 'not the password');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('That email and password don’t match. No password yet? Email yourself a code.'), findsOneWidget);
+      expect(tester.widget<EditableText>(find.descendant(of: password, matching: find.byType(EditableText))).focusNode.hasFocus, isTrue);
+      expect(forums.currentUser, isNull);
+
+      // Shown, to check it.
+      await tester.tap(find.byTooltip('Show password'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(password).obscureText, isFalse);
+      await tester.enterText(password, _Passwords.password);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(forums.tries.last, ('reader@example.org', _Passwords.password, null));
+      expect(forums.currentUser, isNotNull);
+      // A new account's machine name: the name step follows, as after a code.
+      expect(find.widgetWithText(FilledButton, 'Save name'), findsOneWidget);
+    });
+
+    testWidgets("with the password asks for the authenticator's code, and sends a code to an address not yet confirmed", (tester) async {
+      final forums = _Passwords(secondStep: true);
+      await account(tester, forums: forums);
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
+      await tester.enterText(find.widgetWithText(TextField, 'Password'), _Passwords.password);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), '123456');
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.byType(FilledButton)));
+      await tester.pumpAndSettle();
+      expect(forums.tries.last, ('reader@example.org', _Passwords.password, '123456'));
+      expect(forums.currentUser, isNotNull);
+
+      await forums.signOut();
+      forums.unverified = true;
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
+      await tester.enterText(find.widgetWithText(TextField, 'Password'), _Passwords.password);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(find.text('We sent a 6-digit code to reader@example.org.'), findsOneWidget);
+      expect(forums.currentUser, isNull);
     });
 
     testWidgets('says under the field when the email is no address, and gives it the focus', (tester) async {
       await account(tester);
-      await tester.enterText(find.byType(TextField), 'reader');
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader');
       await tester.tap(find.text('Email me a code'));
       await tester.pumpAndSettle();
       expect(find.text('Please enter a valid email address.'), findsOneWidget);
       expect(find.byType(SnackBar), findsNothing);
       expect(_focusedField(tester), 'Email address');
-      await tester.enterText(find.byType(TextField), 'reader@');
+      await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@');
       await tester.pump();
       expect(find.text('Please enter a valid email address.'), findsNothing, reason: 'it goes as the email is edited');
     });
@@ -3939,7 +4038,7 @@ void main() {
       expect(c.read(routerProvider).state.uri.path, '/progress');
 
       c.read(settingsProvider.notifier).update((s) => s.copyWith(showStreaks: false));
-      c.read(routerProvider).go('/community/account');
+      c.read(routerProvider).go('/account');
       await tester.pumpAndSettle();
       expect(find.byType(StreakFlame), findsNothing);
     });
@@ -3981,6 +4080,26 @@ void main() {
           expect(opened, hasLength(3));
         }
       }
+    });
+
+    // The web app's fields are drawn, out of password managers' reach: it
+    // signs in on the site's page, whose forms they fill, and comes back.
+    testWidgets("on the web, signs in on the site's page, which comes back here", (tester) async {
+      final opened = <String>[];
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'launch') opened.add((call.arguments as Map)['url'] as String);
+        return true;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null));
+      final forums = _OnSite();
+      await account(tester, forums: forums);
+      expect(find.text('Sign in with your password manager, a passkey, your password or a code by email.'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing, reason: 'no field of its own');
+      await tester.tap(find.text('Continue to sign in'));
+      await tester.pumpAndSettle();
+      expect(forums.asked.last, ('/account', 'en'));
+      expect(opened.single, 'https://shnayimmikrah.org/account/sign-in?next=%2Faccount&lang=en');
     });
 
     testWidgets('in the demo, has no website to open', (tester) async {
@@ -4027,7 +4146,7 @@ void main() {
       expect(_location(c), '/settings/data');
       expect(forums.currentUser, isNotNull, reason: 'nothing is deleted');
       await _goBack(tester);
-      expect(_location(c), '/community/account');
+      expect(_location(c), '/account');
 
       // On a wide screen, no wider than Material's dialogs.
       tester.view.physicalSize = const Size(1366, 860);
@@ -4036,12 +4155,9 @@ void main() {
       expect(tester.getSize(find.descendant(of: dialog, matching: find.byType(Material)).first).width, 560);
     });
 
-    // In Settings, Your data opens above the account, and Back comes back to
-    // it. Where Your data is beneath the account (its Cloud backup row opened
-    // it), the account goes back to that one, rather than opening a second
-    // above, which Back would lead round to again.
-    testWidgets('in Settings, saves a backup file first in Your data, never a second one above the account',
-        (tester) async {
+    // From the Account tab, Your data opens above the account, and Back comes
+    // back to it. Your data's Cloud backup row opens the Account tab.
+    testWidgets('in the Account tab, saves a backup file first in Your data, and comes back', (tester) async {
       final forums = DemoForumRepository();
       await forums.verifyCode('reader@example.org', '123456');
       await forums.updateDisplayName('Rivka');
@@ -4064,26 +4180,20 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      c.read(routerProvider).go('/settings');
+      c.read(routerProvider).go('/account');
       await tester.pumpAndSettle();
-      await open('Account & community');
-      expect(_location(c), '/settings/account');
       await backUpFirst();
       expect(_location(c), '/settings/data');
+      expect(forums.currentUser, isNotNull, reason: 'nothing is deleted');
       await _goBack(tester);
-      expect(_location(c), '/settings/account');
-      await _goBack(tester);
-      expect(_location(c), '/settings');
+      expect(_location(c), '/account');
 
+      c.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
       await open('Your data');
       await open('Cloud backup');
       expect(find.byType(AccountScreen), findsOneWidget);
-      await backUpFirst();
-      expect(_location(c), '/settings/data');
-      expect(find.byType(AccountScreen), findsNothing, reason: 'the account is closed, not left beneath');
-      expect(forums.currentUser, isNotNull, reason: 'nothing is deleted');
-      await _goBack(tester);
-      expect(_location(c), '/settings');
+      expect(_location(c), '/account');
     });
 
     testWidgets('reads its backup row as one switch, Sync now an item of its own', (tester) async {

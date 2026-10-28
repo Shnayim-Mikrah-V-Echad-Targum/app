@@ -8,9 +8,11 @@ const a11yRoutes = [
   '/progress',
   '/community',
   '/community/new',
-  // A discussion with its posts, and signing in from the community.
+  // A discussion with its posts, and signing in before posting.
   '/community/thread/1',
-  '/community/account',
+  '/community/sign-in',
+  // The Account tab: signing in.
+  '/account',
   // A question on a verse, over the tabs, as the reader opens it.
   '/ask?verse=Genesis%203:22',
   // The bookmarks and notes, with none yet.
@@ -23,7 +25,6 @@ const a11yRoutes = [
   '/settings/reminders',
   '/settings/data',
   '/settings/about',
-  '/settings/account',
   // The guide, the sources and a policy within Settings, as it opens them;
   // and a policy on its own, as every visitor can open it.
   '/settings/guide',

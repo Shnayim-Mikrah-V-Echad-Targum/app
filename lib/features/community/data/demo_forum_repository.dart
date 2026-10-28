@@ -192,6 +192,13 @@ class DemoForumRepository implements ForumRepository {
     _users.add(_user);
   }
 
+  /// Any password of 8 characters or more, as the demo has no accounts.
+  @override
+  Future<void> signInWithPassword(String email, String password, {String? secondStep}) async {
+    if (!email.contains('@') || password.length < 8) throw const CommunityException('invalid_credentials');
+    await verifyCode(email, '000000');
+  }
+
   @override
   Future<void> signOut() async {
     _user = null;
@@ -533,6 +540,9 @@ class DemoForumRepository implements ForumRepository {
 
   @override
   Future<Uri?> siteLink(SitePage page, {String? lang}) async => null;
+
+  @override
+  Uri? signInPage({required String next, String? lang}) => null;
 }
 
 /// A sample discussion of the demo: its posts in order, the first starting

@@ -39,6 +39,20 @@ class AppShell extends StatelessWidget {
 
   void _go(int index) => shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
+  /// The Account tab's branch, with the community; null without it.
+  static int? get _accountBranch => AppConfig.communityEnabled ? 4 : null;
+
+  /// Opens the account from [context]: its own tab, where the rail has it; on
+  /// a phone, whose bar has room for five destinations and no more (§6.9),
+  /// above the page [context] is on (Settings, Community), with a way back.
+  static void openAccount(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < Breakpoints.medium) {
+      context.push('/account');
+    } else {
+      context.go('/account');
+    }
+  }
+
   /// Whether Today's tab is on show at its root, with no page of its own
   /// open: the one place the system's Back leaves the app.
   bool get _atToday => shell.currentIndex == 0 && shell.shellRouteContext.routerState.uri.path == '/today';
@@ -98,11 +112,20 @@ class AppShell extends StatelessWidget {
       (Icons.donut_large_outlined, Icons.donut_large, l.navProgress),
       // As the router has the tab (see routerProvider).
       if (AppConfig.communityEnabled) (Icons.forum_outlined, Icons.forum, l.navCommunity),
+      // Signing in, the profile and backup; with the community, as the router
+      // has the tab. Not on the phone's bar (see openAccount).
+      if (AppConfig.communityEnabled) (Icons.account_circle_outlined, Icons.account_circle, l.navAccount),
       (Icons.settings_outlined, Icons.settings, l.navSettings),
     ];
     final width = MediaQuery.sizeOf(context).width;
 
     if (width < Breakpoints.medium) {
+      // The bar leaves the account out, which opens from Settings: there, and
+      // on its own address (a link, or a reload), it shows Settings chosen.
+      final account = _accountBranch;
+      final bar = [for (var i = 0; i < items.length; i++) if (i != account) items[i]];
+      int toBar(int branch) => account == null || branch < account ? branch : (branch == account ? bar.length - 1 : branch - 1);
+      int toBranch(int index) => account == null || index < account ? index : index + 1;
       return _BarFrame(
         body: shell,
         // Where Android's navigation bar can't be see-through, it takes the
@@ -114,10 +137,10 @@ class AppShell extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.only(top: hairline.width),
               child: _NavBar(
-                selectedIndex: shell.currentIndex,
-                onSelected: _go,
+                selectedIndex: toBar(shell.currentIndex),
+                onSelected: (index) => _go(toBranch(index)),
                 destinations: [
-                  for (final (icon, selected, label) in items)
+                  for (final (icon, selected, label) in bar)
                     NavigationDestination(
                       icon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(icon)),
                       selectedIcon: IndicatorFocusRing(indicator: _barIndicator, radius: 16, child: Icon(selected)),

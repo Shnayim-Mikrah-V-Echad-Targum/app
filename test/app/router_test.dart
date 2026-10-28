@@ -72,8 +72,9 @@ void main() {
       ('/today/guide', GuideScreen, null, 0, TodayScreen),
       ('/community/legal/privacy', LegalScreen, 'Privacy', 3, CommunityScreen),
       ('/community/legal/guidelines', LegalScreen, 'Community guidelines', 3, CommunityScreen),
-      ('/community/account/legal/privacy', LegalScreen, 'Privacy', 3, AccountScreen),
-      ('/settings/account/legal/privacy', LegalScreen, 'Privacy', 4, AccountScreen),
+      // On the phone's bar, which has no Account, Settings: where the account
+      // opens from there.
+      ('/account/legal/privacy', LegalScreen, 'Privacy', 4, AccountScreen),
       ('/settings/guide', GuideScreen, null, 4, SettingsScreen),
       ('/settings/accessibility/legal/accessibility', LegalScreen, 'Accessibility statement', 4,
           AccessibilitySettingsScreen),
@@ -105,14 +106,15 @@ void main() {
         router.go(path);
         await _settle(tester);
         expect(find.byType(path.endsWith('guide') ? GuideScreen : LegalScreen), findsOneWidget);
-        expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 4);
+        expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 5);
       });
     }
 
     for (final (path, tab) in [
       ('/community/legal/term', 3),
+      // The bar has no Account: Settings, where the account opens from.
+      ('/account/legal/term', 4),
       ('/settings/accessibility/legal/term', 4),
-      ('/settings/account/legal/term', 4),
       ('/settings/about/legal/term', 4),
     ]) {
       testWidgets('$path, a policy that does not exist, says so within its tab', (tester) async {
@@ -207,6 +209,8 @@ void main() {
       ('/settings/about/legal/privacy', '/legal/privacy', LegalScreen),
       ('/settings/accessibility/legal/accessibility', '/legal/accessibility', LegalScreen),
       ('/community/legal/guidelines', '/legal/guidelines', LegalScreen),
+      ('/account/legal/privacy', '/legal/privacy', LegalScreen),
+      // The account's addresses before it was a tab of its own.
       ('/community/account/legal/privacy', '/legal/privacy', LegalScreen),
       ('/settings/account/legal/privacy', '/legal/privacy', LegalScreen),
     ]) {

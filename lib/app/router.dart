@@ -71,28 +71,33 @@ GoRoute _legal(String path) => _route(path, (s) => switch (LegalDoc.fromSlug(s.p
 String? _pageOverTabs(String path) => switch (path) {
       '/today/guide' || '/settings/guide' => '/guide',
       '/settings/about/sources' => '/sources',
-      _ => RegExp(r'^/(community|community/account|settings/about|settings/accessibility|settings/account)(/legal/[^/]+)$')
+      _ => RegExp(r'^/(community|account|settings/about|settings/accessibility)(/legal/[^/]+)$')
           .firstMatch(path)
           ?.group(2),
     };
 
 /// Whether [path] is a page of the community or of its account, none of
 /// which is offered without it ([AppConfig.communityEnabled]): Community and
-/// its pages, a question asked over the reader, and the account, over the
-/// tabs, in Settings, or signing in to restore a backup at the welcome.
+/// its pages, a question asked over the reader, the Account tab (and its old
+/// address in Settings), signing in over the tabs, or signing in to restore
+/// a backup at the welcome.
 bool _isCommunityPage(String path) =>
-    RegExp(r'^/(community|ask|account|settings/account|welcome/account)(/|$)').hasMatch(path);
+    RegExp(r'^/(community|ask|account|sign-in|settings/account|welcome/account)(/|$)').hasMatch(path);
+
+/// The account's addresses before it was a tab of its own, in Community and
+/// in Settings ('/settings/account/legal/privacy'), as the Account tab's.
+String? _accountTabPath(GoRouterState state) {
+  final old = RegExp(r'^/(community|settings)/account(/.*)?$').firstMatch(state.uri.path);
+  return old == null ? null : state.uri.replace(path: '/account${old.group(2) ?? ''}').toString();
+}
+
+/// Signing in before an action, which goes back to it once signed in:
+/// ?next= names the page that asked (see ensureSignedIn).
+AccountScreen _signIn(GoRouterState s) => AccountScreen(returnWhenSignedIn: true, returnTo: s.uri.queryParameters['next']);
 
 /// A week and its haftarah within each of the [weekTabs], so the navigation
 /// bar stays.
 List<RouteBase> _weekPages() => [_week('week/:id'), _haftarah('haftarah/:id')];
-
-/// The account page, in Community and in Settings: each tab keeps its own.
-/// ?then=back goes back once signed in; ?from=data says Your data is beneath.
-AccountScreen _account(GoRouterState s) => AccountScreen(
-      returnWhenSignedIn: s.uri.queryParameters['then'] == 'back',
-      openedFromData: s.uri.queryParameters['from'] == 'data',
-    );
 
 /// A page that a link opened before onboarding was done, such as a
 /// discussion shared with a new reader: the welcome comes first, and the
@@ -136,6 +141,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Without the community, a link to any of its pages (a discussion
       // shared, the account) opens Today: before onboarding, the welcome.
       if (!AppConfig.communityEnabled && _isCommunityPage(path)) return '/today';
+      if (_accountTabPath(state) case final tab?) return tab;
       // The site's own address, whatever a link added to it (?fbclid=,
       // ?utm_source=), or its index.html by name: the app's start.
       if (path == '/' || path == '/index.html') return onboarded.value ? '/today' : '/welcome';
@@ -189,12 +195,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                       forumSlug: s.uri.queryParameters['forum'],
                       verse: s.uri.queryParameters['verse'],
                     )),
-                // The privacy policy from the account, under it.
-                _route('account', _account, routes: [_legal('legal/:doc')]),
+                // Signing in before posting, within the tab.
+                _route('sign-in', _signIn),
                 _route('moderation', (_) => const ModerationScreen()),
                 // The guidelines from a new discussion.
                 _legal('legal/:doc'),
               ]),
+            ]),
+          // The account, with the community (AppShell leaves its destination
+          // out too): the privacy policy from it, under it.
+          if (AppConfig.communityEnabled)
+            StatefulShellBranch(routes: [
+              _route('/account', (_) => const AccountScreen(), routes: [_legal('legal/:doc')]),
             ]),
           StatefulShellBranch(routes: [
             _route('/settings', (_) => const SettingsScreen(), routes: [
@@ -210,8 +222,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 _route('city', (_) => const CityPickerScreen()),
               ]),
               _route('data', (_) => const DataSettingsScreen()),
-              // The privacy policy from the account, under it.
-              _route('account', _account, routes: [_legal('legal/:doc')]),
               _route('about', (_) => const AboutScreen(), routes: [_sources('sources'), _legal('legal/:doc')]),
               _guide('guide'),
             ]),
@@ -235,7 +245,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       _route('/ask', (s) => ComposeScreen(forumSlug: 'questions', verse: s.uri.queryParameters['verse'])),
       // Signing in over the tabs, before such a question is posted; back to
       // it once signed in.
-      _route('/account', _account),
+      _route('/sign-in', _signIn),
       // The list of cities over the reader, offered once reminders are turned
       // on there; choosing one goes back to it.
       _route('/city', (_) => const CityPickerScreen()),

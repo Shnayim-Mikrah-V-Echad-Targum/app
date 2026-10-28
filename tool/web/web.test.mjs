@@ -1098,10 +1098,11 @@ describe('the build', () => {
       assert.equal(fileNavigation.test(file), true, file);
     }
     // The accounts' pages and the admin panel are the Worker's, never the app's.
-    for (const page of ['/account', '/account/sign-up', '/account/reset/complete?token=abc', '/account?lang=he', '/admin', '/admin/accounts/3']) {
+    for (const page of ['/account/security', '/account/sign-up', '/account/reset/complete?token=abc', '/account/sign-in?next=%2Faccount', '/admin', '/admin/accounts/3']) {
       assert.equal(serverPage.test(page), true, page);
     }
-    for (const page of ['/accounts', '/administer', '/settings/account', '/community/account', '/today']) {
+    // The app's Account tab is the app's.
+    for (const page of ['/account', '/account?lang=he', '/accounts', '/administer', '/settings/account', '/community/account', '/today']) {
       assert.equal(serverPage.test(page), false, page);
     }
   });
