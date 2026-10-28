@@ -184,8 +184,9 @@ jobs:
   # The site's own web build, for shnayimmikrah.org: the app built with the
   # site's address (so its community is the site's, not the demo), with the
   # web job's finishing steps, published as site.zip on the rolling
-  # pre-release web-latest. The site's Worker, in its own repository, serves
-  # it: its build fetches this file when it has no build of its own.
+  # pre-release web-latest, its notes naming the commit. The site's Worker, in
+  # its own repository, serves it: its build fetches this file, and the site
+  # takes each new one as it is published.
   site-web:
     name: Publish the site's web build
     needs: test
@@ -237,6 +238,9 @@ jobs:
               --notes "The web app as shnayimmikrah.org serves it, rebuilt from main on every push. Not a release for download."
           fi
           gh release upload web-latest "$RUNNER_TEMP/site.zip" --repo "$GITHUB_REPOSITORY" --clobber
+          # Which commit it is, for the site's record of the build it serves.
+          gh release edit web-latest --repo "$GITHUB_REPOSITORY" \
+            --notes "The web app as shnayimmikrah.org serves it, rebuilt from main on every push. Not a release for download. Built from $GITHUB_SHA."
 
   android:
     name: Build Android
