@@ -141,6 +141,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navSettings;
 
+  /// The navigation destination for the account: signing in, the profile, backup and the account's security.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
   /// No description provided for @actionContinue.
   ///
   /// In en, this message translates to:
@@ -4056,8 +4062,44 @@ abstract class AppLocalizations {
   /// No description provided for @signInBody.
   ///
   /// In en, this message translates to:
-  /// **'We’ll email you a 6-digit code — no password needed.'**
+  /// **'Sign in with your password, or get a 6-digit code by email.'**
   String get signInBody;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// The button under the email and password fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get signInAction;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// Under the password field. An account made with an emailed code has no password until one is added on the website.
+  ///
+  /// In en, this message translates to:
+  /// **'That email and password don’t match. No password yet? Email yourself a code.'**
+  String get errInvalidCredentials;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password, or email yourself a code.'**
+  String get passwordRequired;
 
   /// No description provided for @emailLabel.
   ///
@@ -4070,6 +4112,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email me a code'**
   String get sendCodeAction;
+
+  /// On the web app: the sign-in step, which opens the website's sign-in page (whose forms password managers and passkeys can fill) and comes back signed in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with your password manager, a passkey, your password or a code by email.'**
+  String get signInOnSiteBody;
+
+  /// On the web app: the button that opens the website's sign-in page in the same tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to sign in'**
+  String get signInOnSiteAction;
 
   /// No description provided for @codeSentTo.
   ///

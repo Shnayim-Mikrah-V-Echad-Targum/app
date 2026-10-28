@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell.dart';
 import '../../../app/retry.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/theme/app_theme.dart';
@@ -82,7 +83,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> with FetchAga
             icon: user == null
                 ? const Icon(Icons.person_outline)
                 : InitialDisc(profile != null && profile.hasChosenName ? profile.displayName : ''),
-            onPressed: () => context.push('/community/account'),
+            onPressed: () => AppShell.openAccount(context),
           ),
         ],
         body: RefreshIndicator(
@@ -99,7 +100,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> with FetchAga
                     PaperRow(
                       icon: Icons.info_outline,
                       title: l.signInPrompt,
-                      trailing: TextButton(onPressed: () => context.push('/community/account'), child: Text(l.signInTitle)),
+                      trailing: TextButton(onPressed: () => AppShell.openAccount(context), child: Text(l.signInTitle)),
                     ),
                   ],
                 ),

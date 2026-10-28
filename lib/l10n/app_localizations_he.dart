@@ -33,6 +33,9 @@ class AppLocalizationsHe extends AppLocalizations {
   String get navSettings => 'הגדרות';
 
   @override
+  String get navAccount => 'חשבון';
+
+  @override
   String get actionContinue => 'המשך';
 
   @override
@@ -2489,13 +2492,40 @@ class AppLocalizationsHe extends AppLocalizations {
   String get signInTitle => 'כניסה';
 
   @override
-  String get signInBody => 'נשלח אליך בדוא״ל קוד בן 6 ספרות — ללא סיסמה.';
+  String get signInBody =>
+      'כניסה עם הסיסמה, או עם קוד בן 6 ספרות שיישלח אליך בדוא״ל.';
+
+  @override
+  String get passwordLabel => 'סיסמה';
+
+  @override
+  String get signInAction => 'כניסה';
+
+  @override
+  String get showPassword => 'הצגת הסיסמה';
+
+  @override
+  String get hidePassword => 'הסתרת הסיסמה';
+
+  @override
+  String get errInvalidCredentials =>
+      'כתובת הדוא״ל והסיסמה אינן תואמות. עדיין אין לך סיסמה? אפשר לקבל קוד בדוא״ל.';
+
+  @override
+  String get passwordRequired => 'יש להזין את הסיסמה, או לקבל קוד בדוא״ל.';
 
   @override
   String get emailLabel => 'כתובת דוא״ל';
 
   @override
   String get sendCodeAction => 'שליחת קוד';
+
+  @override
+  String get signInOnSiteBody =>
+      'כניסה עם מנהל הסיסמאות, מפתח גישה, הסיסמה או קוד בדוא״ל.';
+
+  @override
+  String get signInOnSiteAction => 'המשך לכניסה';
 
   @override
   String codeSentTo(String email) {

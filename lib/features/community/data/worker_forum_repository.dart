@@ -143,6 +143,18 @@ class WorkerForumRepository implements ForumRepository {
   }
 
   @override
+  Future<void> signInWithPassword(String email, String password, {String? secondStep}) async {
+    final body = await _send('POST', 'auth/password', body: {
+      'email': email.trim(),
+      // As typed: a password's spaces are its own.
+      'password': password,
+      'totp': ?secondStep?.trim(),
+    }) as Map<String, dynamic>;
+    final u = body['user'] as Map<String, dynamic>;
+    await _signedIn(CommunityUser(id: u['id'] as String, email: u['email'] as String?), body['token'] as String?);
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       await _send('POST', 'auth/sign-out');
@@ -397,5 +409,14 @@ class WorkerForumRepository implements ForumRepository {
     }
     final body = await _send('POST', 'handoff', body: {'next': page.path, 'lang': ?language}) as Map<String, dynamic>;
     return Uri.parse(body['url'] as String);
+  }
+
+  /// On the web the page's cookie is the session, so signing in on the site's
+  /// page signs the app in too, once it is back (refreshSession).
+  @override
+  Uri? signInPage({required String next, String? lang}) {
+    if (_keepsToken) return null;
+    final language = lang == 'he' || lang == 'en' ? lang : null;
+    return _server.resolve('account/sign-in').replace(queryParameters: {'next': next, 'lang': ?language});
   }
 }

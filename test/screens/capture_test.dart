@@ -2180,7 +2180,7 @@ final _screenSetup = <String, Future<void> Function(WidgetTester)>{
     await tester.enterText(find.byType(TextField).last, 'I have been reading verse by verse.');
   },
   'account_code_error': (tester) async {
-    await tester.enterText(find.byType(TextField), 'reader@example.org');
+    await tester.enterText(find.widgetWithText(TextField, 'Email address'), 'reader@example.org');
     await tester.tap(find.byType(FilledButton).first);
     await _settle(tester);
     await tester.enterText(find.byType(TextField), '123');

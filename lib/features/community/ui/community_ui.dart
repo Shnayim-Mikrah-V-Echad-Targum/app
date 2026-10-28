@@ -48,6 +48,9 @@ String communityError(AppLocalizations l, Object e) {
     'invalid_name' => l.errInvalidName,
     'invalid_code' || 'otp_expired' => l.errInvalidCode,
     'invalid_totp' => l.secondStepWrong,
+    'invalid_credentials' => l.errInvalidCredentials,
+    // Said before the password goes to the server.
+    'password_empty' => l.passwordRequired,
     // Said before the code goes to the server, where it would only fail.
     'code_incomplete' => l.codeIncomplete(signInCodeLength),
     'invalid_email' || 'email_address_invalid' => l.errInvalidEmail,
@@ -66,7 +69,7 @@ bool alreadyDone(Object e) => e is CommunityException && e.code == 'duplicate';
 
 /// The fields of the community's forms that an error from the server can be
 /// about.
-enum CommunityField { title, body, email, code, name }
+enum CommunityField { title, body, email, password, code, name }
 
 /// The field that the error [code] is about, where the form shows it under
 /// that field and gives the field the focus; null for an error about no one
@@ -76,6 +79,7 @@ CommunityField? fieldFor(String code) => switch (code) {
       'title_too_short' => CommunityField.title,
       'too_short' || 'too_many_links' || 'content_rejected' || 'duplicate_post' => CommunityField.body,
       'invalid_email' || 'email_address_invalid' => CommunityField.email,
+      'invalid_credentials' || 'password_empty' => CommunityField.password,
       'invalid_code' || 'otp_expired' || 'code_incomplete' => CommunityField.code,
       'invalid_name' || 'name_taken' => CommunityField.name,
       _ => null,
@@ -183,7 +187,8 @@ Future<bool> ensureSignedIn(BuildContext context, WidgetRef ref, {bool named = f
   // Over the tabs (a question asked from the reader), the account page
   // opens over them too: a tab's page can't be shown above it.
   final overTabs = StatefulNavigationShell.maybeOf(context) == null;
-  await context.push(overTabs ? '/account?then=back' : '/community/account?then=back');
+  final page = Uri(path: overTabs ? '/sign-in' : '/community/sign-in', queryParameters: {'next': GoRouterState.of(context).uri.toString()});
+  await context.push(page.toString());
   return ready();
 }
 

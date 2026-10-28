@@ -17,6 +17,12 @@ abstract class ForumRepository {
   /// it, this fails with `totp_required`, and the emailed code stays good to
   /// send again with it; a wrong one fails with `invalid_totp`.
   Future<void> verifyCode(String email, String code, {String? secondStep});
+  /// Signs in with the account's [password], which an account made by code
+  /// has once one is added on the site. Asks for the authenticator's code as
+  /// [verifyCode] does; fails with `invalid_credentials` for a wrong password
+  /// or none, and with `unverified` for an address not yet confirmed, which
+  /// is then sent a code for [verifyCode].
+  Future<void> signInWithPassword(String email, String password, {String? secondStep});
   Future<void> signOut();
 
   /// Permanently deletes the account and everything the user posted.
@@ -104,13 +110,20 @@ abstract class ForumRepository {
   /// app's language, which the site's pages keep; without it they follow the
   /// browser's.
   Future<Uri?> siteLink(SitePage page, {String? lang});
+
+  /// The website's sign-in page, which comes back to [next] (a page of the
+  /// app, as its path) once signed in, where the app signs in on the site's
+  /// own pages: on the web, at the site's address. Their forms are what
+  /// password managers and passkeys fill, where the web app's own fields are
+  /// drawn, and so out of their reach. Null where the app signs in itself.
+  Uri? signInPage({required String next, String? lang});
 }
 
 /// The website's pages the account page opens: the account's own (its
 /// password, passkeys and authenticator app), and for an admin the admin
-/// panel.
+/// panel. The site's /account is the app's own Account tab.
 enum SitePage {
-  account('/account'),
+  account('/account/security'),
   admin('/account/admin');
 
   const SitePage(this.path);

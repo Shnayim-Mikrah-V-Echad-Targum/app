@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/config.dart';
 import '../../../app/providers.dart';
+import '../../../app/shell.dart';
 import '../../../services/web_install.dart';
 import '../../../ui/l10n.dart';
 import '../../../ui/widgets/paper_group.dart';
@@ -81,14 +82,15 @@ class SettingsScreen extends ConsumerWidget {
         GroupHeader(l.settingsGroupYou),
         PaperGroup(
           children: [
-            // No account without the community.
-            if (AppConfig.communityEnabled)
-              page(
-                Icons.person_outline,
-                l.settingsAccount,
-                // A name in either script keeps its own direction in the sentence.
-                user == null ? l.settingsAccountDesc : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
-                '/settings/account',
+            // The account is a tab of its own, which the phone's bar has no
+            // room for: from here there.
+            if (AppConfig.communityEnabled && MediaQuery.sizeOf(context).width < Breakpoints.medium)
+              PaperRow(
+                icon: Icons.person_outline,
+                title: l.settingsAccount,
+                subtitle: user == null ? l.settingsAccountDesc : (name == null ? null : l.signedInAs('\u2068$name\u2069')),
+                subtitleMaxLines: null,
+                onTap: () => AppShell.openAccount(context),
               ),
             page(Icons.backup_outlined, l.settingsData, l.settingsDataDesc, '/settings/data'),
             PaperRow(

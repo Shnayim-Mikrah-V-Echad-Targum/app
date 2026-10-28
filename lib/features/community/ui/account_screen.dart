@@ -27,10 +27,13 @@ import '../data/forum_repository.dart';
 import '../data/models.dart';
 import 'community_ui.dart';
 
-/// Sign in with a 6-digit email code, choose the name posts are signed with,
-/// and manage the profile, backup and account (§9 Account).
+/// Sign in with the account's password or a 6-digit email code, choose the
+/// name posts are signed with, and manage the profile, backup and account
+/// (§9 Account). It is the Account tab, and the page a sign-in before an
+/// action opens.
 ///
-/// Signing in takes three steps in one centred column: the email, the code,
+/// Signing in takes three steps in one centred column: the email (and the
+/// password, which signs in at once), the code,
 /// and, for an account that still has a machine's name, a display name. A
 /// page opened to sign in before an action ([returnWhenSignedIn]) goes back
 /// to it only once the account has a name of its own, so that no post is
@@ -40,7 +43,7 @@ class AccountScreen extends ConsumerStatefulWidget {
     super.key,
     this.returnWhenSignedIn = false,
     this.needsName = true,
-    this.openedFromData = false,
+    this.returnTo,
   });
 
   /// Opened to sign in before an action (e.g. posting): go back to it once
@@ -52,10 +55,10 @@ class AccountScreen extends ConsumerStatefulWidget {
   /// Welcome posts nothing, so goes back at once.
   final bool needsName;
 
-  /// Opened from Your data (its Cloud backup row), which is the page beneath:
-  /// saving a backup file first goes back to it, rather than opening a
-  /// second Your data above.
-  final bool openedFromData;
+  /// The page that opened this one to sign in before an action ([returnWhenSignedIn]),
+  /// as its address: on the web, where signing in leaves for the site's page,
+  /// the page the site comes back to.
+  final String? returnTo;
 
   @override
   ConsumerState<AccountScreen> createState() => _AccountScreenState();
@@ -66,11 +69,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   static const resendDelay = 30;
 
   final _email = TextEditingController();
+  final _password = TextEditingController();
   final _code = TextEditingController();
   final _name = TextEditingController();
   // Each step's field takes the keyboard focus as the step appears, and
   // again with its error.
   final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
   final _codeFocus = FocusNode();
   final _nameFocus = FocusNode();
   bool _codeSent = false;
@@ -90,6 +95,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   bool _syncing = false;
   String? _emailError;
+  String? _passwordError;
+  bool _showPassword = false;
   String? _codeError;
   String? _nameError;
 
@@ -101,9 +108,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   void dispose() {
     _resendTimer?.cancel();
     _email.dispose();
+    _password.dispose();
     _code.dispose();
     _name.dispose();
     _emailFocus.dispose();
+    _passwordFocus.dispose();
     _codeFocus.dispose();
     _nameFocus.dispose();
     super.dispose();
@@ -127,6 +136,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final field = fieldOf(e);
     final node = switch (field) {
       CommunityField.email => _emailFocus,
+      CommunityField.password => _passwordFocus,
       CommunityField.code => _codeFocus,
       CommunityField.name => _nameFocus,
       _ => null,
@@ -139,6 +149,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       switch (field) {
         case CommunityField.email:
           _emailError = message;
+        case CommunityField.password:
+          _passwordError = message;
+          _password.selection = TextSelection(baseOffset: 0, extentOffset: _password.text.length);
         case CommunityField.code:
           _codeError = message;
           // Typing replaces a code that didn't work, and goes on with one
@@ -240,31 +253,96 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   List<Widget> _emailStep(BuildContext context) {
     final l = context.l10n;
+    final onSite = ref.read(forumRepositoryProvider).signInPage(
+          next: widget.returnTo ?? GoRouterState.of(context).uri.toString(),
+          lang: Localizations.localeOf(context).languageCode,
+        );
+    if (onSite != null) return _siteStep(context, onSite);
     return [
       ..._stepHead(context, mark: const AppMark(size: 56), title: l.signInTitle, body: l.signInBody),
       const Gap(Space.xxl),
+      // Together, for the phone's password manager to fill both, and to offer
+      // to save them once they sign in.
       AutofillGroup(
-        child: TextField(
-          controller: _email,
-          focusNode: _emailFocus,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const [AutofillHints.email],
-          textDirection: TextDirection.ltr,
-          decoration: InputDecoration(labelText: l.emailLabel, errorText: _emailError, errorMaxLines: 3),
-          onChanged: (_) {
-            if (_emailError != null) setState(() => _emailError = null);
-          },
-          onSubmitted: (_) => _sendCode(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _email,
+              focusNode: _emailFocus,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.username, AutofillHints.email],
+              textDirection: TextDirection.ltr,
+              decoration: InputDecoration(labelText: l.emailLabel, errorText: _emailError, errorMaxLines: 3),
+              onChanged: (_) {
+                if (_emailError != null) setState(() => _emailError = null);
+              },
+              onSubmitted: (_) => _passwordFocus.requestFocus(),
+            ),
+            const Gap(Space.lg),
+            TextField(
+              controller: _password,
+              focusNode: _passwordFocus,
+              obscureText: !_showPassword,
+              keyboardType: TextInputType.visiblePassword,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              autocorrect: false,
+              enableSuggestions: false,
+              textDirection: TextDirection.ltr,
+              decoration: InputDecoration(
+                labelText: l.passwordLabel,
+                errorText: _passwordError,
+                errorMaxLines: 3,
+                suffixIcon: IconButton(
+                  tooltip: _showPassword ? l.hidePassword : l.showPassword,
+                  icon: Icon(_showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                  onPressed: () => setState(() => _showPassword = !_showPassword),
+                ),
+              ),
+              onChanged: (_) {
+                if (_passwordError != null) setState(() => _passwordError = null);
+              },
+              onSubmitted: (_) => _signInWithPassword(),
+            ),
+          ],
         ),
       ),
       const Gap(Space.lg),
-      FilledButton(onPressed: _busy ? null : _sendCode, child: Text(l.sendCodeAction)),
+      FilledButton(onPressed: _busy ? null : _signInWithPassword, child: Text(l.signInAction)),
+      const Gap(Space.sm),
+      // An account made in the app has no password until one is added on
+      // the site: the code signs any account in, and makes one the first time.
+      OutlinedButton(onPressed: _busy ? null : _sendCode, child: Text(l.sendCodeAction)),
       const Gap(Space.xl),
       LinkedText(
         text: l.signInPrivacy,
         link: l.privacyTitle,
         textAlign: TextAlign.center,
-        onTap: () => context.push(policyPath(context, 'privacy', fromAccount: true)),
+        onTap: () => context.push(policyPath(context, 'privacy')),
+      ),
+    ];
+  }
+
+  /// On the web: the site's sign-in page, in this tab, which comes back here
+  /// signed in. Its forms, unlike this page's drawn fields, are what password
+  /// managers fill, and it offers the passkey and the password too.
+  List<Widget> _siteStep(BuildContext context, Uri page) {
+    final l = context.l10n;
+    return [
+      ..._stepHead(context, mark: const AppMark(size: 56), title: l.signInTitle, body: l.signInOnSiteBody),
+      const Gap(Space.xxl),
+      FilledButton(
+        onPressed: _busy ? null : () => launchUrl(page, webOnlyWindowName: '_self'),
+        child: Text(l.signInOnSiteAction),
+      ),
+      const Gap(Space.xl),
+      LinkedText(
+        text: l.signInPrivacy,
+        link: l.privacyTitle,
+        textAlign: TextAlign.center,
+        onTap: () => context.push(policyPath(context, 'privacy')),
       ),
     ];
   }
@@ -377,7 +455,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _showError(const CommunityException('code_incomplete'));
       return;
     }
-    final l = context.l10n;
     final email = _email.text.trim();
     setState(() {
       _busy = true;
@@ -399,28 +476,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           if (secondStep == null || !mounted) return;
         }
       }
-      ref.invalidate(myProfileProvider);
-      // Whether it has a name decides what follows. Should the profile not
-      // come, the caller asks for it again (see ensureSignedIn).
-      Profile? profile;
-      try {
-        profile = await ref.read(myProfileProvider.future);
-      } catch (_) {}
-      if (!mounted) return;
-      _resendTimer?.cancel();
-      _code.clear();
-      _codeSent = false;
-      _resendIn = 0;
-      // A machine's name is no name: until one is chosen, the email.
-      final name = profile != null && profile.hasChosenName ? profile.displayName : null;
-      if (profile != null && name == null && widget.needsName) {
-        _justSignedIn = true;
-        _name.clear();
-        showStatus(context, l.signedInNow(context.ltrRun(email)));
-        _focusAfterFrame(_nameFocus);
-        return;
-      }
-      _finishSigningIn(l.signedInNow(name == null ? context.ltrRun(email) : _inLine(name)));
+      await _signedInAs(email);
     } catch (e) {
       if (mounted) _showError(e);
     } finally {
@@ -431,6 +487,100 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         });
       }
     }
+  }
+
+  /// Signs in with the email and password, asking for the authenticator's
+  /// code as [_verify] does. An address not yet confirmed is sent a code,
+  /// and the code step follows; a wrong password, or none, is said under the
+  /// password field, with the code as the way in.
+  Future<void> _signInWithPassword() async {
+    if (_busy) return;
+    final email = _email.text.trim();
+    final password = _password.text;
+    // Plainly missing: said at once, without asking the server.
+    if (!email.contains('@')) {
+      _showError(const CommunityException('invalid_email'));
+      return;
+    }
+    if (password.isEmpty) {
+      _showError(const CommunityException('password_empty'));
+      return;
+    }
+    final l = context.l10n;
+    setState(() {
+      _busy = true;
+      _verifying = true;
+      _emailError = null;
+      _passwordError = null;
+    });
+    try {
+      String? secondStep;
+      while (true) {
+        try {
+          await ref.read(forumRepositoryProvider).signInWithPassword(email, password, secondStep: secondStep);
+          break;
+        } on CommunityException catch (e) {
+          if (e.code == 'unverified') {
+            if (!mounted) return;
+            final sent = l.codeSentTo(context.ltrRun(email));
+            setState(() {
+              _codeSent = true;
+              _codeError = null;
+              _code.clear();
+              _startResendCountdown();
+            });
+            if (MediaQuery.supportsAnnounceOf(context)) announceStatus(context, sent);
+            _focusAfterFrame(_codeFocus);
+            return;
+          }
+          if (e.code != 'totp_required' && !(e.code == 'invalid_totp' && secondStep != null)) rethrow;
+          if (!mounted) return;
+          secondStep = await _askSecondStep(wrong: e.code == 'invalid_totp');
+          if (secondStep == null || !mounted) return;
+        }
+      }
+      // The password manager offers to save what signed in.
+      TextInput.finishAutofillContext();
+      _password.clear();
+      await _signedInAs(email);
+    } catch (e) {
+      if (mounted) _showError(e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _verifying = false;
+        });
+      }
+    }
+  }
+
+  /// Signed in as [email]: says so, then asks for a name if the account has
+  /// none of its own yet, or else goes back to what the page was opened for.
+  Future<void> _signedInAs(String email) async {
+    final l = context.l10n;
+    ref.invalidate(myProfileProvider);
+    // Whether it has a name decides what follows. Should the profile not
+    // come, the caller asks for it again (see ensureSignedIn).
+    Profile? profile;
+    try {
+      profile = await ref.read(myProfileProvider.future);
+    } catch (_) {}
+    if (!mounted) return;
+    _resendTimer?.cancel();
+    _code.clear();
+    _codeSent = false;
+    _resendIn = 0;
+    // A machine's name is no name: until one is chosen, the email.
+    final name = profile != null && profile.hasChosenName ? profile.displayName : null;
+    if (profile != null && name == null && widget.needsName) {
+      _justSignedIn = true;
+      _name.clear();
+      showStatus(context, l.signedInNow(context.ltrRun(email)));
+      _focusAfterFrame(_nameFocus);
+      return;
+    }
+    _finishSigningIn(l.signedInNow(name == null ? context.ltrRun(email) : _inLine(name)));
   }
 
   /// The account's authenticator code, or one of its recovery codes, asked
@@ -726,11 +876,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
     if (!mounted) return;
     if (choice == _Deletion.backUpFirst) {
-      if (widget.openedFromData && context.canPop()) {
-        context.pop();
-      } else {
-        openTabPage(context, '/settings/data');
-      }
+      // Your data, where the backup file is saved, above the account: Back
+      // comes back here.
+      openTabPage(context, '/settings/data');
       return;
     }
     if (choice != _Deletion.delete) return;

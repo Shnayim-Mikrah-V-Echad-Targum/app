@@ -641,7 +641,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.byType(AccountScreen), findsOneWidget);
-      expect(location(c), '/account?then=back');
+      // Signing in over the tabs, which comes back to the question that asked.
+      final at = Uri.parse(location(c));
+      expect(at.path, '/sign-in');
+      expect(Uri.parse(at.queryParameters['next']!).path, '/ask');
       expect(find.byType(NavigationBar), findsNothing);
 
       await tester.tap(find.byType(BackButton));

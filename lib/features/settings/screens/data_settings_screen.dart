@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/shell.dart';
 import '../../../app/config.dart';
 import '../../../app/providers.dart';
 import '../../../core/calendar/local_date.dart';
@@ -446,8 +447,7 @@ class DataSettingsScreen extends ConsumerWidget {
                 title: l.cloudBackup,
                 subtitle: l.syncProgressDesc,
                 subtitleMaxLines: null,
-                // The account's Save a backup file first comes back here.
-                onTap: () => context.push('/settings/account?from=data'),
+                onTap: () => AppShell.openAccount(context),
               ),
             Builder(
               // The row's own context, where the iPad anchors the share sheet.

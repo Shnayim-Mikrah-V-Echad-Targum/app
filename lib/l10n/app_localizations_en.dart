@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSettings => 'Settings';
 
   @override
+  String get navAccount => 'Account';
+
+  @override
   String get actionContinue => 'Continue';
 
   @override
@@ -2495,13 +2498,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInBody =>
-      'We’ll email you a 6-digit code — no password needed.';
+      'Sign in with your password, or get a 6-digit code by email.';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get signInAction => 'Sign in';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get errInvalidCredentials =>
+      'That email and password don’t match. No password yet? Email yourself a code.';
+
+  @override
+  String get passwordRequired =>
+      'Enter your password, or email yourself a code.';
 
   @override
   String get emailLabel => 'Email address';
 
   @override
   String get sendCodeAction => 'Email me a code';
+
+  @override
+  String get signInOnSiteBody =>
+      'Sign in with your password manager, a passkey, your password or a code by email.';
+
+  @override
+  String get signInOnSiteAction => 'Continue to sign in';
 
   @override
   String codeSentTo(String email) {
