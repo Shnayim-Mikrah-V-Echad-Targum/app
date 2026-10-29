@@ -3,17 +3,11 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
-
 import 'npz.dart';
 import 'onnx_graphs.dart';
 import 'voice_catalogue.dart';
+import 'voice_runtime.dart';
 import 'voice_store.dart';
-
-/// Opens an ONNX Runtime session on the model at a location (a file, or on
-/// the web a URL).
-typedef OrtSessionFactory = Future<OrtSession> Function(String location);
 
 /// How the voices read one utterance, as the reader has set them
 /// (VoiceSettings).
@@ -54,53 +48,52 @@ abstract class VoiceRunner {
 }
 
 /// Opens [spec]'s model, its files on the device in [store].
-Future<VoiceRunner> openVoice(VoiceSpec spec, VoiceStore store, OrtSessionFactory open) => switch (spec) {
-  PiperSpec() => PiperRunner.open(spec, store, open),
-  KokoroSpec() => KokoroRunner.open(spec, store, open),
-  BlueSpec() => BlueRunner.open(spec, store, open),
-  PocketSpec() => PocketRunner.open(spec, store, open),
+Future<VoiceRunner> openVoice(VoiceSpec spec, VoiceStore store, VoiceRuntime rt) => switch (spec) {
+  PiperSpec() => PiperRunner.open(spec, store, rt),
+  KokoroSpec() => KokoroRunner.open(spec, store, rt),
+  BlueSpec() => BlueRunner.open(spec, store, rt),
+  PocketSpec() => PocketRunner.open(spec, store, rt),
 };
 
 Future<Map<String, dynamic>> _json(VoiceStore store, VoiceFile file) async => jsonDecode(utf8.decode(await store.read(file))) as Map<String, dynamic>;
 
-/// Runs [body] with a list to put the values it makes in, which are all
-/// let go of afterwards.
-Future<T> _withValues<T>(Future<T> Function(List<OrtValue> values) body) async {
-  final values = <OrtValue>[];
+/// The tensors one utterance makes, all let go of once it is made.
+class _Values {
+  _Values(this._rt);
+  final VoiceRuntime _rt;
+  final _all = <OnnxTensor>[];
+
+  void add(OnnxTensor t) => _all.add(t);
+  void addAll(Iterable<OnnxTensor> ts) => _all.addAll(ts);
+
+  Future<OnnxTensor> int64(List<int> data, List<int> shape) async {
+    final t = await _rt.int64(data, shape);
+    _all.add(t);
+    return t;
+  }
+
+  Future<OnnxTensor> float(Float32List data, List<int> shape) async {
+    final t = await _rt.float32(data, shape);
+    _all.add(t);
+    return t;
+  }
+
+  void release() {
+    for (final t in _all) {
+      unawaited(t.dispose().then((_) {}, onError: (Object _) {}));
+    }
+    _all.clear();
+  }
+}
+
+/// Runs [body] with a [_Values] for the tensors it makes, let go of after.
+Future<T> _withValues<T>(VoiceRuntime rt, Future<T> Function(_Values values) body) async {
+  final values = _Values(rt);
   try {
     return await body(values);
   } finally {
-    for (final v in values) {
-      unawaited(v.dispose().then((_) {}, onError: (Object _) {}));
-    }
+    values.release();
   }
-}
-
-/// An int64 tensor: on the web, whose lists hold no int64, built as int32
-/// and converted.
-Future<OrtValue> _int64(List<int> data, List<int> shape, List<OrtValue> values) async {
-  if (!kIsWeb) {
-    final v = await OrtValue.fromList(Int64List.fromList(data), shape);
-    values.add(v);
-    return v;
-  }
-  final v32 = await OrtValue.fromList(Int32List.fromList(data), shape);
-  values.add(v32);
-  final v64 = await v32.to(OrtDataType.int64);
-  values.add(v64);
-  return v64;
-}
-
-Future<OrtValue> _float(Float32List data, List<int> shape, List<OrtValue> values) async {
-  final v = await OrtValue.fromList(data, shape);
-  values.add(v);
-  return v;
-}
-
-Future<Float32List> _floats(OrtValue v) async {
-  final list = await v.asFlattenedList();
-  if (list is Float32List) return list;
-  return Float32List.fromList([for (final s in list) (s as num).toDouble()]);
 }
 
 Float32List _ones(int n) => Float32List(n)..fillRange(0, n, 1);
@@ -148,20 +141,21 @@ Float32List _join(List<Float32List> parts, int rate, {double gap = 0.15}) {
 // --- Piper -------------------------------------------------------------------
 
 class PiperRunner implements VoiceRunner {
-  PiperRunner._(this.spec, this._session, this._ids, this._letters, this.sampleRate);
+  PiperRunner._(this._rt, this.spec, this._session, this._ids, this._letters, this.sampleRate);
 
-  static Future<PiperRunner> open(PiperSpec spec, VoiceStore store, OrtSessionFactory open) async {
+  static Future<PiperRunner> open(PiperSpec spec, VoiceStore store, VoiceRuntime rt) async {
     final config = await _json(store, spec.config);
     final ids = {
       for (final e in (config['phoneme_id_map'] as Map).entries) e.key as String: [for (final i in e.value as List) i as int],
     };
     final letters = spec.letters == null ? null : (await _json(store, spec.letters!)).cast<String, String>();
     final rate = ((config['audio'] as Map?)?['sample_rate'] as num?)?.toInt() ?? 22050;
-    return PiperRunner._(spec, await open(await store.location(spec.model)), ids, letters, rate);
+    return PiperRunner._(rt, spec, await rt.open(await store.location(spec.model)), ids, letters, rate);
   }
 
+  final VoiceRuntime _rt;
   final PiperSpec spec;
-  final OrtSession _session;
+  final OnnxModel _session;
   final Map<String, List<int>> _ids;
   final Map<String, String>? _letters;
 
@@ -202,17 +196,17 @@ class PiperRunner implements VoiceRunner {
   }
 
   @override
-  Future<Float32List> synthesize(String sounds, {required VoiceSpec voice, required String spoken, required VoiceTuning tuning}) => _withValues((values) async {
+  Future<Float32List> synthesize(String sounds, {required VoiceSpec voice, required String spoken, required VoiceTuning tuning}) => _withValues(_rt, (values) async {
     final ids = this.ids(symbols(sounds, spoken));
     final scales = Float32List.fromList([tuning.variation ?? spec.noise, spec.length / tuning.speed.clamp(0.25, 4.0), tuning.rhythm ?? spec.noiseWidth]);
     final outputs = await _session.run({
-      'input': await _int64(ids, [1, ids.length], values),
-      'input_lengths': await _int64([ids.length], [1], values),
-      'scales': await _float(scales, [3], values),
-      if (spec.speaker != null) 'sid': await _int64([spec.speaker!], [1], values),
+      'input': await values.int64(ids, [1, ids.length]),
+      'input_lengths': await values.int64([ids.length], [1]),
+      'scales': await values.float(scales, [3]),
+      if (spec.speaker != null) 'sid': await values.int64([spec.speaker!], [1]),
     });
     values.addAll(outputs.values);
-    return _floats(outputs.values.first);
+    return outputs.values.first.floats();
   });
 
   @override
@@ -222,21 +216,22 @@ class PiperRunner implements VoiceRunner {
 // --- Kokoro ------------------------------------------------------------------
 
 class KokoroRunner implements VoiceRunner {
-  KokoroRunner._(this._session, this._vocab, this._styles, this._styleCount);
+  KokoroRunner._(this._rt, this._session, this._vocab, this._styles, this._styleCount);
 
   /// Kokoro reads 510 symbols at most at once.
   static const maxSymbols = 500;
   static const _styleSize = 256;
 
-  static Future<KokoroRunner> open(KokoroSpec spec, VoiceStore store, OrtSessionFactory open) async {
+  static Future<KokoroRunner> open(KokoroSpec spec, VoiceStore store, VoiceRuntime rt) async {
     final config = await _json(store, spec.config);
     final vocab = {for (final e in (config['vocab'] as Map).entries) e.key as String: (e.value as num).toInt()};
     final styles = readNpz(await store.read(spec.styles))[spec.style];
     if (styles == null) throw FormatException('No style ${spec.style}');
-    return KokoroRunner._(await open(await store.location(spec.model)), vocab, styles.data, styles.shape.first);
+    return KokoroRunner._(rt, await rt.open(await store.location(spec.model)), vocab, styles.data, styles.shape.first);
   }
 
-  final OrtSession _session;
+  final VoiceRuntime _rt;
+  final OnnxModel _session;
   final Map<String, int> _vocab;
   final Float32List _styles;
   final int _styleCount;
@@ -253,19 +248,19 @@ class KokoroRunner implements VoiceRunner {
     return _join(parts, sampleRate);
   }
 
-  Future<Float32List> _piece(String sounds, VoiceTuning tuning) => _withValues((values) async {
+  Future<Float32List> _piece(String sounds, VoiceTuning tuning) => _withValues(_rt, (values) async {
     final tokens = [for (final rune in sounds.runes) ?_vocab[String.fromCharCode(rune)]];
     // One style for each number of symbols: n of them take row n - 1.
     final row = math.min(math.max(tokens.length, 1), _styleCount) - 1;
     final style = Float32List.sublistView(_styles, row * _styleSize, (row + 1) * _styleSize);
     final ids = [0, ...tokens, 0];
     final outputs = await _session.run({
-      'input_ids': await _int64(ids, [1, ids.length], values),
-      'style': await _float(Float32List.fromList(style), [1, _styleSize], values),
-      'speed': await _float(Float32List.fromList([tuning.speed.clamp(0.5, 2.0)]), [1], values),
+      'input_ids': await values.int64(ids, [1, ids.length]),
+      'style': await values.float(Float32List.fromList(style), [1, _styleSize]),
+      'speed': await values.float(Float32List.fromList([tuning.speed.clamp(0.5, 2.0)]), [1]),
     });
     values.addAll(outputs.values);
-    return _floats(outputs['waveform'] ?? outputs.values.first);
+    return (outputs['waveform'] ?? outputs.values.first).floats();
   });
 
   @override
@@ -276,15 +271,16 @@ class KokoroRunner implements VoiceRunner {
 
 class BlueRunner implements VoiceRunner {
   BlueRunner._({
+    required this._rt,
     required this.spec,
     required this.sampleRate,
     required this.baseChunk,
     required this.compress,
     required this.latentDim,
-    required OrtSession durationPredictor,
-    required OrtSession textEncoder,
-    required OrtSession vectorEstimator,
-    required OrtSession vocoder,
+    required OnnxModel durationPredictor,
+    required OnnxModel textEncoder,
+    required OnnxModel vectorEstimator,
+    required OnnxModel vocoder,
     required this._vocab,
     required int padId,
     required this._store,
@@ -305,7 +301,7 @@ class BlueRunner implements VoiceRunner {
   /// read in pieces.
   static const maxSymbols = 200;
 
-  static Future<BlueRunner> open(BlueSpec spec, VoiceStore store, OrtSessionFactory open) async {
+  static Future<BlueRunner> open(BlueSpec spec, VoiceStore store, VoiceRuntime rt) async {
     final config = await _json(store, spec.config);
     final vocab = await _json(store, spec.vocab);
     final stats = spec.stats == null ? null : readNpz(await store.read(spec.stats!));
@@ -313,15 +309,16 @@ class BlueRunner implements VoiceRunner {
     final ae = config['ae'] as Map;
     final ttl = config['ttl'] as Map;
     return BlueRunner._(
+      rt: rt,
       spec: spec,
       sampleRate: (ae['sample_rate'] as num).toInt(),
       baseChunk: (ae['base_chunk_size'] as num).toInt(),
       compress: (ttl['chunk_compress_factor'] as num).toInt(),
       latentDim: (ttl['latent_dim'] as num).toInt(),
-      durationPredictor: await open(await store.location(spec.durationPredictor)),
-      textEncoder: await open(await store.location(spec.textEncoder)),
-      vectorEstimator: await open(await store.location(spec.vectorEstimator)),
-      vocoder: await open(await store.location(spec.vocoder)),
+      durationPredictor: await rt.open(await store.location(spec.durationPredictor)),
+      textEncoder: await rt.open(await store.location(spec.textEncoder)),
+      vectorEstimator: await rt.open(await store.location(spec.vectorEstimator)),
+      vocoder: await rt.open(await store.location(spec.vocoder)),
       vocab: {for (final e in (vocab['char_to_id'] as Map).entries) e.key as String: (e.value as num).toInt()},
       padId: (vocab['pad_id'] as num?)?.toInt() ?? 0,
       store: store,
@@ -343,16 +340,17 @@ class BlueRunner implements VoiceRunner {
     }
   }
 
+  final VoiceRuntime _rt;
   final BlueSpec spec;
   @override
   final int sampleRate;
   final int baseChunk;
   final int compress;
   final int latentDim;
-  final OrtSession _dp;
-  final OrtSession _te;
-  final OrtSession _ve;
-  final OrtSession _vo;
+  final OnnxModel _dp;
+  final OnnxModel _te;
+  final OnnxModel _ve;
+  final OnnxModel _vo;
   final Map<String, int> _vocab;
   final int _pad;
   final VoiceStore _store;
@@ -393,19 +391,19 @@ class BlueRunner implements VoiceRunner {
     return math.sqrt(-2 * math.log(u)) * math.cos(2 * math.pi * v);
   }
 
-  Future<Float32List> _piece(String sounds, VoiceTuning tuning, (NpyArray, NpyArray) style) => _withValues((values) async {
+  Future<Float32List> _piece(String sounds, VoiceTuning tuning, (NpyArray, NpyArray) style) => _withValues(_rt, (values) async {
     final (styleTtl, styleDuration) = style;
     final text = RegExp(r'[.!?;:,]$').hasMatch(sounds) ? sounds : '$sounds.';
     final ids = [for (final rune in text.runes) _vocab[String.fromCharCode(rune)] ?? _pad];
     final n = ids.length;
-    final textIds = await _int64(ids, [1, n], values);
-    final textMask = await _float(_ones(n), [1, 1, n], values);
-    final ttl = await _float(styleTtl.data, styleTtl.shape, values);
-    final styleDp = await _float(styleDuration.data, styleDuration.shape, values);
+    final textIds = await values.int64(ids, [1, n]);
+    final textMask = await values.float(_ones(n), [1, 1, n]);
+    final ttl = await values.float(styleTtl.data, styleTtl.shape);
+    final styleDp = await values.float(styleDuration.data, styleDuration.shape);
 
     final dpOut = await _dp.run({'text_ids': textIds, 'style_dp': styleDp, 'text_mask': textMask});
     values.addAll(dpOut.values);
-    final seconds = (await _floats(dpOut.values.first)).first / tuning.speed.clamp(0.25, 4.0);
+    final seconds = (await dpOut.values.first.floats()).first / tuning.speed.clamp(0.25, 4.0);
     final teOut = await _te.run({'text_ids': textIds, 'style_ttl': ttl, 'text_mask': textMask});
     values.addAll(teOut.values);
     final textEmb = teOut.values.first;
@@ -416,17 +414,17 @@ class BlueRunner implements VoiceRunner {
     for (var i = 0; i < noise.length; i++) {
       noise[i] = _gaussian();
     }
-    var x = await _float(noise, [1, _channels, frames], values);
-    final latentMask = await _float(_ones(frames), [1, 1, frames], values);
+    var x = await values.float(noise, [1, _channels, frames]);
+    final latentMask = await values.float(_ones(frames), [1, 1, frames]);
     final steps = tuning.steps.clamp(1, 64);
-    final total = await _float(Float32List.fromList([steps.toDouble()]), [1], values);
-    final cfg = await _float(Float32List.fromList([tuning.guidance]), [1], values);
-    final OrtValue? uTextValue = uText == null ? null : await _float(uText!.data, uText!.shape, values);
-    final OrtValue? uRefValue = uRef == null ? null : await _float(uRef!.data, uRef!.shape, values);
-    final uMask = uText == null ? null : await _float(_ones(uText!.shape.last), [1, 1, uText!.shape.last], values);
+    final total = await values.float(Float32List.fromList([steps.toDouble()]), [1]);
+    final cfg = await values.float(Float32List.fromList([tuning.guidance]), [1]);
+    final OnnxTensor? uTextValue = uText == null ? null : await values.float(uText!.data, uText!.shape);
+    final OnnxTensor? uRefValue = uRef == null ? null : await values.float(uRef!.data, uRef!.shape);
+    final uMask = uText == null ? null : await values.float(_ones(uText!.shape.last), [1, 1, uText!.shape.last]);
 
     for (var step = 0; step < steps; step++) {
-      final current = await _float(Float32List.fromList([step.toDouble()]), [1], values);
+      final current = await values.float(Float32List.fromList([step.toDouble()]), [1]);
       final feeds = {
         'noisy_latent': x,
         'text_emb': textEmb,
@@ -452,21 +450,21 @@ class BlueRunner implements VoiceRunner {
           values.addAll(conditioned.values);
           final unconditioned = await _ve.run({...feeds, 'text_emb': uTextValue!, 'style_ttl': uRefValue!, 'text_mask': uMask!});
           values.addAll(unconditioned.values);
-          final c = await _floats(conditioned.values.first);
-          final u = await _floats(unconditioned.values.first);
+          final c = await conditioned.values.first.floats();
+          final u = await unconditioned.values.first.floats();
           final s = tuning.guidance;
           final next = Float32List(c.length);
           for (var i = 0; i < c.length; i++) {
             next[i] = u[i] + s * (c[i] - u[i]);
           }
-          x = await _float(next, [1, _channels, frames], values);
+          x = await values.float(next, [1, _channels, frames]);
       }
     }
 
     var latent = x;
     var shape = [1, _channels, frames];
     if (mean != null || spec.foldLatent) {
-      var z = await _floats(x);
+      var z = await x.floats();
       if (mean != null) {
         z = Float32List.fromList(z);
         for (var ch = 0; ch < _channels; ch++) {
@@ -490,11 +488,11 @@ class BlueRunner implements VoiceRunner {
         z = folded;
         shape = [1, latentDim, frames * compress];
       }
-      latent = await _float(z, shape, values);
+      latent = await values.float(z, shape);
     }
     final voOut = await _vo.run({_vo.inputNames.first: latent});
     values.addAll(voOut.values);
-    final wav = await _floats(voOut.values.first);
+    final wav = await voOut.values.first.floats();
     // The vocoder's first and last frames are its warm-up and tail.
     return wav.length > 2 * chunk ? Float32List.sublistView(wav, chunk, wav.length - chunk) : wav;
   });
@@ -514,9 +512,9 @@ class BlueRunner implements VoiceRunner {
 /// Runtime, joined by small models of the app's own (OnnxGraphs), so that
 /// only the audio and the end-of-speech score cross into Dart each step.
 class PocketRunner implements VoiceRunner {
-  PocketRunner._(this._step, this._concat, this._window, this._config, this._voices, this._ids, this._space, this._pieces);
+  PocketRunner._(this._rt, this._step, this._concat, this._window, this._config, this._voices, this._ids, this._space, this._pieces);
 
-  static Future<PocketRunner> open(PocketSpec spec, VoiceStore store, OrtSessionFactory open) async {
+  static Future<PocketRunner> open(PocketSpec spec, VoiceStore store, VoiceRuntime rt) async {
     final assets = await _json(store, spec.assets);
     final config = assets['config'] as Map<String, dynamic>;
     final lora = config['lora'] as Map<String, dynamic>;
@@ -531,15 +529,15 @@ class PocketRunner implements VoiceRunner {
     int n(String key) => (config[key] as num).toInt();
     final flowRest = [n('flow_layers'), 2, 1, n('flow_heads'), n('flow_head_dim')];
     final mimiRest = [n('mimi_layers'), 2, 1, n('mimi_heads'), n('mimi_head_dim')];
-    final step = await open(await store.location(spec.model));
-    final concat = await open(await store.made('pocket-concat-${flowRest.join('x')}.onnx', OnnxGraphs.concat(flowRest)));
-    final window = await open(
+    final step = await rt.open(await store.location(spec.model));
+    final concat = await rt.open(await store.made('pocket-concat-${flowRest.join('x')}.onnx', OnnxGraphs.concat(flowRest)));
+    final window = await rt.open(
       await store.made(
         'pocket-window-${mimiRest.join('x')}-${n('mimi_kv_len')}-${n('mimi_steps_per_latent')}.onnx',
         OnnxGraphs.window(mimiRest, keep: n('mimi_kv_len'), step: n('mimi_steps_per_latent')),
       ),
     );
-    return PocketRunner._(step, concat, window, config, (assets['voices'] as Map).cast<String, String>(), ids, pieces['▁'] ?? 0, pieces);
+    return PocketRunner._(rt, step, concat, window, config, (assets['voices'] as Map).cast<String, String>(), ids, pieces['▁'] ?? 0, pieces);
   }
 
   /// The pieces of a SentencePiece model, by text: their ids are their
@@ -594,9 +592,10 @@ class PocketRunner implements VoiceRunner {
     return pieces;
   }
 
-  final OrtSession _step;
-  final OrtSession _concat;
-  final OrtSession _window;
+  final VoiceRuntime _rt;
+  final OnnxModel _step;
+  final OnnxModel _concat;
+  final OnnxModel _window;
   final Map<String, dynamic> _config;
   final Map<String, String> _voices;
   final Map<String, int> _ids;
@@ -605,7 +604,7 @@ class PocketRunner implements VoiceRunner {
   final _random = math.Random();
 
   // Each voice's keys and values, prefilled once: its length, and the value.
-  final _prefilled = <String, Future<(int, OrtValue)>>{};
+  final _prefilled = <String, Future<(int, OnnxTensor)>>{};
 
   int _n(String key) => (_config[key] as num).toInt();
   Map<String, dynamic> get _lora => _config['lora'] as Map<String, dynamic>;
@@ -663,16 +662,16 @@ class PocketRunner implements VoiceRunner {
     return sign * (1 + fraction / 1024) * math.pow(2, exponent - 15);
   }
 
-  Future<OrtValue> _scalar64(int v, List<OrtValue> values) => _int64([v], const [], values);
-  Future<OrtValue> _scalar(double v, List<OrtValue> values) => _float(Float32List.fromList([v]), const [], values);
+  Future<OnnxTensor> _scalar64(int v, _Values values) => values.int64([v], const []);
+  Future<OnnxTensor> _scalar(double v, _Values values) => values.float(Float32List.fromList([v]), const []);
 
   /// The feeds of one step, as the graph takes them (older exports lack some).
-  Map<String, OrtValue> _feeds(Map<String, OrtValue> all) => {
+  Map<String, OnnxTensor> _feeds(Map<String, OnnxTensor> all) => {
     for (final MapEntry(:key, :value) in all.entries)
       if (_step.inputNames.contains(key)) key: value,
   };
 
-  Future<(int, OrtValue)> _prefill(String voice) => _prefilled[voice] ??= _withValues((values) async {
+  Future<(int, OnnxTensor)> _prefill(String voice) => _prefilled[voice] ??= _withValues(_rt, (values) async {
     final shape = [for (final d in (_config['voices'] as Map)[voice] as List) (d as num).toInt()];
     final length = shape.first;
     final model = _n('model_dim');
@@ -681,17 +680,17 @@ class PocketRunner implements VoiceRunner {
     final mimiLength = _n('mimi_kv_len') * mimiRest.fold<int>(1, (a, b) => a * b);
     final out = await _step.run(
       _feeds({
-        'tokens': await _int64(List.filled(length, 0), [1, length], values),
-        'latent': await _float(Float32List(length * _n('latent_dim')), [1, length, _n('latent_dim')], values),
-        'is_bos': await _float(Float32List(length), [1, length, 1], values),
-        'cond': await _float(_conditioning(voice), [1, length, model], values),
-        'gates': await _float(Float32List.fromList([0, 0, 1]), [3], values),
-        'noise': await _float(Float32List(_n('latent_dim')), [1, _n('latent_dim')], values),
-        'flow_kv': await _float(Float32List(0), [0, ...flowRest], values),
+        'tokens': await values.int64(List.filled(length, 0), [1, length]),
+        'latent': await values.float(Float32List(length * _n('latent_dim')), [1, length, _n('latent_dim')]),
+        'is_bos': await values.float(Float32List(length), [1, length, 1]),
+        'cond': await values.float(_conditioning(voice), [1, length, model]),
+        'gates': await values.float(Float32List.fromList([0, 0, 1]), [3]),
+        'noise': await values.float(Float32List(_n('latent_dim')), [1, _n('latent_dim')]),
+        'flow_kv': await values.float(Float32List(0), [0, ...flowRest]),
         'flow_offset': await _scalar64(0, values),
-        'mimi_kv': await _float(Float32List(mimiLength), [_n('mimi_kv_len'), ...mimiRest], values),
+        'mimi_kv': await values.float(Float32List(mimiLength), [_n('mimi_kv_len'), ...mimiRest]),
         'mimi_offset': await _scalar64(0, values),
-        'mimi_conv': await _float(Float32List(_n('conv_state_size')), [_n('conv_state_size')], values),
+        'mimi_conv': await values.float(Float32List(_n('conv_state_size')), [_n('conv_state_size')]),
         'decode_steps': await _scalar(1, values),
         'lora': await _scalar(1, values),
       }),
@@ -712,7 +711,7 @@ class PocketRunner implements VoiceRunner {
     return _join(parts, sampleRate);
   }
 
-  Future<Float32List> _piece(String sounds, String voice, VoiceTuning tuning) => _withValues((values) async {
+  Future<Float32List> _piece(String sounds, String voice, VoiceTuning tuning) => _withValues(_rt, (values) async {
     final (voiceLength, voiceFlow) = await _prefill(voice);
     final ids = tokens(sounds);
     final t = ids.length;
@@ -724,19 +723,19 @@ class PocketRunner implements VoiceRunner {
     final maxFrames = ((t / (_config['tokens_per_second_estimate'] as num) + (_config['gen_seconds_padding'] as num)) * (_config['frame_rate'] as num)).ceil();
     final steps = await _scalar(((_config['sampler_decode_steps'] as num?) ?? 1).toDouble(), values);
     final lora = await _scalar(1, values);
-    final zeroMimi = await _float(Float32List(mimiLength), [_n('mimi_kv_len'), ...mimiRest], values);
-    final zeroConv = await _float(Float32List(_n('conv_state_size')), [_n('conv_state_size')], values);
+    final zeroMimi = await values.float(Float32List(mimiLength), [_n('mimi_kv_len'), ...mimiRest]);
+    final zeroConv = await values.float(Float32List(_n('conv_state_size')), [_n('conv_state_size')]);
     final zeroOffset = await _scalar64(0, values);
 
     // The text, after the voice.
     final text = await _step.run(
       _feeds({
-        'tokens': await _int64(ids, [1, t], values),
-        'latent': await _float(Float32List(t * latentDim), [1, t, latentDim], values),
-        'is_bos': await _float(Float32List(t), [1, t, 1], values),
-        'cond': await _float(Float32List(t * _n('model_dim')), [1, t, _n('model_dim')], values),
-        'gates': await _float(Float32List.fromList([1, 0, 0]), [3], values),
-        'noise': await _float(Float32List(latentDim), [1, latentDim], values),
+        'tokens': await values.int64(ids, [1, t]),
+        'latent': await values.float(Float32List(t * latentDim), [1, t, latentDim]),
+        'is_bos': await values.float(Float32List(t), [1, t, 1]),
+        'cond': await values.float(Float32List(t * _n('model_dim')), [1, t, _n('model_dim')]),
+        'gates': await values.float(Float32List.fromList([1, 0, 0]), [3]),
+        'noise': await values.float(Float32List(latentDim), [1, latentDim]),
         'flow_kv': voiceFlow,
         'flow_offset': await _scalar64(voiceLength, values),
         'mimi_kv': zeroMimi,
@@ -752,12 +751,12 @@ class PocketRunner implements VoiceRunner {
     var flowLength = voiceLength + t;
 
     // Then the speech, a frame at a time, until it ends.
-    var latent = await _float(Float32List(latentDim), [1, 1, latentDim], values);
-    var isBos = await _float(Float32List.fromList([1]), [1, 1, 1], values);
-    final notBos = await _float(Float32List.fromList([0]), [1, 1, 1], values);
-    final gates = await _float(Float32List.fromList([0, 1, 0]), [3], values);
-    final zeroToken = await _int64([0], [1, 1], values);
-    final zeroCond = await _float(Float32List(_n('model_dim')), [1, 1, _n('model_dim')], values);
+    var latent = await values.float(Float32List(latentDim), [1, 1, latentDim]);
+    var isBos = await values.float(Float32List.fromList([1]), [1, 1, 1]);
+    final notBos = await values.float(Float32List.fromList([0]), [1, 1, 1]);
+    final gates = await values.float(Float32List.fromList([0, 1, 0]), [3]);
+    final zeroToken = await values.int64([0], [1, 1]);
+    final zeroCond = await values.float(Float32List(_n('model_dim')), [1, 1, _n('model_dim')]);
     var mimi = zeroMimi, conv = zeroConv, offset = zeroOffset;
     final threshold = (_config['eos_threshold'] as num).toDouble();
     final audio = <Float32List>[];
@@ -765,7 +764,7 @@ class PocketRunner implements VoiceRunner {
     final deviation = math.sqrt(temperature);
     for (var frame = 0; frame < maxFrames; frame++) {
       // Each step's own values go as soon as the next has taken what it needs.
-      final stepValues = <OrtValue>[];
+      final stepValues = _Values(_rt);
       final noise = Float32List(latentDim);
       for (var i = 0; i < latentDim; i++) {
         noise[i] = _gaussian() * deviation;
@@ -777,7 +776,7 @@ class PocketRunner implements VoiceRunner {
           'is_bos': isBos,
           'cond': zeroCond,
           'gates': gates,
-          'noise': await _float(noise, [1, latentDim], stepValues),
+          'noise': await stepValues.float(noise, [1, latentDim]),
           'flow_kv': flow,
           'flow_offset': await _scalar64(flowLength, stepValues),
           'mimi_kv': mimi,
@@ -789,8 +788,8 @@ class PocketRunner implements VoiceRunner {
       );
       final joined = (await _concat.run({'past': flow, 'next': out['flow_kv_new']!})).values.single;
       final windowed = (await _window.run({'past': mimi, 'next': out['mimi_kv_new']!})).values.single;
-      final eos = (await _floats(out['eos_logit']!)).first;
-      final sound = await _floats(out['audio']!);
+      final eos = (await out['eos_logit']!.floats()).first;
+      final sound = await out['audio']!.floats();
       // Let go of what this step replaces: the caches it joined, and the
       // last step's state (but the zeros all steps start from).
       stepValues.addAll([out['flow_kv_new']!, out['mimi_kv_new']!, out['eos_logit']!, out['audio']!]);
@@ -803,9 +802,7 @@ class PocketRunner implements VoiceRunner {
       latent = out['next_latent']!;
       isBos = notBos;
       flowLength += 1;
-      for (final v in stepValues) {
-        unawaited(v.dispose().then((_) {}, onError: (Object _) {}));
-      }
+      stepValues.release();
       if (end == null && eos > threshold) end = frame;
       if (end != null && frame >= end + afterEnd) break;
       audio.add(Float32List.fromList(sound));

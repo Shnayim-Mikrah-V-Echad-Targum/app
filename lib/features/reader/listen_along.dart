@@ -104,6 +104,9 @@ class ListenController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Why the last Listen failed, as the engine said.
+  Object? lastError;
+
   /// Reads [queue] at [rate] from the first item of verse [startVerse], and
   /// completes once it ends: read to its end (when the Listen is still on,
   /// for the caller to end or go on with), stopped, or failed (when it is
@@ -129,8 +132,9 @@ class ListenController extends ChangeNotifier {
       // Stopped from elsewhere, or by another page's Listen.
       end();
       return ListenEnd.stopped;
-    } catch (_) {
+    } catch (e) {
       if (!identical(_queue, queue)) return ListenEnd.stopped;
+      lastError = e;
       end();
       return ListenEnd.failed;
     }

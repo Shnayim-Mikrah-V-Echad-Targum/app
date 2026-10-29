@@ -1105,6 +1105,10 @@ class AppLocalizationsHe extends AppLocalizations {
       'לא מותקן קול בעברית. אפשר להוריד קול של האפליקציה בהגדרות, נגישות, קול עברי, או להוסיף קול בהגדרות הדיבור של המכשיר.';
 
   @override
+  String get voiceCouldNotRead =>
+      'הקול העברי לא הצליח לקרוא כאן. אפשר לבחור קול אחר בהגדרות, נגישות, קול עברי, או להוסיף קול עברי בהגדרות הדיבור של המכשיר.';
+
+  @override
   String get guidedMode => 'קריאה מודרכת';
 
   @override

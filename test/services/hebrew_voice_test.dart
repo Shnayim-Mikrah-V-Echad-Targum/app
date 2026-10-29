@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/core/text/hebrew_pronunciation.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/hebrew_voice.dart';
@@ -12,6 +11,7 @@ import 'package:shnayim_mikrah/services/hebrew_voice/npz.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_catalogue.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_engines.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_routing_tts.dart';
+import 'package:shnayim_mikrah/services/hebrew_voice/voice_runtime.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_settings.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_store.dart';
 import 'package:shnayim_mikrah/services/tts.dart';
@@ -58,7 +58,18 @@ class _Store implements VoiceStore {
   }
 }
 
-class _Session extends Fake implements OrtSession {
+/// A runtime whose models open and close, and run nothing.
+class _Runtime extends Fake implements VoiceRuntime {
+  final opened = <String>[];
+
+  @override
+  Future<OnnxModel> open(String location) async {
+    opened.add(location);
+    return _Model();
+  }
+}
+
+class _Model extends Fake implements OnnxModel {
   @override
   Future<void> close() async {}
 }
@@ -271,7 +282,7 @@ void main() {
       return PiperRunner.open(
         PiperSpec(model: _model, config: _config, input: input, letters: letters == null ? null : lettersFile),
         store,
-        (_) async => _Session(),
+        _Runtime(),
       );
     }
 
@@ -310,7 +321,7 @@ void main() {
           'voices': <String, String>{},
           'tokenizer': base64.encode(proto),
         }));
-      final runner = await PocketRunner.open(PocketSpec(model: _model, assets: assets, voice: 'omer'), store, (_) async => _Session());
+      final runner = await PocketRunner.open(PocketSpec(model: _model, assets: assets, voice: 'omer'), store, _Runtime());
       expect(runner.sampleRate, 24000);
       expect(runner.tokens('ab ba, a.'), [100, 101, 3, 101, 100, 3, 4, 100, 3, 5]);
       expect(runner.tokens('bˈa'), [101, 102, 100]);
@@ -471,13 +482,33 @@ void main() {
       expect(events, ['cancel', 'start', 'cancel']);
     });
 
-    test('should the voice fail, the device reads in its place', () async {
+    test('should the voice fail, a device with a Hebrew voice reads in its place', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(const MethodChannel('flutter_tts'), (call) async {
+        device.add(call);
+        return switch (call.method) {
+          'getVoices' => [
+              {'name': 'Hila', 'locale': 'he-IL'},
+            ],
+          'isLanguageAvailable' => true,
+          _ => 1,
+        };
+      });
       voices
         ..readyIds.add('a')
         ..fail = true;
       await tts.setLanguage('he-IL');
       await tts.speak(pointed);
       expect(spokenByDevice().single, 'בְּרֵאשִׁית בָּרָא אֱלֹהִים');
+      expect(player.played, isEmpty);
+    });
+
+    test('should the voice fail on a device with no Hebrew voice, it says so rather than race on in silence', () async {
+      voices
+        ..readyIds.add('a')
+        ..fail = true;
+      await tts.setLanguage('he-IL');
+      await expectLater(tts.speak(pointed), throwsA(isA<HebrewVoiceFailure>()));
+      expect(spokenByDevice(), isEmpty);
       expect(player.played, isEmpty);
     });
   });

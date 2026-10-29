@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/text/hebrew_phonemes.dart';
 import 'voice_catalogue.dart';
 import 'voice_engines.dart';
+import 'voice_runtime.dart';
 import 'voice_settings.dart';
 import 'voice_store.dart';
 import 'voice_store_io.dart' if (dart.library.js_interop) 'voice_store_web.dart' as platform;
 
-export 'voice_engines.dart' show OrtSessionFactory, VoiceTuning;
+export 'voice_engines.dart' show VoiceTuning;
 
 /// Where a voice is, on the device.
 enum HebrewVoiceState {
@@ -57,9 +57,9 @@ class HebrewVoiceStatus {
 /// ONNX Runtime. Voices of one model share its files, which are taken off
 /// the device with the last of them.
 class HebrewVoices {
-  HebrewVoices({VoiceStore? store, OrtSessionFactory? openSession, List<HebrewVoiceOption>? voices})
+  HebrewVoices({VoiceStore? store, VoiceRuntime? runtime, List<HebrewVoiceOption>? voices})
     : _store = store ?? platform.voiceStore(),
-      _openSession = openSession ?? _defaultSession,
+      _runtime = runtime ?? voiceRuntime(),
       voices = voices ?? hebrewVoices {
     for (final v in this.voices) {
       _status[v.id] = ValueNotifier(const HebrewVoiceStatus(HebrewVoiceState.absent));
@@ -67,7 +67,7 @@ class HebrewVoices {
   }
 
   final VoiceStore _store;
-  final OrtSessionFactory _openSession;
+  final VoiceRuntime _runtime;
 
   /// Every voice offered, clearest first within each group.
   final List<HebrewVoiceOption> voices;
@@ -191,7 +191,7 @@ class HebrewVoices {
       final runner = _runners.remove(oldest)!;
       unawaited(runner.then((r) => r.close()).then((_) {}, onError: (Object _) {}));
     }
-    final opening = _runners[key] = openVoice(spec, _store, _openSession);
+    final opening = _runners[key] = openVoice(spec, _store, _runtime);
     opening.then(
       (_) {},
       onError: (Object _) {
@@ -238,8 +238,6 @@ class HebrewVoices {
     );
     return wav(audio, runner.sampleRate, even: settings.evenLoudness);
   }
-
-  static Future<OrtSession> _defaultSession(String location) => OnnxRuntime().createSession(location);
 
   /// [audio] at [sampleRate] as a 16-bit mono WAV file; with [even], brought
   /// to a common loudness (its peak at 0.9 of full scale), else only kept

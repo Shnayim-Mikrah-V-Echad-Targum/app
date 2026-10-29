@@ -12,13 +12,11 @@ VoiceStore voiceStore() => CachedVoiceStore();
 /// On the web: the voices' files in the browser's Cache Storage, fetched
 /// once and checked against their digests (their publisher's links are
 /// signed afresh each time, so the browser's ordinary cache would fetch them
-/// on every visit), and ONNX Runtime Web loaded only once a voice is wanted,
-/// not for every visitor.
+/// on every visit). ONNX Runtime Web opens them from blob URLs
+/// (VoiceRuntime).
 class CachedVoiceStore implements VoiceStore {
   static const _cacheName = 'hebrew-voice';
-  static const _runtime = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.min.js';
 
-  static Future<void>? _runtimeLoaded;
   final _objectUrls = <String, String>{};
 
   Future<web.Cache> _cache() => web.window.caches.open(_cacheName).toDart;
@@ -28,7 +26,6 @@ class CachedVoiceStore implements VoiceStore {
 
   @override
   Future<void> fetch(List<VoiceFile> files, {required void Function(int received, int total) onProgress}) async {
-    await _loadRuntime();
     final wanted = <VoiceFile>[];
     for (final f in {...files}) {
       if (!await has(f)) wanted.add(f);
@@ -67,7 +64,6 @@ class CachedVoiceStore implements VoiceStore {
   /// A URL of the file held in memory, which ONNX Runtime Web opens.
   @override
   Future<String> location(VoiceFile file) async {
-    await _loadRuntime();
     if (_objectUrls[file.url] case final url?) return url;
     final cached = await (await _cache()).match(file.url.toJS).toDart;
     if (cached == null) throw StateError('${file.path} is not on the device.');
@@ -84,22 +80,6 @@ class CachedVoiceStore implements VoiceStore {
 
   @override
   Future<String> made(String name, Uint8List bytes) async {
-    await _loadRuntime();
     return _objectUrls['made:$name'] ??= web.URL.createObjectURL(web.Blob([bytes.toJS].toJS));
   }
-
-  /// Loads ONNX Runtime Web, once, which the plugin finds as `ort`.
-  static Future<void> _loadRuntime() => _runtimeLoaded ??= () {
-    final done = Completer<void>();
-    final script = web.HTMLScriptElement()
-      ..src = _runtime
-      ..crossOrigin = 'anonymous';
-    script.onload = ((web.Event _) => done.complete()).toJS;
-    script.onerror = ((web.Event _) {
-      _runtimeLoaded = null;
-      done.completeError(StateError('ONNX Runtime Web could not be loaded.'));
-    }).toJS;
-    web.document.head!.append(script);
-    return done.future;
-  }();
 }

@@ -1099,6 +1099,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.';
 
   @override
+  String get voiceCouldNotRead =>
+      'The Hebrew voice couldn’t read here. Choose another in Settings, Accessibility, Hebrew voice, or add a Hebrew voice in your device’s speech settings.';
+
+  @override
   String get guidedMode => 'Guided reading';
 
   @override

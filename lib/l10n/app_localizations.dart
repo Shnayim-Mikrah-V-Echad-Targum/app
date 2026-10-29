@@ -1605,6 +1605,12 @@ abstract class AppLocalizations {
   /// **'No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.'**
   String get ttsNoHebrewVoice;
 
+  /// No description provided for @voiceCouldNotRead.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hebrew voice couldn’t read here. Choose another in Settings, Accessibility, Hebrew voice, or add a Hebrew voice in your device’s speech settings.'**
+  String get voiceCouldNotRead;
+
   /// No description provided for @guidedMode.
   ///
   /// In en, this message translates to:

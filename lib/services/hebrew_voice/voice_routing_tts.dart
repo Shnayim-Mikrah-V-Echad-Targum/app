@@ -159,13 +159,33 @@ class VoiceRoutingTts extends FlutterTts {
       startHandler?.call();
       await _player.play(BytesSource(audio, mimeType: 'audio/wav'));
       return 1;
-    } catch (_) {
+    } catch (e) {
       if (token != _token) return 1;
       _making = false;
       _playing = false;
-      // The device's voice reads it instead.
-      return super.speak(HebrewText.stripTeamim(text), focus: focus);
+      debugPrint('The Hebrew voice $voice could not read: $e');
+      // The device's voice reads it instead, if it has a Hebrew one: else
+      // Listen stops, and says so, rather than race on in silence.
+      if (await _deviceHasHebrew()) return super.speak(HebrewText.stripTeamim(text), focus: focus);
+      throw HebrewVoiceFailure(voice, e);
     }
+  }
+
+  bool? _deviceHebrew;
+
+  /// Whether the device has a Hebrew voice of its own (asked once).
+  Future<bool> _deviceHasHebrew() async {
+    if (_deviceHebrew case final known?) return known;
+    var found = false;
+    try {
+      final voices = await super.getVoices;
+      if (voices is List) found = voices.any((v) => _isHebrew('${v is Map ? v['locale'] : v}'));
+      if (!found && !kIsWeb) {
+        final answer = await super.isLanguageAvailable('he-IL');
+        found = answer == true || answer == 1;
+      }
+    } catch (_) {}
+    return _deviceHebrew = found;
   }
 
   @override
@@ -185,4 +205,15 @@ class VoiceRoutingTts extends FlutterTts {
     unawaited(_completions?.cancel());
     unawaited(_audio?.dispose());
   }
+}
+
+/// The app's voice couldn't read an utterance, and the device has no Hebrew
+/// voice to read it instead.
+class HebrewVoiceFailure implements Exception {
+  const HebrewVoiceFailure(this.voice, this.cause);
+  final String voice;
+  final Object cause;
+
+  @override
+  String toString() => 'The Hebrew voice $voice could not read: $cause';
 }
