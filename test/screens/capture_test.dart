@@ -1034,7 +1034,7 @@ const _listening = {
 /// that Listen stays at the verse it has reached.
 class _HeldTts extends RecordingTts {
   @override
-  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate, SpeechRole role = SpeechRole.mikrah}) {
     spoken.add((text, language));
     return Completer<bool>().future;
   }

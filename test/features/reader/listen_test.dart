@@ -24,7 +24,7 @@ import '../../helpers.dart';
 class _FailingTts extends RecordingTts {
   @override
   Future<bool> speakQueue(List<String> items,
-          {required String language, double rate = kDefaultSpeechRate, int startAt = 0, List<int>? groups}) =>
+          {required String language, double rate = kDefaultSpeechRate, int startAt = 0, List<int>? groups, List<SpeechRole>? roles}) =>
       Future.error(PlatformException(code: 'no-engine'));
 }
 

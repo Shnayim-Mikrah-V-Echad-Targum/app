@@ -1270,7 +1270,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (_fullText || _finished) {
       for (final (i, r) in (_fullText ? _textVerses(flow) : flow.verses).indexed) {
         queue.add(i, hebrew(texts.mikrah.verse(r)));
-        if (_fullText && texts.onkelos != null) queue.add(i, hebrew(texts.onkelos!.verse(r), targum: true));
+        if (_fullText && texts.onkelos != null) queue.add(i, hebrew(texts.onkelos!.verse(r), targum: true), role: SpeechRole.targum);
       }
       return queue;
     }
@@ -1280,7 +1280,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     switch (kind) {
       case StepKind.targum:
         for (final r in refs) {
-          queue.add(index[r]!, hebrew(texts.onkelos!.verse(r), targum: true));
+          queue.add(index[r]!, hebrew(texts.onkelos!.verse(r), targum: true), role: SpeechRole.targum);
           // With the Hebrew of a verse read a third time among the Targum.
           if (flow.thirdHebrewInTargum(_chunk, r)) queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
         }

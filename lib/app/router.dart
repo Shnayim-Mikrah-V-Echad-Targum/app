@@ -29,10 +29,13 @@ import '../features/settings/screens/accessibility_settings_screen.dart';
 import '../features/settings/screens/city_picker_screen.dart';
 import '../features/settings/screens/data_settings_screen.dart';
 import '../features/settings/screens/display_settings_screen.dart';
+import '../features/settings/screens/hebrew_voice_screen.dart';
+import '../features/settings/screens/voice_picker_screen.dart';
 import '../features/settings/screens/reading_settings_screen.dart';
 import '../features/settings/screens/reminder_settings_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/today/today_screen.dart';
+import '../services/hebrew_voice/voice_settings.dart';
 import '../services/feedback.dart' show statusMessageShown;
 import '../ui/theme/motion.dart';
 import '../ui/widgets/fallbacks.dart';
@@ -217,6 +220,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               _route('accessibility', (_) => const AccessibilitySettingsScreen(), routes: [
                 // The accessibility statement.
                 _legal('legal/:doc'),
+                // The app's Hebrew voices, and the voice for each role. A role
+                // that doesn't exist is no page.
+                _route('voice', (_) => const HebrewVoiceScreen(), routes: [
+                  _route(':role', (s) => switch (SpeechRole.values.where((r) => r.name == s.pathParameters['role']).firstOrNull) {
+                        final role? => VoicePickerScreen(role: role),
+                        null => const NotFoundPage(),
+                      }),
+                ]),
               ]),
               _route('reminders', (_) => const ReminderSettingsScreen(), routes: [
                 _route('city', (_) => const CityPickerScreen()),

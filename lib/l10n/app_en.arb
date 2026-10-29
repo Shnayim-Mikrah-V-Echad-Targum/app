@@ -1161,7 +1161,7 @@
   "listenAlong": "Listen along",
   "listenAlongDesc": "Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn’t available on this device.",
-  "ttsNoHebrewVoice": "No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.",
+  "ttsNoHebrewVoice": "No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.",
   "guidedMode": "Guided reading",
   "fullTextMode": "Full text",
   "wholeParsha": "Whole parsha",
@@ -1694,36 +1694,185 @@
   "divineNameLabel": "Speaking the Divine Name",
   "divineAdonai": "Ado-nai",
   "divineHashem": "HaShem",
-  "hebrewVoice": "Shnayim Mikrah’s Hebrew voice",
+  "hebrewVoice": "Hebrew voice",
   "@hebrewVoice": {
-    "description": "The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen)."
+    "description": "The setting, and page, of the app's own voices for the pointed Hebrew and Aramaic (Listen)."
   },
-  "hebrewVoiceDesc": "Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads {mb} MB once.",
-  "@hebrewVoiceDesc": {
+  "hebrewVoiceIntro": "The app’s own voices read the Torah, the Targum and the haftarah aloud from the pointed text: every vowel as written, each word stressed where its accent stands. They run on this device, offline once downloaded, also where it has no Hebrew voice of its own. Rashi, the translation and anything without vowels stay with the device’s voice.",
+  "voiceWhoReads": "Who reads what",
+  "voiceForTorah": "The Torah",
+  "voiceForTargum": "The Targum",
+  "voiceForHaftarah": "The haftarah",
+  "voiceChooseTorah": "Voice for the Torah",
+  "voiceChooseTargum": "Voice for the Targum",
+  "voiceChooseHaftarah": "Voice for the haftarah",
+  "voiceSameAsTorah": "Same as the Torah",
+  "voiceDevice": "Your device’s voice",
+  "voiceDeviceDesc": "Reads without the rules of the vowels and accents, where the device has a Hebrew voice",
+  "voiceSummaryReady": "{name}, on this device",
+  "@voiceSummaryReady": {
     "placeholders": {
-      "mb": {
-        "type": "int"
+      "name": {
+        "type": "String"
       }
     }
   },
-  "hebrewVoiceDownloading": "Downloading… {percent}%",
-  "@hebrewVoiceDownloading": {
+  "voiceSummaryFallback": "{name} isn’t downloaded: {other} reads meanwhile",
+  "@voiceSummaryFallback": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "other": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceSummaryDeviceMeanwhile": "{name} isn’t downloaded: your device’s voice reads meanwhile",
+  "@voiceSummaryDeviceMeanwhile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voicePlaySample": "Hear a sample",
+  "voicePlaySampleDesc": "The first verse of the Torah, as Listen reads it",
+  "voiceGroupRecommended": "Recommended",
+  "voiceGroupMore": "More voices",
+  "voiceGroupExperimental": "Experimental",
+  "voiceGroupExperimentalDesc": "Phonikud’s experiments: Shaul’s voice, trained in other ways. Some read less clearly.",
+  "voiceClarityHelp": "How clear each voice is: how much of fourteen verses of the Torah, read by it, a Hebrew speech recognizer heard right.",
+  "voiceMale": "Male",
+  "@voiceMale": {
+    "description": "A voice's gender."
+  },
+  "voiceFemale": "Female",
+  "@voiceFemale": {
+    "description": "A voice's gender."
+  },
+  "voiceClarity": "{percent}% clear",
+  "@voiceClarity": {
     "placeholders": {
       "percent": {
         "type": "int"
       }
     }
   },
-  "hebrewVoiceReady": "On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ({mb} MB).",
-  "@hebrewVoiceReady": {
+  "voiceOnDevice": "On this device",
+  "voiceToDownload": "{size} to download",
+  "@voiceToDownload": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceDownloading": "Downloading… {percent}%",
+  "@voiceDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceFailed": "Couldn’t download: tap to try again",
+  "voiceReadyStatus": "{name} is ready",
+  "@voiceReadyStatus": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceFailedStatus": "{name} couldn’t be downloaded. Check the connection, and try again.",
+  "@voiceFailedStatus": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceRemove": "Remove from this device",
+  "voiceRemovedStatus": "{name} removed from this device",
+  "@voiceRemovedStatus": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceHear": "Hear it",
+  "voiceMore": "More for {name}",
+  "@voiceMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceMegabytes": "{mb} MB",
+  "@voiceMegabytes": {
     "placeholders": {
       "mb": {
         "type": "int"
       }
     }
   },
-  "hebrewVoiceFailed": "The Hebrew voice couldn’t be downloaded. Check the connection, and try again.",
-  "hebrewVoiceInstalled": "The Hebrew voice is ready. Listen reads with it.",
+  "pronunciationTitle": "Pronunciation",
+  "pronunciationHelp": "How the app’s voices say the vowels on which the traditions differ.",
+  "pronIsraeli": "Israeli and Sephardi",
+  "pronLithuanian": "Lithuanian",
+  "pronPolish": "Polish and Galician",
+  "pronHungarian": "Hungarian",
+  "pronGerman": "German (Yekkish)",
+  "pronCustom": "Your own",
+  "pronCustomDesc": "Set below, sound by sound",
+  "pronEachSound": "Each sound",
+  "pronQamatz": "Qamatz",
+  "pronHolam": "Holam",
+  "pronTsere": "Tsere",
+  "pronShuruk": "Shuruk and qubbutz",
+  "pronTav": "Tav without a dagesh",
+  "stressTitle": "Stress",
+  "stressAccents": "Where the accent stands",
+  "stressAccentsDesc": "As the Torah is read with its trope",
+  "stressPenultimate": "Before the last syllable",
+  "stressPenultimateDesc": "As many Ashkenazim read",
+  "voiceSoundTitle": "Sound",
+  "voicePauses": "Pause at the dividing accents",
+  "voicePausesDesc": "At an etnachta, segolta, zaqef or paseq, as well as at each verse’s end",
+  "voiceEvenLoudness": "Even loudness",
+  "voiceEvenLoudnessDesc": "Every verse, and every voice, at the same loudness",
+  "voiceVariation": "Variation in the voice (Piper)",
+  "voiceRhythm": "Variation in the timing (Piper)",
+  "voiceOwnValue": "The voice’s own",
+  "voiceSteps": "Quality (Blue)",
+  "voiceStepsValue": "{steps} steps",
+  "@voiceStepsValue": {
+    "placeholders": {
+      "steps": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceGuidance": "Closeness to the text (Blue)",
+  "voiceResetSound": "Reset the sound",
+  "voiceStorageTitle": "Storage",
+  "voiceStorageSummary": "{count, plural, =0{No voices on this device} =1{One voice, {size}} other{{count} voices, {size}}}",
+  "@voiceStorageSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceRemoveAll": "Remove all voices",
+  "voiceRemoveAllConfirm": "Remove every voice from this device? Your device’s voice reads until you download one again.",
+  "voiceRemoveAllDone": "Every voice removed",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",
   "presetLargePrint": "Large print",

@@ -1,3 +1,5 @@
+import 'hebrew_pronunciation.dart';
+
 /// Pointed Hebrew, and the Aramaic of Targum Onkelos, as the sounds a voice
 /// speaks: IPA in the schema of Phonikud (https://phonikud.github.io, CC BY
 /// 4.0), whose rules for modern Hebrew these follow, and on which the
@@ -11,12 +13,17 @@
 ///    a word with none (one joined to the next by a maqaf, or the Targum,
 ///    which has no accents) is stressed on its last syllable;
 ///  * a vocal shva: at the start of a word (after the conjunction וּ too),
-///    after a silent shva, under a
-///    doubled letter (a strong dagesh), before the same letter again, or after
-///    a hiriq with a meteg; any other is silent, as modern Hebrew reads it;
+///    after a silent shva, under a doubled letter (a strong dagesh), before
+///    the same letter again, or after a long vowel or hiriq with a meteg
+///    (וַאֲבָֽרְכָה, but וַֽיְהִי); any
+///    other is silent, as modern Hebrew reads it, but for the ה, א and ע it
+///    is under, which are sounded (וֶהְיֵה, נַעְשֶׂה);
 ///  * a qamatz qatan, where the text marks it (ׇ), and before a hataf qamatz;
 ///  * a pause after the great dividing accents (etnachta, segolta, zaqef), a
 ///    paseq, and the end of a verse.
+///
+/// The vowels on which the reading traditions differ, and the stress, are
+/// said as [HebrewPronunciation] sets them: as Israel reads, by default.
 ///
 /// Text without vowels has no reading here: [isPointed] says whether a text
 /// has enough of them.
@@ -43,8 +50,10 @@ abstract final class HebrewPhonemes {
   }
 
   /// The sounds of [text], one verse or line: words, with the stress before
-  /// its vowel, separated by spaces, and the pauses as commas and full stops.
-  static String phonemize(String text) {
+  /// its vowel, separated by spaces, and the pauses as commas and full stops:
+  /// at the end of a verse, and with [pauses], at its dividing accents and a
+  /// paseq too.
+  static String phonemize(String text, {HebrewPronunciation pronunciation = HebrewPronunciation.israeli, bool pauses = true}) {
     final tokens = _tokens(text);
     final out = StringBuffer();
     for (var i = 0; i < tokens.length; i++) {
@@ -53,14 +62,14 @@ abstract final class HebrewPhonemes {
         case _Word():
           // The last word of a verse: its meteg sign is the silluq, its stress.
           final endsVerse = tokens.skip(i + 1).whereType<_Word>().isEmpty && tokens.skip(i + 1).any((t) => t is _Pause && t.endsVerse);
-          final sounds = _word(t.letters, endsVerse: endsVerse);
+          final sounds = _word(t.letters, endsVerse: endsVerse, p: pronunciation);
           if (sounds.isEmpty) continue;
           if (out.isNotEmpty && !_endsWithSpace(out)) out.write(' ');
           out.write(sounds);
-          if (t.pauseAfter) out.write(',');
+          if (t.pauseAfter && pauses) out.write(',');
         case _Pause():
           final s = out.toString();
-          if (s.isEmpty) continue;
+          if (s.isEmpty || (!t.endsVerse && !pauses)) continue;
           final mark = t.endsVerse ? '.' : ',';
           // One pause, the stronger, where two meet.
           if (s.endsWith(',') || s.endsWith('.')) {
@@ -128,7 +137,7 @@ abstract final class HebrewPhonemes {
 
   // --- One word ------------------------------------------------------------
 
-  static String _word(List<_Letter> letters, {required bool endsVerse}) {
+  static String _word(List<_Letter> letters, {required bool endsVerse, required HebrewPronunciation p}) {
     final n = letters.length;
     if (n == 0) return '';
     // The Divine Name is never voiced as written, should it come here so:
@@ -138,7 +147,10 @@ abstract final class HebrewPhonemes {
     final name = _tetragrammaton.firstMatch(bare) ?? _targumName.firstMatch(bare);
     if (name != null) {
       final prefix = name.group(1)!.length;
-      return '${prefix == 0 ? '' : _word(letters.sublist(0, prefix), endsVerse: false).replaceAll(_stress, '')}ʔadonˈaj';
+      // Adonai's holam and qamatz as the reader says them, stressed on the
+      // last syllable, or with the penultimate rule on the one before.
+      final adonai = p.stress == StressRule.penultimate ? 'ʔadˈ${p.holam.sound}n${p.qamatz.sound}j' : 'ʔad${p.holam.sound}nˈ${p.qamatz.sound}j';
+      return '${prefix == 0 ? '' : _word(letters.sublist(0, prefix), endsVerse: false, p: p).replaceAll(_stress, '')}$adonai';
     }
     // The letter whose syllable is stressed, if the accents say.
     int? stressed;
@@ -174,7 +186,7 @@ abstract final class HebrewPhonemes {
       // of Jerusalem, יְרוּשָׁלַ͏ִם, are "ajim").
       final vowels = <String>[];
       for (final m in cur.marks) {
-        final v = _vowel(m, cur, next);
+        final v = _vowel(m, cur, next, p);
         if (v != null) vowels.add(v);
       }
 
@@ -188,7 +200,9 @@ abstract final class HebrewPhonemes {
                 (prev != null && silentShva[i - 1]) ||
                 _strongDagesh(cur, prev) ||
                 (next != null && _same(c, next.char)) ||
-                (prev != null && prev.has(_meteg) && prev.has(0x05B4)));
+                // A meteg (ga'ya) on a long vowel before it, or a hiriq, marks
+                // the syllable open; on a short one (וַֽיְהִי) it doesn't.
+                (prev != null && prev.has(_meteg) && _longOrHiriq(prev)));
         if (!vocalShva) silentShva[i] = true;
       }
 
@@ -200,20 +214,21 @@ abstract final class HebrewPhonemes {
       final voicedByNext = next != null && vowels.isEmpty && !cur.has(0x05B0) && _isVowelLetter(next, cur);
       switch (c) {
         case 'א' || 'ע':
-          if (vowel.isNotEmpty || vocalShva || voicedByNext) consonant = 'ʔ';
+          // Under a silent shva within the word too (נַעְשֶׂה): the stop.
+          if (vowel.isNotEmpty || vocalShva || voicedByNext || (cur.has(0x05B0) && !last)) consonant = 'ʔ';
         case 'ה':
-          if (cur.has(0x05BC) || vowel.isNotEmpty || vocalShva || voicedByNext) consonant = 'h';
+          if (cur.has(0x05BC) || vowel.isNotEmpty || vocalShva || voicedByNext || (cur.has(0x05B0) && !last)) consonant = 'h';
         case 'ו':
           if (cur.has(0x05BC) && vowels.isEmpty && !cur.has(0x05B0)) {
             // Shuruk: the vowel u, or a doubled v with no vowel of its own.
             if (prev == null || !_hasVowelSound(prev) || prev.char == 'ו') {
-              vowel = 'u';
+              vowel = p.shuruk.sound;
             } else {
               consonant = 'v';
             }
           } else if (prev != null && _isVowelLetter(cur, prev)) {
             // Holam male: the o of the letter before.
-            vowel = 'o';
+            vowel = p.holam.sound;
           } else if (vowels.isNotEmpty || vocalShva || cur.has(0x05BC)) {
             consonant = 'v';
           } else if (last) {
@@ -237,7 +252,7 @@ abstract final class HebrewPhonemes {
             consonant = cur.has(0x05C2) ? 's' : 'ʃ';
           }
         default:
-          consonant = _consonant(cur);
+          consonant = _consonant(cur, p);
       }
 
       // A patah under a final ח, ע or הּ is read before it.
@@ -252,7 +267,7 @@ abstract final class HebrewPhonemes {
     // The stress: before the vowel of the stressed letter, or the next full
     // vowel after it; or, unsaid, the last syllable's (not a furtive patah's).
     int? target;
-    if (stressed != null) {
+    if (stressed != null && p.stress == StressRule.accents) {
       for (var i = stressed; i < n; i++) {
         if (sounds[i].vowel.isNotEmpty && !sounds[i].fromShva) {
           target = i;
@@ -262,7 +277,9 @@ abstract final class HebrewPhonemes {
     }
     if (target == null) {
       final full = [for (var i = 0; i < n; i++) if (sounds[i].vowel.isNotEmpty && !sounds[i].fromShva && !sounds[i].vowelBefore) i];
-      if (full.isNotEmpty) {
+      if (full.isNotEmpty && p.stress == StressRule.penultimate) {
+        target = full.length > 1 ? full[full.length - 2] : full.last;
+      } else if (full.isNotEmpty) {
         target = full.last;
         // The dual's -ayim (שָׁמַיִם, צָהֳרַיִם) is stressed before its yod.
         final yod = full.last;
@@ -278,19 +295,22 @@ abstract final class HebrewPhonemes {
     return out.toString();
   }
 
-  /// The vowel [mark] sounds on [cur], or null for any other mark.
-  static String? _vowel(int mark, _Letter cur, _Letter? next) => switch (mark) {
+  /// The vowel [mark] sounds on [cur], as [p] says it, or null for any other
+  /// mark.
+  static String? _vowel(int mark, _Letter cur, _Letter? next, HebrewPronunciation p) => switch (mark) {
         0x05B4 => 'i',
-        0x05B5 || 0x05B6 || 0x05B1 => 'e',
+        0x05B5 => p.tsere.sound,
+        0x05B6 || 0x05B1 => 'e',
         0x05B7 || 0x05B2 => 'a',
         // A qamatz before a hataf qamatz is a qamatz qatan (צָהֳרַיִם).
-        0x05B8 => next != null && next.has(0x05B3) ? 'o' : 'a',
-        0x05B9 || 0x05BA || 0x05B3 || 0x05C7 => 'o',
-        0x05BB => 'u',
+        0x05B8 => next != null && next.has(0x05B3) ? 'o' : p.qamatz.sound,
+        0x05B9 || 0x05BA => p.holam.sound,
+        0x05B3 || 0x05C7 => 'o',
+        0x05BB => p.shuruk.sound,
         _ => null,
       };
 
-  static String _consonant(_Letter l) {
+  static String _consonant(_Letter l, HebrewPronunciation p) {
     final hard = l.has(0x05BC);
     return switch (l.char) {
       'ב' => hard ? 'b' : 'v',
@@ -300,7 +320,8 @@ abstract final class HebrewPhonemes {
       'ד' => 'd',
       'ז' => l.geresh ? 'ʒ' : 'z',
       'ח' => 'χ',
-      'ט' || 'ת' => 't',
+      'ט' => 't',
+      'ת' => hard ? 't' : p.tavRafe.sound,
       'ל' => 'l',
       'מ' || 'ם' => 'm',
       'נ' || 'ן' => 'n',
@@ -325,6 +346,11 @@ abstract final class HebrewPhonemes {
   /// Whether [l] has a full vowel, or is a vowel letter carrying one (a
   /// shuruk or holam male).
   static bool _hasVowelSound(_Letter l) => l.marks.any((m) => _isVowel(m) && m != 0x05B0) || (l.char == 'ו' && l.has(0x05BC));
+
+  /// Whether [l] has a long vowel (qamatz gadol, tsere, holam, a shuruk) or
+  /// a hiriq.
+  static bool _longOrHiriq(_Letter l) =>
+      l.has(0x05B8) || l.has(0x05B5) || l.has(0x05B9) || l.has(0x05BA) || l.has(0x05B4) || (l.char == 'ו' && l.has(0x05BC));
 
   /// A dagesh that doubles its letter: on one of בגדכפת after a vowel, or on
   /// any other letter but a mappiq's ה and a shuruk's ו.

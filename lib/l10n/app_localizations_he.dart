@@ -1102,7 +1102,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get ttsNoHebrewVoice =>
-      'לא מותקן קול בעברית. אפשר להפעיל את הקול של האפליקציה בהגדרות, נגישות, או להוסיף קול בהגדרות הדיבור של המכשיר.';
+      'לא מותקן קול בעברית. אפשר להוריד קול של האפליקציה בהגדרות, נגישות, קול עברי, או להוסיף קול בהגדרות הדיבור של המכשיר.';
 
   @override
   String get guidedMode => 'קריאה מודרכת';
@@ -1923,29 +1923,264 @@ class AppLocalizationsHe extends AppLocalizations {
   String get divineHashem => 'השם';
 
   @override
-  String get hebrewVoice => 'הקול העברי של שניים מקרא';
+  String get hebrewVoice => 'קול עברי';
 
   @override
-  String hebrewVoiceDesc(int mb) {
-    return 'מקריא את התורה ואת התרגום בקול, בכל הניקוד כפי שהוא כתוב, גם כשבמכשיר אין קול עברי. הורדה חד־פעמית של $mb מ״ב.';
+  String get hebrewVoiceIntro =>
+      'הקולות של האפליקציה קוראים בקול את התורה, את התרגום ואת ההפטרה מתוך הנוסח המנוקד: כל תנועה כפי שהיא כתובה, וכל מילה מוטעמת במקום הטעם שלה. הם פועלים במכשיר, גם בלי חיבור לאחר ההורדה, וגם כשאין במכשיר קול עברי משלו. רש״י, התרגום לאנגלית וכל טקסט בלי ניקוד נקראים בקול של המכשיר.';
+
+  @override
+  String get voiceWhoReads => 'מי קורא מה';
+
+  @override
+  String get voiceForTorah => 'התורה';
+
+  @override
+  String get voiceForTargum => 'התרגום';
+
+  @override
+  String get voiceForHaftarah => 'ההפטרה';
+
+  @override
+  String get voiceChooseTorah => 'קול לתורה';
+
+  @override
+  String get voiceChooseTargum => 'קול לתרגום';
+
+  @override
+  String get voiceChooseHaftarah => 'קול להפטרה';
+
+  @override
+  String get voiceSameAsTorah => 'כמו בתורה';
+
+  @override
+  String get voiceDevice => 'הקול של המכשיר';
+
+  @override
+  String get voiceDeviceDesc =>
+      'קורא בלי כללי הניקוד והטעמים, אם יש במכשיר קול עברי';
+
+  @override
+  String voiceSummaryReady(String name) {
+    return '$name, במכשיר';
   }
 
   @override
-  String hebrewVoiceDownloading(int percent) {
+  String voiceSummaryFallback(String name, String other) {
+    return '$name עדיין לא הורד: בינתיים $other קורא';
+  }
+
+  @override
+  String voiceSummaryDeviceMeanwhile(String name) {
+    return '$name עדיין לא הורד: בינתיים קורא הקול של המכשיר';
+  }
+
+  @override
+  String get voicePlaySample => 'השמעת דוגמה';
+
+  @override
+  String get voicePlaySampleDesc =>
+      'הפסוק הראשון בתורה, כפי שההשמעה קוראת אותו';
+
+  @override
+  String get voiceGroupRecommended => 'מומלצים';
+
+  @override
+  String get voiceGroupMore => 'קולות נוספים';
+
+  @override
+  String get voiceGroupExperimental => 'ניסיוניים';
+
+  @override
+  String get voiceGroupExperimentalDesc =>
+      'הניסויים של Phonikud: הקול של שאול, שאומן בדרכים אחרות. חלקם קוראים פחות ברור.';
+
+  @override
+  String get voiceClarityHelp =>
+      'כמה ברור כל קול: כמה מארבעה־עשר פסוקים מהתורה, שהקול קרא, זיהה נכון מזהה דיבור עברי.';
+
+  @override
+  String get voiceMale => 'גברי';
+
+  @override
+  String get voiceFemale => 'נשי';
+
+  @override
+  String voiceClarity(int percent) {
+    return '$percent% ברור';
+  }
+
+  @override
+  String get voiceOnDevice => 'במכשיר';
+
+  @override
+  String voiceToDownload(String size) {
+    return 'הורדה של $size';
+  }
+
+  @override
+  String voiceDownloading(int percent) {
     return 'מוריד… $percent%';
   }
 
   @override
-  String hebrewVoiceReady(int mb) {
-    return 'פועל. ההשמעה קוראת בו את התורה ואת התרגום. כיבוי מסיר אותו מהמכשיר ($mb מ״ב).';
+  String get voiceFailed => 'ההורדה נכשלה: לחצו לניסיון חוזר';
+
+  @override
+  String voiceReadyStatus(String name) {
+    return '$name מוכן';
   }
 
   @override
-  String get hebrewVoiceFailed =>
-      'לא ניתן היה להוריד את הקול העברי. כדאי לבדוק את החיבור ולנסות שוב.';
+  String voiceFailedStatus(String name) {
+    return 'לא ניתן היה להוריד את $name. כדאי לבדוק את החיבור ולנסות שוב.';
+  }
 
   @override
-  String get hebrewVoiceInstalled => 'הקול העברי מוכן. ההשמעה קוראת בו.';
+  String get voiceRemove => 'הסרה מהמכשיר';
+
+  @override
+  String voiceRemovedStatus(String name) {
+    return '$name הוסר מהמכשיר';
+  }
+
+  @override
+  String get voiceHear => 'השמעה';
+
+  @override
+  String voiceMore(String name) {
+    return 'עוד עבור $name';
+  }
+
+  @override
+  String voiceMegabytes(int mb) {
+    return '$mb מ״ב';
+  }
+
+  @override
+  String get pronunciationTitle => 'הגייה';
+
+  @override
+  String get pronunciationHelp =>
+      'איך הקולות של האפליקציה הוגים את התנועות שבהן המסורות שונות.';
+
+  @override
+  String get pronIsraeli => 'ישראלית וספרדית';
+
+  @override
+  String get pronLithuanian => 'ליטאית';
+
+  @override
+  String get pronPolish => 'פולנית וגליצאית';
+
+  @override
+  String get pronHungarian => 'הונגרית';
+
+  @override
+  String get pronGerman => 'גרמנית (ייקית)';
+
+  @override
+  String get pronCustom => 'משלכם';
+
+  @override
+  String get pronCustomDesc => 'כפי שנקבעה למטה, צליל אחר צליל';
+
+  @override
+  String get pronEachSound => 'כל צליל';
+
+  @override
+  String get pronQamatz => 'קמץ';
+
+  @override
+  String get pronHolam => 'חולם';
+
+  @override
+  String get pronTsere => 'צירה';
+
+  @override
+  String get pronShuruk => 'שורוק וקובוץ';
+
+  @override
+  String get pronTav => 'ת׳ רפה';
+
+  @override
+  String get stressTitle => 'הטעמה';
+
+  @override
+  String get stressAccents => 'במקום הטעם';
+
+  @override
+  String get stressAccentsDesc => 'כפי שקוראים בתורה בטעמים';
+
+  @override
+  String get stressPenultimate => 'לפני ההברה האחרונה';
+
+  @override
+  String get stressPenultimateDesc => 'כפי שאשכנזים רבים קוראים';
+
+  @override
+  String get voiceSoundTitle => 'צליל';
+
+  @override
+  String get voicePauses => 'עצירה בטעמים המפסיקים';
+
+  @override
+  String get voicePausesDesc =>
+      'באתנחתא, בסגולתא, בזקף ובפסק, ולא רק בסוף כל פסוק';
+
+  @override
+  String get voiceEvenLoudness => 'עוצמה אחידה';
+
+  @override
+  String get voiceEvenLoudnessDesc => 'כל פסוק וכל קול באותה עוצמה';
+
+  @override
+  String get voiceVariation => 'גיוון בקול (Piper)';
+
+  @override
+  String get voiceRhythm => 'גיוון בקצב (Piper)';
+
+  @override
+  String get voiceOwnValue => 'של הקול עצמו';
+
+  @override
+  String get voiceSteps => 'איכות (Blue)';
+
+  @override
+  String voiceStepsValue(int steps) {
+    return '$steps צעדים';
+  }
+
+  @override
+  String get voiceGuidance => 'צמידות לטקסט (Blue)';
+
+  @override
+  String get voiceResetSound => 'איפוס הצליל';
+
+  @override
+  String get voiceStorageTitle => 'אחסון';
+
+  @override
+  String voiceStorageSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count קולות, $size',
+      one: 'קול אחד, $size',
+      zero: 'אין קולות במכשיר',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get voiceRemoveAll => 'הסרת כל הקולות';
+
+  @override
+  String get voiceRemoveAllConfirm =>
+      'להסיר את כל הקולות מהמכשיר? הקול של המכשיר יקרא עד שתורידו קול שוב.';
+
+  @override
+  String get voiceRemoveAllDone => 'כל הקולות הוסרו';
 
   @override
   String get speechRate => 'קצב הקראה';
