@@ -1694,7 +1694,7 @@
   "divineNameLabel": "Speaking the Divine Name",
   "divineAdonai": "Ado-nai",
   "divineHashem": "HaShem",
-  "hebrewVoice": "Shnayim Mikrah's Hebrew voice",
+  "hebrewVoice": "Shnayim Mikrah’s Hebrew voice",
   "@hebrewVoice": {
     "description": "The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen)."
   },
@@ -1722,7 +1722,7 @@
       }
     }
   },
-  "hebrewVoiceFailed": "The Hebrew voice couldn't be downloaded. Check the connection, and try again.",
+  "hebrewVoiceFailed": "The Hebrew voice couldn’t be downloaded. Check the connection, and try again.",
   "hebrewVoiceInstalled": "The Hebrew voice is ready. Listen reads with it.",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",

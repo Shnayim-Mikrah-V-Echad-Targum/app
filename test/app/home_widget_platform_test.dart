@@ -409,7 +409,9 @@ void main() {
         final runner = pbxproj.settings(runnerConfigs.firstWhere((c) => name(c) == name(config)));
         expect(settings['PRODUCT_BUNDLE_IDENTIFIER'], '${runner['PRODUCT_BUNDLE_IDENTIFIER']}.ParshaWidget');
         expect(settings['PRODUCT_BUNDLE_IDENTIFIER'], 'org.shnayimmikrah.app.ParshaWidget');
-        expect(settings['IPHONEOS_DEPLOYMENT_TARGET'], '15.0');
+        // The project's, iOS 16, which ONNX Runtime (the app's Hebrew voice)
+        // needs.
+        expect(settings['IPHONEOS_DEPLOYMENT_TARGET'], '16.0');
         expect(settings['SKIP_INSTALL'], 'YES');
         expect(settings['INFOPLIST_FILE'], 'ParshaWidget/Info.plist');
         expect(settings['CODE_SIGN_ENTITLEMENTS'], 'ParshaWidget/ParshaWidget.entitlements');

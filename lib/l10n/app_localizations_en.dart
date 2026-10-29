@@ -1922,7 +1922,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divineHashem => 'HaShem';
 
   @override
-  String get hebrewVoice => 'Shnayim Mikrah\'s Hebrew voice';
+  String get hebrewVoice => 'Shnayim Mikrah’s Hebrew voice';
 
   @override
   String hebrewVoiceDesc(int mb) {
@@ -1941,7 +1941,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hebrewVoiceFailed =>
-      'The Hebrew voice couldn\'t be downloaded. Check the connection, and try again.';
+      'The Hebrew voice couldn’t be downloaded. Check the connection, and try again.';
 
   @override
   String get hebrewVoiceInstalled =>

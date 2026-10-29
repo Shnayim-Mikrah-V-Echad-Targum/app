@@ -3072,7 +3072,7 @@ abstract class AppLocalizations {
   /// The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen).
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikrah\'s Hebrew voice'**
+  /// **'Shnayim Mikrah’s Hebrew voice'**
   String get hebrewVoice;
 
   /// No description provided for @hebrewVoiceDesc.
@@ -3096,7 +3096,7 @@ abstract class AppLocalizations {
   /// No description provided for @hebrewVoiceFailed.
   ///
   /// In en, this message translates to:
-  /// **'The Hebrew voice couldn\'t be downloaded. Check the connection, and try again.'**
+  /// **'The Hebrew voice couldn’t be downloaded. Check the connection, and try again.'**
   String get hebrewVoiceFailed;
 
   /// No description provided for @hebrewVoiceInstalled.
