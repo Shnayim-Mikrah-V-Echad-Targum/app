@@ -25,8 +25,7 @@ import 'voice_settings.dart';
 /// are the device's to read; and should the app's voice fail, the device's
 /// reads in its place.
 class VoiceRoutingTts extends FlutterTts {
-  VoiceRoutingTts(this.voices, {required this._settings, @visibleForTesting AudioPlayer Function()? player})
-      : _newPlayer = player ?? AudioPlayer.new;
+  VoiceRoutingTts(this.voices, {required this._settings, @visibleForTesting AudioPlayer Function()? player}) : _newPlayer = player ?? AudioPlayer.new;
 
   final HebrewVoices voices;
   final VoiceSettings Function() _settings;
@@ -45,15 +44,19 @@ class VoiceRoutingTts extends FlutterTts {
   AudioPlayer _start(AudioPlayer player) {
     // The speech service holds the audio focus (Android) and sets the
     // session (iOS): the player only plays.
-    unawaited(player
-        .setAudioContext(AudioContext(
-          android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none, usageType: AndroidUsageType.media),
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-            options: const {AVAudioSessionOptions.duckOthers, AVAudioSessionOptions.interruptSpokenAudioAndMixWithOthers},
-          ),
-        ))
-        .then((_) {}, onError: (Object _) {}));
+    unawaited(
+      player
+          .setAudioContext(
+            AudioContext(
+              android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none, usageType: AndroidUsageType.media),
+              iOS: AudioContextIOS(
+                category: AVAudioSessionCategory.playback,
+                options: const {AVAudioSessionOptions.duckOthers, AVAudioSessionOptions.interruptSpokenAudioAndMixWithOthers},
+              ),
+            ),
+          )
+          .then((_) {}, onError: (Object _) {}),
+    );
     _completions = player.onPlayerComplete.listen((_) {
       if (!_playing) return;
       _playing = false;
@@ -103,9 +106,12 @@ class VoiceRoutingTts extends FlutterTts {
       _prepared.remove(_prepared.keys.first);
     }
     final made = _prepared[key] = voices.speak(text, id: voice, settings: _settings(), speed: _speed);
-    made.then((_) {}, onError: (Object _) {
-      _prepared.remove(key);
-    });
+    made.then(
+      (_) {},
+      onError: (Object _) {
+        _prepared.remove(key);
+      },
+    );
   }
 
   @override

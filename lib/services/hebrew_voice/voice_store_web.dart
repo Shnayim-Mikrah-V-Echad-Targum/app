@@ -82,18 +82,24 @@ class CachedVoiceStore implements VoiceStore {
     return (await cached.arrayBuffer().toDart).toDart.asUint8List();
   }
 
+  @override
+  Future<String> made(String name, Uint8List bytes) async {
+    await _loadRuntime();
+    return _objectUrls['made:$name'] ??= web.URL.createObjectURL(web.Blob([bytes.toJS].toJS));
+  }
+
   /// Loads ONNX Runtime Web, once, which the plugin finds as `ort`.
   static Future<void> _loadRuntime() => _runtimeLoaded ??= () {
-        final done = Completer<void>();
-        final script = web.HTMLScriptElement()
-          ..src = _runtime
-          ..crossOrigin = 'anonymous';
-        script.onload = ((web.Event _) => done.complete()).toJS;
-        script.onerror = ((web.Event _) {
-          _runtimeLoaded = null;
-          done.completeError(StateError('ONNX Runtime Web could not be loaded.'));
-        }).toJS;
-        web.document.head!.append(script);
-        return done.future;
-      }();
+    final done = Completer<void>();
+    final script = web.HTMLScriptElement()
+      ..src = _runtime
+      ..crossOrigin = 'anonymous';
+    script.onload = ((web.Event _) => done.complete()).toJS;
+    script.onerror = ((web.Event _) {
+      _runtimeLoaded = null;
+      done.completeError(StateError('ONNX Runtime Web could not be loaded.'));
+    }).toJS;
+    web.document.head!.append(script);
+    return done.future;
+  }();
 }

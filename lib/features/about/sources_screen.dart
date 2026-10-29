@@ -125,6 +125,14 @@ class SourcesScreen extends StatelessWidget {
         'https://github.com/maxmelichov/BlueTTS',
       ),
       _Source(
+        he ? 'קולות Pocket TTS' : 'The Pocket TTS voices',
+        he
+            ? 'המודל Pocket TTS של Kyutai, עם המתאם לעברית של thewh1teagle: עומר, ליאת, אלבה, אנה ומיכאל.'
+            : 'Kyutai’s Pocket TTS, with thewh1teagle’s Hebrew adapter: Omer, Liat, Alba, Anna and Michael.',
+        'CC BY 4.0',
+        'https://huggingface.co/thewh1teagle/pocket-tts-onnx',
+      ),
+      _Source(
         he ? 'זריחה ושקיעה' : 'Sunrise and sunset',
         l.sourcesSunDescription,
         he ? 'נחלת הכלל' : 'Public domain',

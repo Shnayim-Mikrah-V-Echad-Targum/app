@@ -22,4 +22,8 @@ abstract class VoiceStore {
 
   /// The bytes of [file], a small one (a config, a style).
   Future<Uint8List> read(VoiceFile file);
+
+  /// Where ONNX Runtime opens a small model the app made itself (OnnxGraphs),
+  /// [bytes], kept as [name].
+  Future<String> made(String name, Uint8List bytes);
 }

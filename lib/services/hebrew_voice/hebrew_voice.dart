@@ -58,9 +58,9 @@ class HebrewVoiceStatus {
 /// the device with the last of them.
 class HebrewVoices {
   HebrewVoices({VoiceStore? store, OrtSessionFactory? openSession, List<HebrewVoiceOption>? voices})
-      : _store = store ?? platform.voiceStore(),
-        _openSession = openSession ?? _defaultSession,
-        voices = voices ?? hebrewVoices {
+    : _store = store ?? platform.voiceStore(),
+      _openSession = openSession ?? _defaultSession,
+      voices = voices ?? hebrewVoices {
     for (final v in this.voices) {
       _status[v.id] = ValueNotifier(const HebrewVoiceStatus(HebrewVoiceState.absent));
     }
@@ -133,9 +133,12 @@ class HebrewVoices {
     if (now == HebrewVoiceState.downloading || now == HebrewVoiceState.ready) return;
     _set(id, const HebrewVoiceStatus(HebrewVoiceState.downloading));
     try {
-      await _store.fetch(voice.files, onProgress: (received, total) {
-        _set(id, HebrewVoiceStatus(HebrewVoiceState.downloading, received: received, total: total));
-      });
+      await _store.fetch(
+        voice.files,
+        onProgress: (received, total) {
+          _set(id, HebrewVoiceStatus(HebrewVoiceState.downloading, received: received, total: total));
+        },
+      );
       _set(id, const HebrewVoiceStatus(HebrewVoiceState.ready));
       // Another voice of the same model may need nothing more now.
       await _refresh(skip: {id});
@@ -149,7 +152,10 @@ class HebrewVoices {
   /// still on it.
   Future<void> remove(String id) async {
     final voice = voices.firstWhere((v) => v.id == id);
-    final kept = {for (final v in voices) if (v.id != id && ready(v.id)) ...v.files};
+    final kept = {
+      for (final v in voices)
+        if (v.id != id && ready(v.id)) ...v.files,
+    };
     await _closeRunner(voice.spec);
     for (final f in voice.files) {
       if (!kept.contains(f)) await _store.remove(f);
@@ -186,9 +192,12 @@ class HebrewVoices {
       unawaited(runner.then((r) => r.close()).then((_) {}, onError: (Object _) {}));
     }
     final opening = _runners[key] = openVoice(spec, _store, _openSession);
-    opening.then((_) {}, onError: (Object _) {
-      if (identical(_runners[key], opening)) _runners.remove(key);
-    });
+    opening.then(
+      (_) {},
+      onError: (Object _) {
+        if (identical(_runners[key], opening)) _runners.remove(key);
+      },
+    );
     return opening;
   }
 

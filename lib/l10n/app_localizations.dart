@@ -3213,6 +3213,24 @@ abstract class AppLocalizations {
   /// **'Female'**
   String get voiceFemale;
 
+  /// No description provided for @voiceQuick.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick'**
+  String get voiceQuick;
+
+  /// No description provided for @voiceModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes a moment'**
+  String get voiceModerate;
+
+  /// No description provided for @voiceSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow: may pause between verses'**
+  String get voiceSlow;
+
   /// No description provided for @voiceClarity.
   ///
   /// In en, this message translates to:
@@ -3438,7 +3456,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceVariation.
   ///
   /// In en, this message translates to:
-  /// **'Variation in the voice (Piper)'**
+  /// **'Variation in the voice (Piper, Pocket)'**
   String get voiceVariation;
 
   /// No description provided for @voiceRhythm.

@@ -48,6 +48,14 @@ class _Store implements VoiceStore {
 
   @override
   Future<Uint8List> read(VoiceFile file) async => files[file]!;
+
+  final madeModels = <String, Uint8List>{};
+
+  @override
+  Future<String> made(String name, Uint8List bytes) async {
+    madeModels[name] = bytes;
+    return name;
+  }
 }
 
 class _Session extends Fake implements OrtSession {
@@ -281,6 +289,33 @@ void main() {
       expect(pointed.symbols('ʔa', 'אָ֑'), 'ɬʎ');
       final bare = await piper(PiperInput.bareLetters, letters: {'א': 'ɬ', 'ָ': 'ʎ'});
       expect(bare.symbols('ʔa', 'אָ֑'), 'ɬ');
+    });
+
+    test('Pocket TTS: a sound to an id, and between words the tokenizer\'s boundary and any punctuation', () async {
+      List<int> piece(String text) {
+        final bytes = utf8.encode(text);
+        final inner = [0x0a, bytes.length, ...bytes];
+        return [0x0a, inner.length, ...inner];
+      }
+
+      final proto = [for (final p in ['<unk>', '<s>', '</s>', '▁', ',', '.']) ...piece(p)];
+      final assets = _file('he/assets.json', 1000);
+      final store = _Store()
+        ..files[assets] = utf8.encode(jsonEncode({
+          'config': {
+            'sample_rate': 24000, 'flow_layers': 6, 'flow_heads': 16, 'flow_head_dim': 64,
+            'mimi_layers': 2, 'mimi_heads': 8, 'mimi_head_dim': 64, 'mimi_kv_len': 266, 'mimi_steps_per_latent': 16,
+            'lora': {'atomic_chars': 'abˈ', 'vocab_base': 100},
+          },
+          'voices': <String, String>{},
+          'tokenizer': base64.encode(proto),
+        }));
+      final runner = await PocketRunner.open(PocketSpec(model: _model, assets: assets, voice: 'omer'), store, (_) async => _Session());
+      expect(runner.sampleRate, 24000);
+      expect(runner.tokens('ab ba, a.'), [100, 101, 3, 101, 100, 3, 4, 100, 3, 5]);
+      expect(runner.tokens('bˈa'), [101, 102, 100]);
+      // The caches' joining models, made once.
+      expect(store.madeModels.keys, containsAll(['pocket-concat-6x2x1x16x64.onnx', 'pocket-window-2x2x1x8x64-266-16.onnx']));
     });
 
     test('long sounds are read in pieces, after a pause where there is one', () {

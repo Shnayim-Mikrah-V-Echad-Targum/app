@@ -1137,7 +1137,7 @@ HE = {
   "voicePausesDesc": "באתנחתא, בסגולתא, בזקף ובפסק, ולא רק בסוף כל פסוק",
   "voiceEvenLoudness": "עוצמה אחידה",
   "voiceEvenLoudnessDesc": "כל פסוק וכל קול באותה עוצמה",
-  "voiceVariation": "גיוון בקול (Piper)",
+  "voiceVariation": "גיוון בקול (Piper, Pocket)",
   "voiceRhythm": "גיוון בקצב (Piper)",
   "voiceOwnValue": "של הקול עצמו",
   "voiceSteps": "איכות (Blue)",
@@ -1150,4 +1150,7 @@ HE = {
   "voiceRemoveAllConfirm": "להסיר את כל הקולות מהמכשיר? הקול של המכשיר יקרא עד שתורידו קול שוב.",
   "voiceRemoveAllDone": "כל הקולות הוסרו",
   "ttsNoHebrewVoice": "לא מותקן קול בעברית. אפשר להוריד קול של האפליקציה בהגדרות, נגישות, קול עברי, או להוסיף קול בהגדרות הדיבור של המכשיר.",
+  "voiceQuick": "מהיר",
+  "voiceModerate": "לוקח רגע",
+  "voiceSlow": "איטי: עשוי לעצור בין פסוקים",
 }

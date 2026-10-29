@@ -56,7 +56,10 @@ NpyArray readNpy(Uint8List bytes) {
   if (!header.contains("'descr': '<f4'")) throw FormatException('Not little-endian float32: $header');
   if (header.contains("'fortran_order': True")) throw const FormatException('Fortran order');
   final shapeText = RegExp(r"'shape': \(([^)]*)\)").firstMatch(header)?.group(1) ?? '';
-  final shape = [for (final d in shapeText.split(',')) if (d.trim().isNotEmpty) int.parse(d.trim())];
+  final shape = [
+    for (final d in shapeText.split(','))
+      if (d.trim().isNotEmpty) int.parse(d.trim()),
+  ];
   final count = shape.fold<int>(1, (a, b) => a * b);
   final start = headerStart + headerLength;
   final values = Float32List(count);

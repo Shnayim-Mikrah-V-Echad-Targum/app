@@ -1748,6 +1748,9 @@
     "description": "A voice's gender."
   },
   "voiceFemale": "Female",
+  "voiceQuick": "Quick",
+  "voiceModerate": "Takes a moment",
+  "voiceSlow": "Slow: may pause between verses",
   "@voiceFemale": {
     "description": "A voice's gender."
   },
@@ -1844,7 +1847,7 @@
   "voicePausesDesc": "At an etnachta, segolta, zaqef or paseq, as well as at each verse’s end",
   "voiceEvenLoudness": "Even loudness",
   "voiceEvenLoudnessDesc": "Every verse, and every voice, at the same loudness",
-  "voiceVariation": "Variation in the voice (Piper)",
+  "voiceVariation": "Variation in the voice (Piper, Pocket)",
   "voiceRhythm": "Variation in the timing (Piper)",
   "voiceOwnValue": "The voice’s own",
   "voiceSteps": "Quality (Blue)",

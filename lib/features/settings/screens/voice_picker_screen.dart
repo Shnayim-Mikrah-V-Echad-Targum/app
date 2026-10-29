@@ -200,6 +200,11 @@ class _VoiceRow extends StatelessWidget {
         voice.gender == VoiceGender.male ? l.voiceMale : l.voiceFemale,
         ?voice.model,
         l.voiceClarity((voice.clarity * 100).round()),
+        switch (voice.speed) {
+          VoiceSpeed.quick => l.voiceQuick,
+          VoiceSpeed.moderate => l.voiceModerate,
+          VoiceSpeed.slow => l.voiceSlow,
+        },
         state,
       ],
       selected: chosen,

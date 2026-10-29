@@ -17,8 +17,8 @@ VoiceStore voiceStore() => FileVoiceStore();
 /// nothing behind.
 class FileVoiceStore implements VoiceStore {
   FileVoiceStore({Future<Directory> Function()? folder, http.Client Function()? client})
-      : _folder = folder ?? getApplicationSupportDirectory,
-        _client = client ?? http.Client.new;
+    : _folder = folder ?? getApplicationSupportDirectory,
+      _client = client ?? http.Client.new;
 
   final Future<Directory> Function() _folder;
   final http.Client Function() _client;
@@ -117,6 +117,17 @@ class FileVoiceStore implements VoiceStore {
 
   @override
   Future<Uint8List> read(VoiceFile file) async => (await _file(file)).readAsBytes();
+
+  @override
+  Future<String> made(String name, Uint8List bytes) async {
+    final sep = Platform.pathSeparator;
+    final file = File('${(await _folder()).path}${sep}voices${sep}made$sep$name');
+    if (!await file.exists() || await file.length() != bytes.length) {
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(bytes, flush: true);
+    }
+    return file.path;
+  }
 }
 
 class _DigestSink implements Sink<Digest> {
