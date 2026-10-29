@@ -1161,7 +1161,7 @@
   "listenAlong": "Listen along",
   "listenAlongDesc": "Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn’t available on this device.",
-  "ttsNoHebrewVoice": "No Hebrew voice is installed. You can add one in your device’s speech settings.",
+  "ttsNoHebrewVoice": "No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.",
   "guidedMode": "Guided reading",
   "fullTextMode": "Full text",
   "wholeParsha": "Whole parsha",
@@ -1694,6 +1694,36 @@
   "divineNameLabel": "Speaking the Divine Name",
   "divineAdonai": "Ado-nai",
   "divineHashem": "HaShem",
+  "hebrewVoice": "Shnayim Mikrah's Hebrew voice",
+  "@hebrewVoice": {
+    "description": "The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen)."
+  },
+  "hebrewVoiceDesc": "Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads {mb} MB once.",
+  "@hebrewVoiceDesc": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
+  "hebrewVoiceDownloading": "Downloading… {percent}%",
+  "@hebrewVoiceDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "hebrewVoiceReady": "On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ({mb} MB).",
+  "@hebrewVoiceReady": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
+  "hebrewVoiceFailed": "The Hebrew voice couldn't be downloaded. Check the connection, and try again.",
+  "hebrewVoiceInstalled": "The Hebrew voice is ready. Listen reads with it.",
   "speechRate": "Speech rate",
   "presetsTitle": "Quick setups",
   "presetLargePrint": "Large print",

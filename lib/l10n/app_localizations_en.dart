@@ -1096,7 +1096,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ttsNoHebrewVoice =>
-      'No Hebrew voice is installed. You can add one in your device’s speech settings.';
+      'No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.';
 
   @override
   String get guidedMode => 'Guided reading';
@@ -1920,6 +1920,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get divineHashem => 'HaShem';
+
+  @override
+  String get hebrewVoice => 'Shnayim Mikrah\'s Hebrew voice';
+
+  @override
+  String hebrewVoiceDesc(int mb) {
+    return 'Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads $mb MB once.';
+  }
+
+  @override
+  String hebrewVoiceDownloading(int percent) {
+    return 'Downloading… $percent%';
+  }
+
+  @override
+  String hebrewVoiceReady(int mb) {
+    return 'On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ($mb MB).';
+  }
+
+  @override
+  String get hebrewVoiceFailed =>
+      'The Hebrew voice couldn\'t be downloaded. Check the connection, and try again.';
+
+  @override
+  String get hebrewVoiceInstalled =>
+      'The Hebrew voice is ready. Listen reads with it.';
 
   @override
   String get speechRate => 'Speech rate';

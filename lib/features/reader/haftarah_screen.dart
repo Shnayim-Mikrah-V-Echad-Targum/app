@@ -171,7 +171,7 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
     final settings = ref.read(settingsProvider);
     final queue = SpeechQueue(language: 'he-IL');
     for (final (i, v) in list.indexed) {
-      queue.add(i, HebrewSpeech.spoken(v.hebrew.readText, divineName: settings.divineName));
+      queue.add(i, HebrewSpeech.spoken(v.hebrew.readText, keepTeamim: true, divineName: settings.divineName));
     }
     if (queue.isEmpty) return;
     final end = await _listen.play(queue, rate: settings.speechRate, startVerse: _firstVerseInView(list.length));

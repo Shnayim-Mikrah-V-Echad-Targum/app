@@ -1102,7 +1102,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get ttsNoHebrewVoice =>
-      'לא מותקן קול בעברית. אפשר להוסיף קול בהגדרות הדיבור של המכשיר.';
+      'לא מותקן קול בעברית. אפשר להפעיל את הקול של האפליקציה בהגדרות, נגישות, או להוסיף קול בהגדרות הדיבור של המכשיר.';
 
   @override
   String get guidedMode => 'קריאה מודרכת';
@@ -1921,6 +1921,31 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get divineHashem => 'השם';
+
+  @override
+  String get hebrewVoice => 'הקול העברי של שניים מקרא';
+
+  @override
+  String hebrewVoiceDesc(int mb) {
+    return 'מקריא את התורה ואת התרגום בקול, בכל הניקוד כפי שהוא כתוב, גם כשבמכשיר אין קול עברי. הורדה חד־פעמית של $mb מ״ב.';
+  }
+
+  @override
+  String hebrewVoiceDownloading(int percent) {
+    return 'מוריד… $percent%';
+  }
+
+  @override
+  String hebrewVoiceReady(int mb) {
+    return 'פועל. ההשמעה קוראת בו את התורה ואת התרגום. כיבוי מסיר אותו מהמכשיר ($mb מ״ב).';
+  }
+
+  @override
+  String get hebrewVoiceFailed =>
+      'לא ניתן היה להוריד את הקול העברי. כדאי לבדוק את החיבור ולנסות שוב.';
+
+  @override
+  String get hebrewVoiceInstalled => 'הקול העברי מוכן. ההשמעה קוראת בו.';
 
   @override
   String get speechRate => 'קצב הקראה';

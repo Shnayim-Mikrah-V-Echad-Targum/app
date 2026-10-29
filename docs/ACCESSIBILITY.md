@@ -196,7 +196,8 @@ Record the results in the release checklist ([RELEASE.md](RELEASE.md)).
 - **Hebrew screen-reader voices:**
   - Hebrew voices vary by platform, and some systems have none installed.
   - In that case the screen reader reads the Hebrew with its default voice, usually badly.
-  - Before reading aloud, the app checks for a Hebrew text-to-speech voice. If there is none, it says so and points to the device's speech settings.
+  - Before reading aloud, the app checks for a Hebrew text-to-speech voice. If there is none, it says so and points to its own (below) and to the device's speech settings.
+  - *Shnayim Mikrah's Hebrew voice* (Settings → Accessibility → Speech) reads the Torah, the Targum and the haftarah aloud on any device, with or without a Hebrew voice of its own, and reads them as pointed: every vowel, the vocal shva, the qamatz qatan, the stress where the accent stands. It is fetched once, when turned on (64 MB), and speaks on the device, offline. The Rashi and translation, and any unpointed Hebrew, stay with the device's voice. Screen readers keep their own voices.
 - **Narrator and NVDA on Windows** can't switch voices within the app, because Flutter's Windows accessibility bridge has no language property. They read the Hebrew labels in the voice of the screen reader's own language. Choosing a Hebrew voice in the screen reader's settings while reading is the workaround.
 - **Home-screen widget themes:** the widget follows the system's light or dark appearance, but has no high-contrast or sepia theme of its own: a launcher draws it apart from the app, which can't pass it the theme chosen in the app. Its colours meet the contrast of the light and dark themes (§3.5 of [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)).
 - **Cantillation:** no screen reader can convey it. Reading with ta'amim needs sight or a teacher. The *every mark* label setting lets braille users get every mark.

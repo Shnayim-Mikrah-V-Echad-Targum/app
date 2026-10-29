@@ -14,6 +14,7 @@ import '../../about/about_screen.dart';
 import '../../reader/listen_along.dart';
 import '../../reader/reader_screen.dart';
 import '../app_settings.dart';
+import '../widgets/hebrew_voice_row.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Settings → Accessibility (docs/DESIGN_SYSTEM.md §9): quick setups as cards
@@ -174,6 +175,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                 onChanged: (v) => update((s) => s.copyWith(speechRate: v)),
               ),
             ),
+            // The app's own voice, for the pointed Hebrew and Aramaic.
+            const HebrewVoiceRow(),
           ],
         ),
         GroupHeader(l.a11yGroupMore),

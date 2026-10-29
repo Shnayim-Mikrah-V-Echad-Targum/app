@@ -24,6 +24,10 @@ dependencies:
   flutter_riverpod: ^3.4.3
   flutter_timezone: ^5.1.1
   flutter_tts: ^4.2.5
+  # The app's own Hebrew voice (lib/services/hebrew_voice/): its model run on
+  # the device, and the audio it makes played.
+  flutter_onnxruntime: ^1.9.0
+  audioplayers: ^6.8.1
   go_router: ^18.0.2
   # The community's requests to the site's server
   # (lib/features/community/data/worker_forum_repository.dart).

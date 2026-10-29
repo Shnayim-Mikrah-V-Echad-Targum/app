@@ -1602,7 +1602,7 @@ abstract class AppLocalizations {
   /// No description provided for @ttsNoHebrewVoice.
   ///
   /// In en, this message translates to:
-  /// **'No Hebrew voice is installed. You can add one in your device’s speech settings.'**
+  /// **'No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.'**
   String get ttsNoHebrewVoice;
 
   /// No description provided for @guidedMode.
@@ -3068,6 +3068,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'HaShem'**
   String get divineHashem;
+
+  /// The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen).
+  ///
+  /// In en, this message translates to:
+  /// **'Shnayim Mikrah\'s Hebrew voice'**
+  String get hebrewVoice;
+
+  /// No description provided for @hebrewVoiceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads {mb} MB once.'**
+  String hebrewVoiceDesc(int mb);
+
+  /// No description provided for @hebrewVoiceDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading… {percent}%'**
+  String hebrewVoiceDownloading(int percent);
+
+  /// No description provided for @hebrewVoiceReady.
+  ///
+  /// In en, this message translates to:
+  /// **'On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ({mb} MB).'**
+  String hebrewVoiceReady(int mb);
+
+  /// No description provided for @hebrewVoiceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hebrew voice couldn\'t be downloaded. Check the connection, and try again.'**
+  String get hebrewVoiceFailed;
+
+  /// No description provided for @hebrewVoiceInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hebrew voice is ready. Listen reads with it.'**
+  String get hebrewVoiceInstalled;
 
   /// No description provided for @speechRate.
   ///
