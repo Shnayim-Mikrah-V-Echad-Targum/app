@@ -1602,7 +1602,7 @@ abstract class AppLocalizations {
   /// No description provided for @ttsNoHebrewVoice.
   ///
   /// In en, this message translates to:
-  /// **'No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.'**
+  /// **'No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.'**
   String get ttsNoHebrewVoice;
 
   /// No description provided for @guidedMode.
@@ -3069,41 +3069,443 @@ abstract class AppLocalizations {
   /// **'HaShem'**
   String get divineHashem;
 
-  /// The setting that turns on the app's own voice for the pointed Hebrew and Aramaic (Listen).
+  /// The setting, and page, of the app's own voices for the pointed Hebrew and Aramaic (Listen).
   ///
   /// In en, this message translates to:
-  /// **'Shnayim Mikrah’s Hebrew voice'**
+  /// **'Hebrew voice'**
   String get hebrewVoice;
 
-  /// No description provided for @hebrewVoiceDesc.
+  /// No description provided for @hebrewVoiceIntro.
   ///
   /// In en, this message translates to:
-  /// **'Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads {mb} MB once.'**
-  String hebrewVoiceDesc(int mb);
+  /// **'The app’s own voices read the Torah, the Targum and the haftarah aloud from the pointed text: every vowel as written, each word stressed where its accent stands. They run on this device, offline once downloaded, also where it has no Hebrew voice of its own. Rashi, the translation and anything without vowels stay with the device’s voice.'**
+  String get hebrewVoiceIntro;
 
-  /// No description provided for @hebrewVoiceDownloading.
+  /// No description provided for @voiceWhoReads.
+  ///
+  /// In en, this message translates to:
+  /// **'Who reads what'**
+  String get voiceWhoReads;
+
+  /// No description provided for @voiceForTorah.
+  ///
+  /// In en, this message translates to:
+  /// **'The Torah'**
+  String get voiceForTorah;
+
+  /// No description provided for @voiceForTargum.
+  ///
+  /// In en, this message translates to:
+  /// **'The Targum'**
+  String get voiceForTargum;
+
+  /// No description provided for @voiceForHaftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'The haftarah'**
+  String get voiceForHaftarah;
+
+  /// No description provided for @voiceChooseTorah.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice for the Torah'**
+  String get voiceChooseTorah;
+
+  /// No description provided for @voiceChooseTargum.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice for the Targum'**
+  String get voiceChooseTargum;
+
+  /// No description provided for @voiceChooseHaftarah.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice for the haftarah'**
+  String get voiceChooseHaftarah;
+
+  /// No description provided for @voiceSameAsTorah.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as the Torah'**
+  String get voiceSameAsTorah;
+
+  /// No description provided for @voiceDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device’s voice'**
+  String get voiceDevice;
+
+  /// No description provided for @voiceDeviceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads without the rules of the vowels and accents, where the device has a Hebrew voice'**
+  String get voiceDeviceDesc;
+
+  /// No description provided for @voiceSummaryReady.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, on this device'**
+  String voiceSummaryReady(String name);
+
+  /// No description provided for @voiceSummaryFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn’t downloaded: {other} reads meanwhile'**
+  String voiceSummaryFallback(String name, String other);
+
+  /// No description provided for @voiceSummaryDeviceMeanwhile.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn’t downloaded: your device’s voice reads meanwhile'**
+  String voiceSummaryDeviceMeanwhile(String name);
+
+  /// No description provided for @voicePlaySample.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear a sample'**
+  String get voicePlaySample;
+
+  /// No description provided for @voicePlaySampleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The first verse of the Torah, as Listen reads it'**
+  String get voicePlaySampleDesc;
+
+  /// No description provided for @voiceGroupRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get voiceGroupRecommended;
+
+  /// No description provided for @voiceGroupMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More voices'**
+  String get voiceGroupMore;
+
+  /// No description provided for @voiceGroupExperimental.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental'**
+  String get voiceGroupExperimental;
+
+  /// No description provided for @voiceGroupExperimentalDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Phonikud’s experiments: Shaul’s voice, trained in other ways. Some read less clearly.'**
+  String get voiceGroupExperimentalDesc;
+
+  /// No description provided for @voiceClarityHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How clear each voice is: how much of fourteen verses of the Torah, read by it, a Hebrew speech recognizer heard right.'**
+  String get voiceClarityHelp;
+
+  /// A voice's gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get voiceMale;
+
+  /// A voice's gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get voiceFemale;
+
+  /// No description provided for @voiceClarity.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% clear'**
+  String voiceClarity(int percent);
+
+  /// No description provided for @voiceOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'On this device'**
+  String get voiceOnDevice;
+
+  /// No description provided for @voiceToDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} to download'**
+  String voiceToDownload(String size);
+
+  /// No description provided for @voiceDownloading.
   ///
   /// In en, this message translates to:
   /// **'Downloading… {percent}%'**
-  String hebrewVoiceDownloading(int percent);
+  String voiceDownloading(int percent);
 
-  /// No description provided for @hebrewVoiceReady.
+  /// No description provided for @voiceFailed.
   ///
   /// In en, this message translates to:
-  /// **'On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ({mb} MB).'**
-  String hebrewVoiceReady(int mb);
+  /// **'Couldn’t download: tap to try again'**
+  String get voiceFailed;
 
-  /// No description provided for @hebrewVoiceFailed.
+  /// No description provided for @voiceReadyStatus.
   ///
   /// In en, this message translates to:
-  /// **'The Hebrew voice couldn’t be downloaded. Check the connection, and try again.'**
-  String get hebrewVoiceFailed;
+  /// **'{name} is ready'**
+  String voiceReadyStatus(String name);
 
-  /// No description provided for @hebrewVoiceInstalled.
+  /// No description provided for @voiceFailedStatus.
   ///
   /// In en, this message translates to:
-  /// **'The Hebrew voice is ready. Listen reads with it.'**
-  String get hebrewVoiceInstalled;
+  /// **'{name} couldn’t be downloaded. Check the connection, and try again.'**
+  String voiceFailedStatus(String name);
+
+  /// No description provided for @voiceRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this device'**
+  String get voiceRemove;
+
+  /// No description provided for @voiceRemovedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} removed from this device'**
+  String voiceRemovedStatus(String name);
+
+  /// No description provided for @voiceHear.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear it'**
+  String get voiceHear;
+
+  /// No description provided for @voiceMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More for {name}'**
+  String voiceMore(String name);
+
+  /// No description provided for @voiceMegabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{mb} MB'**
+  String voiceMegabytes(int mb);
+
+  /// No description provided for @pronunciationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pronunciation'**
+  String get pronunciationTitle;
+
+  /// No description provided for @pronunciationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How the app’s voices say the vowels on which the traditions differ.'**
+  String get pronunciationHelp;
+
+  /// No description provided for @pronIsraeli.
+  ///
+  /// In en, this message translates to:
+  /// **'Israeli and Sephardi'**
+  String get pronIsraeli;
+
+  /// No description provided for @pronLithuanian.
+  ///
+  /// In en, this message translates to:
+  /// **'Lithuanian'**
+  String get pronLithuanian;
+
+  /// No description provided for @pronPolish.
+  ///
+  /// In en, this message translates to:
+  /// **'Polish and Galician'**
+  String get pronPolish;
+
+  /// No description provided for @pronHungarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Hungarian'**
+  String get pronHungarian;
+
+  /// No description provided for @pronGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German (Yekkish)'**
+  String get pronGerman;
+
+  /// No description provided for @pronCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own'**
+  String get pronCustom;
+
+  /// No description provided for @pronCustomDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Set below, sound by sound'**
+  String get pronCustomDesc;
+
+  /// No description provided for @pronEachSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Each sound'**
+  String get pronEachSound;
+
+  /// No description provided for @pronQamatz.
+  ///
+  /// In en, this message translates to:
+  /// **'Qamatz'**
+  String get pronQamatz;
+
+  /// No description provided for @pronHolam.
+  ///
+  /// In en, this message translates to:
+  /// **'Holam'**
+  String get pronHolam;
+
+  /// No description provided for @pronTsere.
+  ///
+  /// In en, this message translates to:
+  /// **'Tsere'**
+  String get pronTsere;
+
+  /// No description provided for @pronShuruk.
+  ///
+  /// In en, this message translates to:
+  /// **'Shuruk and qubbutz'**
+  String get pronShuruk;
+
+  /// No description provided for @pronTav.
+  ///
+  /// In en, this message translates to:
+  /// **'Tav without a dagesh'**
+  String get pronTav;
+
+  /// No description provided for @stressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stress'**
+  String get stressTitle;
+
+  /// No description provided for @stressAccents.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the accent stands'**
+  String get stressAccents;
+
+  /// No description provided for @stressAccentsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'As the Torah is read with its trope'**
+  String get stressAccentsDesc;
+
+  /// No description provided for @stressPenultimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Before the last syllable'**
+  String get stressPenultimate;
+
+  /// No description provided for @stressPenultimateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'As many Ashkenazim read'**
+  String get stressPenultimateDesc;
+
+  /// No description provided for @voiceSoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get voiceSoundTitle;
+
+  /// No description provided for @voicePauses.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause at the dividing accents'**
+  String get voicePauses;
+
+  /// No description provided for @voicePausesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'At an etnachta, segolta, zaqef or paseq, as well as at each verse’s end'**
+  String get voicePausesDesc;
+
+  /// No description provided for @voiceEvenLoudness.
+  ///
+  /// In en, this message translates to:
+  /// **'Even loudness'**
+  String get voiceEvenLoudness;
+
+  /// No description provided for @voiceEvenLoudnessDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Every verse, and every voice, at the same loudness'**
+  String get voiceEvenLoudnessDesc;
+
+  /// No description provided for @voiceVariation.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation in the voice (Piper)'**
+  String get voiceVariation;
+
+  /// No description provided for @voiceRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'Variation in the timing (Piper)'**
+  String get voiceRhythm;
+
+  /// No description provided for @voiceOwnValue.
+  ///
+  /// In en, this message translates to:
+  /// **'The voice’s own'**
+  String get voiceOwnValue;
+
+  /// No description provided for @voiceSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Quality (Blue)'**
+  String get voiceSteps;
+
+  /// No description provided for @voiceStepsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{steps} steps'**
+  String voiceStepsValue(int steps);
+
+  /// No description provided for @voiceGuidance.
+  ///
+  /// In en, this message translates to:
+  /// **'Closeness to the text (Blue)'**
+  String get voiceGuidance;
+
+  /// No description provided for @voiceResetSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the sound'**
+  String get voiceResetSound;
+
+  /// No description provided for @voiceStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get voiceStorageTitle;
+
+  /// No description provided for @voiceStorageSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No voices on this device} =1{One voice, {size}} other{{count} voices, {size}}}'**
+  String voiceStorageSummary(int count, String size);
+
+  /// No description provided for @voiceRemoveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all voices'**
+  String get voiceRemoveAll;
+
+  /// No description provided for @voiceRemoveAllConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove every voice from this device? Your device’s voice reads until you download one again.'**
+  String get voiceRemoveAllConfirm;
+
+  /// No description provided for @voiceRemoveAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Every voice removed'**
+  String get voiceRemoveAllDone;
 
   /// No description provided for @speechRate.
   ///

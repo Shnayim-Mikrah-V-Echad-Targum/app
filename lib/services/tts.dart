@@ -5,8 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../app/providers.dart';
 import 'hebrew_voice/hebrew_voice.dart';
 import 'hebrew_voice/voice_routing_tts.dart';
+import 'hebrew_voice/voice_settings.dart';
+
+export 'hebrew_voice/voice_settings.dart' show SpeechRole;
 
 /// The speech rate Listen reads at unless the reader sets another, which the
 /// player and Settings call normal (speechRateLabel). Rates are on the
@@ -210,8 +214,9 @@ class TtsService {
 
   /// Speaks [text], stopping whatever is being spoken first, and completes
   /// when it is finished or stopped: with true if it was spoken to its end.
-  /// Throws if the engine can't speak at all.
-  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) async {
+  /// [role] says what it is, for the voice the reader chose for it. Throws
+  /// if the engine can't speak at all.
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate, SpeechRole role = SpeechRole.mikrah}) async {
     final generation = ++_generation;
     _preparing++;
     try {
@@ -236,6 +241,7 @@ class TtsService {
       if (!kIsWeb) await _tts.awaitSpeakCompletion(false);
       if (generation == _generation) {
         _engineBusy = true;
+        if (_tts case final VoiceRoutingTts voices) voices.role = role;
         final result = await _tts.speak(text);
         if (result != 1 && result != null && result != true && identical(_utterance, c)) {
           // Refused (a broken or unbound engine): no handler will report
@@ -395,6 +401,7 @@ class TtsService {
 
   List<String> _queue = const [];
   List<int> _groups = const [];
+  List<SpeechRole> _roles = const [];
   String _queueLanguage = 'he-IL';
   double _queueRate = kDefaultSpeechRate;
   Completer<bool>? _queueEnd;
@@ -403,7 +410,8 @@ class TtsService {
   // ends the loop speaking it.
   int _queueToken = 0;
 
-  /// Speaks [items] one after another from [startAt], and completes with
+  /// Speaks [items] one after another from [startAt], each read as its
+  /// [roles] say (by default as the Torah), and completes with
   /// true once the last has been spoken, or false if the queue is stopped or
   /// replaced first (or has no items). While it is paused, it waits. It
   /// completes with an error if the engine can't speak.
@@ -417,13 +425,16 @@ class TtsService {
     double rate = kDefaultSpeechRate,
     int startAt = 0,
     List<int>? groups,
+    List<SpeechRole>? roles,
   }) {
+    assert(roles == null || roles.length == items.length);
     assert(groups == null || groups.length == items.length);
     _endQueue(completed: false);
     _queueId++;
     if (items.isEmpty) return Future.value(false);
     _queue = List.unmodifiable(items);
     _groups = List.unmodifiable(groups ?? [for (var i = 0; i < items.length; i++) i]);
+    _roles = List.unmodifiable(roles ?? List.filled(items.length, SpeechRole.mikrah));
     _queueLanguage = language;
     _queueRate = rate;
     final end = _queueEnd = Completer<bool>();
@@ -438,7 +449,9 @@ class TtsService {
       _set(currentIndex, i);
       final bool spokenToEnd;
       try {
-        spokenToEnd = await speak(_queue[i], language: _queueLanguage, rate: _queueRate);
+        // The app's voice makes the next item while this one is heard.
+        if (_tts case final VoiceRoutingTts voices when i + 1 < _queue.length) voices.prefetch(_queue[i + 1], role: _roles[i + 1]);
+        spokenToEnd = await speak(_queue[i], language: _queueLanguage, rate: _queueRate, role: _roles[i]);
       } catch (e, s) {
         if (token == _queueToken) _endQueue(completed: false, error: e, stack: s);
         return;
@@ -460,6 +473,7 @@ class TtsService {
     _queueToken++;
     _queue = const [];
     _groups = const [];
+    _roles = const [];
     _set(currentIndex, null);
     _set(paused, false);
     final end = _queueEnd;
@@ -573,7 +587,7 @@ class TtsService {
 }
 
 final ttsProvider = Provider<TtsService>((ref) {
-  final engine = VoiceRoutingTts(ref.watch(hebrewVoiceProvider));
+  final engine = VoiceRoutingTts(ref.watch(hebrewVoicesProvider), settings: () => ref.read(settingsProvider).voice);
   final t = TtsService(engine: engine);
   ref.onDispose(() {
     t.dispose();

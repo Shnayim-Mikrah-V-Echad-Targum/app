@@ -5,6 +5,7 @@ import '../../core/calendar/local_date.dart';
 import '../../core/calendar/zmanim.dart';
 import '../../core/text/hebrew_text.dart';
 import '../../data/models/parsha.dart';
+import '../../services/hebrew_voice/voice_settings.dart';
 import '../../services/tts.dart' show kDefaultSpeechRate;
 import '../progress/domain/reading_plan.dart';
 
@@ -232,6 +233,7 @@ class AppSettings {
     this.screenReaderText = ScreenReaderText.simplified,
     this.divineName = DivineNameSpeech.adonai,
     this.speechRate = kDefaultSpeechRate,
+    this.voice = const VoiceSettings(),
     this.showStreaks = true,
     this.cloudSync = false,
     this.autoUpdateCheck = true,
@@ -363,6 +365,10 @@ class AppSettings {
   final ScreenReaderText screenReaderText;
   final DivineNameSpeech divineName;
   final double speechRate;
+
+  /// The app's own Hebrew voices: which reads what, how they say it, and
+  /// how they sound.
+  final VoiceSettings voice;
 
   // Streaks
   final bool showStreaks;
@@ -588,6 +594,7 @@ class AppSettings {
     ScreenReaderText? screenReaderText,
     DivineNameSpeech? divineName,
     double? speechRate,
+    VoiceSettings? voice,
     bool? showStreaks,
     bool? cloudSync,
     bool? autoUpdateCheck,
@@ -659,6 +666,7 @@ class AppSettings {
         screenReaderText: screenReaderText ?? this.screenReaderText,
         divineName: divineName ?? this.divineName,
         speechRate: speechRate ?? this.speechRate,
+        voice: voice ?? this.voice,
         showStreaks: showStreaks ?? this.showStreaks,
         cloudSync: cloudSync ?? this.cloudSync,
         autoUpdateCheck: autoUpdateCheck ?? this.autoUpdateCheck,
@@ -757,6 +765,7 @@ class AppSettings {
         'screenReaderText': screenReaderText.name,
         'divineName': divineName.name,
         'speechRate': speechRate,
+        'voice': voice.toJson(),
         'showStreaks': showStreaks,
         'cloudSync': cloudSync,
         'autoUpdateCheck': autoUpdateCheck,
@@ -864,6 +873,7 @@ class AppSettings {
       screenReaderText: e(ScreenReaderText.values, j['screenReaderText'], d.screenReaderText),
       divineName: e(DivineNameSpeech.values, j['divineName'], d.divineName),
       speechRate: n('speechRate', d.speechRate, 0.1, 1.0),
+      voice: VoiceSettings.fromJson(j['voice']),
       showStreaks: b('showStreaks', d.showStreaks),
       cloudSync: b('cloudSync', d.cloudSync),
       autoUpdateCheck: b('autoUpdateCheck', d.autoUpdateCheck),

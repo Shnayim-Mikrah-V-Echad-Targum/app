@@ -290,7 +290,7 @@ class RecordingTts extends TtsService {
   String get spokenText => spoken.map((s) => s.$1).join(' ');
 
   @override
-  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) async {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate, SpeechRole role = SpeechRole.mikrah}) async {
     spoken.add((text, language));
     return true;
   }
@@ -302,7 +302,7 @@ class HeldTts extends RecordingTts {
   Completer<bool>? _current;
 
   @override
-  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate}) {
+  Future<bool> speak(String text, {required String language, double rate = kDefaultSpeechRate, SpeechRole role = SpeechRole.mikrah}) {
     // The next utterance stops the one before, as the engine's does.
     _current?.complete(false);
     spoken.add((text, language));

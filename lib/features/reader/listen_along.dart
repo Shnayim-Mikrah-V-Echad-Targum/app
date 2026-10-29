@@ -23,14 +23,19 @@ class SpeechQueue {
   /// was made from.
   final verses = <int>[];
 
+  /// For each of [items], what it is, for the voice the reader chose for it.
+  final roles = <SpeechRole>[];
+
   bool get isEmpty => items.isEmpty;
 
-  /// Adds [text] as part of verse [verse]; nothing, if it has nothing to say.
-  void add(int verse, String text) {
+  /// Adds [text] as part of verse [verse], read as [role]; nothing, if it
+  /// has nothing to say.
+  void add(int verse, String text, {SpeechRole role = SpeechRole.mikrah}) {
     if (text.trim().isEmpty) return;
     assert(verses.isEmpty || verse >= verses.last, 'a verse is read after the one before it');
     items.add(text);
     verses.add(verse);
+    roles.add(role);
   }
 
   /// The first item of [verse], or of the first verse after it that has one;
@@ -112,6 +117,7 @@ class ListenController extends ChangeNotifier {
       rate: rate,
       startAt: queue.startOf(startVerse),
       groups: queue.verses,
+      roles: queue.roles,
     );
     _queueId = tts.queueId;
     _changed();

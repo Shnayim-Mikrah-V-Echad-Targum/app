@@ -241,6 +241,20 @@ jobs:
           # Which commit it is, for the site's record of the build it serves.
           gh release edit web-latest --repo "$GITHUB_REPOSITORY" \
             --notes "The web app as shnayimmikrah.org serves it, rebuilt from main on every push. Not a release for download. Built from $GITHUB_SHA."
+      # The site takes the build at once, rather than at its next hourly
+      # look, which GitHub's scheduler often runs hours late: with a token
+      # (the WEBSITE_DISPATCH_TOKEN secret, a fine-grained token with
+      # Actions: write on the website's repository) that may start its
+      # follow-app workflow. Without one, the hourly look takes it.
+      - name: Tell the site
+        env:
+          DISPATCH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$DISPATCH_TOKEN" ]; then echo "No WEBSITE_DISPATCH_TOKEN: the site takes the build at its next hourly look."; exit 0; fi
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $DISPATCH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/Shnayim-Mikrah-V-Echad-Targum/website/actions/workflows/follow-app.yml/dispatches \
+            -d '{"ref":"main"}'
 
   android:
     name: Build Android

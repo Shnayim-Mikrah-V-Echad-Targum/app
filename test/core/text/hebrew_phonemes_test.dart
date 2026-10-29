@@ -3,8 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/core/text/hebrew_phonemes.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_pronunciation.dart';
 import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
-import 'package:shnayim_mikrah/services/hebrew_voice/hebrew_voice.dart';
+
+/// The sounds every voice was trained on: Phonikud's schema.
+const inventory = 'abdefhijklmnopstuvzɡʁʃʒʔχˈ ,.';
 
 void main() {
   String p(String text) => HebrewPhonemes.phonemize(text);
@@ -43,7 +46,14 @@ void main() {
       expect(p('הַֽמִּשְׁפְּתָֽיִם׃'), 'hamiʃpetˈajim.');
       expect(p('הִנְנִי'), 'hinenˈi');
       expect(p('וּקְשַׁרְתָּ֥ם'), 'ukeʃaʁtˈam', reason: 'after the conjunction וּ, still the start');
-      expect(p('וַֽיְהִי'), 'vajhˈi', reason: 'a silent shva after a short vowel');
+      expect(p('וַֽיְהִי'), 'vajhˈi', reason: 'a silent shva after a short vowel, its meteg light');
+      expect(p('וַאֲבָֽרְכָה֙'), 'vaʔavaʁeχˈa', reason: 'after a long vowel with a meteg');
+    });
+
+    test('a ה, א or ע under a silent shva is still sounded', () {
+      expect(p('וֶהְיֵ֖ה'), 'vehjˈe');
+      expect(p('יַהְד֔וּ'), 'jahdˈu,');
+      expect(p('נַעְשֶׂ֣ה'), 'naʔsˈe');
     });
 
     test('vowel letters, holam male and shuruk, and a consonant ו before a holam', () {
@@ -111,7 +121,7 @@ void main() {
             expect(sounds, isNotEmpty, reason: text);
             for (final rune in sounds.runes) {
               final c = String.fromCharCode(rune);
-              if (!HebrewVoice.speaks(c)) unknown.add(c);
+              if (!inventory.contains(c)) unknown.add(c);
             }
             expect(sounds, isNot(contains('jehov')), reason: text);
           }
@@ -120,5 +130,54 @@ void main() {
     }
     expect(verses, greaterThan(11000));
     expect(unknown, isEmpty);
+  });
+
+  group('the traditions', () {
+    const verse = 'בָּר֨וּךְ אַתָּ֜ה כֹּהֵ֣ן תּוֹרָ֤ה שַׁבָּת';
+    String say(HebrewPronunciation pronunciation) => HebrewPhonemes.phonemize(verse, pronunciation: pronunciation);
+
+    test('Israeli and Sephardi, as by default', () {
+      expect(say(HebrewPronunciation.israeli), 'baʁˈuχ ʔatˈa kohˈen toʁˈa ʃabˈat');
+    });
+
+    test('each Ashkenazi tradition says its qamatz, holam, tsere, shuruk and sav', () {
+      expect(say(HebrewPronunciationPreset.lithuanian.pronunciation), 'boʁˈuχ ʔatˈo kejhˈejn tejʁˈo ʃabˈos');
+      expect(say(HebrewPronunciationPreset.polish.pronunciation), 'buʁˈiχ ʔatˈu kojhˈajn tojʁˈu ʃabˈus');
+      expect(say(HebrewPronunciationPreset.hungarian.pronunciation), 'boʁˈuχ ʔatˈo kojhˈejn tojʁˈo ʃabˈos');
+      expect(say(HebrewPronunciationPreset.german.pronunciation), 'boʁˈuχ ʔatˈo kouhˈejn touʁˈo ʃabˈos');
+    });
+
+    test('the stress where the accents put it, or before the last syllable', () {
+      const penultimate = HebrewPronunciation(stress: StressRule.penultimate);
+      expect(say(penultimate), 'bˈaʁuχ ʔˈata kˈohen tˈoʁa ʃˈabat');
+      expect(HebrewPhonemes.phonemize('הַשָּׁמַ֖יִם', pronunciation: penultimate), 'haʃamˈajim');
+    });
+
+    test('a preset sets the sounds, and leaves the stress as it was', () {
+      const custom = HebrewPronunciation(holam: HolamSound.oj);
+      expect(custom.preset, isNull);
+      final penultimate = const HebrewPronunciation(stress: StressRule.penultimate);
+      expect(penultimate.preset, HebrewPronunciationPreset.israeli);
+      final lithuanian = penultimate.withPreset(HebrewPronunciationPreset.lithuanian);
+      expect(lithuanian.stress, StressRule.penultimate);
+      expect(lithuanian.preset, HebrewPronunciationPreset.lithuanian);
+      expect(HebrewPronunciation.fromJson(lithuanian.toJson()), lithuanian);
+    });
+
+    test('the Divine Name read as Adonai in each, and every sound one the voices know', () {
+      final name = HebrewSpeech.spoken('יְהֹוָ֥ה', keepTeamim: true);
+      expect(HebrewPhonemes.phonemize(name, pronunciation: HebrewPronunciationPreset.lithuanian.pronunciation), 'ʔadejnˈoj');
+      for (final preset in HebrewPronunciationPreset.values) {
+        for (final stress in StressRule.values) {
+          final sounds = HebrewPhonemes.phonemize('$verse $name', pronunciation: preset.pronunciation.copyWith(stress: stress));
+          expect(sounds.runes.map(String.fromCharCode).where((c) => !inventory.contains(c)), isEmpty, reason: sounds);
+        }
+      }
+    });
+  });
+
+  test('pauses at the dividing accents only when asked', () {
+    const verse = 'וַיֹּ֥אמֶר אֱלֹהִ֖ים יְהִ֣י א֑וֹר וַֽיְהִי־אֽוֹר׃';
+    expect(HebrewPhonemes.phonemize(verse, pauses: false), 'vajˈomeʁ ʔelohˈim jehˈi ʔˈoʁ vajhˈi ʔˈoʁ.');
   });
 }

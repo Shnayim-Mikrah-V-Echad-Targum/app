@@ -41,7 +41,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await openSources(tester);
     expect(find.byType(Chip), findsNothing);
-    final license = find.text('CC BY 4.0');
+    final license = find.text('CC BY 4.0').first;
     expect(find.ancestor(of: license, matching: find.byType(ButtonStyleButton)), findsNothing);
     // Read in the card's link, not as an item of its own.
     final card = tester.getSemantics(license);

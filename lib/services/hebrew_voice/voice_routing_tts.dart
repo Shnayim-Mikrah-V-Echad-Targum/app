@@ -6,24 +6,34 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../core/text/hebrew_phonemes.dart';
 import '../../core/text/hebrew_text.dart';
+import '../tts.dart';
 import 'hebrew_voice.dart';
+import 'voice_settings.dart';
 
 /// The speech engine TtsService speaks through: the device's own, but for
-/// pointed Hebrew and Aramaic once the app's Hebrew voice is on the device
-/// ([HebrewVoice]), which reads it here and plays it, reporting its start,
+/// pointed Hebrew and Aramaic once one of the app's voices is on the device
+/// ([HebrewVoices]), which reads it here and plays it, reporting its start,
 /// end and stop as the device's engine would, so that the service, its queue
 /// and its audio session are the same whichever voice reads.
 ///
-/// The Hebrew comes with its cantillation, for the stress
+/// Each utterance is read by the voice the reader chose for its [role]
+/// (VoiceSettings): while that voice isn't on the device, by the clearest
+/// one that is; with none, or if the reader chose the device's, by the
+/// device's. The Hebrew comes with its cantillation, for the stress
 /// (HebrewSpeech.spoken, keepTeamim): it is removed for the device's voices,
 /// which mis-read it. Unpointed Hebrew (Rashi), and every other language,
 /// are the device's to read; and should the app's voice fail, the device's
 /// reads in its place.
 class VoiceRoutingTts extends FlutterTts {
-  VoiceRoutingTts(this.voice, {@visibleForTesting AudioPlayer Function()? player}) : _newPlayer = player ?? AudioPlayer.new;
+  VoiceRoutingTts(this.voices, {required this._settings, @visibleForTesting AudioPlayer Function()? player})
+      : _newPlayer = player ?? AudioPlayer.new;
 
-  final HebrewVoice voice;
+  final HebrewVoices voices;
+  final VoiceSettings Function() _settings;
   final AudioPlayer Function() _newPlayer;
+
+  /// What the next utterance is (TtsService sets it before each).
+  SpeechRole role = SpeechRole.mikrah;
 
   // Made for the first utterance of the app's voice, so that a device that
   // never hears it never starts a player.
@@ -53,17 +63,50 @@ class VoiceRoutingTts extends FlutterTts {
   }
 
   String _language = 'he-IL';
-  double _rate = 0.5;
+  double _rate = kDefaultSpeechRate;
 
   // An utterance of the app's voice is being made ([_making]) or played.
   bool _making = false;
   bool _playing = false;
   int _token = 0;
 
-  bool get _hebrew => _language.toLowerCase().startsWith('he') || _language.toLowerCase().startsWith('iw');
+  static bool _isHebrew(String language) => language.toLowerCase().startsWith('he') || language.toLowerCase().startsWith('iw');
 
-  /// Whether [text] is for the app's voice.
-  bool _ours(String text) => _hebrew && voice.ready && HebrewPhonemes.isPointed(text);
+  /// The voice that reads [text] as [role], or null for the device's.
+  String? voiceFor(String text, SpeechRole role) {
+    if (!_isHebrew(_language) || !HebrewPhonemes.isPointed(text)) return null;
+    final chosen = _settings().voiceFor(role);
+    if (chosen == VoiceSettings.deviceVoice) return null;
+    if (voices.ready(chosen)) return chosen;
+    return voices.readyVoices.firstOrNull?.id;
+  }
+
+  /// The pace the reader set, relative to the voices' own.
+  double get _speed => (_rate / kDefaultSpeechRate).clamp(0.25, 4.0);
+
+  // Utterances made ahead of time ([prefetch]): the next of a queue.
+  final _prepared = <String, Future<Uint8List>>{};
+
+  String _key(String text, String voice) => '$voice|$_speed|${_settings().hashCode}|$text';
+
+  Future<Uint8List> _make(String text, String voice) =>
+      _prepared.remove(_key(text, voice)) ?? voices.speak(text, id: voice, settings: _settings(), speed: _speed);
+
+  /// Makes [text], read as [role], ahead of its turn, so that it is ready to
+  /// play once the one before it ends. Does nothing for the device's voice.
+  void prefetch(String text, {required SpeechRole role}) {
+    final voice = voiceFor(text, role);
+    if (voice == null) return;
+    final key = _key(text, voice);
+    if (_prepared.containsKey(key)) return;
+    while (_prepared.length >= 3) {
+      _prepared.remove(_prepared.keys.first);
+    }
+    final made = _prepared[key] = voices.speak(text, id: voice, settings: _settings(), speed: _speed);
+    made.then((_) {}, onError: (Object _) {
+      _prepared.remove(key);
+    });
+  }
 
   @override
   Future<dynamic> setLanguage(String language) {
@@ -78,30 +121,32 @@ class VoiceRoutingTts extends FlutterTts {
     return super.setSpeechRate(rate);
   }
 
-  /// Hebrew is available whenever the app's own voice is.
+  /// Hebrew is available whenever one of the app's voices is, and the
+  /// reader hasn't chosen the device's.
   @override
   Future<dynamic> isLanguageAvailable(String language) async {
-    if (voice.ready && (language.toLowerCase().startsWith('he') || language.toLowerCase().startsWith('iw'))) return true;
+    if (_isHebrew(language) && _settings().torah != VoiceSettings.deviceVoice && voices.readyVoices.isNotEmpty) return true;
     return super.isLanguageAvailable(language);
   }
 
   @override
   Future<dynamic> get getVoices async {
-    final voices = await super.getVoices;
-    if (!voice.ready) return voices;
+    final list = await super.getVoices;
+    if (voices.readyVoices.isEmpty) return list;
     return [
-      ...?(voices as List?),
+      ...?(list as List?),
       {'name': 'Shnayim Mikrah', 'locale': 'he-IL'},
     ];
   }
 
   @override
   Future<dynamic> speak(String text, {bool focus = false}) async {
-    if (!_ours(text)) return super.speak(HebrewText.stripTeamim(text), focus: focus);
+    final voice = voiceFor(text, role);
+    if (voice == null) return super.speak(HebrewText.stripTeamim(text), focus: focus);
     final token = ++_token;
     _making = true;
     try {
-      final audio = await voice.speak(text, rate: _rate);
+      final audio = await _make(text, voice);
       if (token != _token) return 1; // stopped meanwhile, and reported then
       _making = false;
       _playing = true;

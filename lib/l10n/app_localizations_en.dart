@@ -1096,7 +1096,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ttsNoHebrewVoice =>
-      'No Hebrew voice is installed. Turn on the app’s own in Settings, Accessibility, or add one in your device’s speech settings.';
+      'No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.';
 
   @override
   String get guidedMode => 'Guided reading';
@@ -1922,30 +1922,265 @@ class AppLocalizationsEn extends AppLocalizations {
   String get divineHashem => 'HaShem';
 
   @override
-  String get hebrewVoice => 'Shnayim Mikrah’s Hebrew voice';
+  String get hebrewVoice => 'Hebrew voice';
 
   @override
-  String hebrewVoiceDesc(int mb) {
-    return 'Reads the Torah and the Targum aloud with every vowel as written, also where the device has no Hebrew voice. Downloads $mb MB once.';
+  String get hebrewVoiceIntro =>
+      'The app’s own voices read the Torah, the Targum and the haftarah aloud from the pointed text: every vowel as written, each word stressed where its accent stands. They run on this device, offline once downloaded, also where it has no Hebrew voice of its own. Rashi, the translation and anything without vowels stay with the device’s voice.';
+
+  @override
+  String get voiceWhoReads => 'Who reads what';
+
+  @override
+  String get voiceForTorah => 'The Torah';
+
+  @override
+  String get voiceForTargum => 'The Targum';
+
+  @override
+  String get voiceForHaftarah => 'The haftarah';
+
+  @override
+  String get voiceChooseTorah => 'Voice for the Torah';
+
+  @override
+  String get voiceChooseTargum => 'Voice for the Targum';
+
+  @override
+  String get voiceChooseHaftarah => 'Voice for the haftarah';
+
+  @override
+  String get voiceSameAsTorah => 'Same as the Torah';
+
+  @override
+  String get voiceDevice => 'Your device’s voice';
+
+  @override
+  String get voiceDeviceDesc =>
+      'Reads without the rules of the vowels and accents, where the device has a Hebrew voice';
+
+  @override
+  String voiceSummaryReady(String name) {
+    return '$name, on this device';
   }
 
   @override
-  String hebrewVoiceDownloading(int percent) {
+  String voiceSummaryFallback(String name, String other) {
+    return '$name isn’t downloaded: $other reads meanwhile';
+  }
+
+  @override
+  String voiceSummaryDeviceMeanwhile(String name) {
+    return '$name isn’t downloaded: your device’s voice reads meanwhile';
+  }
+
+  @override
+  String get voicePlaySample => 'Hear a sample';
+
+  @override
+  String get voicePlaySampleDesc =>
+      'The first verse of the Torah, as Listen reads it';
+
+  @override
+  String get voiceGroupRecommended => 'Recommended';
+
+  @override
+  String get voiceGroupMore => 'More voices';
+
+  @override
+  String get voiceGroupExperimental => 'Experimental';
+
+  @override
+  String get voiceGroupExperimentalDesc =>
+      'Phonikud’s experiments: Shaul’s voice, trained in other ways. Some read less clearly.';
+
+  @override
+  String get voiceClarityHelp =>
+      'How clear each voice is: how much of fourteen verses of the Torah, read by it, a Hebrew speech recognizer heard right.';
+
+  @override
+  String get voiceMale => 'Male';
+
+  @override
+  String get voiceFemale => 'Female';
+
+  @override
+  String voiceClarity(int percent) {
+    return '$percent% clear';
+  }
+
+  @override
+  String get voiceOnDevice => 'On this device';
+
+  @override
+  String voiceToDownload(String size) {
+    return '$size to download';
+  }
+
+  @override
+  String voiceDownloading(int percent) {
     return 'Downloading… $percent%';
   }
 
   @override
-  String hebrewVoiceReady(int mb) {
-    return 'On. Listen reads the Torah and the Targum with it. Turn off to remove it from this device ($mb MB).';
+  String get voiceFailed => 'Couldn’t download: tap to try again';
+
+  @override
+  String voiceReadyStatus(String name) {
+    return '$name is ready';
   }
 
   @override
-  String get hebrewVoiceFailed =>
-      'The Hebrew voice couldn’t be downloaded. Check the connection, and try again.';
+  String voiceFailedStatus(String name) {
+    return '$name couldn’t be downloaded. Check the connection, and try again.';
+  }
 
   @override
-  String get hebrewVoiceInstalled =>
-      'The Hebrew voice is ready. Listen reads with it.';
+  String get voiceRemove => 'Remove from this device';
+
+  @override
+  String voiceRemovedStatus(String name) {
+    return '$name removed from this device';
+  }
+
+  @override
+  String get voiceHear => 'Hear it';
+
+  @override
+  String voiceMore(String name) {
+    return 'More for $name';
+  }
+
+  @override
+  String voiceMegabytes(int mb) {
+    return '$mb MB';
+  }
+
+  @override
+  String get pronunciationTitle => 'Pronunciation';
+
+  @override
+  String get pronunciationHelp =>
+      'How the app’s voices say the vowels on which the traditions differ.';
+
+  @override
+  String get pronIsraeli => 'Israeli and Sephardi';
+
+  @override
+  String get pronLithuanian => 'Lithuanian';
+
+  @override
+  String get pronPolish => 'Polish and Galician';
+
+  @override
+  String get pronHungarian => 'Hungarian';
+
+  @override
+  String get pronGerman => 'German (Yekkish)';
+
+  @override
+  String get pronCustom => 'Your own';
+
+  @override
+  String get pronCustomDesc => 'Set below, sound by sound';
+
+  @override
+  String get pronEachSound => 'Each sound';
+
+  @override
+  String get pronQamatz => 'Qamatz';
+
+  @override
+  String get pronHolam => 'Holam';
+
+  @override
+  String get pronTsere => 'Tsere';
+
+  @override
+  String get pronShuruk => 'Shuruk and qubbutz';
+
+  @override
+  String get pronTav => 'Tav without a dagesh';
+
+  @override
+  String get stressTitle => 'Stress';
+
+  @override
+  String get stressAccents => 'Where the accent stands';
+
+  @override
+  String get stressAccentsDesc => 'As the Torah is read with its trope';
+
+  @override
+  String get stressPenultimate => 'Before the last syllable';
+
+  @override
+  String get stressPenultimateDesc => 'As many Ashkenazim read';
+
+  @override
+  String get voiceSoundTitle => 'Sound';
+
+  @override
+  String get voicePauses => 'Pause at the dividing accents';
+
+  @override
+  String get voicePausesDesc =>
+      'At an etnachta, segolta, zaqef or paseq, as well as at each verse’s end';
+
+  @override
+  String get voiceEvenLoudness => 'Even loudness';
+
+  @override
+  String get voiceEvenLoudnessDesc =>
+      'Every verse, and every voice, at the same loudness';
+
+  @override
+  String get voiceVariation => 'Variation in the voice (Piper)';
+
+  @override
+  String get voiceRhythm => 'Variation in the timing (Piper)';
+
+  @override
+  String get voiceOwnValue => 'The voice’s own';
+
+  @override
+  String get voiceSteps => 'Quality (Blue)';
+
+  @override
+  String voiceStepsValue(int steps) {
+    return '$steps steps';
+  }
+
+  @override
+  String get voiceGuidance => 'Closeness to the text (Blue)';
+
+  @override
+  String get voiceResetSound => 'Reset the sound';
+
+  @override
+  String get voiceStorageTitle => 'Storage';
+
+  @override
+  String voiceStorageSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voices, $size',
+      one: 'One voice, $size',
+      zero: 'No voices on this device',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get voiceRemoveAll => 'Remove all voices';
+
+  @override
+  String get voiceRemoveAllConfirm =>
+      'Remove every voice from this device? Your device’s voice reads until you download one again.';
+
+  @override
+  String get voiceRemoveAllDone => 'Every voice removed';
 
   @override
   String get speechRate => 'Speech rate';

@@ -81,12 +81,48 @@ class SourcesScreen extends StatelessWidget {
         'https://www.geonames.org/',
       ),
       _Source(
-        he ? 'הקול העברי' : 'The Hebrew voice',
+        he ? 'כללי ההגייה של הקולות' : 'The voices’ pronunciation',
         he
-            ? 'הקול „שאול” של Phonikud TTS (מודל Piper שאומן על הקלטות SASPEECH), מורד מ־Hugging Face כשמפעילים אותו. כללי ההגייה מבוססים על Phonikud (רישיון CC BY 4.0), עם הטעמה מן הטעמים.'
-            : 'The “Shaul” voice of Phonikud TTS (a Piper model trained on the SASPEECH recordings), downloaded from Hugging Face when turned on. The pronunciation follows Phonikud’s rules (CC BY 4.0), with the stress taken from the cantillation.',
+            ? 'כללי ההגייה של הקולות העבריים מבוססים על Phonikud, עם הטעמה מן הטעמים, השווא הנע וקמץ קטן כפי שהם מסומנים, ומסורות ההגייה של אשכנז.'
+            : 'The Hebrew voices’ rules of pronunciation follow Phonikud’s, with the stress taken from the cantillation, the vocal shva and qamatz qatan as the text marks them, and the Ashkenazi traditions of reading.',
+        'CC BY 4.0',
+        'https://phonikud.github.io',
+      ),
+      _Source(
+        he ? 'הקולות שאול ומיכאל' : 'The voices Shaul and Michael',
+        he
+            ? 'מודלי Piper של Phonikud TTS, שאומנו על הקלטות SASPEECH, וגם הניסויים שבהם שאול אומן בדרכים אחרות. מורדים מ־Hugging Face כשבוחרים בהם.'
+            : 'Phonikud TTS’s Piper models, trained on the SASPEECH recordings, with the experiments in which Shaul was trained in other ways. Downloaded from Hugging Face when chosen.',
         he ? 'שימוש לא מסחרי' : 'CC BY-NC',
         'https://huggingface.co/Phonikud/phonikud-tts-checkpoints',
+      ),
+      _Source(
+        he ? 'הקולות הגברי והנשי (Piper)' : 'The male and female voices (Piper)',
+        he ? 'מודלי Piper של notmax123, להגיית Phonikud.' : 'Piper models by notmax123, for Phonikud’s pronunciation.',
+        'CC BY-NC 4.0',
+        'https://huggingface.co/notmax123/piper-medium-heb',
+      ),
+      _Source(
+        he ? 'הקול נועה' : 'The voice Noa',
+        he ? 'מודל Piper של thewh1teagle.' : 'A Piper model by thewh1teagle.',
+        'CC BY 4.0',
+        'https://huggingface.co/thewh1teagle/piper-he-noa',
+      ),
+      _Source(
+        he ? 'שאול של Kokoro' : 'Shaul in Kokoro',
+        he
+            ? 'מודל Kokoro עברי שהוסב ל־ONNX על ידי thewh1teagle מתוך המודל של avris, שאומן על הקלטות SASPEECH.'
+            : 'A Hebrew Kokoro model, converted to ONNX by thewh1teagle from avris’s, trained on the SASPEECH recordings.',
+        he ? 'שימוש לא מסחרי' : 'Non-commercial',
+        'https://huggingface.co/thewh1teagle/kokoro-hebrew-nc',
+      ),
+      _Source(
+        he ? 'קולות Blue' : 'The Blue voices',
+        he
+            ? 'BlueTTS של מקס מליחוב (notmax123): המודלים V3,‏ 2, ‏2 הקומפקטי ו־2.5, עם הקולות רועי, רותם, קול נשי 1, קול גברי 1, ואת קוראי LibriTTS (רישיון CC BY 4.0, של Google).'
+            : 'BlueTTS by Max Melichov (notmax123): the V3, 2, compact 2 and 2.5 models, with the voices Roi, Rotem, Female 1 and Male 1, and readers from LibriTTS (CC BY 4.0, Google).',
+        'MIT',
+        'https://github.com/maxmelichov/BlueTTS',
       ),
       _Source(
         he ? 'זריחה ושקיעה' : 'Sunrise and sunset',
