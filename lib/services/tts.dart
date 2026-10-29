@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import 'hebrew_voice/hebrew_voice.dart';
+import 'hebrew_voice/voice_routing_tts.dart';
+
 /// The speech rate Listen reads at unless the reader sets another, which the
 /// player and Settings call normal (speechRateLabel). Rates are on the
 /// setting's scale, 0.1 to 1.0, on which the engines' own normal pace is 0.5
@@ -18,8 +21,10 @@ const kDefaultSpeechRate = 0.45;
 /// each layer of each verse, that can be paused, resumed and moved through
 /// verse by verse ([speakQueue]).
 class TtsService {
-  /// Speaks through [engine], by default the platform's.
-  TtsService({@visibleForTesting FlutterTts? engine}) : _tts = engine ?? FlutterTts() {
+  /// Speaks through [engine], by default the platform's (the app passes
+  /// VoiceRoutingTts, which reads pointed Hebrew with its own voice once it
+  /// is on the device).
+  TtsService({FlutterTts? engine}) : _tts = engine ?? FlutterTts() {
     _tts.setStartHandler(() => _speaking = true);
     _tts.setCompletionHandler(() {
       _engineStopped(spokenToEnd: true);
@@ -568,7 +573,11 @@ class TtsService {
 }
 
 final ttsProvider = Provider<TtsService>((ref) {
-  final t = TtsService();
-  ref.onDispose(t.dispose);
+  final engine = VoiceRoutingTts(ref.watch(hebrewVoiceProvider));
+  final t = TtsService(engine: engine);
+  ref.onDispose(() {
+    t.dispose();
+    engine.dispose();
+  });
   return t;
 });

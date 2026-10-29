@@ -247,11 +247,16 @@ abstract final class HebrewSpeech {
   /// mis-handle it) and the Masoretic dots, optionally removes vowels, and
   /// substitutes the Divine Name according to [divineName].
   ///
+  /// With [keepTeamim], the cantillation stays, for the app's own Hebrew
+  /// voice, which takes each word's stress from it (HebrewPhonemes); the
+  /// speech service removes it again for any other voice (VoiceRoutingTts).
+  ///
   /// Set [targum] for Targum Onkelos, which writes the Name יְיָ, and [rashi]
   /// for Rashi, who writes ה'.
   static String spoken(
     String text, {
     bool keepNikud = true,
+    bool keepTeamim = false,
     DivineNameSpeech divineName = DivineNameSpeech.adonai,
     bool targum = false,
     bool rashi = false,
@@ -259,7 +264,7 @@ abstract final class HebrewSpeech {
     // A sof pasuq ends a sentence: speak it as a full stop, always followed
     // by a space so the next word is never run into it. The extraordinary
     // points and the inverted nun are written, not read.
-    final cleaned = HebrewText.stripTeamim(text)
+    final cleaned = (keepTeamim ? text : HebrewText.stripTeamim(text))
         .replaceAll(HebrewText._masoraDots, '')
         .replaceAll('\u05c6', '')
         .replaceAll('׃', '. ');
@@ -272,9 +277,12 @@ abstract final class HebrewSpeech {
       final inParens = parens > 0 || word.contains('(');
       parens += '('.allMatches(word).length - ')'.allMatches(word).length;
       if (parens < 0) parens = 0;
-      final m = _tetragrammaton.firstMatch(word) ??
-          (targum ? _targumName.firstMatch(word) : null) ??
-          (rashi ? _rashiName.firstMatch(word) : null);
+      // The Name is matched without its accents, which it keeps no more than
+      // any other word read in its place.
+      final bare = keepTeamim ? HebrewText.stripTeamim(word) : word;
+      final m = _tetragrammaton.firstMatch(bare) ??
+          (targum ? _targumName.firstMatch(bare) : null) ??
+          (rashi ? _rashiName.firstMatch(bare) : null);
       final numeral = m != null && m.pattern == _rashiName && _isNumeral(m, parts, i, inParens: inParens);
       out.write(m == null || numeral ? word : _substitute(m, divineName));
       if (i < seps.length) out.write(seps[i] == '־' ? ' ' : seps[i]);

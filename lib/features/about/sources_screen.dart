@@ -81,6 +81,14 @@ class SourcesScreen extends StatelessWidget {
         'https://www.geonames.org/',
       ),
       _Source(
+        he ? 'הקול העברי' : 'The Hebrew voice',
+        he
+            ? 'הקול „שאול” של Phonikud TTS (מודל Piper שאומן על הקלטות SASPEECH), מורד מ־Hugging Face כשמפעילים אותו. כללי ההגייה מבוססים על Phonikud (רישיון CC BY 4.0), עם הטעמה מן הטעמים.'
+            : 'The “Shaul” voice of Phonikud TTS (a Piper model trained on the SASPEECH recordings), downloaded from Hugging Face when turned on. The pronunciation follows Phonikud’s rules (CC BY 4.0), with the stress taken from the cantillation.',
+        he ? 'שימוש לא מסחרי' : 'CC BY-NC',
+        'https://huggingface.co/Phonikud/phonikud-tts-checkpoints',
+      ),
+      _Source(
         he ? 'זריחה ושקיעה' : 'Sunrise and sunset',
         l.sourcesSunDescription,
         he ? 'נחלת הכלל' : 'Public domain',

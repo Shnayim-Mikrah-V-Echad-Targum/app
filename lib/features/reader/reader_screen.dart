@@ -1263,8 +1263,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// guided reader, the step shown, as the step shows it. The Divine Name is
   /// spoken as the reader has chosen.
   SpeechQueue _speechQueue(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
+    // With the cantillation, for the app's own Hebrew voice's stress.
     String hebrew(Verse v, {bool targum = false}) =>
-        HebrewSpeech.spoken(v.readText, divineName: s.divineName, targum: targum);
+        HebrewSpeech.spoken(v.readText, keepTeamim: true, divineName: s.divineName, targum: targum);
     final queue = SpeechQueue(language: 'he-IL');
     if (_fullText || _finished) {
       for (final (i, r) in (_fullText ? _textVerses(flow) : flow.verses).indexed) {

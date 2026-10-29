@@ -233,6 +233,11 @@ void main() {
       expect(HebrewSpeech.spoken('יְהֹוָ֖ה', divineName: DivineNameSpeech.hashem), 'הַשֵּׁם');
     });
 
+    test('keeps the cantillation for the app\'s own voice, but not on the Name read in its place', () {
+      expect(HebrewSpeech.spoken('וַיֹּ֥אמֶר יְהֹוָ֖ה אֶל־מֹשֶׁ֑ה׃', keepTeamim: true), 'וַיֹּ֥אמֶר אֲדֹנָי אֶל מֹשֶׁ֑ה.');
+      expect(HebrewSpeech.spoken('וַיֹּ֥אמֶר יְיָ֖', keepTeamim: true, targum: true), 'וַיֹּ֥אמֶר אֲדֹנָי');
+    });
+
     test('a prefix keeps its vowels, and punctuation stays', () {
       expect(HebrewSpeech.spoken('לַֽיהֹוָ֔ה'), 'לַאֲדֹנָי');
       expect(HebrewSpeech.spoken('וַֽיהֹוָ֔ה'), 'וַאֲדֹנָי');
