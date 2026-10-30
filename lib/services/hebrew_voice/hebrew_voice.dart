@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/text/hebrew_phonemes.dart';
+import 'stretch.dart';
 import 'voice_catalogue.dart';
 import 'voice_engines.dart';
 import 'voice_runtime.dart';
@@ -210,8 +211,9 @@ class HebrewVoices {
   }
 
   /// [text], pointed Hebrew or Aramaic (with its cantillation, where it has
-  /// it), read by voice [id] as [settings] say, at [speed] (1 for the voice's
-  /// own pace), as a WAV file. Throws if the voice isn't on the device or
+  /// it), read by voice [id] as [settings] say, at [speed] (1 for the pace
+  /// Listen calls normal, kReadingPace, whichever voice reads), as a WAV
+  /// file. Throws if the voice isn't on the device or
   /// can't read it.
   Future<Uint8List> speak(String text, {required String id, required VoiceSettings settings, double speed = 1}) {
     final done = Completer<Uint8List>();
@@ -230,13 +232,17 @@ class HebrewVoices {
     final voice = voices.firstWhere((v) => v.id == id);
     final runner = await _runner(voice.spec);
     final sounds = HebrewPhonemes.phonemize(text, pronunciation: settings.pronunciation, pauses: settings.pauses);
+    // How fast, relative to the voice's own pace: the model reads at part
+    // of it, and the rest is stretched.
+    final pace = voice.normalSpeed * speed;
+    final own = runner.ownSpeed(pace);
     final audio = await runner.synthesize(
       sounds,
       voice: voice.spec,
       spoken: text,
-      tuning: VoiceTuning(speed: speed, variation: settings.variation, rhythm: settings.rhythm, steps: settings.steps, guidance: settings.guidance),
+      tuning: VoiceTuning(speed: own, variation: settings.variation, rhythm: settings.rhythm, steps: settings.steps, guidance: settings.guidance),
     );
-    return wav(audio, runner.sampleRate, even: settings.evenLoudness);
+    return wav(stretch(audio, pace / own, runner.sampleRate), runner.sampleRate, even: settings.evenLoudness);
   }
 
   /// [audio] at [sampleRate] as a 16-bit mono WAV file; with [even], brought

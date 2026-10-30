@@ -540,6 +540,7 @@ class HebrewVoiceOption {
     required this.family,
     required this.spec,
     required this.clarity,
+    required this.normalSpeed,
     this.group = VoiceGroup.more,
     this.model,
   });
@@ -557,6 +558,11 @@ class HebrewVoiceOption {
   /// How much of what it read the app's test heard right (the consonants of
   /// fourteen verses, by a Hebrew speech recognizer), from 0 to 1.
   final double clarity;
+
+  /// The speed, 1 being its own pace, at which it reads [kReadingPace], as
+  /// the app's test found: at their own, the voices read between 5 and 8
+  /// syllables a second, as fast as people talk.
+  final double normalSpeed;
   final VoiceGroup group;
 
   /// What the model is, where a family has several ("Blue V3", "Kokoro").
@@ -632,6 +638,11 @@ BlueSpec _blue25(VoiceFile style) => BlueSpec(
 /// length to make it) to keep ahead of the reading on any phone or browser.
 const kDefaultHebrewVoice = 'phonikud-michael';
 
+/// How fast every voice reads at the pace Listen calls normal: three and a
+/// half syllables a second, slow enough to follow the words in the text,
+/// where people talk at five to seven.
+const kReadingPace = 3.5;
+
 /// Every voice, clearest first within each group.
 final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
   // Recommended.
@@ -644,6 +655,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2.5',
     spec: _blue25(_blue25VoiceLibriMale6209),
     clarity: 0.976,
+    normalSpeed: 0.56,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -655,6 +667,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2.5',
     spec: _blue25(_blue25VoiceLibriFemale1088),
     clarity: 0.973,
+    normalSpeed: 0.562,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -666,6 +679,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2, compact',
     spec: _blue2Int8(_blue2VoiceFemale1),
     clarity: 0.973,
+    normalSpeed: 0.572,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -677,6 +691,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2, compact',
     spec: _blue2Int8(_blue2VoiceMale1),
     clarity: 0.972,
+    normalSpeed: 0.576,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -688,6 +703,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Kokoro',
     spec: KokoroSpec(model: _kokoroKokoro, config: _kokoroConfig, styles: _kokoroVoicesHebrew, style: 'he_shaul'),
     clarity: 0.972,
+    normalSpeed: 0.542,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -699,6 +715,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudMichael),
     clarity: 0.972,
+    normalSpeed: 0.531,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -710,6 +727,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: PiperSpec(model: _noaHeILNoaMedium, config: _noaHeILNoaMediumConfig, speaker: 0),
     clarity: 0.97,
+    normalSpeed: 0.541,
     group: VoiceGroup.recommended,
   ),
   HebrewVoiceOption(
@@ -721,6 +739,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: PiperSpec(model: _phonikudMediumPiperMediumFemale, config: _phonikudMediumModelConfig, input: PiperInput.soundsUnpadded),
     clarity: 0.968,
+    normalSpeed: 0.529,
     group: VoiceGroup.recommended,
   ),
   // More.
@@ -733,6 +752,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2',
     spec: _blue2(_blue2VoiceFemale1),
     clarity: 0.971,
+    normalSpeed: 0.568,
   ),
   HebrewVoiceOption(
     id: 'blue2-male1',
@@ -743,6 +763,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2',
     spec: _blue2(_blue2VoiceMale1),
     clarity: 0.967,
+    normalSpeed: 0.568,
   ),
   HebrewVoiceOption(
     id: 'blue3-roi',
@@ -753,6 +774,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue V3',
     spec: _blueV3(_blueV3VoiceRoi),
     clarity: 0.964,
+    normalSpeed: 0.842,
   ),
   HebrewVoiceOption(
     id: 'blue3-rotem',
@@ -763,6 +785,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue V3',
     spec: _blueV3(_blueV3VoiceRotem),
     clarity: 0.963,
+    normalSpeed: 0.808,
   ),
   HebrewVoiceOption(
     id: 'blue25-female-6147',
@@ -773,6 +796,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2.5',
     spec: _blue25(_blue25VoiceLibriFemale6147),
     clarity: 0.963,
+    normalSpeed: 0.545,
   ),
   HebrewVoiceOption(
     id: 'piper-medium-male',
@@ -783,6 +807,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: PiperSpec(model: _phonikudMediumPiperMediumMale, config: _phonikudMediumModelConfig, input: PiperInput.soundsUnpadded),
     clarity: 0.962,
+    normalSpeed: 0.589,
   ),
   HebrewVoiceOption(
     id: 'blue25-male-8088',
@@ -793,6 +818,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Blue 2.5',
     spec: _blue25(_blue25VoiceLibriMale8088),
     clarity: 0.96,
+    normalSpeed: 0.553,
   ),
   HebrewVoiceOption(
     id: 'phonikud-shaul',
@@ -803,6 +829,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudShaul),
     clarity: 0.957,
+    normalSpeed: 0.393,
   ),
   HebrewVoiceOption(
     id: 'phonikud-demo',
@@ -813,6 +840,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudModel),
     clarity: 0.953,
+    normalSpeed: 0.477,
   ),
   HebrewVoiceOption(
     id: 'pocket-liat',
@@ -823,6 +851,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Pocket TTS',
     spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'liat'),
     clarity: 0.950,
+    normalSpeed: 0.655,
   ),
   HebrewVoiceOption(
     id: 'pocket-alba',
@@ -833,6 +862,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Pocket TTS',
     spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'alba'),
     clarity: 0.950,
+    normalSpeed: 0.65,
   ),
   HebrewVoiceOption(
     id: 'pocket-omer',
@@ -843,6 +873,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Pocket TTS',
     spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'omer'),
     clarity: 0.949,
+    normalSpeed: 0.646,
   ),
   HebrewVoiceOption(
     id: 'pocket-michael',
@@ -853,6 +884,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Pocket TTS',
     spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'michael'),
     clarity: 0.941,
+    normalSpeed: 0.627,
   ),
   HebrewVoiceOption(
     id: 'pocket-anna',
@@ -863,6 +895,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Pocket TTS',
     spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'anna'),
     clarity: 0.938,
+    normalSpeed: 0.675,
   ),
   // Phonikud's experiments: Shaul, trained other ways.
   HebrewVoiceOption(
@@ -874,6 +907,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudShaulWhisperHebIpa1),
     clarity: 0.933,
+    normalSpeed: 0.348,
     group: VoiceGroup.experimental,
   ),
   HebrewVoiceOption(
@@ -885,6 +919,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudExpExportHand),
     clarity: 0.91,
+    normalSpeed: 0.466,
     group: VoiceGroup.experimental,
   ),
   HebrewVoiceOption(
@@ -896,6 +931,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudExpExportPhonikudNonEnhanced),
     clarity: 0.872,
+    normalSpeed: 0.418,
     group: VoiceGroup.experimental,
   ),
   HebrewVoiceOption(
@@ -907,6 +943,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudExpExportPhonikudEnhanced),
     clarity: 0.854,
+    normalSpeed: 0.425,
     group: VoiceGroup.experimental,
   ),
   HebrewVoiceOption(
@@ -918,6 +955,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudExpExportVocalized, letters: _phonikudExpMapVocalized, input: PiperInput.pointedLetters),
     clarity: 0.704,
+    normalSpeed: 0.347,
     group: VoiceGroup.experimental,
   ),
   HebrewVoiceOption(
@@ -929,6 +967,7 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudExpExportNonVocalized, letters: _phonikudExpMapNonVocalized, input: PiperInput.bareLetters),
     clarity: 0.693,
+    normalSpeed: 0.429,
     group: VoiceGroup.experimental,
   ),
 ]);
