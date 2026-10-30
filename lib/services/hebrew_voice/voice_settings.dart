@@ -67,18 +67,18 @@ class VoiceSettings {
 
   /// The voice chosen for [role].
   String voiceFor(SpeechRole role) => switch (role) {
-        SpeechRole.mikrah => torah,
-        SpeechRole.targum => targum ?? torah,
-        SpeechRole.haftarah => haftarah ?? torah,
-      };
+    SpeechRole.mikrah => torah,
+    SpeechRole.targum => targum ?? torah,
+    SpeechRole.haftarah => haftarah ?? torah,
+  };
 
   /// These settings with [role] read by [voice]; for the Targum and the
   /// haftarah, null for the Torah's.
   VoiceSettings withVoice(SpeechRole role, String? voice) => switch (role) {
-        SpeechRole.mikrah => copyWith(torah: voice ?? kDefaultHebrewVoice),
-        SpeechRole.targum => copyWith(targum: () => voice),
-        SpeechRole.haftarah => copyWith(haftarah: () => voice),
-      };
+    SpeechRole.mikrah => copyWith(torah: voice ?? kDefaultHebrewVoice),
+    SpeechRole.targum => copyWith(targum: () => voice),
+    SpeechRole.haftarah => copyWith(haftarah: () => voice),
+  };
 
   /// [targum], [haftarah], [variation] and [rhythm] take a function, so that
   /// they can be set to null.
@@ -93,32 +93,31 @@ class VoiceSettings {
     int? steps,
     double? guidance,
     bool? evenLoudness,
-  }) =>
-      VoiceSettings(
-        torah: torah ?? this.torah,
-        targum: targum == null ? this.targum : targum(),
-        haftarah: haftarah == null ? this.haftarah : haftarah(),
-        pronunciation: pronunciation ?? this.pronunciation,
-        pauses: pauses ?? this.pauses,
-        variation: variation == null ? this.variation : variation(),
-        rhythm: rhythm == null ? this.rhythm : rhythm(),
-        steps: steps ?? this.steps,
-        guidance: guidance ?? this.guidance,
-        evenLoudness: evenLoudness ?? this.evenLoudness,
-      );
+  }) => VoiceSettings(
+    torah: torah ?? this.torah,
+    targum: targum == null ? this.targum : targum(),
+    haftarah: haftarah == null ? this.haftarah : haftarah(),
+    pronunciation: pronunciation ?? this.pronunciation,
+    pauses: pauses ?? this.pauses,
+    variation: variation == null ? this.variation : variation(),
+    rhythm: rhythm == null ? this.rhythm : rhythm(),
+    steps: steps ?? this.steps,
+    guidance: guidance ?? this.guidance,
+    evenLoudness: evenLoudness ?? this.evenLoudness,
+  );
 
   Map<String, dynamic> toJson() => {
-        'torah': torah,
-        'targum': targum,
-        'haftarah': haftarah,
-        'pronunciation': pronunciation.toJson(),
-        'pauses': pauses,
-        'variation': variation,
-        'rhythm': rhythm,
-        'steps': steps,
-        'guidance': guidance,
-        'evenLoudness': evenLoudness,
-      };
+    'torah': torah,
+    'targum': targum,
+    'haftarah': haftarah,
+    'pronunciation': pronunciation.toJson(),
+    'pauses': pauses,
+    'variation': variation,
+    'rhythm': rhythm,
+    'steps': steps,
+    'guidance': guidance,
+    'evenLoudness': evenLoudness,
+  };
 
   factory VoiceSettings.fromJson(Object? j) {
     if (j is! Map) return const VoiceSettings();

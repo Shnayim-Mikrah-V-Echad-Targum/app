@@ -3,9 +3,8 @@
 /// fixed revision of its publisher's copy, with their sizes and digests, and
 /// how its engine is fed.
 ///
-/// Left out, for now: Blue v1 (its symbol table is not published, so it
-/// can't be given text), Pocket TTS (its streaming decoder is yet to come),
-/// and the large models that need a server's GPU (Zonos, F5-TTS, Qwen,
+/// Left out: Blue v1 (its symbol table is not published, so it can't be
+/// given text), and the large models that need a server's GPU (Zonos, F5-TTS, Qwen,
 /// Fish Speech, MOSS, NeuTTS, Mamre, HebTTS) or are published only as
 /// PyTorch weights (MMS, Robo-Shaul). See docs/DESIGN.md.
 library;
@@ -256,6 +255,10 @@ const _blue2Int8Vocoder = VoiceFile(
   25644477,
   '846d13fa9f45bbba17ed503608b80b88753942f556e65bf83e436ae87a5a4f6a',
 );
+const _pocketRepo = 'thewh1teagle/pocket-tts-onnx';
+const _pocketRevision = '110f5251188e9407b4f724acdd8b0dfd0b20692a';
+const _pocketModel = VoiceFile(_pocketRepo, _pocketRevision, 'he/model.onnx', 176992315, '010c6701d007277e6b37440b909de098200802fddbe70f74e890763b5dd43745');
+const _pocketAssets = VoiceFile(_pocketRepo, _pocketRevision, 'he/assets.json', 1654421, '82db670c52c35d0dd9440339af0a02269b8e19f9531c97673b0f2244d37a9b23');
 const _blue25Repo = 'notmax123/BlueTTS2.5-onnx';
 const _blue25Revision = '468da64b4a51795a7594a3637727dbaf876b6df2';
 const _blue25DurationPredictorStyle = VoiceFile(
@@ -447,6 +450,29 @@ class BlueSpec extends VoiceSpec {
   String get modelKey => vectorEstimator.url;
 }
 
+/// A Pocket TTS voice (Kyutai's model, with thewh1teagle's Hebrew adapter):
+/// a streaming model that makes 80 ms of audio a step, at 24,000 Hz.
+class PocketSpec extends VoiceSpec {
+  const PocketSpec({required this.model, required this.assets, required this.voice});
+  final VoiceFile model;
+
+  /// Its config, its voices and its tokenizer.
+  final VoiceFile assets;
+
+  /// This voice's conditioning in [assets].
+  final String voice;
+
+  @override
+  List<VoiceFile> get files => [model, assets];
+
+  /// Its voices are all in [assets].
+  @override
+  VoiceFile get own => assets;
+
+  @override
+  String get modelKey => model.url;
+}
+
 /// How a Blue model is guided toward the text (classifier-free guidance).
 enum BlueGuidance {
   /// The vector estimator takes a cfg_scale input.
@@ -460,6 +486,8 @@ enum BlueGuidance {
 }
 
 enum VoiceGender { male, female }
+
+enum VoiceSpeed { quick, moderate, slow }
 
 /// Who made a voice, and where it was trained: for its description and its
 /// credit (Sources & accuracy).
@@ -478,7 +506,10 @@ enum VoiceFamily {
   kokoro('https://huggingface.co/thewh1teagle/kokoro-hebrew-nc', VoiceLicence.nonCommercial),
 
   /// BlueTTS by notmax123 (Max Melichov): MIT.
-  blue('https://github.com/maxmelichov/BlueTTS', VoiceLicence.mit);
+  blue('https://github.com/maxmelichov/BlueTTS', VoiceLicence.mit),
+
+  /// Kyutai's Pocket TTS, with thewh1teagle's Hebrew adapter: CC BY 4.0.
+  pocket('https://huggingface.co/thewh1teagle/pocket-tts-onnx', VoiceLicence.attribution);
 
   const VoiceFamily(this.source, this.licence);
   final String source;
@@ -532,6 +563,16 @@ class HebrewVoiceOption {
   final String? model;
 
   List<VoiceFile> get files => spec.files;
+
+  /// How long it takes to make what it reads, by its kind of model, as the
+  /// app's test found: Piper a tenth of the speech's length, Kokoro and Blue
+  /// a quarter to two fifths, Pocket TTS longer than the speech itself on a
+  /// laptop, so that Listen may pause between verses.
+  VoiceSpeed get speed => switch (spec) {
+        PiperSpec() => VoiceSpeed.quick,
+        KokoroSpec() || BlueSpec() => VoiceSpeed.moderate,
+        PocketSpec() => VoiceSpeed.slow,
+      };
 
   /// What it all takes on the device.
   int get bytes => {for (final f in files) f.url: f.size}.values.fold(0, (a, b) => a + b);
@@ -772,6 +813,56 @@ final List<HebrewVoiceOption> hebrewVoices = List.unmodifiable([
     model: 'Piper',
     spec: _phonikudVoice(_phonikudModel),
     clarity: 0.953,
+  ),
+  HebrewVoiceOption(
+    id: 'pocket-liat',
+    name: 'Liat',
+    nameHe: 'ליאת',
+    gender: VoiceGender.female,
+    family: VoiceFamily.pocket,
+    model: 'Pocket TTS',
+    spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'liat'),
+    clarity: 0.950,
+  ),
+  HebrewVoiceOption(
+    id: 'pocket-alba',
+    name: 'Alba',
+    nameHe: 'אלבה',
+    gender: VoiceGender.female,
+    family: VoiceFamily.pocket,
+    model: 'Pocket TTS',
+    spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'alba'),
+    clarity: 0.950,
+  ),
+  HebrewVoiceOption(
+    id: 'pocket-omer',
+    name: 'Omer',
+    nameHe: 'עומר',
+    gender: VoiceGender.male,
+    family: VoiceFamily.pocket,
+    model: 'Pocket TTS',
+    spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'omer'),
+    clarity: 0.949,
+  ),
+  HebrewVoiceOption(
+    id: 'pocket-michael',
+    name: 'Michael (Pocket)',
+    nameHe: 'מיכאל (Pocket)',
+    gender: VoiceGender.male,
+    family: VoiceFamily.pocket,
+    model: 'Pocket TTS',
+    spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'michael'),
+    clarity: 0.941,
+  ),
+  HebrewVoiceOption(
+    id: 'pocket-anna',
+    name: 'Anna',
+    nameHe: 'אנה',
+    gender: VoiceGender.female,
+    family: VoiceFamily.pocket,
+    model: 'Pocket TTS',
+    spec: PocketSpec(model: _pocketModel, assets: _pocketAssets, voice: 'anna'),
+    clarity: 0.938,
   ),
   // Phonikud's experiments: Shaul, trained other ways.
   HebrewVoiceOption(

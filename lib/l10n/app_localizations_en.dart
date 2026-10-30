@@ -1099,6 +1099,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.';
 
   @override
+  String get voiceCouldNotRead =>
+      'The Hebrew voice couldn’t read here. Choose another in Settings, Accessibility, Hebrew voice, or add a Hebrew voice in your device’s speech settings.';
+
+  @override
   String get guidedMode => 'Guided reading';
 
   @override
@@ -2005,6 +2009,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceFemale => 'Female';
 
   @override
+  String get voiceQuick => 'Quick';
+
+  @override
+  String get voiceModerate => 'Takes a moment';
+
+  @override
+  String get voiceSlow => 'Slow: may pause between verses';
+
+  @override
   String voiceClarity(int percent) {
     return '$percent% clear';
   }
@@ -2135,7 +2148,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Every verse, and every voice, at the same loudness';
 
   @override
-  String get voiceVariation => 'Variation in the voice (Piper)';
+  String get voiceVariation => 'Variation in the voice (Piper, Pocket)';
 
   @override
   String get voiceRhythm => 'Variation in the timing (Piper)';

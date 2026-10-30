@@ -25,8 +25,7 @@ import 'voice_settings.dart';
 /// are the device's to read; and should the app's voice fail, the device's
 /// reads in its place.
 class VoiceRoutingTts extends FlutterTts {
-  VoiceRoutingTts(this.voices, {required this._settings, @visibleForTesting AudioPlayer Function()? player})
-      : _newPlayer = player ?? AudioPlayer.new;
+  VoiceRoutingTts(this.voices, {required this._settings, @visibleForTesting AudioPlayer Function()? player}) : _newPlayer = player ?? AudioPlayer.new;
 
   final HebrewVoices voices;
   final VoiceSettings Function() _settings;
@@ -45,15 +44,19 @@ class VoiceRoutingTts extends FlutterTts {
   AudioPlayer _start(AudioPlayer player) {
     // The speech service holds the audio focus (Android) and sets the
     // session (iOS): the player only plays.
-    unawaited(player
-        .setAudioContext(AudioContext(
-          android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none, usageType: AndroidUsageType.media),
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-            options: const {AVAudioSessionOptions.duckOthers, AVAudioSessionOptions.interruptSpokenAudioAndMixWithOthers},
-          ),
-        ))
-        .then((_) {}, onError: (Object _) {}));
+    unawaited(
+      player
+          .setAudioContext(
+            AudioContext(
+              android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none, usageType: AndroidUsageType.media),
+              iOS: AudioContextIOS(
+                category: AVAudioSessionCategory.playback,
+                options: const {AVAudioSessionOptions.duckOthers, AVAudioSessionOptions.interruptSpokenAudioAndMixWithOthers},
+              ),
+            ),
+          )
+          .then((_) {}, onError: (Object _) {}),
+    );
     _completions = player.onPlayerComplete.listen((_) {
       if (!_playing) return;
       _playing = false;
@@ -103,9 +106,12 @@ class VoiceRoutingTts extends FlutterTts {
       _prepared.remove(_prepared.keys.first);
     }
     final made = _prepared[key] = voices.speak(text, id: voice, settings: _settings(), speed: _speed);
-    made.then((_) {}, onError: (Object _) {
-      _prepared.remove(key);
-    });
+    made.then(
+      (_) {},
+      onError: (Object _) {
+        _prepared.remove(key);
+      },
+    );
   }
 
   @override
@@ -153,13 +159,33 @@ class VoiceRoutingTts extends FlutterTts {
       startHandler?.call();
       await _player.play(BytesSource(audio, mimeType: 'audio/wav'));
       return 1;
-    } catch (_) {
+    } catch (e) {
       if (token != _token) return 1;
       _making = false;
       _playing = false;
-      // The device's voice reads it instead.
-      return super.speak(HebrewText.stripTeamim(text), focus: focus);
+      debugPrint('The Hebrew voice $voice could not read: $e');
+      // The device's voice reads it instead, if it has a Hebrew one: else
+      // Listen stops, and says so, rather than race on in silence.
+      if (await _deviceHasHebrew()) return super.speak(HebrewText.stripTeamim(text), focus: focus);
+      throw HebrewVoiceFailure(voice, e);
     }
+  }
+
+  bool? _deviceHebrew;
+
+  /// Whether the device has a Hebrew voice of its own (asked once).
+  Future<bool> _deviceHasHebrew() async {
+    if (_deviceHebrew case final known?) return known;
+    var found = false;
+    try {
+      final voices = await super.getVoices;
+      if (voices is List) found = voices.any((v) => _isHebrew('${v is Map ? v['locale'] : v}'));
+      if (!found && !kIsWeb) {
+        final answer = await super.isLanguageAvailable('he-IL');
+        found = answer == true || answer == 1;
+      }
+    } catch (_) {}
+    return _deviceHebrew = found;
   }
 
   @override
@@ -179,4 +205,15 @@ class VoiceRoutingTts extends FlutterTts {
     unawaited(_completions?.cancel());
     unawaited(_audio?.dispose());
   }
+}
+
+/// The app's voice couldn't read an utterance, and the device has no Hebrew
+/// voice to read it instead.
+class HebrewVoiceFailure implements Exception {
+  const HebrewVoiceFailure(this.voice, this.cause);
+  final String voice;
+  final Object cause;
+
+  @override
+  String toString() => 'The Hebrew voice $voice could not read: $cause';
 }

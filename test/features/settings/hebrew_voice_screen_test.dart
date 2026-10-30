@@ -35,6 +35,9 @@ class _Store implements VoiceStore {
 
   @override
   Future<Uint8List> read(VoiceFile file) async => Uint8List(0);
+
+  @override
+  Future<String> made(String name, Uint8List bytes) async => name;
 }
 
 void main() {

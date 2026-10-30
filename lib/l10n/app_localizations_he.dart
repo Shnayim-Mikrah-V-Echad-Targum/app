@@ -1105,6 +1105,10 @@ class AppLocalizationsHe extends AppLocalizations {
       'לא מותקן קול בעברית. אפשר להוריד קול של האפליקציה בהגדרות, נגישות, קול עברי, או להוסיף קול בהגדרות הדיבור של המכשיר.';
 
   @override
+  String get voiceCouldNotRead =>
+      'הקול העברי לא הצליח לקרוא כאן. אפשר לבחור קול אחר בהגדרות, נגישות, קול עברי, או להוסיף קול עברי בהגדרות הדיבור של המכשיר.';
+
+  @override
   String get guidedMode => 'קריאה מודרכת';
 
   @override
@@ -2006,6 +2010,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get voiceFemale => 'נשי';
 
   @override
+  String get voiceQuick => 'מהיר';
+
+  @override
+  String get voiceModerate => 'לוקח רגע';
+
+  @override
+  String get voiceSlow => 'איטי: עשוי לעצור בין פסוקים';
+
+  @override
   String voiceClarity(int percent) {
     return '$percent% ברור';
   }
@@ -2135,7 +2148,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get voiceEvenLoudnessDesc => 'כל פסוק וכל קול באותה עוצמה';
 
   @override
-  String get voiceVariation => 'גיוון בקול (Piper)';
+  String get voiceVariation => 'גיוון בקול (Piper, Pocket)';
 
   @override
   String get voiceRhythm => 'גיוון בקצב (Piper)';

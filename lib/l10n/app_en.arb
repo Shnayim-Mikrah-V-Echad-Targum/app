@@ -1162,6 +1162,7 @@
   "listenAlongDesc": "Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.",
   "ttsUnavailable": "Text-to-speech isn’t available on this device.",
   "ttsNoHebrewVoice": "No Hebrew voice is installed. Download one of the app’s own in Settings, Accessibility, Hebrew voice, or add one in your device’s speech settings.",
+  "voiceCouldNotRead": "The Hebrew voice couldn’t read here. Choose another in Settings, Accessibility, Hebrew voice, or add a Hebrew voice in your device’s speech settings.",
   "guidedMode": "Guided reading",
   "fullTextMode": "Full text",
   "wholeParsha": "Whole parsha",
@@ -1748,6 +1749,9 @@
     "description": "A voice's gender."
   },
   "voiceFemale": "Female",
+  "voiceQuick": "Quick",
+  "voiceModerate": "Takes a moment",
+  "voiceSlow": "Slow: may pause between verses",
   "@voiceFemale": {
     "description": "A voice's gender."
   },
@@ -1844,7 +1848,7 @@
   "voicePausesDesc": "At an etnachta, segolta, zaqef or paseq, as well as at each verse’s end",
   "voiceEvenLoudness": "Even loudness",
   "voiceEvenLoudnessDesc": "Every verse, and every voice, at the same loudness",
-  "voiceVariation": "Variation in the voice (Piper)",
+  "voiceVariation": "Variation in the voice (Piper, Pocket)",
   "voiceRhythm": "Variation in the timing (Piper)",
   "voiceOwnValue": "The voice’s own",
   "voiceSteps": "Quality (Blue)",

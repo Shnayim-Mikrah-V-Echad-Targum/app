@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/text/hebrew_phonemes.dart';
 import 'voice_catalogue.dart';
 import 'voice_engines.dart';
+import 'voice_runtime.dart';
 import 'voice_settings.dart';
 import 'voice_store.dart';
 import 'voice_store_io.dart' if (dart.library.js_interop) 'voice_store_web.dart' as platform;
 
-export 'voice_engines.dart' show OrtSessionFactory, VoiceTuning;
+export 'voice_engines.dart' show VoiceTuning;
 
 /// Where a voice is, on the device.
 enum HebrewVoiceState {
@@ -57,17 +57,17 @@ class HebrewVoiceStatus {
 /// ONNX Runtime. Voices of one model share its files, which are taken off
 /// the device with the last of them.
 class HebrewVoices {
-  HebrewVoices({VoiceStore? store, OrtSessionFactory? openSession, List<HebrewVoiceOption>? voices})
-      : _store = store ?? platform.voiceStore(),
-        _openSession = openSession ?? _defaultSession,
-        voices = voices ?? hebrewVoices {
+  HebrewVoices({VoiceStore? store, VoiceRuntime? runtime, List<HebrewVoiceOption>? voices})
+    : _store = store ?? platform.voiceStore(),
+      _runtime = runtime ?? voiceRuntime(),
+      voices = voices ?? hebrewVoices {
     for (final v in this.voices) {
       _status[v.id] = ValueNotifier(const HebrewVoiceStatus(HebrewVoiceState.absent));
     }
   }
 
   final VoiceStore _store;
-  final OrtSessionFactory _openSession;
+  final VoiceRuntime _runtime;
 
   /// Every voice offered, clearest first within each group.
   final List<HebrewVoiceOption> voices;
@@ -133,9 +133,12 @@ class HebrewVoices {
     if (now == HebrewVoiceState.downloading || now == HebrewVoiceState.ready) return;
     _set(id, const HebrewVoiceStatus(HebrewVoiceState.downloading));
     try {
-      await _store.fetch(voice.files, onProgress: (received, total) {
-        _set(id, HebrewVoiceStatus(HebrewVoiceState.downloading, received: received, total: total));
-      });
+      await _store.fetch(
+        voice.files,
+        onProgress: (received, total) {
+          _set(id, HebrewVoiceStatus(HebrewVoiceState.downloading, received: received, total: total));
+        },
+      );
       _set(id, const HebrewVoiceStatus(HebrewVoiceState.ready));
       // Another voice of the same model may need nothing more now.
       await _refresh(skip: {id});
@@ -149,7 +152,10 @@ class HebrewVoices {
   /// still on it.
   Future<void> remove(String id) async {
     final voice = voices.firstWhere((v) => v.id == id);
-    final kept = {for (final v in voices) if (v.id != id && ready(v.id)) ...v.files};
+    final kept = {
+      for (final v in voices)
+        if (v.id != id && ready(v.id)) ...v.files,
+    };
     await _closeRunner(voice.spec);
     for (final f in voice.files) {
       if (!kept.contains(f)) await _store.remove(f);
@@ -185,10 +191,13 @@ class HebrewVoices {
       final runner = _runners.remove(oldest)!;
       unawaited(runner.then((r) => r.close()).then((_) {}, onError: (Object _) {}));
     }
-    final opening = _runners[key] = openVoice(spec, _store, _openSession);
-    opening.then((_) {}, onError: (Object _) {
-      if (identical(_runners[key], opening)) _runners.remove(key);
-    });
+    final opening = _runners[key] = openVoice(spec, _store, _runtime);
+    opening.then(
+      (_) {},
+      onError: (Object _) {
+        if (identical(_runners[key], opening)) _runners.remove(key);
+      },
+    );
     return opening;
   }
 
@@ -229,8 +238,6 @@ class HebrewVoices {
     );
     return wav(audio, runner.sampleRate, even: settings.evenLoudness);
   }
-
-  static Future<OrtSession> _defaultSession(String location) => OnnxRuntime().createSession(location);
 
   /// [audio] at [sampleRate] as a 16-bit mono WAV file; with [even], brought
   /// to a common loudness (its peak at 0.9 of full scale), else only kept

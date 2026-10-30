@@ -13,6 +13,7 @@ import '../../data/models/parsha.dart';
 import '../../data/models/verse_ref.dart';
 import '../../data/text_repository.dart';
 import '../../services/feedback.dart';
+import '../../services/hebrew_voice/voice_routing_tts.dart' show HebrewVoiceFailure;
 import '../../services/tts.dart';
 import '../../ui/l10n.dart';
 import '../../ui/theme/app_theme.dart';
@@ -178,7 +179,7 @@ class _HaftarahScreenState extends ConsumerState<HaftarahScreen> {
     if (!mounted) return;
     switch (end) {
       case ListenEnd.failed:
-        showStatus(context, l.ttsUnavailable);
+        showStatus(context, _listen.lastError is HebrewVoiceFailure ? l.voiceCouldNotRead : l.ttsUnavailable);
       case ListenEnd.finished:
         _listen.end();
       case ListenEnd.stopped:
