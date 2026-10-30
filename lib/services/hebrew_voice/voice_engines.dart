@@ -14,7 +14,8 @@ import 'voice_store.dart';
 class VoiceTuning {
   const VoiceTuning({this.speed = 1, this.variation, this.rhythm, this.steps = 8, this.guidance = 3});
 
-  /// How fast, relative to the voice's own pace.
+  /// How fast the model itself reads, relative to the voice's own pace
+  /// (VoiceRunner.ownSpeed).
   final double speed;
 
   /// A Piper voice's variation of sound (its noise scale); null for the
@@ -38,6 +39,13 @@ class VoiceTuning {
 /// once for them all: [voice] says whose style it reads in.
 abstract class VoiceRunner {
   int get sampleRate;
+
+  /// Of reading [speed] times as fast as the voice's own pace, how much the
+  /// model does itself (VoiceTuning.speed), the rest being stretched
+  /// afterward (stretch). Piper does it all; Kokoro and Blue, which read
+  /// less clearly when slowed much, half of it, as a power; Pocket TTS, which
+  /// can't, none.
+  double ownSpeed(double speed);
 
   /// The audio of [sounds], read by [voice], at [sampleRate]. [spoken] is
   /// the text they were made from, which a voice that reads the letters
@@ -162,6 +170,9 @@ class PiperRunner implements VoiceRunner {
   @override
   final int sampleRate;
 
+  @override
+  double ownSpeed(double speed) => speed.clamp(0.1, 10.0);
+
   /// The symbols the model reads: the sounds, or for a model that reads the
   /// letters, the letters and points of [spoken] (without the cantillation),
   /// as it was trained to see them.
@@ -198,7 +209,7 @@ class PiperRunner implements VoiceRunner {
   @override
   Future<Float32List> synthesize(String sounds, {required VoiceSpec voice, required String spoken, required VoiceTuning tuning}) => _withValues(_rt, (values) async {
     final ids = this.ids(symbols(sounds, spoken));
-    final scales = Float32List.fromList([tuning.variation ?? spec.noise, spec.length / tuning.speed.clamp(0.25, 4.0), tuning.rhythm ?? spec.noiseWidth]);
+    final scales = Float32List.fromList([tuning.variation ?? spec.noise, spec.length / tuning.speed, tuning.rhythm ?? spec.noiseWidth]);
     final outputs = await _session.run({
       'input': await values.int64(ids, [1, ids.length]),
       'input_lengths': await values.int64([ids.length], [1]),
@@ -238,6 +249,9 @@ class KokoroRunner implements VoiceRunner {
 
   @override
   int get sampleRate => 24000;
+
+  @override
+  double ownSpeed(double speed) => math.sqrt(speed).clamp(0.5, 2.0);
 
   @override
   Future<Float32List> synthesize(String sounds, {required VoiceSpec voice, required String spoken, required VoiceTuning tuning}) async {
@@ -355,6 +369,9 @@ class BlueRunner implements VoiceRunner {
   final int _pad;
   final VoiceStore _store;
 
+  @override
+  double ownSpeed(double speed) => math.sqrt(speed).clamp(0.1, 10.0);
+
   // Each voice's style, read once: for the acoustic model, and for the
   // duration.
   final _styles = <VoiceFile, Future<(NpyArray, NpyArray)>>{};
@@ -403,7 +420,7 @@ class BlueRunner implements VoiceRunner {
 
     final dpOut = await _dp.run({'text_ids': textIds, 'style_dp': styleDp, 'text_mask': textMask});
     values.addAll(dpOut.values);
-    final seconds = (await dpOut.values.first.floats()).first / tuning.speed.clamp(0.25, 4.0);
+    final seconds = (await dpOut.values.first.floats()).first / tuning.speed;
     final teOut = await _te.run({'text_ids': textIds, 'style_ttl': ttl, 'text_mask': textMask});
     values.addAll(teOut.values);
     final textEmb = teOut.values.first;
@@ -612,6 +629,9 @@ class PocketRunner implements VoiceRunner {
 
   @override
   int get sampleRate => _n('sample_rate');
+
+  @override
+  double ownSpeed(double speed) => 1;
 
   /// The ids of [sounds]: one for each sound, and for what lies between
   /// them, the tokenizer's word boundary and any punctuation.

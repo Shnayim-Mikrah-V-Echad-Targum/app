@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/core/text/hebrew_pronunciation.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/hebrew_voice.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/npz.dart';
+import 'package:shnayim_mikrah/services/hebrew_voice/stretch.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_catalogue.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_engines.dart';
 import 'package:shnayim_mikrah/services/hebrew_voice/voice_routing_tts.dart';
@@ -74,6 +76,49 @@ class _Model extends Fake implements OnnxModel {
   Future<void> close() async {}
 }
 
+/// A runtime whose one model gives back [audio], keeping what it was given.
+class _ReadingRuntime extends Fake implements VoiceRuntime {
+  _ReadingRuntime(this.audio);
+  final Float32List audio;
+  final fed = <String, List<num>>{};
+
+  @override
+  Future<OnnxModel> open(String location) async => _ReadingModel(this);
+
+  @override
+  Future<OnnxTensor> float32(Float32List data, List<int> shape) async => _Tensor(data);
+
+  @override
+  Future<OnnxTensor> int64(List<int> data, List<int> shape) async => _Tensor(data);
+}
+
+class _ReadingModel extends Fake implements OnnxModel {
+  _ReadingModel(this._rt);
+  final _ReadingRuntime _rt;
+
+  @override
+  Future<Map<String, OnnxTensor>> run(Map<String, OnnxTensor> feeds) async {
+    for (final MapEntry(:key, :value) in feeds.entries) {
+      _rt.fed[key] = (value as _Tensor).data;
+    }
+    return {'output': _Tensor(_rt.audio)};
+  }
+
+  @override
+  Future<void> close() async {}
+}
+
+class _Tensor extends Fake implements OnnxTensor {
+  _Tensor(this.data);
+  final List<num> data;
+
+  @override
+  Future<Float32List> floats() async => Float32List.fromList([for (final v in data) v.toDouble()]);
+
+  @override
+  Future<void> dispose() async {}
+}
+
 VoiceFile _file(String path, int size) => VoiceFile('test/repo', '0123456789abcdef', path, size, 'x' * 64);
 
 final _model = _file('model.onnx', 60000000);
@@ -82,7 +127,7 @@ final _config = _file('model.config.json', 7000);
 final _styleA = _file('voices/a.json', 290000);
 final _styleB = _file('voices/b.json', 290000);
 
-HebrewVoiceOption _voice(String id, VoiceSpec spec, double clarity) => HebrewVoiceOption(
+HebrewVoiceOption _voice(String id, VoiceSpec spec, double clarity, {double normalSpeed = 1}) => HebrewVoiceOption(
       id: id,
       name: id,
       nameHe: id,
@@ -90,6 +135,7 @@ HebrewVoiceOption _voice(String id, VoiceSpec spec, double clarity) => HebrewVoi
       family: VoiceFamily.blue,
       spec: spec,
       clarity: clarity,
+      normalSpeed: normalSpeed,
     );
 
 final _testVoices = [
@@ -266,6 +312,55 @@ void main() {
       final quiet = ByteData.sublistView(HebrewVoices.wav(audio, 24000, even: false));
       expect(quiet.getInt16(48, Endian.little), -(0.2 * 32767).round());
     });
+
+    test('reads at the pace Listen calls normal, by the voice\'s normal speed: Piper slowing itself, nothing stretched', () async {
+      final store = _Store()
+        ..files[_otherModel] = Uint8List(0)
+        ..files[_config] = utf8.encode(jsonEncode({
+          'audio': {'sample_rate': 22050},
+          'phoneme_id_map': {
+            '_': [0], '^': [1], r'$': [2], ' ': [3], 'a': [14], 'b': [15], 'ˈ': [120],
+          },
+        }));
+      final rt = _ReadingRuntime(Float32List(2205));
+      final reading = HebrewVoices(store: store, runtime: rt, voices: [_voice('c', PiperSpec(model: _otherModel, config: _config), 0.8, normalSpeed: 0.6)]);
+      await reading.init();
+      final wav = await reading.speak('בָּרָא', id: 'c', settings: const VoiceSettings(torah: 'c'), speed: 1.2);
+      expect(rt.fed['scales']![1], closeTo(1 / (0.6 * 1.2), 1e-6), reason: 'its length scale');
+      expect(ByteData.sublistView(wav).getUint32(40, Endian.little), 2205 * 2);
+    });
+  });
+
+  group('stretch', () {
+    const rate = 24000;
+    final tone = Float32List.fromList([for (var i = 0; i < rate; i++) 0.5 * math.sin(2 * math.pi * 220 * i / rate)]);
+
+    double crossingsPerSecond(Float32List audio) {
+      var n = 0;
+      for (var i = 1; i < audio.length; i++) {
+        if ((audio[i - 1] < 0) != (audio[i] < 0)) n++;
+      }
+      return n / (audio.length / rate);
+    }
+
+    double loudness(Float32List audio) {
+      final middle = audio.sublist(audio.length ~/ 4, audio.length * 3 ~/ 4);
+      return math.sqrt(middle.fold<double>(0, (a, s) => a + s * s) / middle.length);
+    }
+
+    test('slows or quickens audio to the length asked, at the same pitch and loudness', () {
+      for (final speed in [0.6, 0.75, 1.5]) {
+        final out = stretch(tone, speed, rate);
+        expect(out.length, (tone.length / speed).round(), reason: '$speed');
+        expect(crossingsPerSecond(out), closeTo(440, 440 * 0.03), reason: '$speed');
+        expect(loudness(out), closeTo(loudness(tone), loudness(tone) * 0.1), reason: '$speed');
+      }
+    });
+
+    test('leaves audio at its own speed as it is', () {
+      expect(identical(stretch(tone, 1, rate), tone), isTrue);
+      expect(stretch(Float32List(0), 0.6, rate), isEmpty);
+    });
   });
 
   group('the engines', () {
@@ -441,6 +536,16 @@ void main() {
       tts.role = SpeechRole.mikrah;
       await tts.speak(pointed);
       expect(voices.asked.last.$2, 'a');
+    });
+
+    test('the device\'s Hebrew voices are slowed to the pace of the app\'s; other languages are read at the rate set', () async {
+      await tts.setLanguage('he-IL');
+      await tts.setSpeechRate(kDefaultSpeechRate);
+      await tts.setLanguage('en-US');
+      await tts.setSpeechRate(kDefaultSpeechRate);
+      final rates = [for (final c in device) if (c.method == 'setSpeechRate') c.arguments as double];
+      expect(rates, [closeTo(kDefaultSpeechRate * VoiceRoutingTts.deviceHebrewSlowing, 1e-9), kDefaultSpeechRate]);
+      expect(VoiceRoutingTts.deviceHebrewSlowing, closeTo(0.67, 0.01));
     });
 
     test('leaves unpointed Hebrew and other languages to the device', () async {

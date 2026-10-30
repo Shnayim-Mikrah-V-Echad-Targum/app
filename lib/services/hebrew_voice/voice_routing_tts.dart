@@ -8,6 +8,7 @@ import '../../core/text/hebrew_phonemes.dart';
 import '../../core/text/hebrew_text.dart';
 import '../tts.dart';
 import 'hebrew_voice.dart';
+import 'voice_catalogue.dart';
 import 'voice_settings.dart';
 
 /// The speech engine TtsService speaks through: the device's own, but for
@@ -124,8 +125,15 @@ class VoiceRoutingTts extends FlutterTts {
   Future<dynamic> setSpeechRate(double rate) {
     // The browser's rate is given doubled (TtsService.webEngine).
     _rate = kIsWeb ? rate / 2 : rate;
-    return super.setSpeechRate(rate);
+    return super.setSpeechRate(_isHebrew(_language) ? rate * deviceHebrewSlowing : rate);
   }
+
+  /// How much the device's own Hebrew voices are slowed, so that the pace
+  /// Listen calls normal is about the app's voices' (kReadingPace): at their
+  /// normal rate they talk at about 5.8 syllables a second, as the app's
+  /// voices do at theirs, and Listen's normal is 0.9 of it
+  /// (kDefaultSpeechRate).
+  static const deviceHebrewSlowing = kReadingPace / (5.8 * kDefaultSpeechRate / 0.5);
 
   /// Hebrew is available whenever one of the app's voices is, and the
   /// reader hasn't chosen the device's.
