@@ -845,7 +845,7 @@ void main() {
       await open(tester, '/week/5787:2');
       // Not one node with the texts above it and the haftarah's button below.
       expect(
-        tester.getSemantics(find.text('0 of 7 aliyot')),
+        tester.getSemantics(find.text('0 of 7 aliyot').first),
         isSemantics(label: '0 of 7 aliyot', isHeader: true, isButton: false, hasTapAction: false),
       );
       expect(find.byTooltip('More options for Revi’i'), findsOneWidget);
