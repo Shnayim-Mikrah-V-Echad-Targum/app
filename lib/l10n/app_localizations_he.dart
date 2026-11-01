@@ -874,6 +874,34 @@ class AppLocalizationsHe extends AppLocalizations {
   String get plannedForShabbat => 'שבת בבוקר — לרשום אחרי שבת';
 
   @override
+  String get wholeParshaReadings => 'כל הפרשה, קריאה אחר קריאה';
+
+  @override
+  String wholeParshaPass(String pass) {
+    return '$pass של כל הפרשה';
+  }
+
+  @override
+  String markPassRead(String pass) {
+    return 'סימון „$pass” כנקרא';
+  }
+
+  @override
+  String markPassUnread(String pass) {
+    return 'סימון „$pass” כלא נקרא';
+  }
+
+  @override
+  String passMarkedRead(String pass) {
+    return '$pass: סומן כנקרא';
+  }
+
+  @override
+  String passMarkedUnread(String pass) {
+    return '$pass: סומן כלא נקרא';
+  }
+
+  @override
   String get markWholeWeek => 'סימון כל הפרשה כנקראה';
 
   @override

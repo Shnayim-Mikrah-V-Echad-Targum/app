@@ -1251,6 +1251,42 @@ abstract class AppLocalizations {
   /// **'Shabbat morning — log it after Shabbat'**
   String get plannedForShabbat;
 
+  /// No description provided for @wholeParshaReadings.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole parsha, reading by reading'**
+  String get wholeParshaReadings;
+
+  /// No description provided for @wholeParshaPass.
+  ///
+  /// In en, this message translates to:
+  /// **'{pass} of the whole parsha'**
+  String wholeParshaPass(String pass);
+
+  /// No description provided for @markPassRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {pass} as read'**
+  String markPassRead(String pass);
+
+  /// No description provided for @markPassUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark {pass} as not read'**
+  String markPassUnread(String pass);
+
+  /// No description provided for @passMarkedRead.
+  ///
+  /// In en, this message translates to:
+  /// **'{pass}: marked as read'**
+  String passMarkedRead(String pass);
+
+  /// No description provided for @passMarkedUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'{pass}: marked as not read'**
+  String passMarkedUnread(String pass);
+
   /// No description provided for @markWholeWeek.
   ///
   /// In en, this message translates to:

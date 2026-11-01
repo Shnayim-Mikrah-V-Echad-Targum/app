@@ -58,7 +58,7 @@ void main() {
   /// The parsha's pointed name, the page's heading.
   Rect name(WidgetTester tester) => tester.getRect(find.text('בְּרֵאשִׁית'));
   Rect rings(WidgetTester tester) => tester.getRect(find.byType(RingsWithLegend));
-  Rect count(WidgetTester tester) => tester.getRect(find.byType(SectionHeader));
+  Rect count(WidgetTester tester) => tester.getRect(find.byType(SectionHeader).first);
   Rect aliyot(WidgetTester tester) => tester.getRect(find.byType(PaperGroup).first);
   Rect haftarah(WidgetTester tester) => tester.getRect(find.byType(PaperGroup).last);
 

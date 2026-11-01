@@ -868,6 +868,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plannedForShabbat => 'Shabbat morning — log it after Shabbat';
 
   @override
+  String get wholeParshaReadings => 'The whole parsha, reading by reading';
+
+  @override
+  String wholeParshaPass(String pass) {
+    return '$pass of the whole parsha';
+  }
+
+  @override
+  String markPassRead(String pass) {
+    return 'Mark $pass as read';
+  }
+
+  @override
+  String markPassUnread(String pass) {
+    return 'Mark $pass as not read';
+  }
+
+  @override
+  String passMarkedRead(String pass) {
+    return '$pass: marked as read';
+  }
+
+  @override
+  String passMarkedUnread(String pass) {
+    return '$pass: marked as not read';
+  }
+
+  @override
   String get markWholeWeek => 'Mark the whole parsha as read';
 
   @override

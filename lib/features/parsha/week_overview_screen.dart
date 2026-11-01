@@ -25,6 +25,7 @@ import '../notes/week_notes_row.dart';
 import '../progress/domain/progress_models.dart';
 import '../progress/domain/reading_plan.dart' show kSecondsPerVerse;
 import '../progress/domain/streak_engine.dart' show WeekStatus;
+import '../settings/app_settings.dart' show ReadingMethod;
 import 'week_context.dart';
 import 'week_rows.dart';
 
@@ -82,6 +83,17 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
     final name = names.portion(ctx.portion, ashkenazi: settings.ashkenaziNames);
     final open = ctx.isOpen && !ctx.progress.isComplete;
     final clearable = ctx.progress.completedUnits > 0;
+    // The whole parsha's readings, first for a reader who reads it so.
+    final whole = open || clearable
+        ? [
+            SectionHeader.plain(
+              l.wholeParshaReadings,
+              padding: const EdgeInsetsDirectional.fromSTEB(Space.xs, 0, 0, Space.sm),
+            ),
+            PaperGroup(ruleInset: PaperGroup.iconInset, children: WholeParshaRows.of(context, ref, ctx)),
+          ]
+        : const <Widget>[];
+    final wholeFirst = settings.method == ReadingMethod.wholeParsha;
     // The week's haftarah, the notes on its verses and its discussion.
     final weekRows = [
       if (settings.haftarahEnabled || ctx.haftarahRequired) HaftarahRow(ctx: ctx),
@@ -187,6 +199,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
                 ],
               ],
               end: [
+                if (wholeFirst && whole.isNotEmpty) ...[...whole, const Gap(Rhythm.sectionGap)],
                 // Digits, which an eyebrow never holds; inset as a group's
                 // header. Nothing above it: side by side it starts level with
                 // the parsha's name, and as one column it stands a section's
@@ -199,6 +212,7 @@ class _WeekOverviewState extends ConsumerState<WeekOverview> with HeadingReveal<
                   ruleInset: _AliyahRow.textStart,
                   children: [for (var a = 0; a < kAliyot; a++) _AliyahRow(ctx: ctx, aliyah: a)],
                 ),
+                if (!wholeFirst && whole.isNotEmpty) ...[const Gap(Rhythm.sectionGap), ...whole],
                 // With the haftarah off, no notes and no community, none.
                 if (weekRows.isNotEmpty) ...[
                   const Gap(Rhythm.sectionGap),
@@ -440,6 +454,21 @@ class _AliyahRow extends ConsumerWidget {
       showStatus(context, l.markedRead);
     }
 
+    Future<void> markPass(ReadingPass pass) async {
+      final name = passNames[pass.index];
+      if (passes[pass.index]) {
+        ref.read(progressProvider.notifier).markUnit(ctx.id, aliyah, pass, null);
+        showStatus(context, l.passMarkedUnread(name));
+        return;
+      }
+      final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
+      if (date == null || !context.mounted) return;
+      final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
+      ref.read(progressProvider.notifier).markUnit(ctx.id, aliyah, pass, date);
+      hapticRecorded(ref, completedParsha: !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete);
+      showStatus(context, l.passMarkedRead(name));
+    }
+
     final disc = ExcludeSemantics(
       child: Container(
         width: _disc,
@@ -504,12 +533,20 @@ class _AliyahRow extends ConsumerWidget {
           showStatus(context, l.markedUnread);
         }
         if (v == 'full') context.push('/read/${ctx.id}/$aliyah?mode=full&from=week');
+        if (v.startsWith('pass:')) markPass(ReadingPass.values[int.parse(v.substring(5))]);
       },
       itemBuilder: (context) => [
         SeferMenuItem(value: 'full', child: Text(l.fullTextMode)),
         if (!done && ctx.isOpen) SeferMenuItem(value: 'read', child: Text(l.actionMarkRead)),
         if (progress.units[aliyah].any((d) => d != null))
           SeferMenuItem(value: 'unread', child: Text(l.actionMarkUnread)),
+        // Each reading of it on its own.
+        for (final p in ReadingPass.values)
+          if (passes[p.index] || ctx.isOpen)
+            SeferMenuItem(
+              value: 'pass:${p.index}',
+              child: Text(passes[p.index] ? l.markPassUnread(passNames[p.index]) : l.markPassRead(passNames[p.index])),
+            ),
       ],
     );
 
