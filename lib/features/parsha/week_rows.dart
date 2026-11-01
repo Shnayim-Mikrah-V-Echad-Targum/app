@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../app/providers.dart';
 import '../../app/routes.dart';
 import '../../data/models/parsha.dart' show HaftarahNusach;
+import '../../services/feedback.dart';
 import '../../ui/l10n.dart';
 import '../../ui/widgets/paper_group.dart';
+import '../../ui/widgets/read_date_sheet.dart';
 import '../community/ui/community_ui.dart';
-import '../progress/domain/progress_models.dart' show cycleYearOf;
+import '../progress/domain/progress_models.dart' show ReadingPass, cycleYearOf, kAliyot;
 import 'week_context.dart';
 
 /// The week's haftarah as a row of a [PaperGroup]: its reference, and in a
@@ -42,6 +44,59 @@ class HaftarahRow extends ConsumerWidget {
       },
       onTap: () => context.push(haftarahPath(context, ctx.id)),
     );
+  }
+}
+
+/// The readings of the whole parsha, for a reader who reads it through once,
+/// then again, then its Targum (or Rashi): a row for each, done once every
+/// aliyah's is, which a tap marks read for all seven (on the day the reader
+/// picks) or, done, not read, with Undo.
+class WholeParshaRows {
+  static List<Widget> of(BuildContext context, WidgetRef ref, WeekContext ctx) {
+    final l = context.l10n;
+    final settings = ref.watch(settingsProvider);
+    final secondName = settings.usesRashi && !settings.usesOnkelos ? l.passRashi : l.passTargum;
+    final names = [l.passMikrah1, l.passMikrah2, secondName];
+    return [
+      for (final pass in ReadingPass.values)
+        () {
+          final read = [for (var a = 0; a < kAliyot; a++) ctx.progress.isUnitDone(a, pass)].where((d) => d).length;
+          final done = read == kAliyot;
+          final name = names[pass.index];
+          Future<void> toggle() async {
+            final progress = ref.read(progressProvider.notifier);
+            if (done) {
+              final before = ref.read(progressProvider).week(ctx.id);
+              progress.markPass(ctx.id, pass, null);
+              final container = ProviderScope.containerOf(context, listen: false);
+              showStatus(
+                context,
+                l.passMarkedUnread(name),
+                action: SnackBarAction(
+                  label: l.actionUndo,
+                  onPressed: () => container.read(progressProvider.notifier).restoreWeek(ctx.id, before),
+                ),
+              );
+              return;
+            }
+            final date = await pickReadDate(context, week: ctx.week, today: ctx.today, oneDayYomTov: settings.oneDayYomTov);
+            if (date == null || !context.mounted) return;
+            final wasComplete = ref.read(progressProvider).week(ctx.id).isComplete;
+            progress.markPass(ctx.id, pass, date);
+            hapticRecorded(ref, completedParsha: !wasComplete && ref.read(progressProvider).week(ctx.id).isComplete);
+            showStatus(context, l.passMarkedRead(name));
+          }
+
+          return PaperRow(
+            icon: done ? Icons.check_circle : Icons.radio_button_unchecked,
+            title: l.wholeParshaPass(name),
+            subtitle: l.aliyotProgress(read, kAliyot),
+            toggled: done,
+            chevron: false,
+            onTap: ctx.isOpen || read > 0 ? toggle : null,
+          );
+        }(),
+    ];
   }
 }
 

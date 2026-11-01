@@ -577,6 +577,12 @@ class ProgressController extends Notifier<ProgressState> {
   void markUnit(String weekId, int aliyah, ReadingPass pass, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withUnit(aliyah, pass, date));
 
+  /// Marks [pass] of every aliyah read on [date], or not read with null:
+  /// for a reader who reads the whole parsha once, then again, then its
+  /// Targum.
+  void markPass(String weekId, ReadingPass pass, LocalDate? date) =>
+      _updateWeek(weekId, (w) => [for (var a = 0; a < kAliyot; a++) a].fold(w, (w, a) => w.withUnit(a, pass, date)));
+
   void markAliyah(String weekId, int aliyah, LocalDate? date) =>
       _updateWeek(weekId, (w) => w.withAliyah(aliyah, date));
 

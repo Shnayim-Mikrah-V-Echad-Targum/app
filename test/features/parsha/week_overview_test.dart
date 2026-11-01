@@ -499,6 +499,78 @@ void main() {
     expect(mark, findsNothing);
   });
 
+  group('the whole parsha, reading by reading', () {
+    Finder wholeRow(String title) => find.widgetWithText(PaperRow, title);
+
+    testWidgets('marks each reading of every aliyah at once, on the day picked, and takes it back with Undo',
+        (tester) async {
+      final c = await open(tester);
+      final first = wholeRow('First reading of the whole parsha');
+      await tester.ensureVisible(first);
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: first, matching: find.text('3 of 7 aliyot')), findsOneWidget);
+      expect(tester.widget<PaperRow>(first).toggled, isFalse);
+      await tester.tap(first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
+      await tester.pumpAndSettle();
+      final week = c.read(progressProvider).week('5787:1');
+      for (var a = 0; a < kAliyot; a++) {
+        expect(week.isUnitDone(a, ReadingPass.mikrah1), isTrue);
+      }
+      expect(week.isUnitDone(3, ReadingPass.mikrah2), isFalse, reason: 'only the reading marked');
+      expect(week.units[6][0], LocalDate(2026, 10, 9));
+      expect(tester.widget<PaperRow>(first).toggled, isTrue);
+      expect(find.text('First reading: marked as read'), findsOneWidget);
+
+      // Done, a tap takes it back, and Undo restores it.
+      await tester.tap(first);
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).week('5787:1').isUnitDone(6, ReadingPass.mikrah1), isFalse);
+      expect(c.read(progressProvider).week('5787:1').isUnitDone(0, ReadingPass.mikrah1), isFalse);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(c.read(progressProvider).week('5787:1').isUnitDone(6, ReadingPass.mikrah1), isTrue);
+    });
+
+    testWidgets('the three readings mark the parsha read', (tester) async {
+      final c = await open(tester);
+      for (final title in ['First reading', 'Second reading', 'Targum']) {
+        final r = wholeRow('$title of the whole parsha');
+        await tester.ensureVisible(r);
+        await tester.pumpAndSettle();
+        await tester.tap(r);
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(PaperRow, 'Today'));
+        await tester.pumpAndSettle();
+      }
+      expect(c.read(progressProvider).week('5787:1').isComplete, isTrue);
+    });
+
+    testWidgets('come before the aliyot for a reader who reads the whole parsha, after them otherwise',
+        (tester) async {
+      await open(tester, settings: _settings.copyWith(method: ReadingMethod.wholeParsha));
+      double top(String text) => tester.getTopLeft(find.text(text).first).dy;
+      expect(top('First reading of the whole parsha'), lessThan(top('Rishon')));
+    });
+
+    testWidgets('an aliyah\'s menu marks each of its readings on its own', (tester) async {
+      final c = await open(tester);
+      final menu = find.descendant(of: row('Revi’i'), matching: find.byType(PopupMenuButton<String>));
+      await tester.ensureVisible(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mark Targum as read'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(PaperRow, 'Today'));
+      await tester.pumpAndSettle();
+      final week = c.read(progressProvider).week('5787:1');
+      expect(week.isUnitDone(3, ReadingPass.targum), isTrue);
+      expect(week.isUnitDone(3, ReadingPass.mikrah1), isFalse);
+    });
+  });
+
   testWidgets(
     'marking the whole parsha read celebrates it, as finishing it anywhere does',
     (tester) async {
