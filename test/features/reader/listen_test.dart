@@ -130,6 +130,22 @@ void main() {
       expect(find.byTooltip('Listen'), findsOneWidget);
     });
 
+    testWidgets('a tap or click on a verse reads from it, without focus mode', (tester) async {
+      final tts = HeldTts();
+      await open(tester, '/read/5787:2/0?mode=full', tts);
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [0]);
+      await Scrollable.ensureVisible(tester.element(find.byType(VerseGroup).at(3)), alignment: 0.3);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(VerseGroup).at(3));
+      await tester.pumpAndSettle();
+      expect(highlighted(tester), [3]);
+      expect(tts.last, startsWith('וירא אלהים את הארץ'));
+      await tester.tap(inPlayer('Stop'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('moves verse by verse, and is played and paused, from the keyboard', (tester) async {
       final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts);
@@ -238,6 +254,25 @@ void main() {
   });
 
   group('in the guided reader, Listen', () {
+    testWidgets('by default reads on from each reading to the next, verse by verse, and Next verse goes on', (tester) async {
+      final tts = HeldTts();
+      await open(tester, '/read/5787:2/0', tts);
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      expect(tts.spoken, hasLength(1));
+      tts.finish();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
+      expect(tts.spoken, hasLength(2), reason: 'on to the next reading by itself');
+      expect(find.text('Read the Hebrew again'), findsOneWidget);
+      await tester.tap(inPlayer('Next verse'));
+      await tester.pumpAndSettle();
+      expect(tts.spoken, hasLength(3));
+      await tester.tap(inPlayer('Stop'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('highlights each verse of a section as it is read', (tester) async {
       final tts = HeldTts();
       await open(tester, '/read/5787:2/0', tts,
@@ -333,17 +368,56 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('the display sheet turns Listen along on, where the haftarah\'s has no such switch', (tester) async {
+    testWidgets('read on through the parsha, finishes each aliyah and goes straight on into the next', (tester) async {
+      final tts = RecordingTts();
+      final c = await open(tester, '/read/5787:2/0', tts,
+          settings: const AppSettings(
+            onboardingComplete: true,
+            method: ReadingMethod.aliyahByAliyah,
+            listenThroughParsha: true,
+          ));
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pump();
+      await tester.pump();
+      final verses = tts.spoken.length;
+      // Mikrah, Mikrah and Targum, each after its breath; then on.
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+      await tester.pump();
+      await tester.pump();
+      final week = c.read(progressProvider).week('5787:2');
+      expect(week.isAliyahDone(0), isTrue, reason: 'finished as it was read');
+      expect(tts.spoken.length, greaterThan(3 * verses), reason: 'reading the next aliyah');
+      expect(week.isUnitDone(1, ReadingPass.mikrah1), isTrue, reason: 'the next aliyah read on from its start');
+      expect(player, findsOneWidget);
+      await tester.tap(inPlayer('Stop'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('the display sheet turns Listen along off, and on reads through the parsha, where the haftarah\'s has no such switch',
+        (tester) async {
       final c = await open(tester, '/read/5787:2/0', RecordingTts());
       await tester.tap(find.byTooltip('Display settings'));
       await tester.pumpAndSettle();
       final row = find.widgetWithText(SwitchRow, 'Listen along');
+      final through = find.widgetWithText(SwitchRow, 'Read on through the parsha');
       await tester.scrollUntilVisible(row, 100, scrollable: find.descendant(of: find.byType(BottomSheet), matching: find.byType(Scrollable)).first);
       await Scrollable.ensureVisible(tester.element(row), alignment: 0.5);
       await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).listenAlong, isTrue, reason: 'on unless turned off');
+      expect(through, findsOneWidget);
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(c.read(settingsProvider).listenAlong, isTrue);
+      expect(c.read(settingsProvider).listenAlong, isFalse);
+      expect(through, findsNothing, reason: 'only while it reads on');
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await Scrollable.ensureVisible(tester.element(through), alignment: 0.5);
+      await tester.pumpAndSettle();
+      await tester.tap(through);
+      await tester.pumpAndSettle();
+      expect(c.read(settingsProvider).listenThroughParsha, isTrue);
       Navigator.pop(tester.element(find.byType(BottomSheet)));
       await tester.pumpAndSettle();
 
@@ -381,7 +455,7 @@ void main() {
     });
   });
 
-  testWidgets('a rate chosen from the player is kept, and the verse is read again at it', (tester) async {
+  testWidgets('a rate chosen from the player is kept, and the verse goes on at it', (tester) async {
     final tts = HeldTts();
     final c = await open(tester, '/read/5787:2/0?mode=full', tts);
     await tester.tap(find.byTooltip('Listen'));

@@ -1123,7 +1123,14 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get listenAlongDesc =>
-      'ההשמעה עוברת מעצמה מכל קריאה לקריאה שאחריה, עד סוף העלייה. עזר למעקב אחר הטקסט, לא תחליף לקריאה בו.';
+      'ההשמעה עוברת מעצמה מכל קריאה לקריאה שאחריה, עד סוף העלייה. כשהיא כבויה, ההשמעה קוראת את השלב המוצג ונעצרת. עזר למעקב אחר הטקסט, לא תחליף לקריאה בו.';
+
+  @override
+  String get listenThroughParsha => 'השמעה רציפה עד סוף הפרשה';
+
+  @override
+  String get listenThroughParshaDesc =>
+      'בסוף כל עלייה ההשמעה מסמנת אותה כנקראה וממשיכה מיד לעלייה הבאה, עד סוף הפרשה.';
 
   @override
   String get ttsUnavailable => 'הקראה קולית אינה זמינה במכשיר זה.';

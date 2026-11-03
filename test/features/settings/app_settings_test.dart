@@ -35,7 +35,8 @@ void main() {
       habitAnchor: HabitAnchor.shacharit,
       singleKeyShortcuts: false,
       cityOfferAnswered: true,
-      listenAlong: true,
+      listenAlong: false,
+      listenThroughParsha: true,
       parallelColumns: false,
       fullTextWholeParsha: true,
     );
@@ -49,8 +50,11 @@ void main() {
     expect(back.habitAnchor, HabitAnchor.shacharit);
     expect(back.cityOfferAnswered, isTrue);
     expect(AppSettings.fromJson({}).cityOfferAnswered, isFalse, reason: 'offered until answered');
-    expect(back.listenAlong, isTrue);
-    expect(AppSettings.fromJson({}).listenAlong, isFalse, reason: 'Listen stops after the step unless asked');
+    expect(back.listenAlong, isFalse);
+    expect(AppSettings.fromJson({}).listenAlong, isTrue, reason: 'Listen reads on unless asked to stop after the step');
+    expect(AppSettings.fromJson({'listenAlong': false}).listenAlong, isTrue, reason: 'the old key, saved off by default, is left behind');
+    expect(back.listenThroughParsha, isTrue);
+    expect(AppSettings.fromJson({}).listenThroughParsha, isFalse, reason: 'to the end of the aliyah unless asked');
     expect(back.parallelColumns, isFalse);
     expect(AppSettings.fromJson({}).parallelColumns, isTrue, reason: 'side by side on a wide screen unless turned off');
     expect(back.fullTextWholeParsha, isTrue);

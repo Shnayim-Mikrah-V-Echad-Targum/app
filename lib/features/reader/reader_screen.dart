@@ -1133,6 +1133,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _quietFocus = null;
       });
     }
+    _prefetchNextStep(texts, flow, s);
     final end = await _listen.play(queue, rate: s.speechRate, startVerse: start);
     if (!mounted) return;
     switch (end) {
@@ -1145,6 +1146,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         // aliyah's end, or without it, Listen is over.
         if (_listensOn()) {
           setState(() => _listenOn = Timer(_listenAlongPause, _listenOnNow));
+        } else if (_fullText && _listenNextAliyah != null) {
+          // The full text of one aliyah read to its end: on into the next.
+          _listenIntoAliyah(_listenNextAliyah!);
         } else {
           _listen.end();
         }
@@ -1158,7 +1162,82 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final flow = _shown?.$3;
     if (flow == null || _fullText || _finished || !ref.read(settingsProvider).listenAlong) return false;
     if (_order case final order?) return order.next(_aliyah, _step) != null;
-    return _chunk < flow.chunks.length - 1 || _step < flow.stepsFor(_chunk).length - 1;
+    return !_atAliyahEnd(flow) || _listenNextAliyah != null;
+  }
+
+  /// While Listen along reads a step of the guided reader, the app's voice
+  /// makes the next step's first verse, so that it is ready after the
+  /// breath between them rather than made then.
+  void _prefetchNextStep(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
+    if (_fullText || _finished || _order != null || !s.listenAlong) return;
+    final (int, int)? next = _step + 1 < flow.stepsFor(_chunk).length
+        ? (_chunk, _step + 1)
+        : _chunk + 1 < flow.chunks.length
+            ? (_chunk + 1, flow.entryStep(_chunk + 1, _doneAtOpen))
+            : null;
+    if (next == null) return;
+    final queue = _speechQueue(texts, flow, s, chunk: next.$1, step: next.$2);
+    if (queue.items.isNotEmpty) _tts.prefetch(queue.items.first, role: queue.roles.first);
+  }
+
+  /// Whether the step shown is the aliyah's last.
+  bool _atAliyahEnd(ReaderFlow flow) => _chunk == flow.chunks.length - 1 && _step == flow.stepsFor(_chunk).length - 1;
+
+  /// The aliyah Listen goes on into from the end of this one, where it reads
+  /// on through the parsha; null where it stops.
+  int? get _listenNextAliyah {
+    final s = ref.read(settingsProvider);
+    if (!s.listenAlong || !s.listenThroughParsha || _aliyah + 1 >= kAliyot || _wholeParsha) return null;
+    return _aliyah + 1;
+  }
+
+  /// On from the aliyah finished into aliyah [a], and Listen reads it from
+  /// where it opens, as it read this one.
+  void _listenIntoAliyah(int a) {
+    setState(() {
+      _aliyah = a;
+      _chosenAliyah = true;
+      _positioned = false;
+      _placeText = true;
+      _finished = false;
+      _completedOnVisit = false;
+      _focusedVerse = null;
+      _quietFocus = null;
+      _targetVerse = null;
+      _quietStep = true;
+    });
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final shown = _shown;
+      if (!mounted || shown == null || !_listen.active || _aliyah != a) return;
+      _startListening(shown.$2, shown.$3, checkVoice: false, startVerse: _fullText ? 0 : null);
+    });
+  }
+
+  /// While Listen reads the guided reader, from verse [r] tapped: within the
+  /// step, from it; else from the step that reads it, in the same reading.
+  void _listenFromVerse(ReaderTexts texts, ReaderFlow flow, VerseRef r) {
+    final i = flow.verses.indexOf(r);
+    if (i < 0 || !_listen.active) return;
+    final here = flow.chunks[_chunk];
+    if (i >= here.start && i < here.end) {
+      if (i != _listen.verse) _listen.moveTo(i);
+      return;
+    }
+    final chunk = flow.chunks.indexWhere((c) => i >= c.start && i < c.end);
+    if (chunk < 0) return;
+    final kind = flow.stepsFor(_chunk)[_step];
+    final step = flow.stepsFor(chunk).indexOf(kind);
+    _listenOn?.cancel();
+    setState(() {
+      _listenOn = null;
+      _listenHeld = false;
+      _chunk = chunk;
+      _step = step < 0 ? 0 : step;
+      _quietStep = true;
+    });
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    _startListening(texts, flow, checkVoice: false, startVerse: i);
   }
 
   /// Listen along's breath is over: on to the next reading, which it reads.
@@ -1171,6 +1250,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (!mounted || shown == null || !_listen.active) return;
     if (!_listensOn()) return _stopListening();
     final (ctx, texts, flow) = shown;
+    if (_order == null && _atAliyahEnd(flow)) {
+      // The aliyah read through: finished as Next finishes it, and on into
+      // the next.
+      final next = _listenNextAliyah!;
+      _next(ctx, flow, listening: true);
+      return _listenIntoAliyah(next);
+    }
     _next(ctx, flow, listening: true);
     // In the whole parsha, the next reading may be another aliyah's.
     _startListening(texts, _order == null ? flow : _flowFor(ctx, texts, ref.read(settingsProvider)), checkVoice: false);
@@ -1263,7 +1349,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// parsha), each verse and then its Targum, where it is shown; in the
   /// guided reader, the step shown, as the step shows it. The Divine Name is
   /// spoken as the reader has chosen.
-  SpeechQueue _speechQueue(ReaderTexts texts, ReaderFlow flow, AppSettings s) {
+  SpeechQueue _speechQueue(ReaderTexts texts, ReaderFlow flow, AppSettings s, {int? chunk, int? step}) {
+    final atChunk = chunk ?? _chunk;
+    final atStep = step ?? _step;
     // With the cantillation, for the app's own Hebrew voice's stress.
     String hebrew(Verse v, {bool targum = false}) =>
         HebrewSpeech.spoken(v.readText, keepTeamim: true, divineName: s.divineName, targum: targum);
@@ -1275,15 +1363,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       }
       return queue;
     }
-    final kind = flow.stepsFor(_chunk)[_step];
-    final refs = flow.stepVerses(_chunk, kind);
+    final kind = flow.stepsFor(atChunk)[atStep];
+    final refs = flow.stepVerses(atChunk, kind);
     final index = {for (final (i, r) in flow.verses.indexed) r: i};
     switch (kind) {
       case StepKind.targum:
         for (final r in refs) {
           queue.add(index[r]!, hebrew(texts.onkelos!.verse(r), targum: true), role: SpeechRole.targum);
           // With the Hebrew of a verse read a third time among the Targum.
-          if (flow.thirdHebrewInTargum(_chunk, r)) queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
+          if (flow.thirdHebrewInTargum(atChunk, r)) queue.add(index[r]!, hebrew(texts.mikrah.verse(r)));
         }
       case StepKind.rashi:
         final comments = [for (final r in refs) texts.rashi!.on(r)];
@@ -1911,6 +1999,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                     final i? when i < flow.verses.length => flow.verses[i],
                                     _ => null,
                                   },
+                                  onVerseTap: _listen.active ? (r) => _listenFromVerse(texts, flow, r) : null,
                                   onVerseOptions: (r) => _openVerseOptions(texts, flow.book, r),
                                   marksOf: marksOf,
                                   ),
@@ -2256,6 +2345,23 @@ class _KeyCombos extends StatelessWidget {
 /// The current step of guided reading: one verse, section or aliyah, in the
 /// layer to be read now (DESIGN_SYSTEM.md §6.17). The pass track, one line
 /// saying what to read, and then the verses: nothing else comes before them.
+/// [child], which a tap or click reads from while Listen is on ([onTap]);
+/// otherwise as it is.
+class _TapToListen extends StatelessWidget {
+  const _TapToListen({required this.onTap, required this.child});
+
+  final VoidCallback? onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => onTap == null
+      ? child
+      : MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: child),
+        );
+}
+
 class _GuidedStep extends StatelessWidget {
   const _GuidedStep({
     this.notice,
@@ -2270,6 +2376,7 @@ class _GuidedStep extends StatelessWidget {
     required this.stepTitle,
     this.quiet = false,
     this.speakingVerse,
+    this.onVerseTap,
     required this.onVerseOptions,
     required this.marksOf,
   });
@@ -2298,6 +2405,10 @@ class _GuidedStep extends StatelessWidget {
 
   /// The verse Listen is reading, which is highlighted.
   final VerseRef? speakingVerse;
+
+  /// While Listen reads, a tap on a verse, the step's or a neighbour shown
+  /// for context, reads from it.
+  final ValueChanged<VerseRef>? onVerseTap;
 
   /// Opens a verse's options, from a long press on it.
   final ValueChanged<VerseRef> onVerseOptions;
@@ -2481,7 +2592,9 @@ class _GuidedStep extends StatelessWidget {
           hanging(LayerLabel(l.targumLabel)),
         // The verse and what goes with it, highlighted together while Listen
         // reads it.
-        SpeakingVerseMark(
+        _TapToListen(
+          onTap: onVerseTap == null ? null : () => onVerseTap!(r),
+          child: SpeakingVerseMark(
           active: r == speakingVerse,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2495,6 +2608,7 @@ class _GuidedStep extends StatelessWidget {
             ],
           ),
         ),
+        ),
         if (texts.mikrah.breaks[r] case final brk? when hebrewStep)
           SectionGap(kind: brk, settings: settings)
         else if (i < refs.length - 1)
@@ -2506,14 +2620,18 @@ class _GuidedStep extends StatelessWidget {
     // dimmed, and neither heard nor touched, so that the step's verse is the
     // only one to read, and the one Next and Back go on from.
     final targumStep = kind == StepKind.targum;
+    // While Listen reads, a tap on one reads from it.
     Widget neighbour(VerseRef r) => ExcludeSemantics(
-          child: IgnorePointer(
-            child: ScriptureVerse(
-              verse: (targumStep ? texts.onkelos! : texts.mikrah).verse(r),
-              kind: targumStep ? ScriptureKind.targum : ScriptureKind.mikrah,
-              settings: settings,
-              dimmed: true,
-              hangingNumber: true,
+          child: _TapToListen(
+            onTap: onVerseTap == null ? null : () => onVerseTap!(r),
+            child: IgnorePointer(
+              child: ScriptureVerse(
+                verse: (targumStep ? texts.onkelos! : texts.mikrah).verse(r),
+                kind: targumStep ? ScriptureKind.targum : ScriptureKind.mikrah,
+                settings: settings,
+                dimmed: true,
+                hangingNumber: true,
+              ),
             ),
           ),
         );
@@ -3190,7 +3308,8 @@ class _FullText extends StatelessWidget {
       final brk = texts.mikrah.breaks[r];
       final rashi = settings.showRashi || settings.usesRashi ? texts.rashi?.on(r) ?? const <Comment>[] : const <Comment>[];
       final marks = marksOf(r);
-      final focusTap = settings.focusMode ? () => onVerseTap(i) : null;
+      // In focus mode, and while Listen reads, which a tap moves to the verse.
+      final focusTap = settings.focusMode || speakingVerse != null ? () => onVerseTap(i) : null;
       final mikrah = ScriptureVerse(
         verse: texts.mikrah.verse(r),
         kind: ScriptureKind.mikrah,

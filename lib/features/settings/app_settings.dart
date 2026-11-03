@@ -223,7 +223,8 @@ class AppSettings {
     this.uiFont = UiFont.standard,
     this.boldText = false,
     this.focusMode = false,
-    this.listenAlong = false,
+    this.listenAlong = true,
+    this.listenThroughParsha = false,
     this.parallelColumns = true,
     this.fullTextWholeParsha = false,
     this.keepScreenOn = true,
@@ -339,9 +340,14 @@ class AppSettings {
   /// Highlight the current verse and dim the rest.
   final bool focusMode;
 
-  /// In the guided reader, Listen goes on from each reading to the next by
-  /// itself, to the end of the aliyah: Mikrah, Mikrah, Targum, hands-free.
+  /// Listen goes on from each reading to the next by itself, to the end of
+  /// the aliyah: in the guided reader, Mikrah, Mikrah, Targum, hands-free.
+  /// Off, it reads the step shown and stops.
   final bool listenAlong;
+
+  /// With [listenAlong], Listen goes on past the aliyah's end to the next,
+  /// to the end of the parsha, each aliyah finished as it is read.
+  final bool listenThroughParsha;
 
   /// On a wide screen, the full text sets the Targum (or, without it, the
   /// translation) in a column beside each verse rather than beneath it
@@ -585,6 +591,7 @@ class AppSettings {
     bool? boldText,
     bool? focusMode,
     bool? listenAlong,
+    bool? listenThroughParsha,
     bool? parallelColumns,
     bool? fullTextWholeParsha,
     bool? keepScreenOn,
@@ -657,6 +664,7 @@ class AppSettings {
         boldText: boldText ?? this.boldText,
         focusMode: focusMode ?? this.focusMode,
         listenAlong: listenAlong ?? this.listenAlong,
+        listenThroughParsha: listenThroughParsha ?? this.listenThroughParsha,
         parallelColumns: parallelColumns ?? this.parallelColumns,
         fullTextWholeParsha: fullTextWholeParsha ?? this.fullTextWholeParsha,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
@@ -755,7 +763,8 @@ class AppSettings {
         'uiFont': uiFont.name,
         'boldText': boldText,
         'focusMode': focusMode,
-        'listenAlong': listenAlong,
+        'listenOn': listenAlong,
+        'listenThroughParsha': listenThroughParsha,
         'parallelColumns': parallelColumns,
         'fullTextWholeParsha': fullTextWholeParsha,
         'keepScreenOn': keepScreenOn,
@@ -863,7 +872,10 @@ class AppSettings {
       uiFont: e(UiFont.values, j['uiFont'], d.uiFont),
       boldText: b('boldText', d.boldText),
       focusMode: b('focusMode', d.focusMode),
-      listenAlong: b('listenAlong', d.listenAlong),
+      // Kept as 'listenOn' since it came on by default: 'listenAlong', saved
+      // off by everyone who never chose, is left behind.
+      listenAlong: b('listenOn', d.listenAlong),
+      listenThroughParsha: b('listenThroughParsha', d.listenThroughParsha),
       parallelColumns: b('parallelColumns', d.parallelColumns),
       fullTextWholeParsha: b('fullTextWholeParsha', d.fullTextWholeParsha),
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),

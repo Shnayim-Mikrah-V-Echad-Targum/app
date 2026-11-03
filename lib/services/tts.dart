@@ -44,6 +44,11 @@ class TtsService {
       _engineStopped();
       _releaseAudioSessionSoon();
     });
+    // How far the device's voice has read, for a change of rate to go on
+    // from: the words before the one it is saying.
+    _tts.setProgressHandler((text, start, end, word) {
+      _wordsSpoken = _words.allMatches(text.substring(0, start.clamp(0, text.length))).length;
+    });
     _sessionOwner = this;
     audioSessionChannel.setMethodCallHandler(_audioSessionCall);
   }
@@ -212,6 +217,12 @@ class TtsService {
     return null;
   }
 
+  static final _words = RegExp(r'\S+');
+
+  // The words of the utterance being spoken that the device's voice has
+  // read, as it reports them (Android, iOS, the web; otherwise none).
+  int _wordsSpoken = 0;
+
   /// Speaks [text], stopping whatever is being spoken first, and completes
   /// when it is finished or stopped: with true if it was spoken to its end.
   /// [role] says what it is, for the voice the reader chose for it. Throws
@@ -231,6 +242,7 @@ class TtsService {
       return false;
     }
     final c = _utterance = Completer<bool>();
+    _wordsSpoken = 0;
     try {
       await _prepareAudioSession();
       // The browser picks the language's voice from those it has loaded. A
@@ -442,7 +454,9 @@ class TtsService {
     return end.future;
   }
 
-  Future<void> _play(int from) async {
+  /// Speaks the queue from item [from], the first of it from its word
+  /// [fromWord] on.
+  Future<void> _play(int from, {int fromWord = 0}) async {
     final token = ++_queueToken;
     _set(paused, false);
     for (var i = from; i < _queue.length; i++) {
@@ -451,7 +465,8 @@ class TtsService {
       try {
         // The app's voice makes the next item while this one is heard.
         if (_tts case final VoiceRoutingTts voices when i + 1 < _queue.length) voices.prefetch(_queue[i + 1], role: _roles[i + 1]);
-        spokenToEnd = await speak(_queue[i], language: _queueLanguage, rate: _queueRate, role: _roles[i]);
+        final item = i == from && fromWord > 0 ? _queue[i].split(_spaces).skip(fromWord).join(' ') : _queue[i];
+        spokenToEnd = await speak(item, language: _queueLanguage, rate: _queueRate, role: _roles[i]);
       } catch (e, s) {
         if (token == _queueToken) _endQueue(completed: false, error: e, stack: s);
         return;
@@ -525,13 +540,28 @@ class TtsService {
     _moveTo(index);
   }
 
-  /// Speaks the queue at [rate] from now on: the item being spoken starts
-  /// again at it.
+  static final _spaces = RegExp(r'\s+');
+
+  /// Has the app's voice make [text], read as [role], ahead of its turn
+  /// (the next reading's first verse, say); nothing for the device's voice.
+  void prefetch(String text, {required SpeechRole role}) {
+    if (_tts case final VoiceRoutingTts voices) voices.prefetch(text, role: role);
+  }
+
+  /// Speaks the queue at [rate] from now on, going on from where it is: the
+  /// app's voice plays what it is reading faster or slower, and the
+  /// device's, which can't, says the item again from the word it had come to
+  /// (from its start where the device doesn't tell how far it has read).
   void setRate(double rate) {
     if (rate == _queueRate) return;
     _queueRate = rate;
     final at = currentIndex.value;
-    if (at != null && !paused.value) unawaited(_play(at));
+    if (at == null || paused.value) return;
+    if (_tts case final VoiceRoutingTts voices when voices.reading) {
+      unawaited(voices.changeRate(rate).then((_) {}, onError: (Object _) {}));
+      return;
+    }
+    unawaited(_play(at, fromWord: _wordsSpoken));
   }
 
   int? _groupStart(int direction) {

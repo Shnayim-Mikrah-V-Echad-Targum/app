@@ -209,6 +209,10 @@ class _Voices extends HebrewVoices {
 }
 
 class _Player extends Fake implements AudioPlayer {
+  final rates = <double>[];
+
+  @override
+  Future<void> setPlaybackRate(double rate) async => rates.add(rate);
   final played = <Source>[];
   int stops = 0;
   final _complete = StreamController<void>.broadcast();
@@ -565,6 +569,22 @@ void main() {
       expect(voices.asked, hasLength(1));
       await tts.speak(pointed);
       expect(voices.asked, hasLength(1), reason: 'made once');
+    });
+
+    test('reads a verse again from what it made, and a new rate plays what it reads faster or slower at once', () async {
+      voices.readyIds.add('a');
+      await tts.setLanguage('he-IL');
+      await tts.setSpeechRate(kDefaultSpeechRate);
+      await tts.speak(pointed);
+      player.finish();
+      await Future<void>.delayed(Duration.zero);
+      await tts.speak(pointed);
+      expect(voices.asked, hasLength(1), reason: 'the Hebrew read a second time is made once');
+      expect(player.played, hasLength(2));
+      expect(tts.reading, isTrue);
+      await tts.changeRate(kDefaultSpeechRate * 1.5);
+      expect(player.rates.last, closeTo(1.5, 1e-9));
+      expect(player.played, hasLength(2), reason: 'going on, not starting again');
     });
 
     test('stopped while the audio is being made or played, reports a cancel and plays nothing more', () async {

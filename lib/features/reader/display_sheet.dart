@@ -122,8 +122,13 @@ class _DisplaySheet extends ConsumerWidget {
                   toggle(l.sideBySide, s.parallelColumns, (s, v) => s.copyWith(parallelColumns: v),
                       subtitle: l.sideBySideDesc),
                 toggle(l.focusMode, s.focusMode, (s, v) => s.copyWith(focusMode: v), subtitle: l.focusModeDesc),
-                if (listenAlong)
+                if (listenAlong) ...[
                   toggle(l.listenAlong, s.listenAlong, (s, v) => s.copyWith(listenAlong: v), subtitle: l.listenAlongDesc),
+                  // How far it reads on: only while it does.
+                  if (s.listenAlong)
+                    toggle(l.listenThroughParsha, s.listenThroughParsha, (s, v) => s.copyWith(listenThroughParsha: v),
+                        subtitle: l.listenThroughParshaDesc),
+                ],
                 // In line with the rows' text, as on the paper of a page.
                 ListTileTheme.merge(
                   contentPadding: const EdgeInsets.symmetric(horizontal: PaperGroup.plainInset),

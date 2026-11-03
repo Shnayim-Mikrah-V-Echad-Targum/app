@@ -1117,7 +1117,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listenAlongDesc =>
-      'Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.';
+      'Keeps playing from one reading to the next, to the end of the aliyah. Off, Listen reads the step shown and stops. An aid for following the text, not a substitute for reading it.';
+
+  @override
+  String get listenThroughParsha => 'Read on through the parsha';
+
+  @override
+  String get listenThroughParshaDesc =>
+      'At the end of an aliyah, Listen marks it read and goes straight on into the next, to the end of the parsha.';
 
   @override
   String get ttsUnavailable => 'Text-to-speech isn’t available on this device.';

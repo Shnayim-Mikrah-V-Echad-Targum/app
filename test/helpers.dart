@@ -329,6 +329,10 @@ class HeldTts extends RecordingTts {
 
 class _SilentEngine extends Fake implements FlutterTts {
   @override
+  void setProgressHandler(ProgressHandler callback) => progressHandler = callback;
+  ProgressHandler? progressHandler;
+
+  @override
   void setStartHandler(VoidCallback callback) {}
   @override
   void setCompletionHandler(VoidCallback callback) {}
