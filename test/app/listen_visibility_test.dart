@@ -32,7 +32,8 @@ class _VoiceHeldTts extends HeldTts {
 void main() {
   // Friday of Bereshit 5787.
   final friday = DateTime(2026, 10, 9, 10);
-  final joined = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4));
+  // Each verse with its Targum, item after item.
+  final joined = AppSettings(onboardingComplete: true, joinDate: LocalDate(2026, 10, 4), fullTextListen: FullTextListen.verseAndTargum);
 
   Future<void> loadTexts(WidgetTester tester) async {
     await tester.pump();

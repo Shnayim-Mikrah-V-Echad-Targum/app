@@ -1126,6 +1126,25 @@ class AppLocalizationsHe extends AppLocalizations {
       'ההשמעה עוברת מעצמה מכל קריאה לקריאה שאחריה, עד סוף העלייה. כשהיא כבויה, ההשמעה קוראת את השלב המוצג ונעצרת. עזר למעקב אחר הטקסט, לא תחליף לקריאה בו.';
 
   @override
+  String get fullTextListenLabel => 'ההשמעה בטקסט המלא קוראת';
+
+  @override
+  String get fullTextListenRounds => 'את העברית פעמיים, ואז את התרגום';
+
+  @override
+  String get fullTextListenRoundsDesc =>
+      'את כולו, ואז את כולו שוב, ואז את כל התרגום. סבב שכבר סומן כנקרא מדולג, וכל סבב שנשמע עד סופו מסומן כנקרא.';
+
+  @override
+  String get fullTextListenVerseAndTargum => 'כל פסוק, ואחריו התרגום שלו';
+
+  @override
+  String get fullTextListenHebrew => 'את העברית בלבד';
+
+  @override
+  String get fullTextListenTargum => 'את התרגום בלבד';
+
+  @override
   String get listenThroughParsha => 'השמעה רציפה עד סוף הפרשה';
 
   @override

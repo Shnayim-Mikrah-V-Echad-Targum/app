@@ -193,6 +193,18 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             const HebrewVoiceRow(),
           ],
         ),
+        ChoiceGroup<FullTextListen>(
+          title: l.fullTextListenLabel,
+          value: s.fullTextListen,
+          help: s.fullTextListen == FullTextListen.rounds ? l.fullTextListenRoundsDesc : null,
+          choices: [
+            Choice(FullTextListen.rounds, l.fullTextListenRounds),
+            Choice(FullTextListen.verseAndTargum, l.fullTextListenVerseAndTargum),
+            Choice(FullTextListen.hebrew, l.fullTextListenHebrew),
+            Choice(FullTextListen.targum, l.fullTextListenTargum),
+          ],
+          onChanged: (v) => update((s) => s.copyWith(fullTextListen: v)),
+        ),
         GroupHeader(l.a11yGroupMore),
         PaperGroup(
           children: [
