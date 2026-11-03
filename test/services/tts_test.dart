@@ -12,6 +12,7 @@ import 'package:shnayim_mikrah/services/tts.dart';
 class _FakeTts extends Fake implements FlutterTts {
   @override
   void setProgressHandler(ProgressHandler callback) => progressHandler = callback;
+  @override
   ProgressHandler? progressHandler;
 
   final calls = <String>[];
@@ -66,6 +67,7 @@ class _FakeTts extends Fake implements FlutterTts {
 class _Engine extends Fake implements FlutterTts {
   @override
   void setProgressHandler(ProgressHandler callback) => progressHandler = callback;
+  @override
   ProgressHandler? progressHandler;
 
   VoidCallback? _onStart;
