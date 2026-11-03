@@ -1629,6 +1629,42 @@ abstract class AppLocalizations {
   /// **'Keeps playing from one reading to the next, to the end of the aliyah. Off, Listen reads the step shown and stops. An aid for following the text, not a substitute for reading it.'**
   String get listenAlongDesc;
 
+  /// No description provided for @fullTextListenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen in the full text reads'**
+  String get fullTextListenLabel;
+
+  /// No description provided for @fullTextListenRounds.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hebrew twice, then the Targum'**
+  String get fullTextListenRounds;
+
+  /// No description provided for @fullTextListenRoundsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'All of it, then all of it again, then all its Targum. A round already marked read is left out, and each heard to its end is marked read.'**
+  String get fullTextListenRoundsDesc;
+
+  /// No description provided for @fullTextListenVerseAndTargum.
+  ///
+  /// In en, this message translates to:
+  /// **'Each verse, then its Targum'**
+  String get fullTextListenVerseAndTargum;
+
+  /// No description provided for @fullTextListenHebrew.
+  ///
+  /// In en, this message translates to:
+  /// **'The Hebrew only'**
+  String get fullTextListenHebrew;
+
+  /// No description provided for @fullTextListenTargum.
+  ///
+  /// In en, this message translates to:
+  /// **'The Targum only'**
+  String get fullTextListenTargum;
+
   /// No description provided for @listenThroughParsha.
   ///
   /// In en, this message translates to:

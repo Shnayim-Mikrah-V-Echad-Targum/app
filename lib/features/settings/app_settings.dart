@@ -27,6 +27,23 @@ enum ReadingMethod {
   wholeParsha,
 }
 
+/// How Listen reads the full text.
+enum FullTextListen {
+  /// All the Hebrew shown, then all of it again, then all its Targum, as
+  /// Shnayim Mikrah is read: each round already marked read for every
+  /// aliyah shown is left out, and each read through is marked read.
+  rounds,
+
+  /// Each verse, then its Targum.
+  verseAndTargum,
+
+  /// The Hebrew alone.
+  hebrew,
+
+  /// The Targum alone.
+  targum,
+}
+
 /// What is read for the "echad Targum".
 enum SecondReading {
   /// Targum Onkelos (SA 285:1).
@@ -225,6 +242,7 @@ class AppSettings {
     this.focusMode = false,
     this.listenAlong = true,
     this.listenThroughParsha = false,
+    this.fullTextListen = FullTextListen.rounds,
     this.parallelColumns = true,
     this.fullTextWholeParsha = false,
     this.keepScreenOn = true,
@@ -348,6 +366,9 @@ class AppSettings {
   /// With [listenAlong], Listen goes on past the aliyah's end to the next,
   /// to the end of the parsha, each aliyah finished as it is read.
   final bool listenThroughParsha;
+
+  /// How Listen reads the full text.
+  final FullTextListen fullTextListen;
 
   /// On a wide screen, the full text sets the Targum (or, without it, the
   /// translation) in a column beside each verse rather than beneath it
@@ -592,6 +613,7 @@ class AppSettings {
     bool? focusMode,
     bool? listenAlong,
     bool? listenThroughParsha,
+    FullTextListen? fullTextListen,
     bool? parallelColumns,
     bool? fullTextWholeParsha,
     bool? keepScreenOn,
@@ -665,6 +687,7 @@ class AppSettings {
         focusMode: focusMode ?? this.focusMode,
         listenAlong: listenAlong ?? this.listenAlong,
         listenThroughParsha: listenThroughParsha ?? this.listenThroughParsha,
+        fullTextListen: fullTextListen ?? this.fullTextListen,
         parallelColumns: parallelColumns ?? this.parallelColumns,
         fullTextWholeParsha: fullTextWholeParsha ?? this.fullTextWholeParsha,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
@@ -765,6 +788,7 @@ class AppSettings {
         'focusMode': focusMode,
         'listenOn': listenAlong,
         'listenThroughParsha': listenThroughParsha,
+        'fullTextListen': fullTextListen.name,
         'parallelColumns': parallelColumns,
         'fullTextWholeParsha': fullTextWholeParsha,
         'keepScreenOn': keepScreenOn,
@@ -876,6 +900,7 @@ class AppSettings {
       // off by everyone who never chose, is left behind.
       listenAlong: b('listenOn', d.listenAlong),
       listenThroughParsha: b('listenThroughParsha', d.listenThroughParsha),
+      fullTextListen: e(FullTextListen.values, j['fullTextListen'], d.fullTextListen),
       parallelColumns: b('parallelColumns', d.parallelColumns),
       fullTextWholeParsha: b('fullTextWholeParsha', d.fullTextWholeParsha),
       keepScreenOn: b('keepScreenOn', d.keepScreenOn),

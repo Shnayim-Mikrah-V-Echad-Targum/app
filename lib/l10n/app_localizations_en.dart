@@ -1120,6 +1120,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keeps playing from one reading to the next, to the end of the aliyah. Off, Listen reads the step shown and stops. An aid for following the text, not a substitute for reading it.';
 
   @override
+  String get fullTextListenLabel => 'Listen in the full text reads';
+
+  @override
+  String get fullTextListenRounds => 'The Hebrew twice, then the Targum';
+
+  @override
+  String get fullTextListenRoundsDesc =>
+      'All of it, then all of it again, then all its Targum. A round already marked read is left out, and each heard to its end is marked read.';
+
+  @override
+  String get fullTextListenVerseAndTargum => 'Each verse, then its Targum';
+
+  @override
+  String get fullTextListenHebrew => 'The Hebrew only';
+
+  @override
+  String get fullTextListenTargum => 'The Targum only';
+
+  @override
   String get listenThroughParsha => 'Read on through the parsha';
 
   @override

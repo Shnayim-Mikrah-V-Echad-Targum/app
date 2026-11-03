@@ -148,6 +148,24 @@ class _DisplaySheet extends ConsumerWidget {
               ],
             ),
           ),
+          // How Listen reads the full text: only there.
+          if (listenAlong && sideBySide)
+            Padding(
+              padding: inset.copyWith(top: Space.xl),
+              child: ChoiceGroup<FullTextListen>(
+                title: l.fullTextListenLabel,
+                headingLevel: 3,
+                value: s.fullTextListen,
+                help: s.fullTextListen == FullTextListen.rounds ? l.fullTextListenRoundsDesc : null,
+                choices: [
+                  Choice(FullTextListen.rounds, l.fullTextListenRounds),
+                  Choice(FullTextListen.verseAndTargum, l.fullTextListenVerseAndTargum),
+                  Choice(FullTextListen.hebrew, l.fullTextListenHebrew),
+                  Choice(FullTextListen.targum, l.fullTextListenTargum),
+                ],
+                onChanged: (v) => update((s) => s.copyWith(fullTextListen: v)),
+              ),
+            ),
           const Gap(Space.md),
           Padding(
             padding: inset,

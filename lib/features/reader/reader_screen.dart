@@ -1111,7 +1111,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// text, the verse opened at, the verse focus mode is on, or the first in
   /// view; in the guided reader, the step's first verse. Until the voice is
   /// stopped, the verse it reads is highlighted and the player shows.
-  Future<void> _startListening(ReaderTexts texts, ReaderFlow flow, {bool checkVoice = true, int? startVerse}) async {
+  Future<void> _startListening(ReaderTexts texts, ReaderFlow flow, {bool checkVoice = true, int? startVerse, ReadingPass? round}) async {
     final l = context.l10n;
     final hasHebrew = checkVoice ? await _tts.hasHebrewVoice() : null;
     // The browser may take a moment to load its voices, and an engine to
@@ -1119,6 +1119,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     // which nothing would then stop or pause.
     if (!mounted || !_onTop || appOutOfSight()) return;
     final s = ref.read(settingsProvider);
+    // The full text read in rounds: from the first not yet read, unless
+    // going on to the next.
+    _listenRound = _fullText && s.fullTextListen == FullTextListen.rounds ? round ?? _nextRound(texts) : null;
     final queue = _speechQueue(texts, flow, s);
     if (queue.isEmpty) return;
     if (hasHebrew == false && queue.language == 'he-IL') showStatus(context, l.ttsNoHebrewVoice);
@@ -1136,6 +1139,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _prefetchNextStep(texts, flow, s);
     final end = await _listen.play(queue, rate: s.speechRate, startVerse: start);
     if (!mounted) return;
+    final read = _listenRound;
+    if (end == ListenEnd.finished && read != null) {
+      // A round read through from the text's start is marked read, and
+      // Listen goes on to the next not yet read.
+      if (start == 0) _markRound(read);
+      if (_nextRound(texts, after: read) case final next?) {
+        _startListening(texts, flow, checkVoice: false, startVerse: 0, round: next);
+        return;
+      }
+    }
     switch (end) {
       case ListenEnd.failed:
         showStatus(context, _listen.lastError is HebrewVoiceFailure ? l.voiceCouldNotRead : l.ttsUnavailable);
@@ -1178,6 +1191,41 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (next == null) return;
     final queue = _speechQueue(texts, flow, s, chunk: next.$1, step: next.$2);
     if (queue.items.isNotEmpty) _tts.prefetch(queue.items.first, role: queue.roles.first);
+  }
+
+  /// In the full text read in rounds ([FullTextListen.rounds]), the round
+  /// Listen reads.
+  ReadingPass? _listenRound;
+
+  /// The aliyot the full text shows: the whole parsha's, or the one's.
+  List<int> get _shownAliyot => _wholeParsha ? [for (var a = 0; a < kAliyot; a++) a] : [_aliyah];
+
+  /// The full text's next round to read [after] the one given, or from the
+  /// first: one not yet read for every aliyah shown. With none [after], the
+  /// first, all of them read, to be heard again; null after the last.
+  ReadingPass? _nextRound(ReaderTexts texts, {ReadingPass? after}) {
+    final shown = _shown;
+    if (shown == null) return null;
+    final rounds = [ReadingPass.mikrah1, ReadingPass.mikrah2, if (texts.onkelos != null) ReadingPass.targum];
+    final week = ref.read(progressProvider).week(shown.$1.id);
+    final from = after == null ? 0 : rounds.indexOf(after) + 1;
+    for (var i = from; i < rounds.length; i++) {
+      if (!_shownAliyot.every((a) => week.isUnitDone(a, rounds[i]))) return rounds[i];
+    }
+    return after == null ? rounds.first : null;
+  }
+
+  /// Marks [round] read for each aliyah the full text shows, as Listen has
+  /// read it through.
+  void _markRound(ReadingPass round) {
+    final shown = _shown;
+    if (shown == null) return;
+    final progress = ref.read(progressProvider.notifier);
+    final week = ref.read(progressProvider).week(shown.$1.id);
+    final today = ref.read(todayProvider);
+    for (final a in _shownAliyot) {
+      if (!week.isUnitDone(a, round)) progress.markUnit(shown.$1.id, a, round, today);
+    }
   }
 
   /// Whether the step shown is the aliyah's last.
@@ -1357,9 +1405,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         HebrewSpeech.spoken(v.readText, keepTeamim: true, divineName: s.divineName, targum: targum);
     final queue = SpeechQueue(language: 'he-IL');
     if (_fullText || _finished) {
+      final onkelos = _fullText ? texts.onkelos : null;
+      // In the full text, as the reader chose; in rounds, the round's.
+      final (withHebrew, withTargum) = !_fullText
+          ? (true, false)
+          : switch (s.fullTextListen) {
+              FullTextListen.verseAndTargum => (true, onkelos != null),
+              FullTextListen.hebrew => (true, false),
+              FullTextListen.targum => (onkelos == null, onkelos != null),
+              FullTextListen.rounds => (_listenRound != ReadingPass.targum || onkelos == null, _listenRound == ReadingPass.targum && onkelos != null),
+            };
       for (final (i, r) in (_fullText ? _textVerses(flow) : flow.verses).indexed) {
-        queue.add(i, hebrew(texts.mikrah.verse(r)));
-        if (_fullText && texts.onkelos != null) queue.add(i, hebrew(texts.onkelos!.verse(r), targum: true), role: SpeechRole.targum);
+        if (withHebrew) queue.add(i, hebrew(texts.mikrah.verse(r)));
+        if (withTargum) queue.add(i, hebrew(onkelos!.verse(r), targum: true), role: SpeechRole.targum);
       }
       return queue;
     }

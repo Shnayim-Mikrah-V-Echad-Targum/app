@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shnayim_mikrah/app/providers.dart';
 import 'package:shnayim_mikrah/app/router.dart';
 import 'package:shnayim_mikrah/core/calendar/local_date.dart';
+import 'package:shnayim_mikrah/core/text/hebrew_text.dart';
 import 'package:shnayim_mikrah/features/progress/domain/progress_models.dart';
 import 'package:shnayim_mikrah/features/reader/haftarah_screen.dart';
 import 'package:shnayim_mikrah/features/reader/listen_along.dart';
@@ -90,7 +91,8 @@ void main() {
     testWidgets('highlights each verse as it is read, with its Targum, and goes on from the same verse after a pause',
         (tester) async {
       final tts = HeldTts();
-      await open(tester, '/read/5787:2/0?mode=full', tts);
+      await open(tester, '/read/5787:2/0?mode=full', tts,
+          settings: const AppSettings(onboardingComplete: true, fullTextListen: FullTextListen.verseAndTargum));
       expect(player, findsNothing);
       await tester.tap(find.byTooltip('Listen'));
       await tester.pumpAndSettle();
@@ -128,6 +130,34 @@ void main() {
       expect(player, findsNothing);
       expect(highlighted(tester), isEmpty);
       expect(find.byTooltip('Listen'), findsOneWidget);
+    });
+
+    testWidgets('by default reads the Hebrew through, then again, then the Targum, marking each round read', (tester) async {
+      final tts = RecordingTts();
+      final c = await open(tester, '/read/5787:2/0?mode=full', tts);
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      final verses = tester.widgetList(find.byType(VerseGroup, skipOffstage: false)).length;
+      expect(tts.spoken, hasLength(3 * verses));
+      expect(tts.spoken[verses], tts.spoken[0], reason: 'the Hebrew again, from its first verse');
+      expect(HebrewText.consonantsOnly(tts.spoken[1].$1), startsWith('ויולד נח שלשה בנים'), reason: 'the Hebrew straight through');
+      expect(HebrewText.consonantsOnly(tts.spoken[2 * verses].$1), startsWith('אלן תולדת נח'), reason: 'then the Targum');
+      final week = c.read(progressProvider).week('5787:2');
+      for (final pass in ReadingPass.values) {
+        expect(week.isUnitDone(0, pass), isTrue, reason: '$pass');
+      }
+    });
+
+    testWidgets('leaves out a round already marked read', (tester) async {
+      final tts = RecordingTts();
+      final c = await open(tester, '/read/5787:2/0?mode=full', tts);
+      c.read(progressProvider.notifier).markPass('5787:2', ReadingPass.mikrah1, LocalDate(2026, 10, 19));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Listen'));
+      await tester.pumpAndSettle();
+      final verses = tester.widgetList(find.byType(VerseGroup, skipOffstage: false)).length;
+      expect(tts.spoken, hasLength(2 * verses), reason: 'once more in Hebrew, then the Targum');
+      expect(HebrewText.consonantsOnly(tts.spoken[verses].$1), startsWith('אלן תולדת נח'));
     });
 
     testWidgets('a tap or click on a verse reads from it, without focus mode', (tester) async {
@@ -239,7 +269,7 @@ void main() {
     testWidgets('in focus mode, the verse being read is the focused one, and none of those dimmed', (tester) async {
       final tts = HeldTts();
       await open(tester, '/read/5787:2/0?mode=full', tts,
-          settings: const AppSettings(onboardingComplete: true, focusMode: true));
+          settings: const AppSettings(onboardingComplete: true, focusMode: true, fullTextListen: FullTextListen.verseAndTargum));
       await tester.tap(find.byTooltip('Listen'));
       await tester.pumpAndSettle();
       tts.finish();
