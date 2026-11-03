@@ -175,6 +175,20 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                 onChanged: (v) => update((s) => s.copyWith(speechRate: v)),
               ),
             ),
+            // How far Listen reads on, as the reader's display sheet sets it.
+            SwitchRow(
+              title: l.listenAlong,
+              subtitle: l.listenAlongDesc,
+              value: s.listenAlong,
+              onChanged: (v) => update((s) => s.copyWith(listenAlong: v)),
+            ),
+            if (s.listenAlong)
+              SwitchRow(
+                title: l.listenThroughParsha,
+                subtitle: l.listenThroughParshaDesc,
+                value: s.listenThroughParsha,
+                onChanged: (v) => update((s) => s.copyWith(listenThroughParsha: v)),
+              ),
             // The app's own voice, for the pointed Hebrew and Aramaic.
             const HebrewVoiceRow(),
           ],

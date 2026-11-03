@@ -10,6 +10,11 @@ import 'package:shnayim_mikrah/services/tts.dart';
 
 /// Records the calls made to the speech engine.
 class _FakeTts extends Fake implements FlutterTts {
+  @override
+  void setProgressHandler(ProgressHandler callback) => progressHandler = callback;
+  @override
+  ProgressHandler? progressHandler;
+
   final calls = <String>[];
   (IosTextToSpeechAudioCategory, List<IosTextToSpeechAudioCategoryOptions>, IosTextToSpeechAudioMode)? category;
   bool failCategory = false;
@@ -60,6 +65,11 @@ class _FakeTts extends Fake implements FlutterTts {
 /// stop while silent, it reports a cancel all the same, as Windows does
 /// ([cancelsWhenSilent]).
 class _Engine extends Fake implements FlutterTts {
+  @override
+  void setProgressHandler(ProgressHandler callback) => progressHandler = callback;
+  @override
+  ProgressHandler? progressHandler;
+
   VoidCallback? _onStart;
   VoidCallback? _onComplete;
   VoidCallback? _onCancel;
@@ -663,16 +673,29 @@ void main() {
       expect(engine.said, ['א', 'א']);
     });
 
-    test('a new rate starts the item being spoken again at it', () async {
-      unawaited(tts.speakQueue(['א', 'ב'], language: 'he-IL', rate: 0.45));
+    test('a new rate goes on at it from the word the voice had come to, then reads on whole items', () async {
+      const verse = 'בראשית ברא אלהים את השמים';
+      unawaited(tts.speakQueue([verse, 'ב'], language: 'he-IL', rate: 0.45));
       await settled();
+      // The engine has said two words, and is on the third.
+      engine.progressHandler!(verse, 11, 16, 'אלהים');
       tts.setRate(0.65);
       await settled();
-      expect(engine.said, ['א', 'א']);
+      expect(engine.said, [verse, 'אלהים את השמים']);
       expect(engine.rates, [0.45, 0.65]);
       engine.finish();
       await settled();
+      expect(engine.said.last, 'ב');
       expect(engine.rates.last, 0.65);
+    });
+
+    test('a new rate, where the engine tells nothing of how far it has read, starts the item again at it', () async {
+      unawaited(tts.speakQueue(['א ב', 'ג'], language: 'he-IL', rate: 0.45));
+      await settled();
+      tts.setRate(0.65);
+      await settled();
+      expect(engine.said, ['א ב', 'א ב']);
+      expect(engine.rates, [0.45, 0.65]);
     });
 
     test('stopped, or replaced by another, it says it did not finish', () async {

@@ -20,7 +20,14 @@ class _WebRuntime implements VoiceRuntime {
     final script = web.HTMLScriptElement()
       ..src = _script
       ..crossOrigin = 'anonymous';
-    script.onload = ((web.Event _) => done.complete(globalContext['ort']! as JSObject)).toJS;
+    script.onload = ((web.Event _) {
+      final ort = globalContext['ort']! as JSObject;
+      // In a worker of its own: run on the page, a verse being made held up
+      // everything else, the end of the one heard among it, so that Listen
+      // fell silent between verses.
+      ((ort['env']! as JSObject)['wasm']! as JSObject)['proxy'] = true.toJS;
+      done.complete(ort);
+    }).toJS;
     script.onerror = ((web.Event _) {
       _loaded = null;
       done.completeError(StateError('ONNX Runtime Web could not be loaded.'));

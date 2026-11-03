@@ -88,13 +88,50 @@ class VoiceRoutingTts extends FlutterTts {
   /// The pace the reader set, relative to the voices' own.
   double get _speed => (_rate / kDefaultSpeechRate).clamp(0.25, 4.0);
 
-  // Utterances made ahead of time ([prefetch]): the next of a queue.
-  final _prepared = <String, Future<Uint8List>>{};
+  // Utterances made, ahead of time ([prefetch]) or as they were read, the
+  // latest last, with the pace each was made at, which plays at another one
+  // set since: the next of a queue, and those just read, which the Hebrew's
+  // second reading and Back read again.
+  final _prepared = <String, (double, Future<Uint8List>)>{};
+  static const _kept = 4;
 
-  String _key(String text, String voice) => '$voice|$_speed|${_settings().hashCode}|$text';
+  /// Keeps [made] as [key]'s, the latest, letting the oldest go.
+  void _keep(String key, (double, Future<Uint8List>) made) {
+    _prepared.remove(key);
+    while (_prepared.length >= _kept) {
+      _prepared.remove(_prepared.keys.first);
+    }
+    _prepared[key] = made;
+    made.$2.then(
+      (_) {},
+      onError: (Object _) {
+        if (identical(_prepared[key], made)) _prepared.remove(key);
+      },
+    );
+  }
 
-  Future<Uint8List> _make(String text, String voice) =>
-      _prepared.remove(_key(text, voice)) ?? voices.speak(text, id: voice, settings: _settings(), speed: _speed);
+  // The pace the utterance playing was made at ([_speed] then).
+  double _madeAt = 1;
+
+  /// Whether the app's voice is making or playing an utterance.
+  bool get reading => _making || _playing;
+
+  /// Plays what the app's voice is reading at [rate] (the setting's) from
+  /// now on, going on from where it is; what it reads next is made at it.
+  Future<void> changeRate(double rate) async {
+    _rate = rate;
+    if (_playing) await _audio?.setPlaybackRate(_speed / _madeAt);
+  }
+
+  String _key(String text, String voice) => '$voice|${_settings().hashCode}|$text';
+
+  /// [text] read by [voice], and the pace it was made at.
+  (double, Future<Uint8List>) _make(String text, String voice) {
+    final key = _key(text, voice);
+    final made = _prepared[key] ?? (_speed, voices.speak(text, id: voice, settings: _settings(), speed: _speed));
+    _keep(key, made);
+    return made;
+  }
 
   /// Makes [text], read as [role], ahead of its turn, so that it is ready to
   /// play once the one before it ends. Does nothing for the device's voice.
@@ -103,16 +140,7 @@ class VoiceRoutingTts extends FlutterTts {
     if (voice == null) return;
     final key = _key(text, voice);
     if (_prepared.containsKey(key)) return;
-    while (_prepared.length >= 3) {
-      _prepared.remove(_prepared.keys.first);
-    }
-    final made = _prepared[key] = voices.speak(text, id: voice, settings: _settings(), speed: _speed);
-    made.then(
-      (_) {},
-      onError: (Object _) {
-        _prepared.remove(key);
-      },
-    );
+    _keep(key, (_speed, voices.speak(text, id: voice, settings: _settings(), speed: _speed)));
   }
 
   @override
@@ -160,12 +188,18 @@ class VoiceRoutingTts extends FlutterTts {
     final token = ++_token;
     _making = true;
     try {
-      final audio = await _make(text, voice);
+      final (madeAt, making) = _make(text, voice);
+      final audio = await making;
       if (token != _token) return 1; // stopped meanwhile, and reported then
       _making = false;
       _playing = true;
+      _madeAt = madeAt;
       startHandler?.call();
       await _player.play(BytesSource(audio, mimeType: 'audio/wav'));
+      // At the rate set now, which a change while it was made may have moved
+      // from the one it was made at: the player keeps a rate from one
+      // utterance to the next, so it is set for each.
+      if (token == _token) await _player.setPlaybackRate(_speed / madeAt);
       return 1;
     } catch (e) {
       if (token != _token) return 1;

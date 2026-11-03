@@ -1626,8 +1626,20 @@ abstract class AppLocalizations {
   /// No description provided for @listenAlongDesc.
   ///
   /// In en, this message translates to:
-  /// **'Keeps playing from one reading to the next, to the end of the aliyah. An aid for following the text, not a substitute for reading it.'**
+  /// **'Keeps playing from one reading to the next, to the end of the aliyah. Off, Listen reads the step shown and stops. An aid for following the text, not a substitute for reading it.'**
   String get listenAlongDesc;
+
+  /// No description provided for @listenThroughParsha.
+  ///
+  /// In en, this message translates to:
+  /// **'Read on through the parsha'**
+  String get listenThroughParsha;
+
+  /// No description provided for @listenThroughParshaDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'At the end of an aliyah, Listen marks it read and goes straight on into the next, to the end of the parsha.'**
+  String get listenThroughParshaDesc;
 
   /// No description provided for @ttsUnavailable.
   ///
