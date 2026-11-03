@@ -567,7 +567,9 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final tts = RecordingTts();
-      final c = await pumpApp(tester, settings: settings, now: now ?? monday, overrides: [ttsProvider.overrideWithValue(tts)]);
+      // What one step reads: Listen stops after it, rather than read on.
+      final c = await pumpApp(tester,
+          settings: settings.copyWith(listenAlong: false), now: now ?? monday, overrides: [ttsProvider.overrideWithValue(tts)]);
       c.read(routerProvider).go(path);
       await loadTexts(tester);
       for (var i = 0; i < steps; i++) {
