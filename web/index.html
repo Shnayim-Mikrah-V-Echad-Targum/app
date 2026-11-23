@@ -87,6 +87,19 @@
     })();
   </script>
   <script>
+    // A page the service worker served from the device never reaches the
+    // site, which logs a visit only for a page it serves: the page says it
+    // was opened, so that a returning visitor is counted too. The first visit,
+    // before the service worker, reached it already.
+    (function () {
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller && navigator.sendBeacon) {
+          navigator.sendBeacon('/api/visit', new Blob([location.pathname], { type: 'text/plain' }));
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <script>
     // The browser's offer to install the app (Chrome and Edge, on Android
     // and on computers), kept from the moment it comes, before the app has
     // loaded, for the app to make when the reader asks: About, Settings and
