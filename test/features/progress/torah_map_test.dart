@@ -74,7 +74,8 @@ void main() {
       ('Bereshit: On time', status.done, null, Icons.check, status.onDone),
       ('Noach: After Shabbat — still counts', status.late, null, Icons.check_circle_outline, status.onLate),
       ('Lech Lecha: Not completed', sefer.paper, BorderSide(color: scheme.outline), Icons.remove, status.neutral),
-      ('Vayera: Made up later', sefer.paper, BorderSide(color: status.late, width: 1.5), Icons.history, status.late),
+      // Read in full, so filled as one read; the history mark says it was made up.
+      ('Vayera: Made up later', status.late, null, Icons.history, status.onLate),
       ('Chayei Sarah: On time', status.done, null, Icons.check, status.onDone),
       ('Toldot: In progress', scheme.primaryContainer, BorderSide(color: scheme.primary, width: 2), Icons.timelapse,
           scheme.onPrimaryContainer),
