@@ -30,15 +30,29 @@ runs:
       run: |
         $name = "onnxruntime-win-x64-$env:VERSION"
         $dir = 'build/windows/x64/plugins/flutter_onnxruntime/onnxruntime'
-        gh release download "v$env:VERSION" --repo microsoft/onnxruntime --pattern "$name.zip" --dir $env:RUNNER_TEMP
-        if ($LASTEXITCODE -ne 0) {
-          Write-Output "::error::$name.zip could not be fetched from microsoft/onnxruntime's release v$env:VERSION. Its Windows files:"
-          gh release view "v$env:VERSION" --repo microsoft/onnxruntime --json assets --jq '.assets[].name' | Select-String win
+        # The plugin's version, or else the newest release of the same minor
+        # version with a Windows zip (patch releases keep its interface):
+        # Microsoft's releases have been moved about since 2026-11-20.
+        $minor = ($env:VERSION -split '\.')[0..1] -join '.'
+        $tags = @("v$env:VERSION") + @(gh release list --repo microsoft/onnxruntime --limit 100 --json tagName --jq '.[].tagName' |
+          Where-Object { $_ -like "v$minor.*" -and $_ -ne "v$env:VERSION" })
+        $found = $null
+        foreach ($tag in $tags) {
+          $v = $tag.TrimStart('v')
+          gh release download $tag --repo microsoft/onnxruntime --pattern "onnxruntime-win-x64-$v.zip" --dir $env:RUNNER_TEMP 2>$null
+          if ($LASTEXITCODE -eq 0) { $found = $v; break }
+        }
+        if (-not $found) {
+          Write-Output "::error::No onnxruntime-win-x64 zip for $minor.x could be fetched from microsoft/onnxruntime's releases. Its latest releases:"
+          gh release list --repo microsoft/onnxruntime --limit 15
           exit 1
         }
+        if ($found -ne $env:VERSION) { Write-Output "::warning::ONNX Runtime $env:VERSION has no Windows release; using $found in its place." }
         New-Item -ItemType Directory -Force -Path $dir | Out-Null
-        Expand-Archive -Path "$env:RUNNER_TEMP/$name.zip" -DestinationPath $dir -Force
+        Expand-Archive -Path "$env:RUNNER_TEMP/onnxruntime-win-x64-$found.zip" -DestinationPath $dir -Force
+        # Where the plugin looks: under its own version's name.
+        if ($found -ne $env:VERSION) { Rename-Item -Path "$dir/onnxruntime-win-x64-$found" -NewName $name }
         if (-not (Test-Path "$dir/$name/include/onnxruntime_cxx_api.h")) {
-          Write-Output "::error::$name.zip did not hold include/onnxruntime_cxx_api.h"
+          Write-Output "::error::onnxruntime-win-x64-$found.zip did not hold include/onnxruntime_cxx_api.h"
           exit 1
         }
