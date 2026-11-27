@@ -385,13 +385,18 @@ void main() {
       // notes; a published release is left alone.
       expect(draft, contains(r'gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${assets[@]}"'));
       expect(draft, contains('is published already'));
-      // No third-party release action.
+      // No third-party release action (the repository's own, under
+      // .github/actions, are its code).
       final actions = {
         for (final job in jobs.values.cast<YamlMap>())
           for (final step in steps(job))
             if (step['uses'] case final String action) action.split('@').first,
       };
-      expect(actions.where((action) => !action.startsWith('actions/')), unorderedEquals(['subosito/flutter-action', 'gradle/actions/setup-gradle']));
+      expect(
+        actions.where((action) => !action.startsWith('actions/') && !action.startsWith('./.github/actions/')),
+        unorderedEquals(['subosito/flutter-action', 'gradle/actions/setup-gradle']),
+      );
+      expect(actions, contains('./.github/actions/onnxruntime-windows'));
     });
 
     test('its notes say what the preview is, how to install it, and what to keep in mind', () {
