@@ -344,11 +344,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      # ONNX Runtime from the cache or Microsoft's release, checked
+      # ONNX Runtime from the cache or Microsoft's NuGet package, checked
       # (.github/actions/onnxruntime-windows).
       - uses: ./.github/actions/onnxruntime-windows
-        with:
-          token: ${{ github.token }}
       - run: flutter build windows --release ${{ env.DART_DEFINES }}
         shell: bash
       # The folder runs on a PC without the Visual C++ Redistributable only

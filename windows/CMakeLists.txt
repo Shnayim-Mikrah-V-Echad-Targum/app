@@ -53,6 +53,12 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# ONNX Runtime for flutter_onnxruntime: 1.28.0, the version Microsoft's
+# Microsoft.ML.OnnxRuntime NuGet package has, since the GitHub release the
+# plugin downloads otherwise (its 1.28.3) was withdrawn in November 2026. CI
+# puts it where the plugin looks (.github/actions/onnxruntime-windows).
+set(ONNXRUNTIME_VERSION "1.28.0")
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
