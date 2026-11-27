@@ -745,7 +745,7 @@ Text fields: focused border 2 px primary (was 3), 3 px in high contrast (§6.7).
 | on time | done | none | onDone | check |
 | late | late | none | onLate (5.49) | check_circle_outline |
 | finished with the next parsha (`restored`) | late | none | onLate | done_all |
-| made up | paper | 1.5 px late | onSurface | history in late |
+| made up | late | none | onLate | history in onLate (read in full, so filled as one read; the history mark says it was made up later) |
 | missed | paper | 1 px outline (2 in high contrast) | onSurfaceVariant | remove 14 in neutral (the non-colour cue, D8) |
 | can still be finished with the next parsha (`overdue`) | paper | 1.5 px overdue (2 in high contrast) | onSurface | hourglass_bottom_rounded in overdue (`stillToReadIcon`, the glyph of `WeekStatusBadge` for `overdue` too, so the Recent weeks row and the week's page mark it alike; not history, the made-up tile's) |
 | current | primaryContainer | 2 px primary | onPrimaryContainer w700 | timelapse |

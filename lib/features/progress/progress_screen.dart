@@ -876,13 +876,16 @@ _TileLook _lookOf(BuildContext context, _TileState state) {
         icon: Icons.done_all,
         iconColor: status.onLate,
       ),
+    // Read in full, after its week: filled as a parsha read is, so that it
+    // never looks still to read; its history mark, not the fill, says it was
+    // made up later and kept no streak.
     _TileState.madeUp => (
-        fill: sefer.paper,
-        border: BorderSide(color: status.late, width: 1.5),
-        text: scheme.onSurface,
+        fill: status.late,
+        border: BorderSide.none,
+        text: status.onLate,
         bold: false,
         icon: Icons.history,
-        iconColor: status.late,
+        iconColor: status.onLate,
       ),
     // The dash, not the colour, is what sets a missed parsha apart from one
     // still to come.
