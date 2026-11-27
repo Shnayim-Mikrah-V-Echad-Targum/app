@@ -311,6 +311,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # The packages Swift Package Manager fetches, ONNX Runtime's among them,
+      # kept between runs, so that a download host down for a while doesn't
+      # stop the build.
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ hashFiles('pubspec.lock') }}
+          restore-keys: swiftpm-
       - run: flutter build ios --release --no-codesign $DART_DEFINES
       # The widget extension, built with the app, links none of its
       # frameworks (ios/ParshaWidget/ParshaWidget.xcconfig): neither a
@@ -336,6 +344,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # ONNX Runtime from the cache or Microsoft's NuGet package, checked
+      # (.github/actions/onnxruntime-windows).
+      - uses: ./.github/actions/onnxruntime-windows
       - run: flutter build windows --release ${{ env.DART_DEFINES }}
         shell: bash
       # The folder runs on a PC without the Visual C++ Redistributable only
