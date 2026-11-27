@@ -1,0 +1,44 @@
+# ONNX Runtime for Windows, which flutter_onnxruntime downloads itself without
+# checking the download (a missing file surfaces only as "ONNX Runtime
+# extraction directory doesn't exist"): fetched here, checked, and kept in the
+# cache, unpacked where the plugin looks for it, so that it skips its own
+# download. Before `flutter build windows`, in the repository's root.
+name: ONNX Runtime for Windows
+description: Puts ONNX Runtime where flutter_onnxruntime looks for it, from the cache or Microsoft's release.
+inputs:
+  version:
+    description: The plugin's ONNX Runtime version (ONNXRUNTIME_VERSION in its windows/CMakeLists.txt).
+    default: "1.28.3"
+  token:
+    description: A token for the GitHub CLI.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: ONNX Runtime for Windows, from the cache
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: build/windows/x64/plugins/flutter_onnxruntime/onnxruntime
+        key: onnxruntime-win-x64-${{ inputs.version }}
+    - name: ONNX Runtime for Windows, from Microsoft's release
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        $name = "onnxruntime-win-x64-$env:VERSION"
+        $dir = 'build/windows/x64/plugins/flutter_onnxruntime/onnxruntime'
+        gh release download "v$env:VERSION" --repo microsoft/onnxruntime --pattern "$name.zip" --dir $env:RUNNER_TEMP
+        if ($LASTEXITCODE -ne 0) {
+          Write-Output "::error::$name.zip could not be fetched from microsoft/onnxruntime's release v$env:VERSION. Its Windows files:"
+          gh release view "v$env:VERSION" --repo microsoft/onnxruntime --json assets --jq '.assets[].name' | Select-String win
+          exit 1
+        }
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Expand-Archive -Path "$env:RUNNER_TEMP/$name.zip" -DestinationPath $dir -Force
+        if (-not (Test-Path "$dir/$name/include/onnxruntime_cxx_api.h")) {
+          Write-Output "::error::$name.zip did not hold include/onnxruntime_cxx_api.h"
+          exit 1
+        }

@@ -239,6 +239,14 @@ jobs:
           python3 tool/ios/sign_for_app_store.py --team "$IOS_TEAM_ID" \
             --profile "org.shnayimmikrah.app=$IOS_PROFILE_NAME" \
             --profile "org.shnayimmikrah.app.ParshaWidget=$IOS_WIDGET_PROFILE_NAME"
+      # The packages Swift Package Manager fetches, ONNX Runtime's among them,
+      # kept between runs, so that a download host down for a while doesn't
+      # stop the build.
+      - uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-${{ hashFiles('pubspec.lock') }}
+          restore-keys: swiftpm-
       - name: Build the IPA
         id: ipa
         run: |
@@ -281,6 +289,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # ONNX Runtime from the cache or Microsoft's release, checked
+      # (.github/actions/onnxruntime-windows).
+      - uses: ./.github/actions/onnxruntime-windows
+        with:
+          token: ${{ github.token }}
       - name: Build
         run: |
           # shellcheck disable=SC2086 # DART_DEFINES is a list of arguments.

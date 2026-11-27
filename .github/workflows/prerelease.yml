@@ -116,6 +116,11 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # ONNX Runtime from the cache or Microsoft's release, checked
+      # (.github/actions/onnxruntime-windows).
+      - uses: ./.github/actions/onnxruntime-windows
+        with:
+          token: ${{ github.token }}
       - name: Build
         shell: bash
         run: |
